@@ -133,17 +133,32 @@ All colors MUST be HSL.
     background-image: url('/images/world-dots.png');
     background-repeat: no-repeat;
     background-position: center;
-    background-size: clamp(900px, 80vw, 1600px) auto;
+    background-size: clamp(1000px, 90vw, 1800px) auto;
     opacity: 0.22;
     mix-blend-mode: soft-light;
-    filter: saturate(90%);
-    /* Smoothly fade the map near edges for seamless look */
-    mask-image: radial-gradient(80% 65% at 50% 50%, black 45%, transparent 100%);
-    -webkit-mask-image: radial-gradient(80% 65% at 50% 50%, black 45%, transparent 100%);
+    filter: saturate(85%) contrast(105%) blur(0.3px);
+    /* Wider, softer feather to blend edges seamlessly */
+    mask-image: radial-gradient(120% 90% at 50% 50%, black 30%, rgba(0,0,0,0.85) 55%, transparent 85%);
+    -webkit-mask-image: radial-gradient(120% 90% at 50% 50%, black 30%, rgba(0,0,0,0.85) 55%, transparent 85%);
+    mask-repeat: no-repeat;
+    -webkit-mask-repeat: no-repeat;
+  }
+  .hero-map::after {
+    content: "";
+    position: absolute;
+    inset: -2% -2%;
+    pointer-events: none;
+    background: radial-gradient(110% 85% at 50% 50%, transparent 60%, hsl(var(--brand-blue) / 0.14) 84%, hsl(var(--brand-deep-blue) / 0.24) 100%);
+    mix-blend-mode: overlay;
   }
   .dark .hero-map {
-    opacity: 0.28;
+    opacity: 0.26;
     mix-blend-mode: screen;
+    filter: saturate(90%) contrast(110%) blur(0.2px);
+  }
+  .dark .hero-map::after {
+    background: radial-gradient(110% 85% at 50% 50%, transparent 60%, hsl(var(--brand-blue) / 0.12) 84%, hsl(var(--brand-deep-blue) / 0.22) 100%);
+    mix-blend-mode: soft-light;
   }
 }
 
