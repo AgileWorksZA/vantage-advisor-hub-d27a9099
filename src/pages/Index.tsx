@@ -20,9 +20,13 @@ const Index = () => {
     <div className="min-h-screen">
       <header className="bg-background/80 backdrop-blur border-b border-border sticky top-0 z-40">
         <div className="container flex items-center justify-between py-4">
-          <a href="#" className="flex items-center gap-2 font-extrabold tracking-tight">
-            <span className="inline-block h-6 w-1.5 rounded-full bg-[hsl(var(--brand-orange))]" aria-hidden />
-            <span className="text-lg">Vantage</span>
+          <a href="/" className="flex items-center gap-3" aria-label="Vantage home">
+            <img
+              src="/lovable-uploads/befc7e6c-ace7-4301-b516-594be39d6653.png"
+              alt="Vantage logo"
+              className="h-6 md:h-7 w-auto"
+              loading="eager"
+            />
           </a>
           <nav className="hidden md:flex items-center gap-6 text-sm">
             <a href="#features" className="text-muted-foreground hover:text-foreground">Features</a>
