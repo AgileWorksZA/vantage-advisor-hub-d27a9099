@@ -46,6 +46,7 @@ const Index = () => {
           onMouseMove={handleMouseMove}
           className="relative bg-hero text-primary-foreground"
         >
+          <div className="hero-map" aria-hidden />
           <div className="spotlight" aria-hidden />
           <div className="container py-24 md:py-32 relative">
             <p className="uppercase tracking-widest font-semibold opacity-90">Redefining Wealth</p>

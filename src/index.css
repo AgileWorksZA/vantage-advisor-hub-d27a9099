@@ -126,7 +126,19 @@ All colors MUST be HSL.
     background: radial-gradient(600px circle at var(--x,50%) var(--y,50%), hsl(var(--brand-peach) / 0.25), transparent 40%);
     transition: background var(--transition-smooth);
   }
+  .hero-map {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image: url('/images/world-dots.png');
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 1200px auto;
+    opacity: 0.18;
+    mix-blend-mode: overlay;
+  }
 }
+
 
 @media (prefers-reduced-motion: reduce) {
   .spotlight { background: none; }
