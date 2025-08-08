@@ -133,9 +133,17 @@ All colors MUST be HSL.
     background-image: url('/images/world-dots.png');
     background-repeat: no-repeat;
     background-position: center;
-    background-size: 1200px auto;
-    opacity: 0.18;
-    mix-blend-mode: overlay;
+    background-size: clamp(900px, 80vw, 1600px) auto;
+    opacity: 0.22;
+    mix-blend-mode: soft-light;
+    filter: saturate(90%);
+    /* Smoothly fade the map near edges for seamless look */
+    mask-image: radial-gradient(80% 65% at 50% 50%, black 45%, transparent 100%);
+    -webkit-mask-image: radial-gradient(80% 65% at 50% 50%, black 45%, transparent 100%);
+  }
+  .dark .hero-map {
+    opacity: 0.28;
+    mix-blend-mode: screen;
   }
 }
 
