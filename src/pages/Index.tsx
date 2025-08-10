@@ -14,6 +14,13 @@ const Index = () => {
     const y = e.clientY - rect.top;
     el.style.setProperty("--x", `${x}px`);
     el.style.setProperty("--y", `${y}px`);
+    el.style.setProperty("--spotlight-opacity", "0.45");
+  };
+
+  const handleMouseLeave: React.MouseEventHandler<HTMLDivElement> = () => {
+    const el = heroRef.current;
+    if (!el) return;
+    el.style.setProperty("--spotlight-opacity", "0");
   };
 
   return (
@@ -44,10 +51,11 @@ const Index = () => {
         <section
           ref={heroRef}
           onMouseMove={handleMouseMove}
+          onMouseLeave={handleMouseLeave}
           className="relative bg-hero text-primary-foreground"
         >
           <div className="hero-map" aria-hidden />
-          <div className="spotlight" aria-hidden />
+          
           <div className="container py-24 md:py-32 relative">
             <p className="uppercase tracking-widest font-semibold opacity-90">Redefining Wealth</p>
             <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight max-w-3xl mt-4">

@@ -130,10 +130,15 @@ All colors MUST be HSL.
     position: absolute;
     inset: 0;
     pointer-events: none;
-    background-image: url('/images/world-dots.png');
-    background-repeat: no-repeat;
-    background-position: center;
-    background-size: clamp(1000px, 90vw, 1800px) auto;
+    /* Spotlight defaults to off; updated via JS on mouse events */
+    --spotlight-opacity: 0;
+    background-image:
+      radial-gradient(600px circle at var(--x,50%) var(--y,50%), hsl(var(--brand-peach) / var(--spotlight-opacity)), transparent 60%),
+      url('/images/world-dots.png');
+    background-repeat: no-repeat, no-repeat;
+    background-position: 0 0, center;
+    background-size: 600px 600px, clamp(1400px, 120vw, 2400px) auto;
+    background-blend-mode: screen, normal;
     opacity: 0.22;
     mix-blend-mode: soft-light;
     filter: saturate(85%) contrast(105%) blur(0.3px);
@@ -143,22 +148,10 @@ All colors MUST be HSL.
     mask-repeat: no-repeat;
     -webkit-mask-repeat: no-repeat;
   }
-  .hero-map::after {
-    content: "";
-    position: absolute;
-    inset: -2% -2%;
-    pointer-events: none;
-    background: radial-gradient(110% 85% at 50% 50%, transparent 60%, hsl(var(--brand-blue) / 0.14) 84%, hsl(var(--brand-deep-blue) / 0.24) 100%);
-    mix-blend-mode: overlay;
-  }
   .dark .hero-map {
     opacity: 0.26;
     mix-blend-mode: screen;
     filter: saturate(90%) contrast(110%) blur(0.2px);
-  }
-  .dark .hero-map::after {
-    background: radial-gradient(110% 85% at 50% 50%, transparent 60%, hsl(var(--brand-blue) / 0.12) 84%, hsl(var(--brand-deep-blue) / 0.22) 100%);
-    mix-blend-mode: soft-light;
   }
 }
 
