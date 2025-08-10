@@ -130,28 +130,46 @@ All colors MUST be HSL.
     position: absolute;
     inset: 0;
     pointer-events: none;
-    /* Spotlight defaults to off; updated via JS on mouse events */
+    /* Interactive dot grid (base) */
+    --x: 50%;
+    --y: 50%;
     --spotlight-opacity: 0;
-    background-image:
-      radial-gradient(600px circle at var(--x,50%) var(--y,50%), hsl(var(--brand-peach) / var(--spotlight-opacity)), transparent 60%),
-      url('/images/world-dots.png');
-    background-repeat: no-repeat, no-repeat;
-    background-position: 0 0, center;
-    background-size: 600px 600px, clamp(1400px, 120vw, 2400px) auto;
-    background-blend-mode: screen, normal;
-    opacity: 0.22;
+    --dot-size: 1.5px;
+    --dot-gap: 14px;
+    background-image: radial-gradient(circle, hsl(var(--brand-blue) / 0.45) 0 var(--dot-size), transparent calc(var(--dot-size) + 0.5px));
+    background-size: var(--dot-gap) var(--dot-gap);
+    background-position: center;
+    background-repeat: repeat;
     mix-blend-mode: soft-light;
-    filter: saturate(85%) contrast(105%) blur(0.3px);
-    /* Wider, softer feather to blend edges seamlessly */
-    mask-image: radial-gradient(120% 90% at 50% 50%, black 30%, rgba(0,0,0,0.85) 55%, transparent 85%);
-    -webkit-mask-image: radial-gradient(120% 90% at 50% 50%, black 30%, rgba(0,0,0,0.85) 55%, transparent 85%);
+    filter: saturate(90%) contrast(110%);
+    /* Feather the edges slightly so dots blend with the hero */
+    mask-image: radial-gradient(120% 90% at 50% 50%, black 35%, rgba(0,0,0,0.85) 60%, transparent 88%);
+    -webkit-mask-image: radial-gradient(120% 90% at 50% 50%, black 35%, rgba(0,0,0,0.85) 60%, transparent 88%);
     mask-repeat: no-repeat;
     -webkit-mask-repeat: no-repeat;
   }
-  .dark .hero-map {
-    opacity: 0.26;
+  .hero-map::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    /* Enlarged dots overlay, revealed by radial mask */
+    --dot-size-lg: 3px;
+    --dot-gap-lg: var(--dot-gap);
+    background-image: radial-gradient(circle, hsl(var(--brand-peach) / 0.9) 0 var(--dot-size-lg), transparent calc(var(--dot-size-lg) + 0.5px));
+    background-size: var(--dot-gap-lg) var(--dot-gap-lg);
+    background-position: center;
+    background-repeat: repeat;
+    opacity: var(--spotlight-opacity);
+    mask-image: radial-gradient(160px circle at var(--x,50%) var(--y,50%), black 0, black 55%, transparent 72%);
+    -webkit-mask-image: radial-gradient(160px circle at var(--x,50%) var(--y,50%), black 0, black 55%, transparent 72%);
+    transition: opacity var(--transition-smooth), mask-position var(--transition-smooth);
     mix-blend-mode: screen;
-    filter: saturate(90%) contrast(110%) blur(0.2px);
+  }
+
+  .dark .hero-map {
+    mix-blend-mode: screen;
+    filter: saturate(95%) contrast(115%);
   }
 }
 
