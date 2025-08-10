@@ -65,7 +65,7 @@ const Index = () => {
               Vantage unifies CRM, planning tools and an investment platform into one integrated ecosystem — reducing the number of systems in your practice.
             </p>
             <div className="mt-8 flex flex-wrap gap-4">
-              <Button variant="hero" size="xl">
+              <Button variant="hero" size="xl" className="bg-foreground text-primary-foreground hover:bg-foreground/90">
                 Book a demo <ArrowRight className="ml-1" />
               </Button>
               <Button asChild variant="premium" size="xl">
