@@ -22,7 +22,7 @@ const Index = () => {
         <div className="container flex items-center justify-between py-4">
           <a href="/" className="flex items-center gap-3" aria-label="Vantage home">
             <img
-              src="/lovable-uploads/befc7e6c-ace7-4301-b516-594be39d6653.png"
+              src="/lovable-uploads/7dc6d80a-2f1f-4523-af0c-88abbde31835.png"
               alt="Vantage logo"
               className="h-6 md:h-7 w-auto"
               loading="eager"
