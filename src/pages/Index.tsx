@@ -14,7 +14,7 @@ const Index = () => {
     const y = e.clientY - rect.top;
     el.style.setProperty("--x", `${x}px`);
     el.style.setProperty("--y", `${y}px`);
-    el.style.setProperty("--spotlight-opacity", "0.9");
+    el.style.setProperty("--spotlight-opacity", "0.45");
   };
 
   const handleMouseLeave: React.MouseEventHandler<HTMLDivElement> = () => {
