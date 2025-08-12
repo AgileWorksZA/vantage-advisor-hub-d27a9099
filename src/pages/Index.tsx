@@ -2,6 +2,7 @@ import { useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Check, ArrowRight, Layers, BarChart3, Users } from "lucide-react";
+import Testimonials from "@/components/Testimonials";
 
 const Index = () => {
   const heroRef = useRef<HTMLDivElement>(null);
@@ -187,6 +188,8 @@ const Index = () => {
             </div>
           </div>
         </section>
+
+        <Testimonials />
 
         <section id="contact" className="py-20 bg-muted/40">
           <div className="container text-center">
