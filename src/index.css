@@ -153,6 +153,41 @@ All colors MUST be HSL.
     mix-blend-mode: screen;
     filter: saturate(90%) contrast(110%) blur(0.2px);
   }
+
+  .interactive-dots {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .dot {
+    position: absolute;
+    width: 2px;
+    height: 2px;
+    background: hsl(var(--brand-peach) / 0.6);
+    border-radius: 50%;
+    pointer-events: all;
+    transition: all 0.2s ease-out;
+    animation: pulse 3s ease-in-out infinite;
+  }
+
+  .dot:hover {
+    transform: scale(3);
+    background: hsl(var(--brand-peach) / 0.9);
+    box-shadow: 0 0 8px hsl(var(--brand-peach) / 0.5);
+  }
+
+  @keyframes pulse {
+    0%, 100% { 
+      opacity: 0.4;
+      transform: scale(1);
+    }
+    50% { 
+      opacity: 0.8;
+      transform: scale(1.2);
+    }
+  }
 }
 
 

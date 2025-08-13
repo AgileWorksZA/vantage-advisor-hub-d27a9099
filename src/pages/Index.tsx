@@ -56,6 +56,19 @@ const Index = () => {
           className="relative bg-hero text-primary-foreground"
         >
           <div className="hero-map" aria-hidden />
+          <div className="interactive-dots" aria-hidden>
+            {Array.from({ length: 80 }, (_, i) => (
+              <div
+                key={i}
+                className="dot"
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  top: `${Math.random() * 100}%`,
+                  animationDelay: `${Math.random() * 2}s`,
+                }}
+              />
+            ))}
+          </div>
           
           <div className="container py-24 md:py-32 relative">
             <p className="uppercase tracking-widest font-semibold opacity-90">Redefining Wealth</p>
