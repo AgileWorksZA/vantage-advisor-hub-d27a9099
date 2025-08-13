@@ -34,7 +34,7 @@ const Testimonials = () => {
   }, [api]);
 
   return (
-    <section id="testimonials" className="py-20 bg-muted/40">
+    <section id="testimonials" className="pb-20 bg-muted/40">
       <div className="container">
         <div className="max-w-2xl">
           <h2 className="text-2xl md:text-4xl font-bold tracking-tight">What Advisers are saying</h2>
