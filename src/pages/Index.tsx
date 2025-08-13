@@ -191,7 +191,7 @@ const Index = () => {
 
         <Testimonials />
 
-        <section id="contact" className="py-20 bg-muted/40">
+        <section id="contact" className="pb-20 bg-muted/40">
           <div className="container text-center">
             <h2 className="text-2xl md:text-4xl font-bold tracking-tight">Ready to reduce your tech stack?</h2>
             <p className="mt-3 text-muted-foreground max-w-2xl mx-auto">
