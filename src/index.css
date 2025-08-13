@@ -157,25 +157,37 @@ All colors MUST be HSL.
   .interactive-dots {
     position: absolute;
     inset: 0;
-    pointer-events: none;
     z-index: 1;
   }
 
   .dot {
     position: absolute;
-    width: 2px;
-    height: 2px;
+    width: 4px;
+    height: 4px;
     background: hsl(var(--brand-peach) / 0.6);
     border-radius: 50%;
-    pointer-events: all;
-    transition: all 0.2s ease-out;
-    animation: pulse 3s ease-in-out infinite;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: pulse 4s ease-in-out infinite;
+  }
+
+  .dot::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: -8px;
+    right: -8px;
+    bottom: -8px;
+    border-radius: 50%;
   }
 
   .dot:hover {
-    transform: scale(3);
-    background: hsl(var(--brand-peach) / 0.9);
-    box-shadow: 0 0 8px hsl(var(--brand-peach) / 0.5);
+    transform: scale(2.5);
+    background: hsl(var(--brand-peach) / 1);
+    box-shadow: 
+      0 0 12px hsl(var(--brand-peach) / 0.6),
+      0 0 20px hsl(var(--brand-peach) / 0.3);
+    animation-play-state: paused;
   }
 
   @keyframes pulse {
