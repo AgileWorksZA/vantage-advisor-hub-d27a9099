@@ -125,7 +125,14 @@ const Index = () => {
         </section>
 
         <section id="benefits" className="py-20 bg-muted/40">
-          <div className="container grid gap-6 md:grid-cols-2">
+          <div className="container">
+            <div className="max-w-2xl">
+              <h2 className="text-2xl md:text-4xl font-bold tracking-tight">Benefits</h2>
+              <p className="mt-3 text-muted-foreground">
+                How Vantage helps adviser firms grow and save.
+              </p>
+            </div>
+            <div className="mt-10 grid gap-6 md:grid-cols-2">
             <Card>
               <CardHeader>
                 <CardTitle>Grow & Scale</CardTitle>
@@ -149,6 +156,7 @@ const Index = () => {
                 <p className="flex items-start gap-2"><Check className="mt-1 text-[hsl(var(--brand-blue))]" /> Product fees</p>
               </CardContent>
             </Card>
+            </div>
           </div>
         </section>
 
