@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Check, ArrowRight, Layers, BarChart3, Users, PiggyBank } from "lucide-react";
@@ -145,6 +145,19 @@ const generateWorldDots = () => {
 
 const Index = () => {
   const heroRef = useRef<HTMLDivElement>(null);
+  const [imgSize, setImgSize] = useState<{ w: number; h: number } | null>(null);
+
+  useEffect(() => {
+    const img = new Image();
+    img.src = "/images/world-dots.png";
+    if (img.complete && img.naturalWidth && img.naturalHeight) {
+      setImgSize({ w: img.naturalWidth, h: img.naturalHeight });
+      return;
+    }
+    img.onload = () => {
+      setImgSize({ w: img.naturalWidth, h: img.naturalHeight });
+    };
+  }, []);
 
   const handleMouseMove: React.MouseEventHandler<HTMLDivElement> = (e) => {
     const el = heroRef.current;
@@ -195,20 +208,34 @@ const Index = () => {
           className="relative bg-hero text-primary-foreground"
         >
           <div className="hero-map" aria-hidden />
-          <div className="interactive-dots" aria-hidden>
-            {generateWorldDots().map((dot, i) => (
-              <div
-                key={i}
-                className="dot"
-                style={{
-                  left: `${dot.x}%`,
-                  top: `${dot.y}%`,
-                  animationDelay: `${dot.delay}s`,
-                  opacity: dot.opacity,
-                }}
-              />
-            ))}
-          </div>
+          {imgSize && (
+            <div
+              className="absolute"
+              style={{
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                width: 'clamp(1400px, 120vw, 2400px)',
+                aspectRatio: `${imgSize.w}/${imgSize.h}`,
+                zIndex: 1,
+              }}
+            >
+              <div className="interactive-dots" aria-hidden>
+                {generateWorldDots().map((dot, i) => (
+                  <div
+                    key={i}
+                    className="dot"
+                    style={{
+                      left: `${dot.x}%`,
+                      top: `${dot.y}%`,
+                      width: `${(2 / imgSize.w) * 100}%`,
+                      height: `${(2 / imgSize.h) * 100}%`,
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
           
           <div className="container py-24 md:py-32 relative">
             <p className="uppercase tracking-widest font-semibold opacity-90">Redefining Wealth</p>
