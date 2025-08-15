@@ -164,32 +164,30 @@ All colors MUST be HSL.
     position: absolute;
     width: 2px;
     height: 2px;
-    background: hsl(var(--foreground) / 0.4);
+    background: white;
     border-radius: 50%;
     cursor: pointer;
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    animation: subtlePulse 6s ease-in-out infinite;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 2;
+    opacity: 0.8;
   }
 
   .dot::before {
     content: '';
     position: absolute;
-    top: -12px;
-    left: -12px;
-    right: -12px;
-    bottom: -12px;
+    top: -10px;
+    left: -10px;
+    right: -10px;
+    bottom: -10px;
     border-radius: 50%;
   }
 
   .dot:hover {
-    transform: scale(4);
+    transform: scale(3);
     background: hsl(var(--brand-peach));
     box-shadow: 
-      0 0 16px hsl(var(--brand-peach) / 0.8),
-      0 0 32px hsl(var(--brand-peach) / 0.4),
-      0 0 48px hsl(var(--brand-peach) / 0.2);
-    animation-play-state: paused;
+      0 0 12px hsl(var(--brand-peach) / 0.8),
+      0 0 24px hsl(var(--brand-peach) / 0.4);
     z-index: 3;
   }
 
