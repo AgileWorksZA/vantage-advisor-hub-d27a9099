@@ -162,42 +162,45 @@ All colors MUST be HSL.
 
   .dot {
     position: absolute;
-    width: 4px;
-    height: 4px;
-    background: hsl(var(--brand-peach) / 0.6);
+    width: 2px;
+    height: 2px;
+    background: hsl(var(--foreground) / 0.4);
     border-radius: 50%;
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    animation: pulse 4s ease-in-out infinite;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: subtlePulse 6s ease-in-out infinite;
+    z-index: 2;
   }
 
   .dot::before {
     content: '';
     position: absolute;
-    top: -8px;
-    left: -8px;
-    right: -8px;
-    bottom: -8px;
+    top: -12px;
+    left: -12px;
+    right: -12px;
+    bottom: -12px;
     border-radius: 50%;
   }
 
   .dot:hover {
-    transform: scale(2.5);
-    background: hsl(var(--brand-peach) / 1);
+    transform: scale(4);
+    background: hsl(var(--brand-peach));
     box-shadow: 
-      0 0 12px hsl(var(--brand-peach) / 0.6),
-      0 0 20px hsl(var(--brand-peach) / 0.3);
+      0 0 16px hsl(var(--brand-peach) / 0.8),
+      0 0 32px hsl(var(--brand-peach) / 0.4),
+      0 0 48px hsl(var(--brand-peach) / 0.2);
     animation-play-state: paused;
+    z-index: 3;
   }
 
-  @keyframes pulse {
-    0%, 100% { 
-      opacity: 0.4;
+  @keyframes subtlePulse {
+    0%, 100% {
+      opacity: 0.3;
       transform: scale(1);
     }
-    50% { 
-      opacity: 0.8;
-      transform: scale(1.2);
+    50% {
+      opacity: 0.6;
+      transform: scale(1.05);
     }
   }
 }

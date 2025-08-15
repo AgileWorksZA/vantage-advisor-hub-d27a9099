@@ -4,6 +4,63 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Check, ArrowRight, Layers, BarChart3, Users, PiggyBank } from "lucide-react";
 import Testimonials from "@/components/Testimonials";
 
+// Generate dots that match the world map pattern
+const generateWorldDots = () => {
+  const dots = [];
+  
+  // Create a realistic world map dot distribution
+  // Based on typical world map projections with higher density in populated areas
+  const regions = [
+    // North America
+    { centerX: 25, centerY: 35, radius: 15, density: 45 },
+    // Europe
+    { centerX: 52, centerY: 30, radius: 8, density: 35 },
+    // Asia
+    { centerX: 75, centerY: 35, radius: 20, density: 55 },
+    // Africa
+    { centerX: 52, centerY: 55, radius: 12, density: 30 },
+    // South America
+    { centerX: 35, centerY: 70, radius: 10, density: 25 },
+    // Australia
+    { centerX: 82, centerY: 75, radius: 6, density: 15 },
+    // Additional scattered dots for oceans and islands
+    { centerX: 15, centerY: 60, radius: 25, density: 8 }, // Atlantic
+    { centerX: 80, centerY: 55, radius: 20, density: 12 }, // Pacific
+  ];
+
+  regions.forEach(region => {
+    for (let i = 0; i < region.density; i++) {
+      // Generate dots in clusters around region centers
+      const angle = Math.random() * Math.PI * 2;
+      const distance = Math.random() * region.radius;
+      const x = region.centerX + Math.cos(angle) * distance + (Math.random() - 0.5) * 10;
+      const y = region.centerY + Math.sin(angle) * distance + (Math.random() - 0.5) * 8;
+      
+      // Ensure dots stay within bounds
+      if (x >= 5 && x <= 95 && y >= 10 && y <= 90) {
+        dots.push({
+          x: x,
+          y: y,
+          delay: Math.random() * 4,
+          opacity: 0.3 + Math.random() * 0.4, // Vary opacity to match background
+        });
+      }
+    }
+  });
+
+  // Add some random scattered dots for completeness
+  for (let i = 0; i < 80; i++) {
+    dots.push({
+      x: Math.random() * 90 + 5,
+      y: Math.random() * 80 + 10,
+      delay: Math.random() * 4,
+      opacity: 0.2 + Math.random() * 0.3,
+    });
+  }
+
+  return dots;
+};
+
 const Index = () => {
   const heroRef = useRef<HTMLDivElement>(null);
 
@@ -57,14 +114,15 @@ const Index = () => {
         >
           <div className="hero-map" aria-hidden />
           <div className="interactive-dots" aria-hidden>
-            {Array.from({ length: 80 }, (_, i) => (
+            {generateWorldDots().map((dot, i) => (
               <div
                 key={i}
                 className="dot"
                 style={{
-                  left: `${Math.random() * 100}%`,
-                  top: `${Math.random() * 100}%`,
-                  animationDelay: `${Math.random() * 2}s`,
+                  left: `${dot.x}%`,
+                  top: `${dot.y}%`,
+                  animationDelay: `${dot.delay}s`,
+                  opacity: dot.opacity,
                 }}
               />
             ))}
