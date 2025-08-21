@@ -259,45 +259,64 @@ const Index = () => {
         <section id="features" className="py-20 bg-background">
           <div className="container">
             <div className="max-w-2xl">
-              <h2 className="text-2xl md:text-4xl font-bold tracking-tight">Integrated ecosystem</h2>
+              <h2 className="text-2xl md:text-4xl font-bold tracking-tight">Product Features</h2>
               <p className="mt-3 text-muted-foreground">
-                Everything advisers need to manage clients and portfolios — in one place.
+                Comprehensive solutions designed specifically for financial advisers.
               </p>
             </div>
-            <div className="mt-10 grid gap-6 md:grid-cols-3">
+            <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               <Card className="hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Layers className="text-[hsl(var(--brand-blue))]" /> CRM + Planning
+                    <Users className="text-[hsl(var(--brand-blue))]" /> Client Relationship Management
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2 text-muted-foreground">
-                  <p>One client record across onboarding, suitability and reviews.</p>
-                  <p>Powerful workflows, tasks and document management.</p>
+                  <p>Comprehensive client database with contact management, relationship tracking, and communication history in one centralized platform.</p>
                 </CardContent>
               </Card>
 
               <Card className="hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <BarChart3 className="text-[hsl(var(--brand-blue))]" /> 360° Client View
+                    <Layers className="text-[hsl(var(--brand-blue))]" /> Digital Onboarding & Advice Process
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2 text-muted-foreground">
-                  <p>Real-time valuations, performance and fees across accounts.</p>
-                  <p>Data-led insights to drive better outcomes.</p>
+                  <p>Streamlined digital workflows for client onboarding, risk profiling, and advice documentation with automated compliance checks.</p>
                 </CardContent>
               </Card>
 
               <Card className="hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Users className="text-[hsl(var(--brand-blue))]" /> White‑labelled
+                    <Check className="text-[hsl(var(--brand-blue))]" /> Streamlined Compliance & Regulatory Controls
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2 text-muted-foreground">
-                  <p>Deliver a branded digital experience to your clients.</p>
-                  <p>Scale with configurable permissions and roles.</p>
+                  <p>Built-in regulatory compliance tools with automated reporting, audit trails, and real-time monitoring of regulatory requirements.</p>
+                </CardContent>
+              </Card>
+
+              <Card className="hover:shadow-lg transition-shadow">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <ArrowRight className="text-[hsl(var(--brand-blue))]" /> Straight Through Transacting
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-muted-foreground">
+                  <p>Seamless transaction processing with direct platform integration, reducing manual intervention and processing time.</p>
+                </CardContent>
+              </Card>
+
+              <Card className="hover:shadow-lg transition-shadow">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="text-[hsl(var(--brand-blue))]" /> Client Reviews & Reporting
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-muted-foreground">
+                  <p>Comprehensive reporting suite with performance analytics, client review tools, and customizable dashboards for informed decision-making.</p>
                 </CardContent>
               </Card>
             </div>
