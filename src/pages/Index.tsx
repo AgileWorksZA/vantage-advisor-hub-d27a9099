@@ -3,11 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Check, ArrowRight, Layers, BarChart3, Users, PiggyBank } from "lucide-react";
 import Testimonials from "@/components/Testimonials";
-
 const Index = () => {
   const heroRef = useRef<HTMLDivElement>(null);
-
-  const handleMouseMove: React.MouseEventHandler<HTMLDivElement> = (e) => {
+  const handleMouseMove: React.MouseEventHandler<HTMLDivElement> = e => {
     const el = heroRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
@@ -17,24 +15,16 @@ const Index = () => {
     el.style.setProperty("--y", `${y}px`);
     el.style.setProperty("--spotlight-opacity", "0.45");
   };
-
   const handleMouseLeave: React.MouseEventHandler<HTMLDivElement> = () => {
     const el = heroRef.current;
     if (!el) return;
     el.style.setProperty("--spotlight-opacity", "0");
   };
-
-  return (
-    <div className="min-h-screen">
+  return <div className="min-h-screen">
       <header className="bg-background/80 backdrop-blur border-b border-border sticky top-0 z-40">
         <div className="container flex items-center justify-between py-4">
           <a href="/" className="flex items-center gap-3" aria-label="Vantage home">
-            <img
-              src="/lovable-uploads/7dc6d80a-2f1f-4523-af0c-88abbde31835.png"
-              alt="Vantage logo"
-              className="h-6 md:h-7 w-auto"
-              loading="eager"
-            />
+            <img src="/lovable-uploads/7dc6d80a-2f1f-4523-af0c-88abbde31835.png" alt="Vantage logo" className="h-6 md:h-7 w-auto" loading="eager" />
           </a>
           <nav className="hidden md:flex items-center gap-6 text-sm">
             <a href="#features" className="text-muted-foreground hover:text-foreground">Features</a>
@@ -49,19 +39,12 @@ const Index = () => {
       </header>
 
       <main>
-        <section
-          ref={heroRef}
-          onMouseMove={handleMouseMove}
-          onMouseLeave={handleMouseLeave}
-          className="relative bg-hero text-primary-foreground"
-        >
+        <section ref={heroRef} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave} className="relative bg-hero text-primary-foreground">
           <div className="hero-map" aria-hidden />
           
           <div className="container py-24 md:py-32 relative">
             <p className="uppercase tracking-widest font-semibold opacity-90">Redefining Wealth</p>
-            <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight max-w-3xl mt-4">
-              Investment Platform for Financial Advisers
-            </h1>
+            <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight max-w-3xl mt-4">Investment Platform for Financial Advisers</h1>
             <p className="mt-6 max-w-2xl text-lg opacity-90">
               Vantage unifies CRM, planning tools and an investment platform into one integrated ecosystem — reducing the number of systems in your practice.
             </p>
@@ -186,9 +169,9 @@ const Index = () => {
                   <CardTitle>Case study — R10bn+ adviser network</CardTitle>
                 </CardHeader>
                 <CardContent className="text-muted-foreground space-y-2">
-                  <p>R250–900k annual saving on technology</p>
-                  <p>R1–3m annual saving on platform data</p>
-                  <p>R400–600k annual saving on client platform fees</p>
+                  <p>R1 – 5m annual saving on technology</p>
+                  <p>R1 – 3m annual saving on platform data</p>
+                  <p>R10 – 30m annual saving on client platform fees</p>
                   <p>40% AUA growth with same support staff</p>
                   <p>5–10bps margin on own model portfolios</p>
                 </CardContent>
@@ -227,8 +210,6 @@ const Index = () => {
           </nav>
         </div>
       </footer>
-    </div>
-  );
+    </div>;
 };
-
 export default Index;
