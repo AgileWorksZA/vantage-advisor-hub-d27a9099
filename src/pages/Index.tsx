@@ -133,7 +133,7 @@ const Index = () => {
             <div className="mt-10 grid gap-6 md:grid-cols-2">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2"><TrendingUp className="text-[hsl(var(--brand-orange))]" /> Grow & Scale</CardTitle>
+                <CardTitle className="flex items-center gap-2"><div className="w-8 h-8 rounded-full bg-[hsl(var(--brand-orange))]/10 flex items-center justify-center"><TrendingUp className="w-4 h-4 text-[hsl(var(--brand-orange))]" /></div> Grow & Scale</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 text-muted-foreground">
                 <p className="flex items-start gap-2"><Check className="mt-1 text-[hsl(var(--brand-orange))]" /> Leads & conversion</p>
