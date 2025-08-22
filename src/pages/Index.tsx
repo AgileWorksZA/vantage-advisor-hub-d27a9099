@@ -86,7 +86,10 @@ const Index = () => {
               <Card className="hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Layers className="text-[hsl(var(--brand-blue))]" /> CRM + Planning
+                    <div className="w-8 h-8 rounded-full bg-[hsl(var(--brand-blue))]/10 flex items-center justify-center">
+                      <Layers className="w-4 h-4 text-[hsl(var(--brand-blue))]" />
+                    </div>
+                    CRM + Planning
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2 text-muted-foreground">
@@ -98,7 +101,10 @@ const Index = () => {
               <Card className="hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <BarChart3 className="text-[hsl(var(--brand-blue))]" /> 360° Client View
+                    <div className="w-8 h-8 rounded-full bg-[hsl(var(--brand-blue))]/10 flex items-center justify-center">
+                      <BarChart3 className="w-4 h-4 text-[hsl(var(--brand-blue))]" />
+                    </div>
+                    360° Client View
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2 text-muted-foreground">
@@ -110,7 +116,10 @@ const Index = () => {
               <Card className="hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Users className="text-[hsl(var(--brand-blue))]" /> White‑labelled
+                    <div className="w-8 h-8 rounded-full bg-[hsl(var(--brand-blue))]/10 flex items-center justify-center">
+                      <Users className="w-4 h-4 text-[hsl(var(--brand-blue))]" />
+                    </div>
+                    White‑labelled
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2 text-muted-foreground">
