@@ -26,6 +26,5 @@ export default defineConfig(({ mode }) => ({
       },
     },
     cssCodeSplit: false,
-    minify: 'terser',
   },
 }));
