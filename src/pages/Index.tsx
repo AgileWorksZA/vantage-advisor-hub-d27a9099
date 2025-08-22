@@ -145,7 +145,7 @@ const Index = () => {
 
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2"><PiggyBank className="text-[hsl(var(--brand-blue))]" /> Save & Optimise</CardTitle>
+                <CardTitle className="flex items-center gap-2"><div className="w-8 h-8 rounded-full bg-[hsl(var(--brand-blue))]/10 flex items-center justify-center"><PiggyBank className="w-4 h-4 text-[hsl(var(--brand-blue))]" /></div> Save & Optimise</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 text-muted-foreground">
                 <p className="flex items-start gap-2"><Check className="mt-1 text-[hsl(var(--brand-blue))]" /> Technology costs</p>
