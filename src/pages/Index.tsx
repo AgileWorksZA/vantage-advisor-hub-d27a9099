@@ -1,7 +1,7 @@
 import { useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Check, ArrowRight, Layers, BarChart3, Users, PiggyBank } from "lucide-react";
+import { Check, ArrowRight, Layers, BarChart3, Users, PiggyBank, TrendingUp } from "lucide-react";
 import Testimonials from "@/components/Testimonials";
 const Index = () => {
   const heroRef = useRef<HTMLDivElement>(null);
@@ -133,7 +133,7 @@ const Index = () => {
             <div className="mt-10 grid gap-6 md:grid-cols-2">
             <Card>
               <CardHeader>
-                <CardTitle>Grow & Scale</CardTitle>
+                <CardTitle className="flex items-center gap-2"><TrendingUp className="text-[hsl(var(--brand-orange))]" /> Grow & Scale</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 text-muted-foreground">
                 <p className="flex items-start gap-2"><Check className="mt-1 text-[hsl(var(--brand-orange))]" /> Leads & conversion</p>
