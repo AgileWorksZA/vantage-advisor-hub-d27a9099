@@ -1,14 +1,29 @@
-import { useRef } from "react";
+import { useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Check, ArrowRight, Layers, BarChart3, Users, PiggyBank } from "lucide-react";
 import Testimonials from "@/components/Testimonials";
 const Index = () => {
   const heroRef = useRef<HTMLDivElement>(null);
+  const rectRef = useRef<DOMRect | null>(null);
+  
+  const updateRect = useCallback(() => {
+    if (heroRef.current) {
+      rectRef.current = heroRef.current.getBoundingClientRect();
+    }
+  }, []);
+
+  useEffect(() => {
+    updateRect();
+    const handleResize = () => updateRect();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [updateRect]);
+
   const handleMouseMove: React.MouseEventHandler<HTMLDivElement> = e => {
     const el = heroRef.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
+    const rect = rectRef.current;
+    if (!el || !rect) return;
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     el.style.setProperty("--x", `${x}px`);
