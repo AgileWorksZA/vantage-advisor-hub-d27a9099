@@ -2,7 +2,6 @@ import { useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Check, ArrowRight, Layers, BarChart3, Users, PiggyBank, TrendingUp } from "lucide-react";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import Testimonials from "@/components/Testimonials";
 const Index = () => {
   const heroRef = useRef<HTMLDivElement>(null);
@@ -48,12 +47,9 @@ const Index = () => {
             <a href="#cases" className="text-muted-foreground hover:text-foreground">Case Studies</a>
             <a href="#contact" className="text-muted-foreground hover:text-foreground">Contact</a>
           </nav>
-          <div className="flex items-center gap-3">
-            <ThemeToggle />
-            <Button asChild variant="hero" size="sm">
-              <a href="#contact" aria-label="Book a demo">Book a demo</a>
-            </Button>
-          </div>
+          <Button asChild variant="hero" size="sm">
+            <a href="#contact" aria-label="Book a demo">Book a demo</a>
+          </Button>
         </div>
       </header>
 
