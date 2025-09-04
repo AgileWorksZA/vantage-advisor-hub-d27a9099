@@ -6,6 +6,19 @@ import Testimonials from "@/components/Testimonials";
 const Index = () => {
   const heroRef = useRef<HTMLDivElement>(null);
   const rectRef = useRef<DOMRect | null>(null);
+
+  const openCalendly = () => {
+    const width = Math.floor(window.screen.width * 0.7);
+    const height = Math.floor(window.screen.height * 0.7);
+    const left = Math.floor((window.screen.width - width) / 2);
+    const top = Math.floor((window.screen.height - height) / 2);
+    
+    window.open(
+      'https://calendly.com/hello-vantage/30min',
+      'calendly',
+      `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
+    );
+  };
   
   const updateRect = useCallback(() => {
     if (heroRef.current) {
@@ -47,8 +60,8 @@ const Index = () => {
             <a href="#cases" className="text-muted-foreground hover:text-foreground">Case Studies</a>
             <a href="#contact" className="text-muted-foreground hover:text-foreground">Contact</a>
           </nav>
-          <Button asChild variant="hero" size="sm">
-            <a href="#contact" aria-label="Book a demo">Book a demo</a>
+          <Button variant="hero" size="sm" onClick={openCalendly} aria-label="Book a demo">
+            Book a demo
           </Button>
         </div>
       </header>
@@ -64,8 +77,8 @@ const Index = () => {
               Vantage unifies CRM, planning tools and an investment platform into one integrated ecosystem — reducing the number of systems in your practice.
             </p>
             <div className="mt-8 flex flex-wrap gap-4">
-              <Button asChild variant="hero" size="xl" className="bg-black text-white hover:bg-black/90 bg-none hover:bg-none">
-                <a href="https://calendly.com/hello-vantage/30min">Book a demo <ArrowRight className="ml-1" /></a>
+              <Button variant="hero" size="xl" className="bg-black text-white hover:bg-black/90 bg-none hover:bg-none" onClick={openCalendly}>
+                Book a demo <ArrowRight className="ml-1" />
               </Button>
               <Button asChild variant="premium" size="xl">
                 <a href="#features">Explore features</a>
@@ -213,8 +226,8 @@ const Index = () => {
               Let’s show you how Vantage consolidates CRM, planning and investment tools into a single, modern platform.
             </p>
             <div className="mt-8 flex items-center justify-center gap-4">
-              <Button asChild variant="hero" size="xl">
-                <a href="https://calendly.com/hello-vantage/30min">Book a demo</a>
+              <Button variant="hero" size="xl" onClick={openCalendly}>
+                Book a demo
               </Button>
               <Button asChild variant="outline" size="xl">
                 <a href="mailto:hello@vantage.co.za">Contact sales</a>
