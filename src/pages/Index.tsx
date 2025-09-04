@@ -224,13 +224,13 @@ const Index = () => {
         </section>
       </main>
 
-      <footer className="border-t border-border py-10 bg-background">
-        <div className="container flex flex-col md:flex-row items-center justify-between gap-6 text-sm text-muted-foreground">
+      <footer className="border-t border-border py-10 bg-foreground">
+        <div className="container flex flex-col md:flex-row items-center justify-between gap-6 text-sm text-background">
           <p>© {new Date().getFullYear()} Vantage. All rights reserved.</p>
           <nav className="flex gap-6">
-            <a href="#features" className="hover:text-foreground">Features</a>
-            <a href="#benefits" className="hover:text-foreground">Benefits</a>
-            <a href="#cases" className="hover:text-foreground">Case studies</a>
+            <a href="#features" className="hover:text-background/80">Features</a>
+            <a href="#benefits" className="hover:text-background/80">Benefits</a>
+            <a href="#cases" className="hover:text-background/80">Case studies</a>
           </nav>
         </div>
       </footer>
