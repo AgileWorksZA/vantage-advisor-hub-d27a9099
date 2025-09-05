@@ -64,7 +64,7 @@ const PrivacyNotice = () => {
               <li>c. merging, linking, restricting, degrading, erasing, or destroying information;</li>
             </ul>
             <p className="mb-8">
-              <strong>We/us/Vantage Group</strong> means Vantage Group (Pty) Ltd and its subsidiaries listed in Annexure A;
+              <strong>We/us/Vantage Group</strong> means Vantage Group (Pty) Ltd and its subsidiaries mentioned above;
             </p>
 
             <h2 className="text-2xl font-semibold mb-4">3. HOW WE COLLECT YOUR PERSONAL INFORMATION</h2>
