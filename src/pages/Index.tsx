@@ -241,9 +241,9 @@ const Index = () => {
         <div className="container flex flex-col md:flex-row items-center justify-between gap-6 text-sm text-background">
           <p>© {new Date().getFullYear()} Vantage. All rights reserved.</p>
           <nav className="flex gap-6">
-            <a href="#features" className="hover:text-background/80">Features</a>
-            <a href="#benefits" className="hover:text-background/80">Benefits</a>
-            <a href="#cases" className="hover:text-background/80">Case studies</a>
+            <a href="/terms-of-use" className="hover:text-background/80">Terms of use</a>
+            <a href="/privacy-notice" className="hover:text-background/80">Privacy Notice</a>
+            <a href="/paia-manual" className="hover:text-background/80">PAIA Manual</a>
           </nav>
         </div>
       </footer>
