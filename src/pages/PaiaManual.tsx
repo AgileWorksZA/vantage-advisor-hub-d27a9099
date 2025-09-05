@@ -338,7 +338,15 @@ const PaiaManual = () => {
                 This Manual will be available on our website (www.vantage.co.za) or by submitting a request for a copy thereof to the Information Officer. To do so, use the contact details in clause 5 of this Manual.
               </p>
               <p className="mb-4">
-                To download the annexures mentioned above please click here.
+                To download the annexures mentioned above{" "}
+                <a 
+                  href="/downloads/Vantage-PAIA-Manual-Annexures.pdf" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-primary underline hover:text-primary/80"
+                >
+                  please click here
+                </a>.
               </p>
             </section>
           </div>
