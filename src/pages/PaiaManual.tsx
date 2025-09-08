@@ -91,8 +91,7 @@ const PaiaManual = () => {
             <section>
               <h2 className="text-2xl font-semibold mb-4">5. CONTACT DETAILS</h2>
               <div className="mb-4">
-                <p className="mb-2"><strong>Contact person:</strong></p>
-                <p className="mb-2">Emile Wegner</p>
+                <p className="mb-2"><strong>Contact person:</strong> Emile Wegner</p>
                 <p className="mb-2"><strong>Telephone number:</strong> +27 11 502 8800</p>
                 <p className="mb-2"><strong>E-mail address:</strong> hello@vantage.co.za</p>
                 <p className="mb-2"><strong>Website address:</strong> www.vantage.co.za</p>
