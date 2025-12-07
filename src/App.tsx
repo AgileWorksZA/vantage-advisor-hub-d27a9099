@@ -9,6 +9,7 @@ import TermsOfUse from "./pages/TermsOfUse";
 import PrivacyNotice from "./pages/PrivacyNotice";
 import PaiaManual from "./pages/PaiaManual";
 import Disclaimer from "./pages/Disclaimer";
+import Auth from "./pages/Auth";
 
 const queryClient = new QueryClient();
 
@@ -20,6 +21,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/auth" element={<Auth />} />
           <Route path="/terms-of-use" element={<TermsOfUse />} />
           <Route path="/privacy-notice" element={<PrivacyNotice />} />
           <Route path="/paia-manual" element={<PaiaManual />} />
