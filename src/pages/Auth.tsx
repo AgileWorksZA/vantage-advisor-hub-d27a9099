@@ -39,11 +39,11 @@ const Auth = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  const handleGoogleLogin = async () => {
+  const handleOAuthLogin = async (provider: "google" | "azure") => {
     setLoading(true);
     try {
       const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
+        provider,
         options: {
           redirectTo: `${window.location.origin}/`,
         },
@@ -90,11 +90,11 @@ const Auth = () => {
               Sign in to access your account
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3">
             <Button
               variant="outline"
               className="w-full flex items-center justify-center gap-3"
-              onClick={handleGoogleLogin}
+              onClick={() => handleOAuthLogin("google")}
               disabled={loading}
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -117,8 +117,23 @@ const Auth = () => {
               </svg>
               {loading ? "Signing in..." : "Continue with Google"}
             </Button>
+
+            <Button
+              variant="outline"
+              className="w-full flex items-center justify-center gap-3"
+              onClick={() => handleOAuthLogin("azure")}
+              disabled={loading}
+            >
+              <svg className="w-5 h-5" viewBox="0 0 23 23">
+                <path fill="#f35325" d="M1 1h10v10H1z"/>
+                <path fill="#81bc06" d="M12 1h10v10H12z"/>
+                <path fill="#05a6f0" d="M1 12h10v10H1z"/>
+                <path fill="#ffba08" d="M12 12h10v10H12z"/>
+              </svg>
+              {loading ? "Signing in..." : "Continue with Microsoft"}
+            </Button>
             
-            <p className="text-center text-sm text-muted-foreground">
+            <p className="text-center text-sm text-muted-foreground pt-2">
               By continuing, you agree to our{" "}
               <a href="/terms-of-use" className="underline hover:text-foreground">
                 Terms of Use
