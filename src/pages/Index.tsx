@@ -61,11 +61,11 @@ const Index = () => {
             <a href="#contact" className="text-muted-foreground hover:text-foreground">Contact</a>
           </nav>
           <div className="flex items-center gap-3">
-            <Button variant="outline" size="sm" asChild>
-              <a href="/auth">Login</a>
-            </Button>
-            <Button variant="hero" size="sm" onClick={openCalendly} aria-label="Book a demo">
+            <Button variant="outline" size="sm" onClick={openCalendly} aria-label="Book a demo">
               Book a demo
+            </Button>
+            <Button variant="hero" size="sm" asChild>
+              <a href="/auth">Try for free</a>
             </Button>
           </div>
         </div>
