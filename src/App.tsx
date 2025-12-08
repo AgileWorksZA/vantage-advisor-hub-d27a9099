@@ -11,6 +11,7 @@ import PaiaManual from "./pages/PaiaManual";
 import Disclaimer from "./pages/Disclaimer";
 import Auth from "./pages/Auth";
 import Signup from "./pages/Signup";
+import SignupConfirmation from "./pages/SignupConfirmation";
 
 const queryClient = new QueryClient();
 
@@ -24,6 +25,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/signup-confirmation" element={<SignupConfirmation />} />
           <Route path="/terms-of-use" element={<TermsOfUse />} />
           <Route path="/privacy-notice" element={<PrivacyNotice />} />
           <Route path="/paia-manual" element={<PaiaManual />} />
