@@ -159,16 +159,10 @@ const Signup = () => {
 
         if (profileError) {
           console.error("Profile creation error:", profileError);
-          toast({
-            title: "Account created",
-            description: "Your account was created but profile details could not be saved. Please update your profile later.",
-          });
-        } else {
-          toast({
-            title: "Account created",
-            description: "Welcome to Vantage! You can now sign in.",
-          });
         }
+        
+        // Redirect to confirmation page
+        navigate("/signup-confirmation");
       }
     } catch (error: any) {
       toast({
