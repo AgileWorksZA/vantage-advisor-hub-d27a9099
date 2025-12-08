@@ -10,6 +10,7 @@ import PrivacyNotice from "./pages/PrivacyNotice";
 import PaiaManual from "./pages/PaiaManual";
 import Disclaimer from "./pages/Disclaimer";
 import Auth from "./pages/Auth";
+import Signup from "./pages/Signup";
 
 const queryClient = new QueryClient();
 
@@ -22,6 +23,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/signup" element={<Signup />} />
           <Route path="/terms-of-use" element={<TermsOfUse />} />
           <Route path="/privacy-notice" element={<PrivacyNotice />} />
           <Route path="/paia-manual" element={<PaiaManual />} />

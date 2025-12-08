@@ -322,14 +322,10 @@ const Auth = () => {
                   {loading ? "Please wait..." : isSignUp ? "Create account" : "Sign in"}
                 </Button>
                 <p className="text-center text-sm text-muted-foreground">
-                  {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
-                  <button
-                    type="button"
-                    className="underline hover:text-foreground"
-                    onClick={() => setIsSignUp(!isSignUp)}
-                  >
-                    {isSignUp ? "Sign in" : "Sign up"}
-                  </button>
+                  Don't have an account?{" "}
+                  <a href="/signup" className="underline hover:text-foreground">
+                    Sign up
+                  </a>
                 </p>
                 <Button
                   type="button"
