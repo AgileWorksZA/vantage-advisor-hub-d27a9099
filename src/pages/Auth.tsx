@@ -8,6 +8,28 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { User, Session } from "@supabase/supabase-js";
 import { ArrowLeft, Mail } from "lucide-react";
+import { z } from "zod";
+
+const authSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .min(1, { message: "Email is required" })
+    .email({ message: "Please enter a valid email address" })
+    .max(255, { message: "Email must be less than 255 characters" }),
+  password: z
+    .string()
+    .min(8, { message: "Password must be at least 8 characters" })
+    .max(72, { message: "Password must be less than 72 characters" })
+    .regex(/[a-z]/, { message: "Password must contain at least one lowercase letter" })
+    .regex(/[A-Z]/, { message: "Password must contain at least one uppercase letter" })
+    .regex(/[0-9]/, { message: "Password must contain at least one number" }),
+});
+
+type AuthFormErrors = {
+  email?: string;
+  password?: string;
+};
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -19,6 +41,7 @@ const Auth = () => {
   const [isSignUp, setIsSignUp] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [errors, setErrors] = useState<AuthFormErrors>({});
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -74,14 +97,38 @@ const Auth = () => {
     }
   };
 
+  const validateForm = (): boolean => {
+    const result = authSchema.safeParse({ email, password });
+    
+    if (!result.success) {
+      const fieldErrors: AuthFormErrors = {};
+      result.error.errors.forEach((err) => {
+        const field = err.path[0] as keyof AuthFormErrors;
+        if (!fieldErrors[field]) {
+          fieldErrors[field] = err.message;
+        }
+      });
+      setErrors(fieldErrors);
+      return false;
+    }
+    
+    setErrors({});
+    return true;
+  };
+
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+    
     setLoading(true);
     
     try {
       if (isSignUp) {
         const { error } = await supabase.auth.signUp({
-          email,
+          email: email.trim(),
           password,
           options: {
             emailRedirectTo: `${window.location.origin}/`,
@@ -111,7 +158,7 @@ const Auth = () => {
         }
       } else {
         const { error } = await supabase.auth.signInWithPassword({
-          email,
+          email: email.trim(),
           password,
         });
         
@@ -235,9 +282,17 @@ const Auth = () => {
                     type="email"
                     placeholder="you@example.com"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      if (errors.email) setErrors((prev) => ({ ...prev, email: undefined }));
+                    }}
+                    className={errors.email ? "border-destructive" : ""}
+                    aria-invalid={!!errors.email}
+                    aria-describedby={errors.email ? "email-error" : undefined}
                   />
+                  {errors.email && (
+                    <p id="email-error" className="text-sm text-destructive">{errors.email}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="password">Password</Label>
@@ -246,10 +301,22 @@ const Auth = () => {
                     type="password"
                     placeholder="••••••••"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    minLength={6}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      if (errors.password) setErrors((prev) => ({ ...prev, password: undefined }));
+                    }}
+                    className={errors.password ? "border-destructive" : ""}
+                    aria-invalid={!!errors.password}
+                    aria-describedby={errors.password ? "password-error" : undefined}
                   />
+                  {errors.password && (
+                    <p id="password-error" className="text-sm text-destructive">{errors.password}</p>
+                  )}
+                  {isSignUp && (
+                    <p className="text-xs text-muted-foreground">
+                      Min 8 characters with uppercase, lowercase, and number
+                    </p>
+                  )}
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? "Please wait..." : isSignUp ? "Create account" : "Sign in"}
