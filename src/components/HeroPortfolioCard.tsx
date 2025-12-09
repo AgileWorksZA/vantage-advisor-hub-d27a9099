@@ -39,11 +39,40 @@ const totalValue = holdings.reduce((sum, h) => sum + h.value, 0);
 function PerformanceChart() {
   const [isVisible, setIsVisible] = useState(false);
   const [hoveredPoint, setHoveredPoint] = useState<number | null>(null);
+  const [animationProgress, setAnimationProgress] = useState(0);
+  const [displayValue, setDisplayValue] = useState(performanceData[0].value);
 
   useEffect(() => {
     const timer = setTimeout(() => setIsVisible(true), 300);
     return () => clearTimeout(timer);
   }, []);
+
+  // Animate the line drawing from left to right
+  useEffect(() => {
+    if (!isVisible) return;
+    
+    const duration = 2000; // 2 seconds
+    const startTime = Date.now();
+    const startValue = performanceData[0].value;
+    const endValue = performanceData[performanceData.length - 1].value;
+    
+    const animate = () => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      
+      // Easing function for smooth animation
+      const eased = 1 - Math.pow(1 - progress, 3);
+      
+      setAnimationProgress(eased);
+      setDisplayValue(Math.round(startValue + (endValue - startValue) * eased));
+      
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      }
+    };
+    
+    requestAnimationFrame(animate);
+  }, [isVisible]);
 
   const minValue = Math.min(...performanceData.map((d) => d.value)) * 0.95;
   const maxValue = Math.max(...performanceData.map((d) => d.value)) * 1.02;
@@ -64,6 +93,21 @@ function PerformanceChart() {
   const linePath = points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
   const areaPath = `${linePath} L ${points[points.length - 1].x} ${height - padding.bottom} L ${points[0].x} ${height - padding.bottom} Z`;
 
+  // Calculate the total path length for stroke animation
+  const pathLength = 1000;
+  const visibleLength = pathLength * animationProgress;
+
+  // Find current animated point position
+  const currentPointIndex = Math.min(
+    Math.floor(animationProgress * (points.length - 1)),
+    points.length - 1
+  );
+  const nextPointIndex = Math.min(currentPointIndex + 1, points.length - 1);
+  const segmentProgress = (animationProgress * (points.length - 1)) % 1;
+  
+  const currentX = points[currentPointIndex].x + (points[nextPointIndex].x - points[currentPointIndex].x) * segmentProgress;
+  const currentY = points[currentPointIndex].y + (points[nextPointIndex].y - points[currentPointIndex].y) * segmentProgress;
+
   return (
     <div
       className={`transition-all duration-700 ${
@@ -72,7 +116,9 @@ function PerformanceChart() {
     >
       <div className="flex items-center justify-between mb-2">
         <span className="text-xs text-muted-foreground">Performance (12 months)</span>
-        <span className="text-xs text-[hsl(142,76%,36%)] font-medium">+28.6%</span>
+        <span className="text-xs text-[hsl(142,76%,36%)] font-medium tabular-nums">
+          R{displayValue.toLocaleString()}
+        </span>
       </div>
       <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} className="overflow-visible cursor-crosshair">
         <defs>
@@ -84,13 +130,15 @@ function PerformanceChart() {
             <stop offset="0%" stopColor="hsl(var(--brand-blue))" />
             <stop offset="100%" stopColor="hsl(var(--brand-orange))" />
           </linearGradient>
+          <clipPath id="areaClip">
+            <rect x="0" y="0" width={chartWidth * animationProgress} height={height} />
+          </clipPath>
         </defs>
 
         <path
           d={areaPath}
           fill="url(#areaGradient)"
-          className="transition-all duration-1000"
-          style={{ opacity: isVisible ? 1 : 0 }}
+          clipPath="url(#areaClip)"
         />
 
         <path
@@ -100,15 +148,33 @@ function PerformanceChart() {
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
-          className="transition-all duration-1000"
-          style={{
-            strokeDasharray: isVisible ? "none" : "1000",
-            strokeDashoffset: isVisible ? 0 : 1000,
-          }}
+          strokeDasharray={pathLength}
+          strokeDashoffset={pathLength - visibleLength}
         />
 
-        {/* Interactive hover points */}
-        {points.map((point, i) => (
+        {/* Animated current point */}
+        {animationProgress > 0 && animationProgress < 1 && (
+          <>
+            <circle
+              cx={currentX}
+              cy={currentY}
+              r="4"
+              fill="hsl(var(--brand-orange))"
+              className="drop-shadow-sm"
+            />
+            <circle
+              cx={currentX}
+              cy={currentY}
+              r="8"
+              fill="hsl(var(--brand-orange))"
+              opacity="0.3"
+              className="animate-pulse"
+            />
+          </>
+        )}
+
+        {/* Interactive hover points - only show after animation */}
+        {animationProgress >= 1 && points.map((point, i) => (
           <g key={i}>
             {/* Invisible larger hit area */}
             <circle
@@ -127,7 +193,6 @@ function PerformanceChart() {
               r={hoveredPoint === i ? 5 : i === points.length - 1 ? 4 : 0}
               fill={i === points.length - 1 ? "hsl(var(--brand-orange))" : "hsl(var(--brand-blue))"}
               className="transition-all duration-200"
-              style={{ opacity: isVisible ? 1 : 0 }}
             />
             {/* Hover tooltip */}
             {hoveredPoint === i && (
@@ -154,15 +219,17 @@ function PerformanceChart() {
           </g>
         ))}
 
-        {/* Pulsing end point */}
-        <circle
-          cx={points[points.length - 1].x}
-          cy={points[points.length - 1].y}
-          r="8"
-          fill="hsl(var(--brand-orange))"
-          opacity="0.3"
-          className="animate-pulse"
-        />
+        {/* Pulsing end point - only show after animation completes */}
+        {animationProgress >= 1 && (
+          <circle
+            cx={points[points.length - 1].x}
+            cy={points[points.length - 1].y}
+            r="8"
+            fill="hsl(var(--brand-orange))"
+            opacity="0.3"
+            className="animate-pulse"
+          />
+        )}
 
         {[0, 3, 6, 9, 11].map((i) => (
           <text
