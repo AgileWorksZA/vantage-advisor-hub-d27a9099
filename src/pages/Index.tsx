@@ -2,6 +2,7 @@ import { useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Check, ArrowRight, Layers, BarChart3, Users, PiggyBank, TrendingUp } from "lucide-react";
+import HeroPortfolioCard from "@/components/HeroPortfolioCard";
 import Testimonials from "@/components/Testimonials";
 const Index = () => {
   const heroRef = useRef<HTMLDivElement>(null);
@@ -76,18 +77,25 @@ const Index = () => {
           <div className="hero-map" aria-hidden />
           
           <div className="container py-24 md:py-32 relative">
-            <p className="uppercase tracking-widest font-semibold opacity-90">Redefining Wealth</p>
-            <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight max-w-3xl mt-4">Investment Platform for Financial Advisers</h1>
-            <p className="mt-6 max-w-2xl text-lg opacity-90">
-              Vantage unifies CRM, planning tools and an investment platform into one integrated ecosystem — reducing the number of systems in your practice.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-4">
-              <Button variant="hero" size="xl" className="bg-black text-white hover:bg-black/90 bg-none hover:bg-none" onClick={openCalendly}>
-                Book a demo <ArrowRight className="ml-1" />
-              </Button>
-              <Button asChild variant="premium" size="xl">
-                <a href="#features">Explore features</a>
-              </Button>
+            <div className="grid md:grid-cols-2 gap-12 items-center">
+              <div>
+                <p className="uppercase tracking-widest font-semibold opacity-90">Redefining Wealth</p>
+                <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight mt-4">Investment Platform for Financial Advisers</h1>
+                <p className="mt-6 text-lg opacity-90">
+                  Vantage unifies CRM, planning tools and an investment platform into one integrated ecosystem — reducing the number of systems in your practice.
+                </p>
+                <div className="mt-8 flex flex-wrap gap-4">
+                  <Button variant="hero" size="xl" className="bg-black text-white hover:bg-black/90 bg-none hover:bg-none" onClick={openCalendly}>
+                    Book a demo <ArrowRight className="ml-1" />
+                  </Button>
+                  <Button asChild variant="premium" size="xl">
+                    <a href="#features">Explore features</a>
+                  </Button>
+                </div>
+              </div>
+              <div className="hidden md:flex justify-end">
+                <HeroPortfolioCard />
+              </div>
             </div>
           </div>
         </section>
