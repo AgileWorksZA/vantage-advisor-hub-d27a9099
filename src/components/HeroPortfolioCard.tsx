@@ -715,11 +715,17 @@ export default function HeroPortfolioCard() {
     return () => clearTimeout(timer);
   }, []);
 
+  // Auto-rotate cards every 15 seconds (pauses on hover)
+  useEffect(() => {
+    if (isHovered) return;
+    const rotateTimer = setInterval(() => {
+      setActiveCard((prev) => (prev + 1) % 3);
+    }, 15000);
+    return () => clearInterval(rotateTimer);
+  }, [isHovered]);
+
   const cycleCards = (clickedIndex: number) => {
-    if (clickedIndex !== 0) {
-      setActiveCard(clickedIndex);
-      setTimeout(() => setActiveCard(0), 3000); // Return to portfolio after 3s
-    }
+    setActiveCard(clickedIndex);
   };
 
   const getCardTransform = (cardIndex: number) => {
