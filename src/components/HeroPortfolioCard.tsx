@@ -247,40 +247,109 @@ function PerformanceChart() {
   );
 }
 
-// Back card 1 - Client Overview
-function ClientOverviewCard({ onClick }: { onClick?: () => void }) {
-  const [hoveredRow, setHoveredRow] = useState<number | null>(null);
+// Family Group Card - Shows family members with their portfolios
+function FamilyGroupCard({ onClick }: { onClick?: () => void }) {
+  const [hoveredMember, setHoveredMember] = useState<number | null>(null);
+  const [animatedTotal, setAnimatedTotal] = useState(0);
   
-  const rows = [
-    { label: "Active Clients", value: "1,247", color: "text-foreground" },
-    { label: "New This Month", value: "+34", color: "text-[hsl(142,76%,36%)]" },
-    { label: "Total AUM", value: "R2.4B", color: "text-foreground" },
-    { label: "Avg. Portfolio", value: "R1.9M", color: "text-foreground" },
+  const familyMembers = [
+    { name: "James Smith", role: "Primary", value: 8500000, change: 12.4, color: "hsl(var(--brand-blue))" },
+    { name: "Sarah Smith", role: "Spouse", value: 6200000, change: 8.7, color: "hsl(var(--brand-orange))" },
+    { name: "Michael Smith", role: "Child", value: 3100000, change: 15.2, color: "hsl(142, 76%, 36%)" },
+    { name: "Emma Smith", role: "Child", value: 2358204, change: 9.8, color: "hsl(280, 65%, 60%)" },
   ];
+
+  const familyTotal = familyMembers.reduce((sum, m) => sum + m.value, 0);
+
+  useEffect(() => {
+    const duration = 2000;
+    const steps = 60;
+    const increment = familyTotal / steps;
+    let current = 0;
+    const timer = setInterval(() => {
+      current += increment;
+      if (current >= familyTotal) {
+        setAnimatedTotal(familyTotal);
+        clearInterval(timer);
+      } else {
+        setAnimatedTotal(Math.floor(current));
+      }
+    }, duration / steps);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Mini donut chart data
+  const total = familyMembers.reduce((sum, m) => sum + m.value, 0);
+  let cumulativePercent = 0;
 
   return (
     <div 
-      className="bg-card/90 backdrop-blur-xl border border-border/50 rounded-2xl p-5 shadow-2xl h-full cursor-pointer transition-all duration-300 hover:border-[hsl(var(--brand-blue))]/50"
+      className="bg-card/90 backdrop-blur-xl border border-border/50 rounded-2xl p-5 shadow-2xl h-full cursor-pointer transition-all duration-300 hover:border-[hsl(var(--brand-blue))]/50 flex flex-col"
       onClick={onClick}
     >
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-base font-semibold text-foreground">Client Overview</h3>
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-base font-semibold text-foreground">Smith Family Group</h3>
         <Users className="w-5 h-5 text-[hsl(var(--brand-blue))]" />
       </div>
-      <div className="space-y-3">
-        {rows.map((row, index) => (
+
+      {/* Family total and mini chart */}
+      <div className="flex items-center gap-4 mb-4 pb-3 border-b border-border/30">
+        <div className="relative w-16 h-16">
+          <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
+            {familyMembers.map((member, index) => {
+              const percent = (member.value / total) * 100;
+              const dashArray = `${percent} ${100 - percent}`;
+              const dashOffset = -cumulativePercent;
+              cumulativePercent += percent;
+              return (
+                <circle
+                  key={index}
+                  cx="18"
+                  cy="18"
+                  r="14"
+                  fill="none"
+                  stroke={member.color}
+                  strokeWidth={hoveredMember === index ? "5" : "4"}
+                  strokeDasharray={dashArray}
+                  strokeDashoffset={dashOffset}
+                  className="transition-all duration-300"
+                />
+              );
+            })}
+          </svg>
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground">Combined Value</p>
+          <p className="text-xl font-bold text-foreground tabular-nums">R{animatedTotal.toLocaleString()}</p>
+          <p className="text-xs text-[hsl(142,76%,36%)]">+11.2% YTD</p>
+        </div>
+      </div>
+
+      {/* Family members list */}
+      <div className="flex-1 space-y-2">
+        {familyMembers.map((member, index) => (
           <div 
             key={index}
-            className={`flex justify-between items-center py-2 border-b border-border/30 last:border-0 transition-all duration-200 rounded px-1 -mx-1 ${
-              hoveredRow === index ? "bg-[hsl(var(--brand-blue))]/5" : ""
+            className={`flex items-center justify-between py-2 px-2 -mx-2 rounded-lg transition-all duration-200 ${
+              hoveredMember === index ? "bg-muted/50" : ""
             }`}
-            onMouseEnter={() => setHoveredRow(index)}
-            onMouseLeave={() => setHoveredRow(null)}
+            onMouseEnter={() => setHoveredMember(index)}
+            onMouseLeave={() => setHoveredMember(null)}
           >
-            <span className="text-xs text-muted-foreground">{row.label}</span>
-            <span className={`text-sm font-semibold ${row.color} transition-transform duration-200 ${hoveredRow === index ? "scale-110" : ""}`}>
-              {row.value}
-            </span>
+            <div className="flex items-center gap-2">
+              <div 
+                className="w-2 h-2 rounded-full" 
+                style={{ backgroundColor: member.color }}
+              />
+              <div>
+                <p className="text-xs font-medium text-foreground">{member.name}</p>
+                <p className="text-[10px] text-muted-foreground">{member.role}</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-xs font-medium text-foreground">R{member.value.toLocaleString()}</p>
+              <p className="text-[10px] text-[hsl(142,76%,36%)]">+{member.change}%</p>
+            </div>
           </div>
         ))}
       </div>
@@ -288,42 +357,190 @@ function ClientOverviewCard({ onClick }: { onClick?: () => void }) {
   );
 }
 
-// Back card 2 - Compliance Status
-function ComplianceCard({ onClick }: { onClick?: () => void }) {
-  const [hoveredRow, setHoveredRow] = useState<number | null>(null);
+// Fund Switch Transaction Card - Shows switching between funds with performance comparison
+function FundSwitchCard({ onClick }: { onClick?: () => void }) {
+  const [animationProgress, setAnimationProgress] = useState(0);
+  const [isVisible, setIsVisible] = useState(false);
 
-  const rows = [
-    { label: "FICA Complete", value: "98%", bgColor: "bg-[hsl(142,76%,36%)]/10", textColor: "text-[hsl(142,76%,36%)]" },
-    { label: "Risk Profiles", value: "100%", bgColor: "bg-[hsl(142,76%,36%)]/10", textColor: "text-[hsl(142,76%,36%)]" },
-    { label: "Reviews Due", value: "12", bgColor: "bg-[hsl(var(--brand-orange))]/10", textColor: "text-[hsl(var(--brand-orange))]" },
-    { label: "Pending Tasks", value: "8", bgColor: "bg-[hsl(var(--brand-blue))]/10", textColor: "text-[hsl(var(--brand-blue))]" },
-  ];
+  const switchAmount = 2500000;
+  const fromFund = { name: "Conservative Bond Fund", oldPerformance: 4.2 };
+  const toFund = { name: "Growth Equity Fund", newPerformance: 12.8 };
+
+  // Performance comparison data
+  const months = ["Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const oldFundData = [100, 100.8, 101.2, 101.8, 102.1, 102.5];
+  const newFundData = [100, 102.1, 103.8, 106.2, 108.5, 112.8];
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsVisible(true), 300);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!isVisible) return;
+    const duration = 2000;
+    const startTime = Date.now();
+    const animate = () => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setAnimationProgress(eased);
+      if (progress < 1) requestAnimationFrame(animate);
+    };
+    requestAnimationFrame(animate);
+  }, [isVisible]);
+
+  // Chart dimensions
+  const width = 280;
+  const height = 100;
+  const padding = { left: 0, right: 0, top: 10, bottom: 20 };
+  const chartWidth = width - padding.left - padding.right;
+  const chartHeight = height - padding.top - padding.bottom;
+
+  const minValue = 98;
+  const maxValue = 115;
+  const range = maxValue - minValue;
+
+  const getPoints = (data: number[]) => {
+    return data.map((d, i) => ({
+      x: padding.left + (i / (data.length - 1)) * chartWidth,
+      y: padding.top + chartHeight - ((d - minValue) / range) * chartHeight,
+      value: d
+    }));
+  };
+
+  const oldPoints = getPoints(oldFundData);
+  const newPoints = getPoints(newFundData);
+
+  const createPath = (points: { x: number; y: number }[]) => {
+    return points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
+  };
+
+  const pathLength = 1000;
+  const visibleLength = pathLength * animationProgress;
+
+  const projectedGain = ((newFundData[newFundData.length - 1] - oldFundData[oldFundData.length - 1]) / 100) * switchAmount;
 
   return (
     <div 
-      className="bg-card/90 backdrop-blur-xl border border-border/50 rounded-2xl p-5 shadow-2xl h-full cursor-pointer transition-all duration-300 hover:border-[hsl(var(--brand-orange))]/50"
+      className="bg-card/90 backdrop-blur-xl border border-border/50 rounded-2xl p-5 shadow-2xl h-full cursor-pointer transition-all duration-300 hover:border-[hsl(142,76%,36%)]/50 flex flex-col"
       onClick={onClick}
     >
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-base font-semibold text-foreground">Compliance</h3>
-        <FileText className="w-5 h-5 text-[hsl(var(--brand-orange))]" />
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-base font-semibold text-foreground">Fund Switch</h3>
+        <div className="flex items-center gap-1 px-2 py-1 bg-[hsl(142,76%,36%)]/10 rounded-full">
+          <TrendingUp className="w-3 h-3 text-[hsl(142,76%,36%)]" />
+          <span className="text-[10px] font-medium text-[hsl(142,76%,36%)]">Completed</span>
+        </div>
       </div>
-      <div className="space-y-3">
-        {rows.map((row, index) => (
-          <div 
-            key={index}
-            className={`flex justify-between items-center py-2 border-b border-border/30 last:border-0 transition-all duration-200 rounded px-1 -mx-1 ${
-              hoveredRow === index ? "bg-muted/50" : ""
-            }`}
-            onMouseEnter={() => setHoveredRow(index)}
-            onMouseLeave={() => setHoveredRow(null)}
-          >
-            <span className="text-xs text-muted-foreground">{row.label}</span>
-            <span className={`text-xs font-semibold ${row.textColor} ${row.bgColor} px-2 py-0.5 rounded transition-transform duration-200 ${hoveredRow === index ? "scale-110" : ""}`}>
-              {row.value}
-            </span>
+
+      {/* Switch details */}
+      <div className="flex items-center gap-2 mb-4 p-3 bg-muted/30 rounded-lg">
+        <div className="flex-1">
+          <p className="text-[10px] text-muted-foreground">From</p>
+          <p className="text-xs font-medium text-foreground truncate">{fromFund.name}</p>
+          <p className="text-[10px] text-muted-foreground">+{fromFund.oldPerformance}% p.a.</p>
+        </div>
+        <div className="flex flex-col items-center px-2">
+          <svg className="w-6 h-6 text-[hsl(var(--brand-blue))]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M5 12h14M12 5l7 7-7 7" />
+          </svg>
+          <p className="text-[9px] text-muted-foreground mt-1">R{(switchAmount / 1000000).toFixed(1)}M</p>
+        </div>
+        <div className="flex-1 text-right">
+          <p className="text-[10px] text-muted-foreground">To</p>
+          <p className="text-xs font-medium text-foreground truncate">{toFund.name}</p>
+          <p className="text-[10px] text-[hsl(142,76%,36%)]">+{toFund.newPerformance}% p.a.</p>
+        </div>
+      </div>
+
+      {/* Performance comparison chart */}
+      <div className="flex-1">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs text-muted-foreground">6-Month Performance Comparison</span>
+        </div>
+        <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} className="overflow-visible">
+          <defs>
+            <linearGradient id="newFundGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="hsl(142, 76%, 36%)" stopOpacity="0.3" />
+              <stop offset="100%" stopColor="hsl(142, 76%, 36%)" stopOpacity="0" />
+            </linearGradient>
+          </defs>
+
+          {/* Old fund line (dashed) */}
+          <path
+            d={createPath(oldPoints)}
+            fill="none"
+            stroke="hsl(var(--muted-foreground))"
+            strokeWidth="2"
+            strokeDasharray="4 4"
+            opacity="0.5"
+            style={{
+              strokeDasharray: `4 4`,
+              strokeDashoffset: 0,
+            }}
+          />
+
+          {/* New fund area */}
+          <path
+            d={`${createPath(newPoints)} L ${newPoints[newPoints.length - 1].x} ${height - padding.bottom} L ${newPoints[0].x} ${height - padding.bottom} Z`}
+            fill="url(#newFundGradient)"
+            style={{
+              clipPath: `inset(0 ${100 - animationProgress * 100}% 0 0)`,
+            }}
+          />
+
+          {/* New fund line */}
+          <path
+            d={createPath(newPoints)}
+            fill="none"
+            stroke="hsl(142, 76%, 36%)"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeDasharray={pathLength}
+            strokeDashoffset={pathLength - visibleLength}
+          />
+
+          {/* End points */}
+          {animationProgress >= 1 && (
+            <>
+              <circle cx={oldPoints[oldPoints.length - 1].x} cy={oldPoints[oldPoints.length - 1].y} r="3" fill="hsl(var(--muted-foreground))" opacity="0.5" />
+              <circle cx={newPoints[newPoints.length - 1].x} cy={newPoints[newPoints.length - 1].y} r="4" fill="hsl(142, 76%, 36%)" />
+              <circle cx={newPoints[newPoints.length - 1].x} cy={newPoints[newPoints.length - 1].y} r="8" fill="hsl(142, 76%, 36%)" opacity="0.3" className="animate-pulse" />
+            </>
+          )}
+
+          {/* Month labels */}
+          {months.map((month, i) => (
+            <text
+              key={i}
+              x={padding.left + (i / (months.length - 1)) * chartWidth}
+              y={height - 4}
+              textAnchor="middle"
+              className="fill-muted-foreground text-[9px]"
+            >
+              {month}
+            </text>
+          ))}
+        </svg>
+
+        {/* Legend and projected gain */}
+        <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/30">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1">
+              <div className="w-4 h-0.5 bg-muted-foreground opacity-50" style={{ backgroundImage: "repeating-linear-gradient(90deg, currentColor 0, currentColor 4px, transparent 4px, transparent 8px)" }} />
+              <span className="text-[10px] text-muted-foreground">Old Fund</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-4 h-0.5 bg-[hsl(142,76%,36%)]" />
+              <span className="text-[10px] text-muted-foreground">New Fund</span>
+            </div>
           </div>
-        ))}
+          <div className="text-right">
+            <p className="text-[10px] text-muted-foreground">Projected Gain</p>
+            <p className="text-sm font-bold text-[hsl(142,76%,36%)]">+R{Math.round(projectedGain).toLocaleString()}</p>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -551,7 +768,7 @@ export default function HeroPortfolioCard() {
       onMouseLeave={() => setIsHovered(false)}
       style={{ perspective: "1000px" }}
     >
-      {/* Card 3 - Compliance */}
+      {/* Card 3 - Fund Switch */}
       <div
         className="absolute inset-0 transition-all duration-700 ease-out"
         style={{
@@ -561,10 +778,10 @@ export default function HeroPortfolioCard() {
           transformStyle: "preserve-3d",
         }}
       >
-        <ComplianceCard onClick={() => cycleCards(2)} />
+        <FundSwitchCard onClick={() => cycleCards(2)} />
       </div>
 
-      {/* Card 2 - Client Overview */}
+      {/* Card 2 - Family Group */}
       <div
         className="absolute inset-0 transition-all duration-700 ease-out"
         style={{
@@ -575,7 +792,7 @@ export default function HeroPortfolioCard() {
           transformStyle: "preserve-3d",
         }}
       >
-        <ClientOverviewCard onClick={() => cycleCards(1)} />
+        <FamilyGroupCard onClick={() => cycleCards(1)} />
       </div>
 
       {/* Card 1 - Portfolio */}
