@@ -13,6 +13,10 @@ const holdings: Holding[] = [
   { name: "Bond Portfolio", value: 85000, change: 4.5, color: "hsl(var(--brand-orange))" },
   { name: "Property REIT", value: 62000, change: 6.8, color: "hsl(142, 76%, 36%)" },
   { name: "Money Market", value: 43000, change: 2.1, color: "hsl(280, 65%, 60%)" },
+  { name: "Global ETF", value: 78000, change: 7.3, color: "hsl(200, 70%, 50%)" },
+  { name: "Tech Growth", value: 95000, change: 12.1, color: "hsl(340, 65%, 55%)" },
+  { name: "Dividend Income", value: 54000, change: 3.8, color: "hsl(160, 60%, 45%)" },
+  { name: "Emerging Markets", value: 38000, change: 9.4, color: "hsl(45, 80%, 50%)" },
 ];
 
 const performanceData = [
@@ -199,6 +203,8 @@ function ComplianceCard() {
 function PortfolioCard() {
   const [animatedTotal, setAnimatedTotal] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
+  const [scrollIndex, setScrollIndex] = useState(0);
+  const visibleCount = 4;
 
   useEffect(() => {
     setIsVisible(true);
@@ -218,12 +224,30 @@ function PortfolioCard() {
     return () => clearInterval(timer);
   }, []);
 
+  // Auto-scroll holdings
+  useEffect(() => {
+    const scrollTimer = setInterval(() => {
+      setScrollIndex((prev) => (prev + 1) % holdings.length);
+    }, 2500);
+    return () => clearInterval(scrollTimer);
+  }, []);
+
   const radius = 45;
   const circumference = 2 * Math.PI * radius;
   let cumulativeOffset = 0;
 
+  // Get visible holdings with wrap-around
+  const getVisibleHoldings = () => {
+    const visible = [];
+    for (let i = 0; i < visibleCount; i++) {
+      const index = (scrollIndex + i) % holdings.length;
+      visible.push({ ...holdings[index], originalIndex: index });
+    }
+    return visible;
+  };
+
   return (
-    <div className="bg-card/90 backdrop-blur-xl border border-border/50 rounded-2xl p-5 shadow-2xl h-full">
+    <div className="bg-card/90 backdrop-blur-xl border border-border/50 rounded-2xl p-5 shadow-2xl h-full flex flex-col overflow-hidden">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-base font-semibold text-foreground">Client Portfolio</h3>
         <div className="flex gap-1">
@@ -274,31 +298,45 @@ function PortfolioCard() {
         </div>
       </div>
 
-      <div className="mb-4 pt-3 border-t border-border/30">
+      <div className="mb-3 pt-3 border-t border-border/30">
         <PerformanceChart />
       </div>
 
-      <div className="space-y-2">
-        {holdings.map((holding, index) => (
-          <div
-            key={holding.name}
-            className="flex items-center justify-between py-1.5 border-b border-border/30 last:border-0 transition-all duration-500"
-            style={{
-              transitionDelay: `${(index + 1) * 150}ms`,
-              opacity: isVisible ? 1 : 0,
-              transform: isVisible ? "translateX(0)" : "translateX(20px)",
-            }}
-          >
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: holding.color }} />
-              <span className="text-xs font-medium text-foreground">{holding.name}</span>
+      {/* Scrolling Holdings List */}
+      <div className="flex-1 min-h-0 relative overflow-hidden">
+        <div className="space-y-1">
+          {getVisibleHoldings().map((holding, index) => (
+            <div
+              key={`${holding.name}-${scrollIndex}`}
+              className="flex items-center justify-between py-1.5 border-b border-border/30 last:border-0 animate-fade-in"
+              style={{
+                opacity: isVisible ? 1 : 0,
+                animation: "slideUp 0.4s ease-out forwards",
+                animationDelay: `${index * 50}ms`,
+              }}
+            >
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: holding.color }} />
+                <span className="text-xs font-medium text-foreground truncate">{holding.name}</span>
+              </div>
+              <div className="text-right flex-shrink-0">
+                <p className="text-xs font-medium text-foreground">R{holding.value.toLocaleString()}</p>
+                <p className="text-[10px] text-[hsl(142,76%,36%)]">+{holding.change}%</p>
+              </div>
             </div>
-            <div className="text-right">
-              <p className="text-xs font-medium text-foreground">R{holding.value.toLocaleString()}</p>
-              <p className="text-[10px] text-[hsl(142,76%,36%)]">+{holding.change}%</p>
-            </div>
-          </div>
-        ))}
+          ))}
+        </div>
+        {/* Scroll indicators */}
+        <div className="absolute bottom-0 left-0 right-0 flex justify-center gap-1 py-1">
+          {holdings.map((_, index) => (
+            <div
+              key={index}
+              className={`w-1 h-1 rounded-full transition-all duration-300 ${
+                index === scrollIndex ? "bg-[hsl(var(--brand-blue))] w-3" : "bg-muted-foreground/30"
+              }`}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );
