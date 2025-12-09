@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { TrendingUp } from "lucide-react";
+import { TrendingUp, Users, FileText } from "lucide-react";
 
 interface Holding {
   name: string;
@@ -81,17 +81,13 @@ function PerformanceChart() {
           </linearGradient>
         </defs>
 
-        {/* Area fill */}
         <path
           d={areaPath}
           fill="url(#areaGradient)"
           className="transition-all duration-1000"
-          style={{
-            opacity: isVisible ? 1 : 0,
-          }}
+          style={{ opacity: isVisible ? 1 : 0 }}
         />
 
-        {/* Line */}
         <path
           d={linePath}
           fill="none"
@@ -106,17 +102,13 @@ function PerformanceChart() {
           }}
         />
 
-        {/* End point */}
         <circle
           cx={points[points.length - 1].x}
           cy={points[points.length - 1].y}
           r="4"
           fill="hsl(var(--brand-orange))"
           className="transition-all duration-500"
-          style={{
-            opacity: isVisible ? 1 : 0,
-            transitionDelay: "800ms",
-          }}
+          style={{ opacity: isVisible ? 1 : 0, transitionDelay: "800ms" }}
         />
         <circle
           cx={points[points.length - 1].x}
@@ -127,7 +119,6 @@ function PerformanceChart() {
           className="animate-pulse"
         />
 
-        {/* X-axis labels */}
         {[0, 3, 6, 9, 11].map((i) => (
           <text
             key={i}
@@ -144,7 +135,68 @@ function PerformanceChart() {
   );
 }
 
-export default function HeroPortfolioCard() {
+// Back card 1 - Client Overview
+function ClientOverviewCard() {
+  return (
+    <div className="bg-card/90 backdrop-blur-xl border border-border/50 rounded-2xl p-5 shadow-2xl h-full">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-base font-semibold text-foreground">Client Overview</h3>
+        <Users className="w-5 h-5 text-[hsl(var(--brand-blue))]" />
+      </div>
+      <div className="space-y-3">
+        <div className="flex justify-between items-center py-2 border-b border-border/30">
+          <span className="text-xs text-muted-foreground">Active Clients</span>
+          <span className="text-sm font-semibold text-foreground">1,247</span>
+        </div>
+        <div className="flex justify-between items-center py-2 border-b border-border/30">
+          <span className="text-xs text-muted-foreground">New This Month</span>
+          <span className="text-sm font-semibold text-[hsl(142,76%,36%)]">+34</span>
+        </div>
+        <div className="flex justify-between items-center py-2 border-b border-border/30">
+          <span className="text-xs text-muted-foreground">Total AUM</span>
+          <span className="text-sm font-semibold text-foreground">R2.4B</span>
+        </div>
+        <div className="flex justify-between items-center py-2">
+          <span className="text-xs text-muted-foreground">Avg. Portfolio</span>
+          <span className="text-sm font-semibold text-foreground">R1.9M</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Back card 2 - Compliance Status
+function ComplianceCard() {
+  return (
+    <div className="bg-card/90 backdrop-blur-xl border border-border/50 rounded-2xl p-5 shadow-2xl h-full">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-base font-semibold text-foreground">Compliance</h3>
+        <FileText className="w-5 h-5 text-[hsl(var(--brand-orange))]" />
+      </div>
+      <div className="space-y-3">
+        <div className="flex justify-between items-center py-2 border-b border-border/30">
+          <span className="text-xs text-muted-foreground">FICA Complete</span>
+          <span className="text-xs font-semibold text-[hsl(142,76%,36%)] bg-[hsl(142,76%,36%)]/10 px-2 py-0.5 rounded">98%</span>
+        </div>
+        <div className="flex justify-between items-center py-2 border-b border-border/30">
+          <span className="text-xs text-muted-foreground">Risk Profiles</span>
+          <span className="text-xs font-semibold text-[hsl(142,76%,36%)] bg-[hsl(142,76%,36%)]/10 px-2 py-0.5 rounded">100%</span>
+        </div>
+        <div className="flex justify-between items-center py-2 border-b border-border/30">
+          <span className="text-xs text-muted-foreground">Reviews Due</span>
+          <span className="text-xs font-semibold text-[hsl(var(--brand-orange))] bg-[hsl(var(--brand-orange))]/10 px-2 py-0.5 rounded">12</span>
+        </div>
+        <div className="flex justify-between items-center py-2">
+          <span className="text-xs text-muted-foreground">Pending Tasks</span>
+          <span className="text-xs font-semibold text-[hsl(var(--brand-blue))] bg-[hsl(var(--brand-blue))]/10 px-2 py-0.5 rounded">8</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Main Portfolio Card
+function PortfolioCard() {
   const [animatedTotal, setAnimatedTotal] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
 
@@ -166,18 +218,12 @@ export default function HeroPortfolioCard() {
     return () => clearInterval(timer);
   }, []);
 
-  // Calculate donut chart segments
   const radius = 45;
   const circumference = 2 * Math.PI * radius;
   let cumulativeOffset = 0;
 
   return (
-    <div
-      className={`relative bg-card/90 backdrop-blur-xl border border-border/50 rounded-2xl p-5 shadow-2xl transition-all duration-700 max-w-sm ${
-        isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-      }`}
-    >
-      {/* Header */}
+    <div className="bg-card/90 backdrop-blur-xl border border-border/50 rounded-2xl p-5 shadow-2xl h-full">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-base font-semibold text-foreground">Client Portfolio</h3>
         <div className="flex gap-1">
@@ -187,24 +233,15 @@ export default function HeroPortfolioCard() {
         </div>
       </div>
 
-      {/* Portfolio Value with Donut */}
       <div className="flex items-center gap-5 mb-4">
         <div className="relative w-24 h-24 flex-shrink-0">
           <svg className="w-full h-full -rotate-90" viewBox="0 0 110 110">
-            <circle
-              cx="55"
-              cy="55"
-              r={radius}
-              fill="none"
-              stroke="hsl(var(--muted))"
-              strokeWidth="10"
-            />
+            <circle cx="55" cy="55" r={radius} fill="none" stroke="hsl(var(--muted))" strokeWidth="10" />
             {holdings.map((holding, index) => {
               const percentage = holding.value / totalValue;
               const strokeLength = percentage * circumference;
               const offset = cumulativeOffset;
               cumulativeOffset += strokeLength;
-
               return (
                 <circle
                   key={holding.name}
@@ -217,9 +254,7 @@ export default function HeroPortfolioCard() {
                   strokeDasharray={`${strokeLength} ${circumference}`}
                   strokeDashoffset={-offset}
                   className="transition-all duration-1000"
-                  style={{
-                    transitionDelay: `${index * 200}ms`,
-                  }}
+                  style={{ transitionDelay: `${index * 200}ms` }}
                 />
               );
             })}
@@ -231,9 +266,7 @@ export default function HeroPortfolioCard() {
 
         <div>
           <p className="text-xs text-muted-foreground mb-0.5">Total Value</p>
-          <p className="text-2xl font-bold text-foreground">
-            R{animatedTotal.toLocaleString()}
-          </p>
+          <p className="text-2xl font-bold text-foreground">R{animatedTotal.toLocaleString()}</p>
           <p className="text-xs text-[hsl(142,76%,36%)] flex items-center gap-1 mt-0.5">
             <TrendingUp className="w-3 h-3" />
             +5.8% this month
@@ -241,12 +274,10 @@ export default function HeroPortfolioCard() {
         </div>
       </div>
 
-      {/* Performance Chart */}
       <div className="mb-4 pt-3 border-t border-border/30">
         <PerformanceChart />
       </div>
 
-      {/* Holdings List */}
       <div className="space-y-2">
         {holdings.map((holding, index) => (
           <div
@@ -259,25 +290,88 @@ export default function HeroPortfolioCard() {
             }}
           >
             <div className="flex items-center gap-2">
-              <div
-                className="w-2 h-2 rounded-full"
-                style={{ backgroundColor: holding.color }}
-              />
+              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: holding.color }} />
               <span className="text-xs font-medium text-foreground">{holding.name}</span>
             </div>
             <div className="text-right">
-              <p className="text-xs font-medium text-foreground">
-                R{holding.value.toLocaleString()}
-              </p>
+              <p className="text-xs font-medium text-foreground">R{holding.value.toLocaleString()}</p>
               <p className="text-[10px] text-[hsl(142,76%,36%)]">+{holding.change}%</p>
             </div>
           </div>
         ))}
       </div>
+    </div>
+  );
+}
 
-      {/* Floating decoration */}
-      <div className="absolute -top-3 -right-3 w-16 h-16 bg-[hsl(var(--brand-blue))]/20 rounded-full blur-xl animate-pulse" />
-      <div className="absolute -bottom-4 -left-4 w-20 h-20 bg-[hsl(var(--brand-orange))]/15 rounded-full blur-xl animate-pulse" style={{ animationDelay: "1s" }} />
+export default function HeroPortfolioCard() {
+  const [isVisible, setIsVisible] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsVisible(true), 200);
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <div
+      className="relative w-[340px] h-[480px] perspective-1000"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      style={{ perspective: "1000px" }}
+    >
+      {/* Card 3 - Back (Compliance) */}
+      <div
+        className="absolute inset-0 transition-all duration-700 ease-out"
+        style={{
+          transform: isVisible
+            ? isHovered
+              ? "translateX(-60px) translateZ(-80px) rotateY(15deg)"
+              : "translateX(16px) translateZ(-40px) rotateY(0deg)"
+            : "translateX(200px) translateZ(-40px) rotateY(0deg)",
+          opacity: isVisible ? (isHovered ? 1 : 0.7) : 0,
+          transformStyle: "preserve-3d",
+        }}
+      >
+        <ComplianceCard />
+      </div>
+
+      {/* Card 2 - Middle (Client Overview) */}
+      <div
+        className="absolute inset-0 transition-all duration-700 ease-out"
+        style={{
+          transform: isVisible
+            ? isHovered
+              ? "translateX(-30px) translateZ(-40px) rotateY(8deg)"
+              : "translateX(8px) translateZ(-20px) rotateY(0deg)"
+            : "translateX(150px) translateZ(-20px) rotateY(0deg)",
+          opacity: isVisible ? (isHovered ? 1 : 0.85) : 0,
+          transitionDelay: "100ms",
+          transformStyle: "preserve-3d",
+        }}
+      >
+        <ClientOverviewCard />
+      </div>
+
+      {/* Card 1 - Front (Portfolio) */}
+      <div
+        className="absolute inset-0 transition-all duration-700 ease-out"
+        style={{
+          transform: isVisible
+            ? isHovered
+              ? "translateX(0px) translateZ(0px) rotateY(0deg)"
+              : "translateX(0px) translateZ(0px) rotateY(0deg)"
+            : "translateX(100px) translateZ(0px) rotateY(0deg)",
+          opacity: isVisible ? 1 : 0,
+          transitionDelay: "200ms",
+          transformStyle: "preserve-3d",
+        }}
+      >
+        <PortfolioCard />
+        {/* Floating decoration */}
+        <div className="absolute -top-3 -right-3 w-16 h-16 bg-[hsl(var(--brand-blue))]/20 rounded-full blur-xl animate-pulse" />
+        <div className="absolute -bottom-4 -left-4 w-20 h-20 bg-[hsl(var(--brand-orange))]/15 rounded-full blur-xl animate-pulse" style={{ animationDelay: "1s" }} />
+      </div>
     </div>
   );
 }
