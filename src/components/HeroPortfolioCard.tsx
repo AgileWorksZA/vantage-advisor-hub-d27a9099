@@ -342,12 +342,13 @@ function PortfolioCard({ isPaused }: { isPaused: boolean }) {
     setIsVisible(true);
     const duration = 2000;
     const steps = 60;
-    const increment = totalValue / steps;
+    const targetValue = 20158204;
+    const increment = targetValue / steps;
     let current = 0;
     const timer = setInterval(() => {
       current += increment;
-      if (current >= totalValue) {
-        setAnimatedTotal(totalValue);
+      if (current >= targetValue) {
+        setAnimatedTotal(targetValue);
         clearInterval(timer);
       } else {
         setAnimatedTotal(Math.floor(current));
