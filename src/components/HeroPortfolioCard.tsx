@@ -53,8 +53,8 @@ function PerformanceChart() {
     
     const duration = 2000; // 2 seconds
     const startTime = Date.now();
-    const startValue = performanceData[0].value;
-    const endValue = performanceData[performanceData.length - 1].value;
+    const startValue = 0;
+    const endValue = 20158204;
     
     const animate = () => {
       const elapsed = Date.now() - startTime;
