@@ -415,18 +415,6 @@ function PortfolioCard({ isPaused }: { isPaused: boolean }) {
             </div>
           ))}
         </div>
-        {/* Clickable scroll indicators */}
-        <div className="absolute bottom-0 left-0 right-0 flex justify-center gap-1 py-1">
-          {holdings.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => setScrollIndex(index)}
-              className={`h-1 rounded-full transition-all duration-300 hover:bg-[hsl(var(--brand-blue))]/70 ${
-                index === scrollIndex ? "bg-[hsl(var(--brand-blue))] w-3" : "bg-muted-foreground/30 w-1 hover:w-2"
-              }`}
-            />
-          ))}
-        </div>
       </div>
     </div>
   );
