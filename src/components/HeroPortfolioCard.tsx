@@ -485,9 +485,8 @@ function FamilyGroupCard({ onClick }: { onClick?: () => void }) {
 }
 
 // Fund Switch Transaction Card - Shows switching between funds with performance comparison
-function FundSwitchCard({ onClick }: { onClick?: () => void }) {
+function FundSwitchCard({ onClick, isActive }: { onClick?: () => void; isActive?: boolean }) {
   const [animationProgress, setAnimationProgress] = useState(0);
-  const [isVisible, setIsVisible] = useState(false);
   const [hoveredAllocation, setHoveredAllocation] = useState<number | null>(null);
   const [hoveredChartPoint, setHoveredChartPoint] = useState<number | null>(null);
 
@@ -525,24 +524,28 @@ function FundSwitchCard({ onClick }: { onClick?: () => void }) {
     targetValue: newFundAllocation[i].value,
   }));
 
+  // Reset and restart animation when card becomes active
   useEffect(() => {
-    const timer = setTimeout(() => setIsVisible(true), 300);
-    return () => clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
-    if (!isVisible) return;
-    const duration = 2000;
-    const startTime = Date.now();
-    const animate = () => {
-      const elapsed = Date.now() - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      setAnimationProgress(eased);
-      if (progress < 1) requestAnimationFrame(animate);
-    };
-    requestAnimationFrame(animate);
-  }, [isVisible]);
+    if (!isActive) {
+      setAnimationProgress(0);
+      return;
+    }
+    
+    const timeout = setTimeout(() => {
+      const duration = 2000;
+      const startTime = Date.now();
+      const animate = () => {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        setAnimationProgress(eased);
+        if (progress < 1) requestAnimationFrame(animate);
+      };
+      requestAnimationFrame(animate);
+    }, 500);
+    
+    return () => clearTimeout(timeout);
+  }, [isActive]);
 
   // Chart dimensions
   const width = 280;
@@ -1030,7 +1033,7 @@ export default function HeroPortfolioCard() {
             transformStyle: "preserve-3d",
           }}
         >
-          <FundSwitchCard onClick={() => cycleCards(2)} />
+          <FundSwitchCard onClick={() => cycleCards(2)} isActive={activeCard === 2} />
         </div>
 
         {/* Card 2 - Family Group */}
