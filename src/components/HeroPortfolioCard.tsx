@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { TrendingUp, Users, FileText, Plus, Check, User, MapPin, Building2, Shield, CheckCircle2 } from "lucide-react";
+import { TrendingUp, Users, FileText, Plus, Check, User, MapPin, Building2, Shield, CheckCircle2, BarChart3 } from "lucide-react";
 interface Holding {
   name: string;
   value: number;
@@ -871,6 +871,210 @@ function OnboardingCard({
     </div>;
 }
 
+// Portfolio Analysis Card - Shows comparison against Model Portfolio and Benchmark
+function PortfolioAnalysisCard({
+  onClick,
+  isActive
+}: {
+  onClick?: () => void;
+  isActive?: boolean;
+}) {
+  const [selectedPeriod, setSelectedPeriod] = useState<'6m' | '1y' | '3y' | '5y'>('1y');
+  const [animationProgress, setAnimationProgress] = useState(0);
+
+  // Fee comparison data
+  const feeComparison = {
+    current: 1.85,
+    model: 1.25,
+    benchmark: 1.45
+  };
+
+  // Asset allocation comparison
+  const allocationComparison = [
+    { asset: "Equities", current: 45, model: 55, benchmark: 50, color: "hsl(var(--brand-blue))" },
+    { asset: "Bonds", current: 35, model: 25, benchmark: 30, color: "hsl(var(--brand-orange))" },
+    { asset: "Property", current: 10, model: 12, benchmark: 10, color: "hsl(142, 76%, 36%)" },
+    { asset: "Cash", current: 10, model: 8, benchmark: 10, color: "hsl(280, 65%, 60%)" }
+  ];
+
+  // Performance comparison data by period
+  const performanceData: Record<string, { current: number; model: number; benchmark: number }> = {
+    '6m': { current: 4.2, model: 6.8, benchmark: 5.5 },
+    '1y': { current: 8.5, model: 12.4, benchmark: 10.2 },
+    '3y': { current: 24.8, model: 38.2, benchmark: 32.1 },
+    '5y': { current: 42.5, model: 68.4, benchmark: 55.8 }
+  };
+
+  const periods: Array<'6m' | '1y' | '3y' | '5y'> = ['6m', '1y', '3y', '5y'];
+
+  // Reset and animate when card becomes active
+  useEffect(() => {
+    if (!isActive) {
+      setAnimationProgress(0);
+      return;
+    }
+
+    const duration = 1500;
+    const startTime = Date.now();
+
+    const animate = () => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setAnimationProgress(eased);
+      if (progress < 1) requestAnimationFrame(animate);
+    };
+    requestAnimationFrame(animate);
+  }, [isActive]);
+
+  const currentPerf = performanceData[selectedPeriod];
+  const maxPerf = Math.max(currentPerf.current, currentPerf.model, currentPerf.benchmark);
+
+  return (
+    <div
+      className="bg-card/90 backdrop-blur-xl border border-border/50 rounded-2xl p-5 shadow-2xl h-full cursor-pointer transition-all duration-300 hover:border-[hsl(var(--brand-blue))]/50 flex flex-col"
+      onClick={onClick}
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between mb-1">
+        <h3 className="text-base font-semibold text-foreground">Portfolio Analysis</h3>
+        <BarChart3 className="w-5 h-5 text-[hsl(var(--brand-blue))]" />
+      </div>
+      <p className="text-xs text-muted-foreground mb-3">vs Model Portfolio & Benchmark</p>
+
+      {/* Fee Comparison */}
+      <div className="mb-3 pb-3 border-b border-border/30">
+        <p className="text-[10px] text-muted-foreground mb-2">Annual Fee Comparison</p>
+        <div className="flex items-center gap-2">
+          <div className="flex-1 space-y-1">
+            {[
+              { label: "Current", value: feeComparison.current, color: "hsl(var(--brand-orange))" },
+              { label: "Model", value: feeComparison.model, color: "hsl(var(--brand-blue))" },
+              { label: "Benchmark", value: feeComparison.benchmark, color: "hsl(142, 76%, 36%)" }
+            ].map((item, idx) => (
+              <div key={item.label} className="flex items-center gap-2">
+                <span className="text-[9px] text-muted-foreground w-16">{item.label}</span>
+                <div className="flex-1 h-3 bg-muted/30 rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-1000"
+                    style={{
+                      width: `${(item.value / 2.5) * 100 * animationProgress}%`,
+                      backgroundColor: item.color
+                    }}
+                  />
+                </div>
+                <span className="text-[10px] font-medium text-foreground w-10 text-right">{item.value}%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Asset Allocation Comparison */}
+      <div className="mb-3 pb-3 border-b border-border/30">
+        <p className="text-[10px] text-muted-foreground mb-2">Asset Allocation</p>
+        <div className="space-y-1.5">
+          {allocationComparison.map((item, idx) => (
+            <div key={item.asset} className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
+              <span className="text-[9px] text-muted-foreground w-14">{item.asset}</span>
+              <div className="flex-1 flex items-center gap-1">
+                <div className="flex-1 h-2 bg-muted/30 rounded-full overflow-hidden flex">
+                  <div
+                    className="h-full transition-all duration-1000"
+                    style={{
+                      width: `${item.current * animationProgress}%`,
+                      backgroundColor: "hsl(var(--brand-orange))"
+                    }}
+                  />
+                </div>
+                <div className="flex-1 h-2 bg-muted/30 rounded-full overflow-hidden flex">
+                  <div
+                    className="h-full transition-all duration-1000"
+                    style={{
+                      width: `${item.model * animationProgress}%`,
+                      backgroundColor: "hsl(var(--brand-blue))"
+                    }}
+                  />
+                </div>
+              </div>
+              <span className="text-[9px] text-muted-foreground w-12 text-right">{item.current}% / {item.model}%</span>
+            </div>
+          ))}
+        </div>
+        <div className="flex justify-center gap-4 mt-2">
+          <div className="flex items-center gap-1">
+            <div className="w-2 h-2 rounded-full bg-[hsl(var(--brand-orange))]" />
+            <span className="text-[9px] text-muted-foreground">Current</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-2 h-2 rounded-full bg-[hsl(var(--brand-blue))]" />
+            <span className="text-[9px] text-muted-foreground">Model</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Performance Comparison */}
+      <div className="flex-1">
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-[10px] text-muted-foreground">Performance Comparison</p>
+          <div className="flex gap-1">
+            {periods.map((period) => (
+              <button
+                key={period}
+                onClick={(e) => { e.stopPropagation(); setSelectedPeriod(period); }}
+                className={`px-2 py-0.5 rounded text-[9px] transition-all duration-200 ${
+                  selectedPeriod === period
+                    ? "bg-[hsl(var(--brand-blue))] text-white"
+                    : "bg-muted/30 text-muted-foreground hover:bg-muted/50"
+                }`}
+              >
+                {period.toUpperCase()}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Performance bars */}
+        <div className="space-y-2">
+          {[
+            { label: "Current", value: currentPerf.current, color: "hsl(var(--brand-orange))" },
+            { label: "Model", value: currentPerf.model, color: "hsl(var(--brand-blue))" },
+            { label: "Benchmark", value: currentPerf.benchmark, color: "hsl(142, 76%, 36%)" }
+          ].map((item) => (
+            <div key={item.label} className="flex items-center gap-2">
+              <span className="text-[9px] text-muted-foreground w-16">{item.label}</span>
+              <div className="flex-1 h-4 bg-muted/30 rounded overflow-hidden relative">
+                <div
+                  className="h-full rounded transition-all duration-1000 flex items-center justify-end pr-1"
+                  style={{
+                    width: `${(item.value / maxPerf) * 100 * animationProgress}%`,
+                    backgroundColor: item.color
+                  }}
+                >
+                  <span className="text-[9px] font-medium text-white">
+                    {(item.value * animationProgress).toFixed(1)}%
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Insight */}
+        <div className={`mt-3 p-2 bg-[hsl(var(--brand-blue))]/10 rounded-lg transition-all duration-700 ${animationProgress >= 1 ? 'opacity-100' : 'opacity-0'}`}>
+          <p className="text-[10px] text-[hsl(var(--brand-blue))]">
+            Switching to Model Portfolio could improve {selectedPeriod} returns by{' '}
+            <span className="font-semibold">
+              {(currentPerf.model - currentPerf.current).toFixed(1)}%
+            </span>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Main Portfolio Card
 function PortfolioCard({
   isPaused
@@ -1020,7 +1224,7 @@ export default function HeroPortfolioCard() {
   useEffect(() => {
     if (isHovered) return;
     const rotateTimer = setInterval(() => {
-      setActiveCard(prev => (prev + 1) % 4);
+      setActiveCard(prev => (prev + 1) % 5);
     }, 15000);
     return () => clearInterval(rotateTimer);
   }, [isHovered]);
@@ -1047,11 +1251,17 @@ export default function HeroPortfolioCard() {
       back: "translateX(16px) translateZ(-40px) rotateY(0deg)",
       hover: "translateX(-60px) translateZ(-80px) rotateY(15deg)"
     },
-    // Onboarding furthest back
+    // Onboarding 
     {
       front: "translateX(0px) translateZ(0px) rotateY(0deg)",
       back: "translateX(24px) translateZ(-60px) rotateY(0deg)",
       hover: "translateX(-90px) translateZ(-120px) rotateY(20deg)"
+    },
+    // Portfolio Analysis furthest back
+    {
+      front: "translateX(0px) translateZ(0px) rotateY(0deg)",
+      back: "translateX(32px) translateZ(-80px) rotateY(0deg)",
+      hover: "translateX(-120px) translateZ(-160px) rotateY(25deg)"
     }];
     if (!isVisible) {
       return `translateX(${200 - cardIndex * 50}px) translateZ(-${cardIndex * 20}px) rotateY(0deg)`;
@@ -1072,17 +1282,28 @@ export default function HeroPortfolioCard() {
     return 1 - distance * 0.15;
   };
   const getCardZIndex = (cardIndex: number) => {
-    if (activeCard === cardIndex) return 40;
-    if (cardIndex === 0) return 30;
-    if (cardIndex === 1) return 20;
-    if (cardIndex === 2) return 10;
+    if (activeCard === cardIndex) return 50;
+    if (cardIndex === 0) return 40;
+    if (cardIndex === 1) return 30;
+    if (cardIndex === 2) return 20;
+    if (cardIndex === 3) return 10;
     return 0;
   };
-  const cardLabels = ["Portfolio", "Family Grouping", "Transact", "Onboarding"];
+  const cardLabels = ["Portfolio", "Family Grouping", "Transact", "Onboarding", "Analysis"];
   return <div className="flex flex-col items-center gap-4">
       <div className="relative w-[340px] h-[480px]" onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)} style={{
       perspective: "1000px"
     }}>
+        {/* Card 5 - Portfolio Analysis */}
+        <div className="absolute inset-0 transition-all duration-700 ease-out" style={{
+        transform: getCardTransform(4),
+        opacity: getCardOpacity(4),
+        zIndex: getCardZIndex(4),
+        transformStyle: "preserve-3d"
+      }}>
+          <PortfolioAnalysisCard onClick={() => cycleCards(4)} isActive={activeCard === 4} />
+        </div>
+
         {/* Card 4 - Onboarding */}
         <div className="absolute inset-0 transition-all duration-700 ease-out" style={{
         transform: getCardTransform(3),
