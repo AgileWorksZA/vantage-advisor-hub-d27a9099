@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { TrendingUp, Users, FileText, Plus } from "lucide-react";
+import { TrendingUp, Users, FileText, Plus, Check, User, MapPin, Building2, Shield, CheckCircle2 } from "lucide-react";
 
 interface Holding {
   name: string;
@@ -830,6 +830,204 @@ function FundSwitchCard({ onClick, isActive }: { onClick?: () => void; isActive?
   );
 }
 
+// Onboarding Card - Shows KYC/AML verification process
+function OnboardingCard({ onClick, isActive }: { onClick?: () => void; isActive?: boolean }) {
+  const [checkStates, setCheckStates] = useState({
+    personalDetails: false,
+    idVerification: false,
+    addressVerification: false,
+    bankVerification: false,
+    complete: false,
+  });
+  const [showSuccess, setShowSuccess] = useState(false);
+
+  const clientDetails = {
+    name: "John Peterson",
+    idNumber: "850115****085",
+    email: "john.peterson@email.com",
+    phone: "+27 82 555 ****",
+  };
+
+  const verificationChecks = [
+    { 
+      key: "idVerification", 
+      label: "ID Number Verification", 
+      icon: User, 
+      detail: "FICA Compliant",
+      color: "hsl(var(--brand-blue))"
+    },
+    { 
+      key: "addressVerification", 
+      label: "Address Verification", 
+      icon: MapPin, 
+      detail: "Proof of Residence",
+      color: "hsl(var(--brand-orange))"
+    },
+    { 
+      key: "bankVerification", 
+      label: "Bank Account Verification", 
+      icon: Building2, 
+      detail: "Account Confirmed",
+      color: "hsl(142, 76%, 36%)"
+    },
+  ];
+
+  // Reset and run animation sequence when card becomes active
+  useEffect(() => {
+    if (!isActive) {
+      setCheckStates({
+        personalDetails: false,
+        idVerification: false,
+        addressVerification: false,
+        bankVerification: false,
+        complete: false,
+      });
+      setShowSuccess(false);
+      return;
+    }
+
+    // Animate checks sequentially
+    const timers: NodeJS.Timeout[] = [];
+    
+    timers.push(setTimeout(() => {
+      setCheckStates(prev => ({ ...prev, personalDetails: true }));
+    }, 500));
+
+    timers.push(setTimeout(() => {
+      setCheckStates(prev => ({ ...prev, idVerification: true }));
+    }, 1200));
+
+    timers.push(setTimeout(() => {
+      setCheckStates(prev => ({ ...prev, addressVerification: true }));
+    }, 1900));
+
+    timers.push(setTimeout(() => {
+      setCheckStates(prev => ({ ...prev, bankVerification: true }));
+    }, 2600));
+
+    timers.push(setTimeout(() => {
+      setCheckStates(prev => ({ ...prev, complete: true }));
+      setShowSuccess(true);
+    }, 3300));
+
+    return () => timers.forEach(t => clearTimeout(t));
+  }, [isActive]);
+
+  return (
+    <div 
+      className="bg-card/90 backdrop-blur-xl border border-border/50 rounded-2xl p-5 shadow-2xl h-full cursor-pointer transition-all duration-300 hover:border-[hsl(var(--brand-blue))]/50 flex flex-col"
+      onClick={onClick}
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between mb-1">
+        <h3 className="text-base font-semibold text-foreground">Onboarding</h3>
+        <Shield className="w-5 h-5 text-[hsl(var(--brand-blue))]" />
+      </div>
+      <p className="text-xs text-muted-foreground mb-4">KYC/AML Verification</p>
+
+      {/* Personal Details Section */}
+      <div className={`p-3 bg-muted/30 rounded-lg mb-4 transition-all duration-500 ${
+        checkStates.personalDetails ? 'border border-[hsl(142,76%,36%)]/30' : 'border border-transparent'
+      }`}>
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs font-medium text-foreground">Personal Details</span>
+          <div className={`w-5 h-5 rounded-full flex items-center justify-center transition-all duration-500 ${
+            checkStates.personalDetails 
+              ? 'bg-[hsl(142,76%,36%)] scale-100' 
+              : 'bg-muted scale-75'
+          }`}>
+            <Check className={`w-3 h-3 transition-all duration-300 ${
+              checkStates.personalDetails ? 'text-white opacity-100' : 'text-muted-foreground opacity-0'
+            }`} />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <p className="text-[10px] text-muted-foreground">Full Name</p>
+            <p className="text-xs text-foreground">{clientDetails.name}</p>
+          </div>
+          <div>
+            <p className="text-[10px] text-muted-foreground">ID Number</p>
+            <p className="text-xs text-foreground font-mono">{clientDetails.idNumber}</p>
+          </div>
+          <div>
+            <p className="text-[10px] text-muted-foreground">Email</p>
+            <p className="text-xs text-foreground truncate">{clientDetails.email}</p>
+          </div>
+          <div>
+            <p className="text-[10px] text-muted-foreground">Phone</p>
+            <p className="text-xs text-foreground">{clientDetails.phone}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Verification Checks */}
+      <div className="flex-1 space-y-2">
+        {verificationChecks.map((check, index) => {
+          const Icon = check.icon;
+          const isChecked = checkStates[check.key as keyof typeof checkStates];
+          
+          return (
+            <div 
+              key={check.key}
+              className={`flex items-center justify-between p-3 rounded-lg transition-all duration-500 ${
+                isChecked ? 'bg-[hsl(142,76%,36%)]/10 border border-[hsl(142,76%,36%)]/30' : 'bg-muted/20 border border-transparent'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <div 
+                  className="w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300"
+                  style={{ backgroundColor: `${check.color}20` }}
+                >
+                  <Icon className="w-4 h-4" style={{ color: check.color }} />
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-foreground">{check.label}</p>
+                  <p className={`text-[10px] transition-all duration-300 ${
+                    isChecked ? 'text-[hsl(142,76%,36%)]' : 'text-muted-foreground'
+                  }`}>
+                    {isChecked ? check.detail : 'Verifying...'}
+                  </p>
+                </div>
+              </div>
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center transition-all duration-500 ${
+                isChecked 
+                  ? 'bg-[hsl(142,76%,36%)] scale-100' 
+                  : 'bg-muted scale-75'
+              }`}>
+                {isChecked ? (
+                  <Check className="w-4 h-4 text-white" />
+                ) : (
+                  <div className="w-3 h-3 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin" />
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Success Confirmation */}
+      <div className={`mt-4 p-3 rounded-lg transition-all duration-700 ${
+        showSuccess 
+          ? 'bg-[hsl(142,76%,36%)]/15 border border-[hsl(142,76%,36%)]/40 opacity-100 translate-y-0' 
+          : 'bg-transparent border border-transparent opacity-0 translate-y-4'
+      }`}>
+        <div className="flex items-center gap-3">
+          <div className={`w-10 h-10 rounded-full bg-[hsl(142,76%,36%)] flex items-center justify-center transition-all duration-500 ${
+            showSuccess ? 'scale-100' : 'scale-0'
+          }`}>
+            <CheckCircle2 className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-[hsl(142,76%,36%)]">Successfully Onboarded</p>
+            <p className="text-[10px] text-muted-foreground">All KYC/AML checks passed</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Main Portfolio Card
 function PortfolioCard({ isPaused }: { isPaused: boolean }) {
   const [animatedTotal, setAnimatedTotal] = useState(0);
@@ -1003,7 +1201,7 @@ export default function HeroPortfolioCard() {
   useEffect(() => {
     if (isHovered) return;
     const rotateTimer = setInterval(() => {
-      setActiveCard((prev) => (prev + 1) % 3);
+      setActiveCard((prev) => (prev + 1) % 4);
     }, 15000);
     return () => clearInterval(rotateTimer);
   }, [isHovered]);
@@ -1016,10 +1214,12 @@ export default function HeroPortfolioCard() {
     const positions = [
       // Portfolio front
       { front: "translateX(0px) translateZ(0px) rotateY(0deg)", back: "translateX(16px) translateZ(-40px) rotateY(0deg)", hover: "translateX(0px) translateZ(0px) rotateY(0deg)" },
-      // Client Overview middle
+      // Family Group middle
       { front: "translateX(0px) translateZ(0px) rotateY(0deg)", back: "translateX(8px) translateZ(-20px) rotateY(0deg)", hover: "translateX(-30px) translateZ(-40px) rotateY(8deg)" },
-      // Compliance back
+      // Transact back
       { front: "translateX(0px) translateZ(0px) rotateY(0deg)", back: "translateX(16px) translateZ(-40px) rotateY(0deg)", hover: "translateX(-60px) translateZ(-80px) rotateY(15deg)" },
+      // Onboarding furthest back
+      { front: "translateX(0px) translateZ(0px) rotateY(0deg)", back: "translateX(24px) translateZ(-60px) rotateY(0deg)", hover: "translateX(-90px) translateZ(-120px) rotateY(20deg)" },
     ];
 
     if (!isVisible) {
@@ -1040,18 +1240,20 @@ export default function HeroPortfolioCard() {
   const getCardOpacity = (cardIndex: number) => {
     if (!isVisible) return 0;
     if (activeCard === cardIndex) return 1;
-    if (isHovered) return cardIndex === 2 ? 1 : cardIndex === 1 ? 1 : 0.85;
-    return cardIndex === 0 ? 1 : cardIndex === 1 ? 0.85 : 0.7;
+    if (isHovered) return 1;
+    const distance = Math.abs(cardIndex - activeCard);
+    return 1 - (distance * 0.15);
   };
 
   const getCardZIndex = (cardIndex: number) => {
-    if (activeCard === cardIndex) return 30;
-    if (cardIndex === 0) return 20;
-    if (cardIndex === 1) return 10;
+    if (activeCard === cardIndex) return 40;
+    if (cardIndex === 0) return 30;
+    if (cardIndex === 1) return 20;
+    if (cardIndex === 2) return 10;
     return 0;
   };
 
-  const cardLabels = ["Portfolio", "Family Grouping", "Transact"];
+  const cardLabels = ["Portfolio", "Family Grouping", "Transact", "Onboarding"];
 
   return (
     <div className="flex flex-col items-center gap-4">
@@ -1061,6 +1263,19 @@ export default function HeroPortfolioCard() {
         onMouseLeave={() => setIsHovered(false)}
         style={{ perspective: "1000px" }}
       >
+        {/* Card 4 - Onboarding */}
+        <div
+          className="absolute inset-0 transition-all duration-700 ease-out"
+          style={{
+            transform: getCardTransform(3),
+            opacity: getCardOpacity(3),
+            zIndex: getCardZIndex(3),
+            transformStyle: "preserve-3d",
+          }}
+        >
+          <OnboardingCard onClick={() => cycleCards(3)} isActive={activeCard === 3} />
+        </div>
+
         {/* Card 3 - Fund Switch */}
         <div
           className="absolute inset-0 transition-all duration-700 ease-out"
