@@ -252,7 +252,11 @@ function MemberSparkline({ data, color, isVisible, delay }: { data: number[]; co
   const [animationProgress, setAnimationProgress] = useState(0);
 
   useEffect(() => {
-    if (!isVisible) return;
+    // Reset animation when card becomes inactive
+    if (!isVisible) {
+      setAnimationProgress(0);
+      return;
+    }
     
     const timeout = setTimeout(() => {
       const duration = 1500;
@@ -327,10 +331,9 @@ function MemberSparkline({ data, color, isVisible, delay }: { data: number[]; co
 }
 
 // Family Group Card - Shows family members with their portfolios
-function FamilyGroupCard({ onClick }: { onClick?: () => void }) {
+function FamilyGroupCard({ onClick, isActive }: { onClick?: () => void; isActive?: boolean }) {
   const [hoveredMember, setHoveredMember] = useState<number | null>(null);
   const [animatedTotal, setAnimatedTotal] = useState(0);
-  const [isVisible, setIsVisible] = useState(false);
   
   const familyMembers = [
     { 
@@ -373,12 +376,13 @@ function FamilyGroupCard({ onClick }: { onClick?: () => void }) {
 
   const familyTotal = familyMembers.reduce((sum, m) => sum + m.value, 0);
 
+  // Reset and animate total when card becomes active
   useEffect(() => {
-    const timer = setTimeout(() => setIsVisible(true), 300);
-    return () => clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
+    if (!isActive) {
+      setAnimatedTotal(0);
+      return;
+    }
+    
     const duration = 2000;
     const steps = 60;
     const increment = familyTotal / steps;
@@ -393,7 +397,7 @@ function FamilyGroupCard({ onClick }: { onClick?: () => void }) {
       }
     }, duration / steps);
     return () => clearInterval(timer);
-  }, []);
+  }, [isActive]);
 
   // Mini donut chart data
   const total = familyMembers.reduce((sum, m) => sum + m.value, 0);
@@ -469,7 +473,7 @@ function FamilyGroupCard({ onClick }: { onClick?: () => void }) {
               <MemberSparkline 
                 data={member.sparkData} 
                 color={member.color} 
-                isVisible={isVisible}
+                isVisible={isActive ?? false}
                 delay={index * 200}
               />
               <div className="text-right min-w-[80px]">
@@ -1047,7 +1051,7 @@ export default function HeroPortfolioCard() {
             transformStyle: "preserve-3d",
           }}
         >
-          <FamilyGroupCard onClick={() => cycleCards(1)} />
+          <FamilyGroupCard onClick={() => cycleCards(1)} isActive={activeCard === 1} />
         </div>
 
         {/* Card 1 - Portfolio */}
