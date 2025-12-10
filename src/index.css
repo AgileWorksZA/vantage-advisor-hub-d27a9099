@@ -166,10 +166,71 @@ All colors MUST be HSL.
   }
 }
 
+@keyframes border-rotate {
+  0% {
+    --border-angle: 0deg;
+  }
+  100% {
+    --border-angle: 360deg;
+  }
+}
+
+@property --border-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.animated-border-button {
+  --border-angle: 0deg;
+  position: relative;
+  background: transparent;
+  isolation: isolate;
+}
+
+.animated-border-button::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 0.5rem;
+  padding: 1.5px;
+  background: conic-gradient(
+    from var(--border-angle),
+    transparent 60%,
+    hsl(var(--brand-blue)) 80%,
+    hsl(var(--brand-orange)) 90%,
+    transparent 100%
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: border-rotate 3s linear infinite;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.animated-border-button.animate::before {
+  opacity: 1;
+}
+
+.animated-border-button-green::before {
+  background: conic-gradient(
+    from var(--border-angle),
+    transparent 60%,
+    hsl(142, 76%, 36%) 80%,
+    hsl(142, 76%, 50%) 90%,
+    transparent 100%
+  );
+}
+
 @media (prefers-reduced-motion: reduce) {
   .spotlight { background: none; }
   @keyframes slideUp {
     from { opacity: 1; transform: none; }
     to { opacity: 1; transform: none; }
+  }
+  .animated-border-button::before {
+    animation: none;
   }
 }
