@@ -500,7 +500,16 @@ function FundSwitchCard({ onClick }: { onClick?: () => void }) {
   const oldFundData = [100, 100.8, 101.2, 101.8, 102.1, 102.5];
   const newFundData = [100, 102.1, 103.8, 106.2, 108.5, 112.8];
 
-  // New fund allocation data
+  // Old fund allocation (Conservative Bond Fund - heavy on bonds/cash)
+  const oldFundAllocation = [
+    { name: "SA Equities", value: 10, color: "hsl(142, 76%, 36%)" },
+    { name: "Global Equities", value: 5, color: "hsl(var(--brand-blue))" },
+    { name: "Bonds", value: 55, color: "hsl(var(--brand-orange))" },
+    { name: "Property", value: 5, color: "hsl(280, 70%, 50%)" },
+    { name: "Cash", value: 25, color: "hsl(var(--muted-foreground))" },
+  ];
+
+  // New fund allocation (Growth Equity Fund - heavy on equities)
   const newFundAllocation = [
     { name: "SA Equities", value: 35, color: "hsl(142, 76%, 36%)" },
     { name: "Global Equities", value: 30, color: "hsl(var(--brand-blue))" },
@@ -508,6 +517,13 @@ function FundSwitchCard({ onClick }: { onClick?: () => void }) {
     { name: "Property", value: 10, color: "hsl(280, 70%, 50%)" },
     { name: "Cash", value: 5, color: "hsl(var(--muted-foreground))" },
   ];
+
+  // Interpolate between old and new allocation based on animation progress
+  const currentAllocation = oldFundAllocation.map((old, i) => ({
+    ...old,
+    currentValue: old.value + (newFundAllocation[i].value - old.value) * animationProgress,
+    targetValue: newFundAllocation[i].value,
+  }));
 
   useEffect(() => {
     const timer = setTimeout(() => setIsVisible(true), 300);
@@ -559,10 +575,10 @@ function FundSwitchCard({ onClick }: { onClick?: () => void }) {
 
   const projectedGain = ((newFundData[newFundData.length - 1] - oldFundData[oldFundData.length - 1]) / 100) * switchAmount;
 
-  // Calculate allocation bar segments
+  // Calculate allocation bar segments using animated values
   let accumulatedWidth = 0;
-  const allocationSegments = newFundAllocation.map((item, index) => {
-    const segmentWidth = item.value;
+  const allocationSegments = currentAllocation.map((item, index) => {
+    const segmentWidth = item.currentValue;
     const segment = {
       ...item,
       x: accumulatedWidth,
@@ -723,7 +739,7 @@ function FundSwitchCard({ onClick }: { onClick?: () => void }) {
           <span className="text-[10px] text-muted-foreground">New Fund Allocation</span>
           {hoveredAllocation !== null && (
             <span className="text-[10px] font-medium text-foreground">
-              {newFundAllocation[hoveredAllocation].name}: {newFundAllocation[hoveredAllocation].value}%
+              {currentAllocation[hoveredAllocation].name}: {Math.round(currentAllocation[hoveredAllocation].currentValue)}%
             </span>
           )}
         </div>
@@ -733,12 +749,13 @@ function FundSwitchCard({ onClick }: { onClick?: () => void }) {
           {allocationSegments.map((segment) => (
             <div
               key={segment.index}
-              className="h-full transition-all duration-200 cursor-pointer"
+              className="h-full cursor-pointer"
               style={{
                 width: `${segment.width}%`,
                 backgroundColor: segment.color,
                 opacity: hoveredAllocation === null || hoveredAllocation === segment.index ? 1 : 0.4,
                 transform: hoveredAllocation === segment.index ? 'scaleY(1.3)' : 'scaleY(1)',
+                transition: 'transform 0.2s, opacity 0.2s',
               }}
               onMouseEnter={() => setHoveredAllocation(segment.index)}
               onMouseLeave={() => setHoveredAllocation(null)}
@@ -748,7 +765,7 @@ function FundSwitchCard({ onClick }: { onClick?: () => void }) {
 
         {/* Allocation legend */}
         <div className="grid grid-cols-3 gap-x-2 gap-y-1">
-          {newFundAllocation.map((item, index) => (
+          {currentAllocation.map((item, index) => (
             <div
               key={index}
               className={`flex items-center gap-1 cursor-pointer transition-all duration-200 ${hoveredAllocation === index ? 'opacity-100' : 'opacity-70 hover:opacity-100'}`}
@@ -763,7 +780,7 @@ function FundSwitchCard({ onClick }: { onClick?: () => void }) {
                 }}
               />
               <span className="text-[9px] text-muted-foreground truncate">{item.name}</span>
-              <span className="text-[9px] font-medium text-foreground ml-auto">{item.value}%</span>
+              <span className="text-[9px] font-medium text-foreground ml-auto tabular-nums">{Math.round(item.currentValue)}%</span>
             </div>
           ))}
         </div>
