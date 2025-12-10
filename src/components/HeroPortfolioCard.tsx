@@ -287,10 +287,11 @@ function FamilyGroupCard({ onClick }: { onClick?: () => void }) {
       className="bg-card/90 backdrop-blur-xl border border-border/50 rounded-2xl p-5 shadow-2xl h-full cursor-pointer transition-all duration-300 hover:border-[hsl(var(--brand-blue))]/50 flex flex-col"
       onClick={onClick}
     >
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-base font-semibold text-foreground">Smith Family Group</h3>
+      <div className="flex items-center justify-between mb-1">
+        <h3 className="text-base font-semibold text-foreground">Family Grouping</h3>
         <Users className="w-5 h-5 text-[hsl(var(--brand-blue))]" />
       </div>
+      <p className="text-xs text-muted-foreground mb-3">Smith Family Group</p>
 
       {/* Family total and mini chart */}
       <div className="flex items-center gap-4 mb-4 pb-3 border-b border-border/30">
@@ -866,7 +867,7 @@ export default function HeroPortfolioCard() {
     return 0;
   };
 
-  const cardLabels = ["Portfolio", "Family", "Transact"];
+  const cardLabels = ["Portfolio", "Family Grouping", "Transact"];
 
   return (
     <div className="flex flex-col items-center gap-4">
