@@ -941,8 +941,8 @@ export default function HeroPortfolioCard() {
             <span
               className={`text-xs transition-all duration-300 ${
                 activeCard === index
-                  ? "text-foreground font-medium opacity-100 w-auto"
-                  : "text-muted-foreground w-0 overflow-hidden opacity-0 group-hover:w-auto group-hover:opacity-100"
+                  ? "text-white font-medium opacity-100 w-auto"
+                  : "text-white/60 w-0 overflow-hidden opacity-0 group-hover:w-auto group-hover:opacity-100"
               }`}
             >
               {label}
