@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { TrendingUp, Users, FileText } from "lucide-react";
+import { TrendingUp, Users, FileText, Plus } from "lucide-react";
 
 interface Holding {
   name: string;
@@ -475,6 +475,15 @@ function FamilyGroupCard({ onClick, isActive }: { onClick?: () => void; isActive
           </div>
         ))}
       </div>
+
+      {/* Add member button */}
+      <button 
+        className="mt-3 w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg border border-dashed border-border/50 text-muted-foreground hover:text-foreground hover:border-[hsl(var(--brand-blue))]/50 hover:bg-muted/30 transition-all duration-200 group"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <Plus className="w-4 h-4 group-hover:text-[hsl(var(--brand-blue))] transition-colors" />
+        <span className="text-xs">Add Member, Company or Trust</span>
+      </button>
     </div>
   );
 }
