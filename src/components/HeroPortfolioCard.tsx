@@ -295,15 +295,19 @@ function MemberSparkline({ data, color, isVisible, delay }: { data: number[]; co
 
   return (
     <svg width={width} height={height} className="overflow-visible">
-      {/* Gradient definition */}
+      {/* Clip path for left-to-right reveal */}
       <defs>
-        <linearGradient id={`sparkGradient-${color.replace(/[^a-zA-Z0-9]/g, '')}`} x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor={color} stopOpacity="0.3" />
-          <stop offset="100%" stopColor={color} stopOpacity="0" />
-        </linearGradient>
+        <clipPath id={`sparkClip-${color.replace(/[^a-zA-Z0-9]/g, '')}-${delay}`}>
+          <rect 
+            x="0" 
+            y="0" 
+            width={width * animationProgress} 
+            height={height} 
+          />
+        </clipPath>
       </defs>
       
-      {/* Animated line */}
+      {/* Animated line with clip path */}
       <path
         d={linePath}
         fill="none"
@@ -311,21 +315,8 @@ function MemberSparkline({ data, color, isVisible, delay }: { data: number[]; co
         strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"
-        strokeDasharray={pathLength}
-        strokeDashoffset={pathLength - visibleLength}
-        style={{ transition: "stroke-dashoffset 0.1s ease-out" }}
+        clipPath={`url(#sparkClip-${color.replace(/[^a-zA-Z0-9]/g, '')}-${delay})`}
       />
-      
-      {/* End dot */}
-      {animationProgress > 0.9 && (
-        <circle
-          cx={points[points.length - 1].x}
-          cy={points[points.length - 1].y}
-          r="2"
-          fill={color}
-          className="animate-scale-in"
-        />
-      )}
     </svg>
   );
 }
