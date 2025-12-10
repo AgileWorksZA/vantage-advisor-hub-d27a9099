@@ -339,7 +339,8 @@ function FamilyGroupCard({ onClick }: { onClick?: () => void }) {
       value: 8500000, 
       change: 12.4, 
       color: "hsl(var(--brand-blue))",
-      sparkData: [65, 68, 72, 70, 75, 78, 82, 85, 88, 92, 95, 100]
+      // Steady consistent growth with small dips - conservative investor
+      sparkData: [75, 77, 76, 79, 81, 80, 83, 85, 84, 87, 90, 92]
     },
     { 
       name: "Sarah Smith", 
@@ -347,7 +348,8 @@ function FamilyGroupCard({ onClick }: { onClick?: () => void }) {
       value: 6200000, 
       change: 8.7, 
       color: "hsl(var(--brand-orange))",
-      sparkData: [70, 72, 71, 74, 76, 75, 78, 80, 82, 85, 87, 89]
+      // V-shaped recovery - dropped then recovered strongly
+      sparkData: [85, 82, 75, 68, 62, 65, 72, 78, 82, 86, 90, 93]
     },
     { 
       name: "Michael Smith", 
@@ -355,7 +357,8 @@ function FamilyGroupCard({ onClick }: { onClick?: () => void }) {
       value: 3100000, 
       change: 15.2, 
       color: "hsl(142, 76%, 36%)",
-      sparkData: [50, 55, 58, 62, 68, 72, 78, 85, 90, 98, 105, 115]
+      // Aggressive steep growth - high risk portfolio
+      sparkData: [40, 45, 52, 48, 58, 65, 72, 80, 92, 105, 112, 125]
     },
     { 
       name: "Emma Smith", 
@@ -363,7 +366,8 @@ function FamilyGroupCard({ onClick }: { onClick?: () => void }) {
       value: 2358204, 
       change: 9.8, 
       color: "hsl(280, 65%, 60%)",
-      sparkData: [60, 62, 65, 64, 68, 70, 72, 75, 78, 82, 85, 90]
+      // Flat then hockey stick - recent acceleration
+      sparkData: [70, 71, 70, 72, 71, 73, 74, 78, 85, 95, 102, 108]
     },
   ];
 
