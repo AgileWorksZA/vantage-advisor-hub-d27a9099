@@ -1007,10 +1007,10 @@ function OnboardingCard({ onClick, isActive }: { onClick?: () => void; isActive?
       </div>
 
       {/* Success Confirmation */}
-      <div className={`mt-4 p-3 rounded-lg transition-all duration-700 ${
+      <div className={`mt-3 pt-3 transition-all duration-700 ${
         showSuccess 
-          ? 'bg-[hsl(142,76%,36%)]/15 border border-[hsl(142,76%,36%)]/40 opacity-100 translate-y-0' 
-          : 'bg-transparent border border-transparent opacity-0 translate-y-4'
+          ? 'opacity-100 translate-y-0' 
+          : 'opacity-0 translate-y-2'
       }`}>
         <div className="flex items-center gap-3">
           <div className={`w-10 h-10 rounded-full bg-[hsl(142,76%,36%)] flex items-center justify-center transition-all duration-500 ${
