@@ -866,55 +866,89 @@ export default function HeroPortfolioCard() {
     return 0;
   };
 
+  const cardLabels = ["Portfolio", "Family", "Transact"];
+
   return (
-    <div
-      className="relative w-[340px] h-[480px]"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      style={{ perspective: "1000px" }}
-    >
-      {/* Card 3 - Fund Switch */}
+    <div className="flex flex-col items-center gap-4">
       <div
-        className="absolute inset-0 transition-all duration-700 ease-out"
-        style={{
-          transform: getCardTransform(2),
-          opacity: getCardOpacity(2),
-          zIndex: getCardZIndex(2),
-          transformStyle: "preserve-3d",
-        }}
+        className="relative w-[340px] h-[480px]"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        style={{ perspective: "1000px" }}
       >
-        <FundSwitchCard onClick={() => cycleCards(2)} />
+        {/* Card 3 - Fund Switch */}
+        <div
+          className="absolute inset-0 transition-all duration-700 ease-out"
+          style={{
+            transform: getCardTransform(2),
+            opacity: getCardOpacity(2),
+            zIndex: getCardZIndex(2),
+            transformStyle: "preserve-3d",
+          }}
+        >
+          <FundSwitchCard onClick={() => cycleCards(2)} />
+        </div>
+
+        {/* Card 2 - Family Group */}
+        <div
+          className="absolute inset-0 transition-all duration-700 ease-out"
+          style={{
+            transform: getCardTransform(1),
+            opacity: getCardOpacity(1),
+            zIndex: getCardZIndex(1),
+            transitionDelay: "100ms",
+            transformStyle: "preserve-3d",
+          }}
+        >
+          <FamilyGroupCard onClick={() => cycleCards(1)} />
+        </div>
+
+        {/* Card 1 - Portfolio */}
+        <div
+          className="absolute inset-0 transition-all duration-700 ease-out"
+          style={{
+            transform: getCardTransform(0),
+            opacity: getCardOpacity(0),
+            zIndex: getCardZIndex(0),
+            transitionDelay: "200ms",
+            transformStyle: "preserve-3d",
+          }}
+        >
+          <PortfolioCard isPaused={isHovered} />
+          {/* Floating decoration */}
+          <div className="absolute -top-3 -right-3 w-16 h-16 bg-[hsl(var(--brand-blue))]/20 rounded-full blur-xl animate-pulse" />
+          <div className="absolute -bottom-4 -left-4 w-20 h-20 bg-[hsl(var(--brand-orange))]/15 rounded-full blur-xl animate-pulse" style={{ animationDelay: "1s" }} />
+        </div>
       </div>
 
-      {/* Card 2 - Family Group */}
-      <div
-        className="absolute inset-0 transition-all duration-700 ease-out"
-        style={{
-          transform: getCardTransform(1),
-          opacity: getCardOpacity(1),
-          zIndex: getCardZIndex(1),
-          transitionDelay: "100ms",
-          transformStyle: "preserve-3d",
-        }}
-      >
-        <FamilyGroupCard onClick={() => cycleCards(1)} />
-      </div>
-
-      {/* Card 1 - Portfolio */}
-      <div
-        className="absolute inset-0 transition-all duration-700 ease-out"
-        style={{
-          transform: getCardTransform(0),
-          opacity: getCardOpacity(0),
-          zIndex: getCardZIndex(0),
-          transitionDelay: "200ms",
-          transformStyle: "preserve-3d",
-        }}
-      >
-        <PortfolioCard isPaused={isHovered} />
-        {/* Floating decoration */}
-        <div className="absolute -top-3 -right-3 w-16 h-16 bg-[hsl(var(--brand-blue))]/20 rounded-full blur-xl animate-pulse" />
-        <div className="absolute -bottom-4 -left-4 w-20 h-20 bg-[hsl(var(--brand-orange))]/15 rounded-full blur-xl animate-pulse" style={{ animationDelay: "1s" }} />
+      {/* Navigation Dots */}
+      <div className="flex items-center gap-3">
+        {cardLabels.map((label, index) => (
+          <button
+            key={index}
+            onClick={() => setActiveCard(index)}
+            className={`group flex items-center gap-2 transition-all duration-300 ${
+              activeCard === index ? "opacity-100" : "opacity-50 hover:opacity-80"
+            }`}
+          >
+            <div
+              className={`rounded-full transition-all duration-300 ${
+                activeCard === index
+                  ? "w-6 h-2 bg-[hsl(var(--brand-orange))]"
+                  : "w-2 h-2 bg-muted-foreground group-hover:bg-foreground"
+              }`}
+            />
+            <span
+              className={`text-xs transition-all duration-300 ${
+                activeCard === index
+                  ? "text-foreground font-medium opacity-100 w-auto"
+                  : "text-muted-foreground w-0 overflow-hidden opacity-0 group-hover:w-auto group-hover:opacity-100"
+              }`}
+            >
+              {label}
+            </span>
+          </button>
+        ))}
       </div>
     </div>
   );
