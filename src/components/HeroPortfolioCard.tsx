@@ -325,6 +325,7 @@ function MemberSparkline({ data, color, isVisible, delay }: { data: number[]; co
 function FamilyGroupCard({ onClick, isActive }: { onClick?: () => void; isActive?: boolean }) {
   const [hoveredMember, setHoveredMember] = useState<number | null>(null);
   const [animatedTotal, setAnimatedTotal] = useState(0);
+  const [showButtonAnimation, setShowButtonAnimation] = useState(false);
   
   const familyMembers = [
     { 
@@ -371,6 +372,7 @@ function FamilyGroupCard({ onClick, isActive }: { onClick?: () => void; isActive
   useEffect(() => {
     if (!isActive) {
       setAnimatedTotal(0);
+      setShowButtonAnimation(false);
       return;
     }
     
@@ -387,7 +389,16 @@ function FamilyGroupCard({ onClick, isActive }: { onClick?: () => void; isActive
         setAnimatedTotal(Math.floor(current));
       }
     }, duration / steps);
-    return () => clearInterval(timer);
+
+    // Trigger button animation after other animations complete
+    const buttonTimer = setTimeout(() => {
+      setShowButtonAnimation(true);
+    }, 2500);
+
+    return () => {
+      clearInterval(timer);
+      clearTimeout(buttonTimer);
+    };
   }, [isActive]);
 
   // Mini donut chart data
@@ -477,13 +488,15 @@ function FamilyGroupCard({ onClick, isActive }: { onClick?: () => void; isActive
       </div>
 
       {/* Add member button */}
-      <button 
-        className="mt-3 w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg border border-dashed border-border/50 text-muted-foreground hover:text-foreground hover:border-[hsl(var(--brand-blue))]/50 hover:bg-muted/30 transition-all duration-200 group"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <Plus className="w-4 h-4 group-hover:text-[hsl(var(--brand-blue))] transition-colors" />
-        <span className="text-xs">Add Member, Company or Trust</span>
-      </button>
+      <div className={`animated-border-button mt-3 ${showButtonAnimation ? 'animate' : ''}`}>
+        <button 
+          className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg border border-dashed border-border/50 text-muted-foreground hover:text-foreground hover:border-[hsl(var(--brand-blue))]/50 hover:bg-muted/30 transition-all duration-200 group bg-card"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Plus className="w-4 h-4 group-hover:text-[hsl(var(--brand-blue))] transition-colors" />
+          <span className="text-xs">Add Member, Company or Trust</span>
+        </button>
+      </div>
     </div>
   );
 }
@@ -493,6 +506,7 @@ function FundSwitchCard({ onClick, isActive }: { onClick?: () => void; isActive?
   const [animationProgress, setAnimationProgress] = useState(0);
   const [hoveredAllocation, setHoveredAllocation] = useState<number | null>(null);
   const [hoveredChartPoint, setHoveredChartPoint] = useState<number | null>(null);
+  const [showButtonAnimation, setShowButtonAnimation] = useState(false);
 
   const switchAmount = 2500000;
   const fromFund = { name: "Conservative Bond Fund", oldPerformance: 4.2 };
@@ -532,6 +546,7 @@ function FundSwitchCard({ onClick, isActive }: { onClick?: () => void; isActive?
   useEffect(() => {
     if (!isActive) {
       setAnimationProgress(0);
+      setShowButtonAnimation(false);
       return;
     }
     
@@ -547,8 +562,16 @@ function FundSwitchCard({ onClick, isActive }: { onClick?: () => void; isActive?
       };
       requestAnimationFrame(animate);
     }, 500);
+
+    // Trigger button animation after other animations complete (500ms delay + 2000ms animation)
+    const buttonTimer = setTimeout(() => {
+      setShowButtonAnimation(true);
+    }, 3000);
     
-    return () => clearTimeout(timeout);
+    return () => {
+      clearTimeout(timeout);
+      clearTimeout(buttonTimer);
+    };
   }, [isActive]);
 
   // Chart dimensions
@@ -794,13 +817,15 @@ function FundSwitchCard({ onClick, isActive }: { onClick?: () => void; isActive?
       </div>
 
       {/* Apply switch button */}
-      <button 
-        className="mt-3 w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg border border-dashed border-border/50 text-muted-foreground hover:text-foreground hover:border-[hsl(142,76%,36%)]/50 hover:bg-muted/30 transition-all duration-200 group"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <Plus className="w-4 h-4 group-hover:text-[hsl(142,76%,36%)] transition-colors" />
-        <span className="text-xs">Apply Switch to more Portfolios</span>
-      </button>
+      <div className={`animated-border-button animated-border-button-green mt-3 ${showButtonAnimation ? 'animate' : ''}`}>
+        <button 
+          className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg border border-dashed border-border/50 text-muted-foreground hover:text-foreground hover:border-[hsl(142,76%,36%)]/50 hover:bg-muted/30 transition-all duration-200 group bg-card"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Plus className="w-4 h-4 group-hover:text-[hsl(142,76%,36%)] transition-colors" />
+          <span className="text-xs">Apply Switch to more Portfolios</span>
+        </button>
+      </div>
     </div>
   );
 }
