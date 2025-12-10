@@ -247,19 +247,132 @@ function PerformanceChart() {
   );
 }
 
+// Sparkline component for family members
+function MemberSparkline({ data, color, isVisible, delay }: { data: number[]; color: string; isVisible: boolean; delay: number }) {
+  const [animationProgress, setAnimationProgress] = useState(0);
+
+  useEffect(() => {
+    if (!isVisible) return;
+    
+    const timeout = setTimeout(() => {
+      const duration = 1500;
+      const startTime = Date.now();
+      
+      const animate = () => {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        setAnimationProgress(eased);
+        if (progress < 1) requestAnimationFrame(animate);
+      };
+      
+      requestAnimationFrame(animate);
+    }, delay);
+    
+    return () => clearTimeout(timeout);
+  }, [isVisible, delay]);
+
+  const width = 50;
+  const height = 20;
+  const padding = 2;
+  
+  const minValue = Math.min(...data) * 0.95;
+  const maxValue = Math.max(...data) * 1.05;
+  const range = maxValue - minValue;
+
+  const points = data.map((d, i) => ({
+    x: padding + (i / (data.length - 1)) * (width - padding * 2),
+    y: padding + (height - padding * 2) - ((d - minValue) / range) * (height - padding * 2),
+  }));
+
+  const linePath = points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
+  const pathLength = 200;
+  const visibleLength = pathLength * animationProgress;
+
+  return (
+    <svg width={width} height={height} className="overflow-visible">
+      {/* Gradient definition */}
+      <defs>
+        <linearGradient id={`sparkGradient-${color.replace(/[^a-zA-Z0-9]/g, '')}`} x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor={color} stopOpacity="0.3" />
+          <stop offset="100%" stopColor={color} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      
+      {/* Animated line */}
+      <path
+        d={linePath}
+        fill="none"
+        stroke={color}
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeDasharray={pathLength}
+        strokeDashoffset={pathLength - visibleLength}
+        style={{ transition: "stroke-dashoffset 0.1s ease-out" }}
+      />
+      
+      {/* End dot */}
+      {animationProgress > 0.9 && (
+        <circle
+          cx={points[points.length - 1].x}
+          cy={points[points.length - 1].y}
+          r="2"
+          fill={color}
+          className="animate-scale-in"
+        />
+      )}
+    </svg>
+  );
+}
+
 // Family Group Card - Shows family members with their portfolios
 function FamilyGroupCard({ onClick }: { onClick?: () => void }) {
   const [hoveredMember, setHoveredMember] = useState<number | null>(null);
   const [animatedTotal, setAnimatedTotal] = useState(0);
+  const [isVisible, setIsVisible] = useState(false);
   
   const familyMembers = [
-    { name: "James Smith", role: "Primary", value: 8500000, change: 12.4, color: "hsl(var(--brand-blue))" },
-    { name: "Sarah Smith", role: "Spouse", value: 6200000, change: 8.7, color: "hsl(var(--brand-orange))" },
-    { name: "Michael Smith", role: "Child", value: 3100000, change: 15.2, color: "hsl(142, 76%, 36%)" },
-    { name: "Emma Smith", role: "Child", value: 2358204, change: 9.8, color: "hsl(280, 65%, 60%)" },
+    { 
+      name: "James Smith", 
+      role: "Primary", 
+      value: 8500000, 
+      change: 12.4, 
+      color: "hsl(var(--brand-blue))",
+      sparkData: [65, 68, 72, 70, 75, 78, 82, 85, 88, 92, 95, 100]
+    },
+    { 
+      name: "Sarah Smith", 
+      role: "Spouse", 
+      value: 6200000, 
+      change: 8.7, 
+      color: "hsl(var(--brand-orange))",
+      sparkData: [70, 72, 71, 74, 76, 75, 78, 80, 82, 85, 87, 89]
+    },
+    { 
+      name: "Michael Smith", 
+      role: "Child", 
+      value: 3100000, 
+      change: 15.2, 
+      color: "hsl(142, 76%, 36%)",
+      sparkData: [50, 55, 58, 62, 68, 72, 78, 85, 90, 98, 105, 115]
+    },
+    { 
+      name: "Emma Smith", 
+      role: "Child", 
+      value: 2358204, 
+      change: 9.8, 
+      color: "hsl(280, 65%, 60%)",
+      sparkData: [60, 62, 65, 64, 68, 70, 72, 75, 78, 82, 85, 90]
+    },
   ];
 
   const familyTotal = familyMembers.reduce((sum, m) => sum + m.value, 0);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsVisible(true), 300);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     const duration = 2000;
@@ -347,9 +460,18 @@ function FamilyGroupCard({ onClick }: { onClick?: () => void }) {
                 <p className="text-[10px] text-muted-foreground">{member.role}</p>
               </div>
             </div>
-            <div className="text-right">
-              <p className="text-xs font-medium text-foreground">R{member.value.toLocaleString()}</p>
-              <p className="text-[10px] text-[hsl(142,76%,36%)]">+{member.change}%</p>
+            <div className="flex items-center gap-3">
+              {/* Sparkline chart */}
+              <MemberSparkline 
+                data={member.sparkData} 
+                color={member.color} 
+                isVisible={isVisible}
+                delay={index * 200}
+              />
+              <div className="text-right min-w-[80px]">
+                <p className="text-xs font-medium text-foreground">R{member.value.toLocaleString()}</p>
+                <p className="text-[10px] text-[hsl(142,76%,36%)]">+{member.change}%</p>
+              </div>
             </div>
           </div>
         ))}
