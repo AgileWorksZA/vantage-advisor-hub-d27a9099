@@ -792,6 +792,15 @@ function FundSwitchCard({ onClick, isActive }: { onClick?: () => void; isActive?
           ))}
         </div>
       </div>
+
+      {/* Apply switch button */}
+      <button 
+        className="mt-3 w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg border border-dashed border-border/50 text-muted-foreground hover:text-foreground hover:border-[hsl(142,76%,36%)]/50 hover:bg-muted/30 transition-all duration-200 group"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <Plus className="w-4 h-4 group-hover:text-[hsl(142,76%,36%)] transition-colors" />
+        <span className="text-xs">Apply Switch to more Portfolios</span>
+      </button>
     </div>
   );
 }
