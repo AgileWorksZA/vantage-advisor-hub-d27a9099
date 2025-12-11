@@ -881,28 +881,48 @@ function PortfolioAnalysisCard({
 }) {
   const [selectedPeriod, setSelectedPeriod] = useState<'6m' | '1y' | '3y' | '5y'>('1y');
   const [animationProgress, setAnimationProgress] = useState(0);
+  const [hoveredPoint, setHoveredPoint] = useState<number | null>(null);
 
-  // Fee comparison data
+  // Fee comparison data (Current vs Model only)
   const feeComparison = {
     current: 1.85,
-    model: 1.25,
-    benchmark: 1.45
+    model: 1.25
   };
 
   // Asset allocation comparison
   const allocationComparison = [
-    { asset: "Equities", current: 45, model: 55, benchmark: 50, color: "hsl(var(--brand-blue))" },
-    { asset: "Bonds", current: 35, model: 25, benchmark: 30, color: "hsl(var(--brand-orange))" },
-    { asset: "Property", current: 10, model: 12, benchmark: 10, color: "hsl(142, 76%, 36%)" },
-    { asset: "Cash", current: 10, model: 8, benchmark: 10, color: "hsl(280, 65%, 60%)" }
+    { asset: "Equities", current: 45, model: 55, color: "hsl(var(--brand-blue))" },
+    { asset: "Bonds", current: 35, model: 25, color: "hsl(var(--brand-orange))" },
+    { asset: "Property", current: 10, model: 12, color: "hsl(142, 76%, 36%)" },
+    { asset: "Cash", current: 10, model: 8, color: "hsl(280, 65%, 60%)" }
   ];
 
-  // Performance comparison data by period
-  const performanceData: Record<string, { current: number; model: number; benchmark: number }> = {
-    '6m': { current: 4.2, model: 6.8, benchmark: 5.5 },
-    '1y': { current: 8.5, model: 12.4, benchmark: 10.2 },
-    '3y': { current: 24.8, model: 38.2, benchmark: 32.1 },
-    '5y': { current: 42.5, model: 68.4, benchmark: 55.8 }
+  // Performance chart data by period
+  const performanceChartData: Record<string, { labels: string[]; current: number[]; model: number[]; benchmark: number[] }> = {
+    '6m': {
+      labels: ["Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+      current: [100, 101.2, 102.1, 102.8, 103.5, 104.2],
+      model: [100, 102.1, 103.5, 105.2, 106.1, 106.8],
+      benchmark: [100, 101.8, 102.9, 104.1, 105.0, 105.5]
+    },
+    '1y': {
+      labels: ["Jan", "Mar", "May", "Jul", "Sep", "Nov"],
+      current: [100, 102.1, 104.5, 106.2, 107.5, 108.5],
+      model: [100, 104.2, 107.8, 109.5, 111.2, 112.4],
+      benchmark: [100, 103.5, 106.2, 108.1, 109.5, 110.2]
+    },
+    '3y': {
+      labels: ["Y1", "Y1.5", "Y2", "Y2.5", "Y3"],
+      current: [100, 108.2, 115.5, 120.8, 124.8],
+      model: [100, 112.5, 125.2, 132.8, 138.2],
+      benchmark: [100, 110.5, 120.2, 127.5, 132.1]
+    },
+    '5y': {
+      labels: ["Y1", "Y2", "Y3", "Y4", "Y5"],
+      current: [100, 108.5, 118.2, 130.5, 142.5],
+      model: [100, 113.5, 132.2, 152.8, 168.4],
+      benchmark: [100, 111.2, 125.5, 142.1, 155.8]
+    }
   };
 
   const periods: Array<'6m' | '1y' | '3y' | '5y'> = ['6m', '1y', '3y', '5y'];
@@ -927,8 +947,47 @@ function PortfolioAnalysisCard({
     requestAnimationFrame(animate);
   }, [isActive]);
 
-  const currentPerf = performanceData[selectedPeriod];
-  const maxPerf = Math.max(currentPerf.current, currentPerf.model, currentPerf.benchmark);
+  const chartData = performanceChartData[selectedPeriod];
+  const allValues = [...chartData.current, ...chartData.model, ...chartData.benchmark];
+  const minValue = Math.min(...allValues) * 0.98;
+  const maxValue = Math.max(...allValues) * 1.02;
+  const range = maxValue - minValue;
+
+  const width = 280;
+  const height = 90;
+  const padding = { left: 0, right: 0, top: 8, bottom: 20 };
+  const chartWidth = width - padding.left - padding.right;
+  const chartHeight = height - padding.top - padding.bottom;
+
+  const getPoints = (data: number[]) => {
+    return data.map((d, i) => {
+      const x = padding.left + (i / (data.length - 1)) * chartWidth;
+      const y = padding.top + chartHeight - ((d - minValue) / range) * chartHeight;
+      return { x, y, value: d };
+    });
+  };
+
+  const currentPoints = getPoints(chartData.current);
+  const modelPoints = getPoints(chartData.model);
+  const benchmarkPoints = getPoints(chartData.benchmark);
+
+  const createPath = (points: { x: number; y: number }[]) => {
+    return points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
+  };
+
+  const createAreaPath = (points: { x: number; y: number }[]) => {
+    const linePath = createPath(points);
+    return `${linePath} L ${points[points.length - 1].x} ${height - padding.bottom} L ${points[0].x} ${height - padding.bottom} Z`;
+  };
+
+  const pathLength = 1000;
+  const visibleLength = pathLength * animationProgress;
+
+  const currentPerf = {
+    current: chartData.current[chartData.current.length - 1] - 100,
+    model: chartData.model[chartData.model.length - 1] - 100,
+    benchmark: chartData.benchmark[chartData.benchmark.length - 1] - 100
+  };
 
   return (
     <div
@@ -940,20 +999,154 @@ function PortfolioAnalysisCard({
         <h3 className="text-base font-semibold text-foreground">Portfolio Analysis</h3>
         <BarChart3 className="w-5 h-5 text-[hsl(var(--brand-blue))]" />
       </div>
-      <p className="text-xs text-muted-foreground mb-3">vs Model Portfolio & Benchmark</p>
+      <p className="text-xs text-muted-foreground mb-2">vs Model Portfolio & Benchmark</p>
 
-      {/* Fee Comparison */}
+      {/* Performance Chart - Now at the top */}
+      <div className="mb-3 pb-3 border-b border-border/30">
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-[10px] text-muted-foreground">Performance Comparison</p>
+          <div className="flex gap-1">
+            {periods.map((period) => (
+              <button
+                key={period}
+                onClick={(e) => { e.stopPropagation(); setSelectedPeriod(period); }}
+                className={`px-2 py-0.5 rounded text-[9px] transition-all duration-200 ${
+                  selectedPeriod === period
+                    ? "bg-[hsl(var(--brand-blue))] text-white"
+                    : "bg-muted/30 text-muted-foreground hover:bg-muted/50"
+                }`}
+              >
+                {period.toUpperCase()}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} className="overflow-visible cursor-crosshair">
+          <defs>
+            <linearGradient id="analysisAreaGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="hsl(var(--brand-blue))" stopOpacity="0.2" />
+              <stop offset="100%" stopColor="hsl(var(--brand-blue))" stopOpacity="0" />
+            </linearGradient>
+            <clipPath id="analysisClip">
+              <rect x="0" y="0" width={chartWidth * animationProgress} height={height} />
+            </clipPath>
+          </defs>
+
+          {/* Model area fill */}
+          <path d={createAreaPath(modelPoints)} fill="url(#analysisAreaGradient)" clipPath="url(#analysisClip)" />
+
+          {/* Benchmark line */}
+          <path
+            d={createPath(benchmarkPoints)}
+            fill="none"
+            stroke="hsl(142, 76%, 36%)"
+            strokeWidth="1.5"
+            strokeDasharray="4,2"
+            strokeLinecap="round"
+            clipPath="url(#analysisClip)"
+            opacity="0.7"
+          />
+
+          {/* Current portfolio line */}
+          <path
+            d={createPath(currentPoints)}
+            fill="none"
+            stroke="hsl(var(--brand-orange))"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeDasharray={pathLength}
+            strokeDashoffset={pathLength - visibleLength}
+          />
+
+          {/* Model portfolio line */}
+          <path
+            d={createPath(modelPoints)}
+            fill="none"
+            stroke="hsl(var(--brand-blue))"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeDasharray={pathLength}
+            strokeDashoffset={pathLength - visibleLength}
+          />
+
+          {/* Interactive hover points */}
+          {animationProgress >= 1 && currentPoints.map((point, i) => (
+            <g key={i}>
+              <circle
+                cx={point.x}
+                cy={point.y}
+                r="12"
+                fill="transparent"
+                className="cursor-pointer"
+                onMouseEnter={() => setHoveredPoint(i)}
+                onMouseLeave={() => setHoveredPoint(null)}
+              />
+              {hoveredPoint === i && (
+                <g>
+                  <line x1={point.x} y1={padding.top} x2={point.x} y2={height - padding.bottom} stroke="hsl(var(--muted-foreground))" strokeWidth="1" strokeDasharray="2,2" opacity="0.5" />
+                  <circle cx={currentPoints[i].x} cy={currentPoints[i].y} r="4" fill="hsl(var(--brand-orange))" />
+                  <circle cx={modelPoints[i].x} cy={modelPoints[i].y} r="4" fill="hsl(var(--brand-blue))" />
+                  <circle cx={benchmarkPoints[i].x} cy={benchmarkPoints[i].y} r="3" fill="hsl(142, 76%, 36%)" />
+                  <rect x={point.x - 45} y={point.y - 48} width="90" height="40" rx="4" fill="hsl(var(--foreground))" opacity="0.9" />
+                  <text x={point.x} y={point.y - 34} textAnchor="middle" className="fill-[hsl(var(--brand-orange))] text-[9px] font-medium">
+                    Current: {chartData.current[i].toFixed(1)}
+                  </text>
+                  <text x={point.x} y={point.y - 22} textAnchor="middle" className="fill-[hsl(var(--brand-blue))] text-[9px] font-medium">
+                    Model: {chartData.model[i].toFixed(1)}
+                  </text>
+                  <text x={point.x} y={point.y - 10} textAnchor="middle" className="fill-[hsl(142,76%,36%)] text-[9px] font-medium">
+                    Bench: {chartData.benchmark[i].toFixed(1)}
+                  </text>
+                </g>
+              )}
+            </g>
+          ))}
+
+          {/* X-axis labels */}
+          {chartData.labels.map((label, i) => (
+            <text
+              key={i}
+              x={padding.left + (i / (chartData.labels.length - 1)) * chartWidth}
+              y={height - 4}
+              textAnchor="middle"
+              className="fill-muted-foreground text-[8px]"
+            >
+              {label}
+            </text>
+          ))}
+        </svg>
+
+        {/* Legend */}
+        <div className="flex justify-center gap-3 mt-1">
+          <div className="flex items-center gap-1">
+            <div className="w-3 h-0.5 bg-[hsl(var(--brand-orange))]" />
+            <span className="text-[8px] text-muted-foreground">Current</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-3 h-0.5 bg-[hsl(var(--brand-blue))]" />
+            <span className="text-[8px] text-muted-foreground">Model</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-3 h-0.5 border-t border-dashed border-[hsl(142,76%,36%)]" />
+            <span className="text-[8px] text-muted-foreground">Benchmark</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Fee Comparison - Current vs Model only */}
       <div className="mb-3 pb-3 border-b border-border/30">
         <p className="text-[10px] text-muted-foreground mb-2">Annual Fee Comparison</p>
         <div className="flex items-center gap-2">
           <div className="flex-1 space-y-1">
             {[
               { label: "Current", value: feeComparison.current, color: "hsl(var(--brand-orange))" },
-              { label: "Model", value: feeComparison.model, color: "hsl(var(--brand-blue))" },
-              { label: "Benchmark", value: feeComparison.benchmark, color: "hsl(142, 76%, 36%)" }
-            ].map((item, idx) => (
+              { label: "Model", value: feeComparison.model, color: "hsl(var(--brand-blue))" }
+            ].map((item) => (
               <div key={item.label} className="flex items-center gap-2">
-                <span className="text-[9px] text-muted-foreground w-16">{item.label}</span>
+                <span className="text-[9px] text-muted-foreground w-12">{item.label}</span>
                 <div className="flex-1 h-3 bg-muted/30 rounded-full overflow-hidden">
                   <div
                     className="h-full rounded-full transition-all duration-1000"
@@ -968,16 +1161,19 @@ function PortfolioAnalysisCard({
             ))}
           </div>
         </div>
+        <p className="text-[9px] text-[hsl(142,76%,36%)] mt-1 text-center">
+          Potential fee saving: {(feeComparison.current - feeComparison.model).toFixed(2)}% p.a.
+        </p>
       </div>
 
       {/* Asset Allocation Comparison */}
-      <div className="mb-3 pb-3 border-b border-border/30">
+      <div className="flex-1">
         <p className="text-[10px] text-muted-foreground mb-2">Asset Allocation</p>
-        <div className="space-y-1.5">
-          {allocationComparison.map((item, idx) => (
+        <div className="space-y-1">
+          {allocationComparison.map((item) => (
             <div key={item.asset} className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
-              <span className="text-[9px] text-muted-foreground w-14">{item.asset}</span>
+              <span className="text-[9px] text-muted-foreground w-12">{item.asset}</span>
               <div className="flex-1 flex items-center gap-1">
                 <div className="flex-1 h-2 bg-muted/30 rounded-full overflow-hidden flex">
                   <div
@@ -1011,64 +1207,6 @@ function PortfolioAnalysisCard({
             <div className="w-2 h-2 rounded-full bg-[hsl(var(--brand-blue))]" />
             <span className="text-[9px] text-muted-foreground">Model</span>
           </div>
-        </div>
-      </div>
-
-      {/* Performance Comparison */}
-      <div className="flex-1">
-        <div className="flex items-center justify-between mb-2">
-          <p className="text-[10px] text-muted-foreground">Performance Comparison</p>
-          <div className="flex gap-1">
-            {periods.map((period) => (
-              <button
-                key={period}
-                onClick={(e) => { e.stopPropagation(); setSelectedPeriod(period); }}
-                className={`px-2 py-0.5 rounded text-[9px] transition-all duration-200 ${
-                  selectedPeriod === period
-                    ? "bg-[hsl(var(--brand-blue))] text-white"
-                    : "bg-muted/30 text-muted-foreground hover:bg-muted/50"
-                }`}
-              >
-                {period.toUpperCase()}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Performance bars */}
-        <div className="space-y-2">
-          {[
-            { label: "Current", value: currentPerf.current, color: "hsl(var(--brand-orange))" },
-            { label: "Model", value: currentPerf.model, color: "hsl(var(--brand-blue))" },
-            { label: "Benchmark", value: currentPerf.benchmark, color: "hsl(142, 76%, 36%)" }
-          ].map((item) => (
-            <div key={item.label} className="flex items-center gap-2">
-              <span className="text-[9px] text-muted-foreground w-16">{item.label}</span>
-              <div className="flex-1 h-4 bg-muted/30 rounded overflow-hidden relative">
-                <div
-                  className="h-full rounded transition-all duration-1000 flex items-center justify-end pr-1"
-                  style={{
-                    width: `${(item.value / maxPerf) * 100 * animationProgress}%`,
-                    backgroundColor: item.color
-                  }}
-                >
-                  <span className="text-[9px] font-medium text-white">
-                    {(item.value * animationProgress).toFixed(1)}%
-                  </span>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Insight */}
-        <div className={`mt-3 p-2 bg-[hsl(var(--brand-blue))]/10 rounded-lg transition-all duration-700 ${animationProgress >= 1 ? 'opacity-100' : 'opacity-0'}`}>
-          <p className="text-[10px] text-[hsl(var(--brand-blue))]">
-            Switching to Model Portfolio could improve {selectedPeriod} returns by{' '}
-            <span className="font-semibold">
-              {(currentPerf.model - currentPerf.current).toFixed(1)}%
-            </span>
-          </p>
         </div>
       </div>
     </div>
