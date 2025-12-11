@@ -102,7 +102,9 @@ const Index = () => {
             <div className="mt-10 grid gap-6 md:grid-cols-3">
               <Card className="hover:shadow-lg transition-shadow">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">CRM + Planning + Market Data<div className="w-8 h-8 rounded-full bg-[hsl(var(--brand-blue))]/10 flex items-center justify-center">
+                  <CardTitle className="flex items-center gap-2">
+
+CRM +  Plan + Market Data<div className="w-8 h-8 rounded-full bg-[hsl(var(--brand-blue))]/10 flex items-center justify-center">
                       <Layers className="w-4 h-4 text-[hsl(var(--brand-blue))]" />
                     </div>
                     CRM + Planning
