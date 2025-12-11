@@ -882,6 +882,7 @@ function PortfolioAnalysisCard({
   const [selectedPeriod, setSelectedPeriod] = useState<'6m' | '1y' | '3y' | '5y'>('1y');
   const [animationProgress, setAnimationProgress] = useState(0);
   const [hoveredPoint, setHoveredPoint] = useState<number | null>(null);
+  const [showButtonAnimation, setShowButtonAnimation] = useState(false);
 
   // Fee comparison data (Current vs Model only)
   const feeComparison = {
@@ -931,6 +932,7 @@ function PortfolioAnalysisCard({
   useEffect(() => {
     if (!isActive) {
       setAnimationProgress(0);
+      setShowButtonAnimation(false);
       return;
     }
 
@@ -945,6 +947,13 @@ function PortfolioAnalysisCard({
       if (progress < 1) requestAnimationFrame(animate);
     };
     requestAnimationFrame(animate);
+
+    // Trigger button animation after chart animation
+    const buttonTimer = setTimeout(() => {
+      setShowButtonAnimation(true);
+    }, 2000);
+
+    return () => clearTimeout(buttonTimer);
   }, [isActive]);
 
   const chartData = performanceChartData[selectedPeriod];
@@ -1208,6 +1217,17 @@ function PortfolioAnalysisCard({
             <span className="text-[9px] text-muted-foreground">Model</span>
           </div>
         </div>
+      </div>
+
+      {/* Action Button */}
+      <div className={`animated-border-button mt-3 ${showButtonAnimation ? 'animate' : ''}`}>
+        <button 
+          className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg border border-dashed border-border/50 text-muted-foreground hover:text-foreground hover:border-[hsl(var(--brand-blue))]/50 hover:bg-muted/30 transition-all duration-200 group bg-card" 
+          onClick={e => e.stopPropagation()}
+        >
+          <TrendingUp className="w-4 h-4 group-hover:text-[hsl(var(--brand-blue))] transition-colors" />
+          <span className="text-xs">Switch to Model Portfolio</span>
+        </button>
       </div>
     </div>
   );
