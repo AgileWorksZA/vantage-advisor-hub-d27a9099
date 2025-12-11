@@ -1004,14 +1004,14 @@ function PortfolioAnalysisCard({
       onClick={onClick}
     >
       {/* Header */}
-      <div className="flex items-center justify-between mb-1">
+      <div className="flex items-center justify-between mb-0.5">
         <h3 className="text-base font-semibold text-foreground">Portfolio Analysis</h3>
         <BarChart3 className="w-5 h-5 text-[hsl(var(--brand-blue))]" />
       </div>
-      <p className="text-xs text-muted-foreground mb-2">vs Model Portfolio & Benchmark</p>
+      <p className="text-xs text-muted-foreground mb-1.5">vs Model Portfolio & Benchmark</p>
 
       {/* Performance Chart - Now at the top */}
-      <div className="mb-3 pb-3 border-b border-border/30">
+      <div className="mb-2 pb-2 border-b border-border/30">
         <div className="flex items-center justify-between mb-2">
           <p className="text-[10px] text-muted-foreground">Performance Comparison</p>
           <div className="flex gap-1">
@@ -1146,7 +1146,7 @@ function PortfolioAnalysisCard({
       </div>
 
       {/* Fee Comparison - Current vs Model only */}
-      <div className="mb-3 pb-3 border-b border-border/30">
+      <div className="mb-2 pb-2 border-b border-border/30">
         <p className="text-[10px] text-muted-foreground mb-2">Annual Fee Comparison</p>
         <div className="flex items-center gap-2">
           <div className="flex-1 space-y-1">
@@ -1220,7 +1220,7 @@ function PortfolioAnalysisCard({
       </div>
 
       {/* Action Button */}
-      <div className={`animated-border-button mt-3 ${showButtonAnimation ? 'animate' : ''}`}>
+      <div className={`animated-border-button mt-2 ${showButtonAnimation ? 'animate' : ''}`}>
         <button 
           className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg border border-dashed border-border/50 text-muted-foreground hover:text-foreground hover:border-[hsl(var(--brand-blue))]/50 hover:bg-muted/30 transition-all duration-200 group bg-card" 
           onClick={e => e.stopPropagation()}
