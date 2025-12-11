@@ -7,33 +7,24 @@ import Testimonials from "@/components/Testimonials";
 const Index = () => {
   const heroRef = useRef<HTMLDivElement>(null);
   const rectRef = useRef<DOMRect | null>(null);
-
   const openCalendly = () => {
     const width = Math.floor(window.screen.width * 0.7);
     const height = Math.floor(window.screen.height * 0.7);
     const left = Math.floor((window.screen.width - width) / 2);
     const top = Math.floor((window.screen.height - height) / 2);
-    
-    window.open(
-      'https://calendly.com/hello-vantage/30min',
-      'calendly',
-      `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
-    );
+    window.open('https://calendly.com/hello-vantage/30min', 'calendly', `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`);
   };
-  
   const updateRect = useCallback(() => {
     if (heroRef.current) {
       rectRef.current = heroRef.current.getBoundingClientRect();
     }
   }, []);
-
   useEffect(() => {
     updateRect();
     const handleResize = () => updateRect();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, [updateRect]);
-
   const handleMouseMove: React.MouseEventHandler<HTMLDivElement> = e => {
     const el = heroRef.current;
     const rect = rectRef.current;
@@ -111,16 +102,15 @@ const Index = () => {
             <div className="mt-10 grid gap-6 md:grid-cols-3">
               <Card className="hover:shadow-lg transition-shadow">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-[hsl(var(--brand-blue))]/10 flex items-center justify-center">
+                  <CardTitle className="flex items-center gap-2">CRM + Planning + Market Data<div className="w-8 h-8 rounded-full bg-[hsl(var(--brand-blue))]/10 flex items-center justify-center">
                       <Layers className="w-4 h-4 text-[hsl(var(--brand-blue))]" />
                     </div>
                     CRM + Planning
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2 text-muted-foreground">
-                  <p>One client record across onboarding, suitability and reviews.</p>
-                  <p>Powerful workflows, tasks and document management.</p>
+                  <p>One client record across onboarding, suitability & reviews.</p>
+                  <p>Powerful workflows, tasks & document management enhanced with market data</p>
                 </CardContent>
               </Card>
 
@@ -134,7 +124,7 @@ const Index = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2 text-muted-foreground">
-                  <p>Real-time valuations, performance and fees across accounts.</p>
+                  <p>Real-time valuations, performance & fees across accounts.</p>
                   <p>Data-led insights to drive better outcomes.</p>
                 </CardContent>
               </Card>
@@ -150,7 +140,7 @@ const Index = () => {
                 </CardHeader>
                 <CardContent className="space-y-2 text-muted-foreground">
                   <p>Deliver a branded digital experience to your clients.</p>
-                  <p>Scale with configurable permissions and roles.</p>
+                  <p>Scale with configurable permissions & roles.</p>
                 </CardContent>
               </Card>
             </div>
