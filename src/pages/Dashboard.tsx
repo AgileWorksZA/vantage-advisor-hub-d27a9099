@@ -69,12 +69,12 @@ const clientsByValueData = [
 ];
 
 const sidebarItems = [
-  { icon: LayoutDashboard, label: "Dash", active: true },
-  { icon: Users, label: "Clients", active: false },
-  { icon: Mail, label: "Email", active: false },
-  { icon: ListTodo, label: "Tasks", active: false },
-  { icon: LineChart, label: "Insights", active: false },
-  { icon: Building2, label: "Practice", active: false },
+  { icon: LayoutDashboard, label: "Dash", path: "/dashboard" },
+  { icon: Users, label: "Clients", path: "/clients" },
+  { icon: Mail, label: "Email", path: "/email" },
+  { icon: ListTodo, label: "Tasks", path: "/tasks" },
+  { icon: LineChart, label: "Insights", path: "/insights" },
+  { icon: Building2, label: "Practice", path: "/practice" },
 ];
 
 const Dashboard = () => {
@@ -134,8 +134,9 @@ const Dashboard = () => {
         {sidebarItems.map((item) => (
           <button
             key={item.label}
+            onClick={() => navigate(item.path)}
             className={`w-full flex flex-col items-center py-2 text-xs gap-1 ${
-              item.active 
+              item.path === "/dashboard" 
                 ? "bg-white/10 text-white" 
                 : "text-white/60 hover:bg-white/5 hover:text-white/80"
             }`}
