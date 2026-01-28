@@ -12,6 +12,7 @@ import Disclaimer from "./pages/Disclaimer";
 import Auth from "./pages/Auth";
 import Signup from "./pages/Signup";
 import SignupConfirmation from "./pages/SignupConfirmation";
+import Dashboard from "./pages/Dashboard";
 
 const queryClient = new QueryClient();
 
@@ -24,6 +25,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/signup-confirmation" element={<SignupConfirmation />} />
           <Route path="/terms-of-use" element={<TermsOfUse />} />
