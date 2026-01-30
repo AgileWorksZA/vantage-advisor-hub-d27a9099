@@ -406,7 +406,14 @@ const Clients = () => {
               </TableHeader>
               <TableBody>
                 {clientsData.map((client, index) => (
-                  <TableRow key={index} className="hover:bg-muted/50">
+                  <TableRow 
+                    key={index} 
+                    className="hover:bg-muted/50 cursor-pointer"
+                    onClick={() => {
+                      const clientId = client.client.toLowerCase().replace(/[^a-z]/g, "-").replace(/-+/g, "-").slice(0, 20);
+                      navigate(`/clients/${clientId}`);
+                    }}
+                  >
                     <TableCell className="text-sm">{client.profileState}</TableCell>
                     <TableCell className="text-sm">{client.profileType}</TableCell>
                     <TableCell className="text-sm">
