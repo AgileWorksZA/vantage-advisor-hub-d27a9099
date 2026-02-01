@@ -13,6 +13,7 @@ import Auth from "./pages/Auth";
 import Signup from "./pages/Signup";
 import SignupConfirmation from "./pages/SignupConfirmation";
 import Dashboard from "./pages/Dashboard";
+import CommandCenter from "./pages/CommandCenter";
 import Clients from "./pages/Clients";
 import ClientDetail from "./pages/ClientDetail";
 import Email from "./pages/Email";
@@ -30,6 +31,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/command-center" element={<CommandCenter />} />
           <Route path="/clients" element={<Clients />} />
           <Route path="/clients/:clientId" element={<ClientDetail />} />
           <Route path="/email" element={<Email />} />
