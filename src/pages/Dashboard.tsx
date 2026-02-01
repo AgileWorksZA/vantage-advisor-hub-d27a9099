@@ -214,7 +214,13 @@ const Dashboard = () => {
   return <div className="min-h-screen bg-muted/30 flex">
       {/* Sidebar */}
       <aside className="w-16 bg-[hsl(180,25%,25%)] flex flex-col items-center py-4 gap-1">
-        <Button variant="ghost" size="icon" className="w-10 h-10 text-white/80 hover:bg-white/10 mb-4">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="w-10 h-10 text-white/80 hover:bg-white/10 mb-4"
+          onClick={() => navigate("/command-center")}
+          title="Practice Overview"
+        >
           <Plus className="w-5 h-5" />
         </Button>
         {sidebarItems.map(item => <button key={item.label} onClick={() => navigate(item.path)} className={`w-full flex flex-col items-center py-2 text-xs gap-1 ${item.path === "/dashboard" ? "bg-white/10 text-white" : "text-white/60 hover:bg-white/5 hover:text-white/80"}`}>
