@@ -18,6 +18,7 @@ import Clients from "./pages/Clients";
 import ClientDetail from "./pages/ClientDetail";
 import Email from "./pages/Email";
 import Insights from "./pages/Insights";
+import Tasks from "./pages/Tasks";
 
 const queryClient = new QueryClient();
 
@@ -36,6 +37,7 @@ const App = () => (
           <Route path="/clients/:clientId" element={<ClientDetail />} />
           <Route path="/email" element={<Email />} />
           <Route path="/insights" element={<Insights />} />
+          <Route path="/tasks" element={<Tasks />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/signup-confirmation" element={<SignupConfirmation />} />
           <Route path="/terms-of-use" element={<TermsOfUse />} />
