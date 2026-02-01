@@ -18,7 +18,8 @@ import {
   ChevronLeft,
   ChevronFirst,
   Users2,
-  Building
+  Building,
+  Trash2
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -37,144 +38,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-const clientsData = [
-  {
-    profileState: "Active",
-    profileType: "Client",
-    clientType: "family",
-    client: "Wegner, E (Emile)",
-    title: "Mr",
-    identification: "8108255051081",
-    age: 44,
-    phone: "+27762149144",
-    email: "emilewegner@efgroup.co.za",
-    advisor: "Emile Wegner",
-    wealthManager: "",
-    language: "English",
-    dateCreated: "15-Apr-2025 08:18:28",
-  },
-  {
-    profileState: "Active",
-    profileType: "Prospect",
-    clientType: "individual",
-    client: "Johno, M (Mako)",
-    title: "Mrs",
-    identification: "8002152190083",
-    age: 45,
-    phone: "+27722031095",
-    email: "dale.harding@efgroup.co.za",
-    advisor: "Dale Harding",
-    wealthManager: "",
-    language: "English",
-    dateCreated: "09-Jul-2025 10:04:34",
-  },
-  {
-    profileState: "Active",
-    profileType: "Client",
-    clientType: "individual",
-    client: "Jones, M (Michelle )",
-    title: "Mrs",
-    identification: "6901190029085",
-    age: 57,
-    phone: "+27716733160",
-    email: "mhough1969@gmail.com",
-    advisor: "Christo van Zyl",
-    wealthManager: "",
-    language: "Afrikaans",
-    dateCreated: "27-Feb-2025 06:17:59",
-  },
-  {
-    profileState: "Active",
-    profileType: "Prospect",
-    clientType: "individual",
-    client: "Crowcamp, DI (Danny Junior)",
-    title: "",
-    identification: "5306045081086",
-    age: 72,
-    phone: "+27617532303",
-    email: "trisha@efgroup.co.za",
-    advisor: "Christo van Zyl",
-    wealthManager: "",
-    language: "English",
-    dateCreated: "18-Nov-2025 08:18:40",
-  },
-  {
-    profileState: "Active",
-    profileType: "Client",
-    clientType: "individual",
-    client: "New TAU, NC (New CRM)",
-    title: "Adv",
-    identification: "6802141451081",
-    age: 57,
-    phone: "+27712223333",
-    email: "test@efgroup.co.za",
-    advisor: "Dale Harding",
-    wealthManager: "",
-    language: "English",
-    dateCreated: "08-Jul-2025 18:46:06",
-  },
-  {
-    profileState: "Active",
-    profileType: "Client",
-    clientType: "family",
-    client: "Harding, DS (Dale)",
-    title: "Mr",
-    identification: "9206245170083",
-    age: 33,
-    phone: "+27722031095",
-    email: "dale.harding@efgroup.co.za",
-    advisor: "Dale Harding",
-    wealthManager: "",
-    language: "English",
-    dateCreated: "10-Jul-2025 13:45:48",
-  },
-  {
-    profileState: "Active",
-    profileType: "Client",
-    clientType: "business",
-    client: "GAB Investments (PTY) Ltd",
-    title: "",
-    identification: "2025/523192/07",
-    age: null,
-    phone: "+27723458855",
-    email: "reg@quicksilverlogistics.co.za",
-    advisor: "Ihan Nel",
-    wealthManager: "",
-    language: "English",
-    dateCreated: "18-Sep-2025 12:55:31",
-  },
-  {
-    profileState: "Active",
-    profileType: "Client",
-    clientType: "individual",
-    client: "Doe, J (John)",
-    title: "Dr",
-    identification: "0404018797088",
-    age: 21,
-    phone: "+27617532303",
-    email: "test@efgroup.co.za",
-    advisor: "Christo van Zyl",
-    wealthManager: "",
-    language: "English",
-    dateCreated: "21-Oct-2025 10:25:52",
-  },
-  {
-    profileState: "Active",
-    profileType: "Prospect",
-    clientType: "individual",
-    client: "Dannheimer (Steenkamp), W (W.H.H )",
-    title: "Dr",
-    identification: "5212095004087",
-    age: 73,
-    phone: "",
-    email: "dannheimersteenkamp@gmail.com",
-    advisor: "Christo van Zyl",
-    wealthManager: "",
-    language: "English",
-    dateCreated: "27-Feb-2025 06:20:22",
-  },
-];
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useClients, generateClientId } from "@/hooks/useClients";
+import AddClientDialog from "@/components/clients/AddClientDialog";
 
 const filterTabs = [
   { label: "Lead", color: "hsl(180, 70%, 45%)" },
@@ -198,16 +73,22 @@ const Clients = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(true);
   const [includeInactive, setIncludeInactive] = useState(false);
   const [activeFilter, setActiveFilter] = useState("Client");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [clientToDelete, setClientToDelete] = useState<{ id: string; name: string } | null>(null);
+
+  const { clients, loading: clientsLoading, refetch, deleteClient } = useClients();
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
-        setLoading(false);
+        setAuthLoading(false);
         
         if (!session?.user) {
           navigate("/auth");
@@ -218,7 +99,7 @@ const Clients = () => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      setLoading(false);
+      setAuthLoading(false);
       
       if (!session?.user) {
         navigate("/auth");
@@ -233,7 +114,21 @@ const Clients = () => {
     navigate("/auth");
   };
 
-  if (loading) {
+  const handleDeleteClick = (e: React.MouseEvent, clientId: string, clientName: string) => {
+    e.stopPropagation();
+    setClientToDelete({ id: clientId, name: clientName });
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (clientToDelete) {
+      await deleteClient(clientToDelete.id);
+      setDeleteDialogOpen(false);
+      setClientToDelete(null);
+    }
+  };
+
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -253,6 +148,30 @@ const Clients = () => {
         return <Users className="w-4 h-4 text-muted-foreground" />;
     }
   };
+
+  // Filter clients based on active filter and search query
+  const filteredClients = clients.filter((client) => {
+    // Filter by profile type
+    if (activeFilter === "Lead" && client.profileType !== "Lead") return false;
+    if (activeFilter === "Prospect" && client.profileType !== "Prospect") return false;
+    if (activeFilter === "Client" && client.profileType !== "Client") return false;
+    
+    // Filter by inactive state
+    if (!includeInactive && client.profileState === "Inactive") return false;
+    
+    // Filter by search query
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      return (
+        client.client.toLowerCase().includes(query) ||
+        client.email.toLowerCase().includes(query) ||
+        client.phone.includes(query) ||
+        client.identification.includes(query)
+      );
+    }
+    
+    return true;
+  });
 
   return (
     <div className="min-h-screen bg-muted/30 flex">
@@ -286,6 +205,8 @@ const Clients = () => {
             <Input 
               placeholder="Search..." 
               className="pl-10 bg-muted/50 border-0"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
           <div className="flex items-center gap-4">
@@ -328,14 +249,24 @@ const Clients = () => {
                 </button>
               ))}
             </div>
-            <Button className="bg-[hsl(180,70%,45%)] hover:bg-[hsl(180,70%,40%)] text-white">
+            <Button 
+              className="bg-[hsl(180,70%,45%)] hover:bg-[hsl(180,70%,40%)] text-white"
+              onClick={() => setAddDialogOpen(true)}
+            >
               + Add Profile
             </Button>
           </div>
 
           {/* Reset Filters & Include Inactive */}
           <div className="flex items-center gap-4 mb-6">
-            <button className="text-[hsl(180,70%,45%)] text-sm hover:underline">
+            <button 
+              className="text-[hsl(180,70%,45%)] text-sm hover:underline"
+              onClick={() => {
+                setActiveFilter("Client");
+                setSearchQuery("");
+                setIncludeInactive(false);
+              }}
+            >
               Reset Filters
             </button>
             <div className="flex items-center gap-2">
@@ -350,7 +281,9 @@ const Clients = () => {
           {/* Recently Viewed Section */}
           <div className="mb-4">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-[hsl(180,70%,45%)] font-medium">RECENTLY VIEWED</h2>
+              <h2 className="text-[hsl(180,70%,45%)] font-medium">
+                {clients.length > 0 ? "YOUR CLIENTS" : "RECENTLY VIEWED"}
+              </h2>
               <div className="flex items-center gap-2">
                 <Button 
                   variant="outline" 
@@ -373,13 +306,20 @@ const Clients = () => {
             
             <div className="flex items-center gap-2 mb-4">
               <Input 
-                placeholder="" 
+                placeholder="Search clients..." 
                 className="max-w-md bg-background"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
               <Button className="bg-[hsl(180,70%,45%)] hover:bg-[hsl(180,70%,40%)] text-white">
                 Search
               </Button>
-              <Button variant="outline" size="icon" className="border-[hsl(180,70%,45%)] text-[hsl(180,70%,45%)]">
+              <Button 
+                variant="outline" 
+                size="icon" 
+                className="border-[hsl(180,70%,45%)] text-[hsl(180,70%,45%)]"
+                onClick={refetch}
+              >
                 <RefreshCw className="w-4 h-4" />
               </Button>
             </div>
@@ -387,63 +327,89 @@ const Clients = () => {
 
           {/* Clients Table */}
           <div className="bg-background rounded-lg border border-border">
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead className="text-xs font-normal text-muted-foreground">Profile state</TableHead>
-                  <TableHead className="text-xs font-normal text-muted-foreground">Profile Type</TableHead>
-                  <TableHead className="text-xs font-normal text-muted-foreground">Client</TableHead>
-                  <TableHead className="text-xs font-normal text-muted-foreground">Title</TableHead>
-                  <TableHead className="text-xs font-normal text-muted-foreground">Identification</TableHead>
-                  <TableHead className="text-xs font-normal text-muted-foreground">Age</TableHead>
-                  <TableHead className="text-xs font-normal text-muted-foreground">Contact Details</TableHead>
-                  <TableHead className="text-xs font-normal text-muted-foreground">Advisor</TableHead>
-                  <TableHead className="text-xs font-normal text-muted-foreground">Wealth Manager</TableHead>
-                  <TableHead className="text-xs font-normal text-muted-foreground">Language</TableHead>
-                  <TableHead className="text-xs font-normal text-muted-foreground">Date Created</TableHead>
-                  <TableHead className="w-10"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {clientsData.map((client, index) => (
-                  <TableRow 
-                    key={index} 
-                    className="hover:bg-muted/50 cursor-pointer"
-                    onClick={() => {
-                      const clientId = client.client.toLowerCase().replace(/[^a-z]/g, "-").replace(/-+/g, "-").slice(0, 20);
-                      navigate(`/clients/${clientId}`);
-                    }}
-                  >
-                    <TableCell className="text-sm">{client.profileState}</TableCell>
-                    <TableCell className="text-sm">{client.profileType}</TableCell>
-                    <TableCell className="text-sm">
-                      <div className="flex items-center gap-2">
-                        {getClientIcon(client.clientType)}
-                        <span>{client.client}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-sm">{client.title}</TableCell>
-                    <TableCell className="text-sm">{client.identification}</TableCell>
-                    <TableCell className="text-sm">{client.age || ""}</TableCell>
-                    <TableCell className="text-sm">
-                      <div className="flex flex-col">
-                        <span>{client.phone}</span>
-                        <span className="text-muted-foreground text-xs">{client.email}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-sm">{client.advisor}</TableCell>
-                    <TableCell className="text-sm">{client.wealthManager}</TableCell>
-                    <TableCell className="text-sm">{client.language}</TableCell>
-                    <TableCell className="text-sm">{client.dateCreated}</TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="icon" className="h-6 w-6">
-                        <Plus className="w-4 h-4" />
-                      </Button>
-                    </TableCell>
+            {clientsLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            ) : filteredClients.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                <Users className="w-12 h-12 mb-4 opacity-50" />
+                <p className="text-lg font-medium">No clients found</p>
+                <p className="text-sm">
+                  {clients.length === 0 
+                    ? "Click '+ Add Profile' to add your first client" 
+                    : "Try adjusting your filters or search query"}
+                </p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="text-xs font-normal text-muted-foreground">Profile state</TableHead>
+                    <TableHead className="text-xs font-normal text-muted-foreground">Profile Type</TableHead>
+                    <TableHead className="text-xs font-normal text-muted-foreground">Client</TableHead>
+                    <TableHead className="text-xs font-normal text-muted-foreground">Title</TableHead>
+                    <TableHead className="text-xs font-normal text-muted-foreground">Identification</TableHead>
+                    <TableHead className="text-xs font-normal text-muted-foreground">Age</TableHead>
+                    <TableHead className="text-xs font-normal text-muted-foreground">Contact Details</TableHead>
+                    <TableHead className="text-xs font-normal text-muted-foreground">Advisor</TableHead>
+                    <TableHead className="text-xs font-normal text-muted-foreground">Wealth Manager</TableHead>
+                    <TableHead className="text-xs font-normal text-muted-foreground">Language</TableHead>
+                    <TableHead className="text-xs font-normal text-muted-foreground">Date Created</TableHead>
+                    <TableHead className="w-20"></TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {filteredClients.map((client) => (
+                    <TableRow 
+                      key={client.id} 
+                      className="hover:bg-muted/50 cursor-pointer"
+                      onClick={() => {
+                        const clientId = generateClientId(client.client);
+                        navigate(`/clients/${clientId}`);
+                      }}
+                    >
+                      <TableCell className="text-sm">{client.profileState}</TableCell>
+                      <TableCell className="text-sm">{client.profileType}</TableCell>
+                      <TableCell className="text-sm">
+                        <div className="flex items-center gap-2">
+                          {getClientIcon(client.clientType)}
+                          <span>{client.client}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm">{client.title}</TableCell>
+                      <TableCell className="text-sm">{client.identification}</TableCell>
+                      <TableCell className="text-sm">{client.age || ""}</TableCell>
+                      <TableCell className="text-sm">
+                        <div className="flex flex-col">
+                          <span>{client.phone}</span>
+                          <span className="text-muted-foreground text-xs">{client.email}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm">{client.advisor}</TableCell>
+                      <TableCell className="text-sm">{client.wealthManager}</TableCell>
+                      <TableCell className="text-sm">{client.language}</TableCell>
+                      <TableCell className="text-sm">{client.dateCreated}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Button variant="ghost" size="icon" className="h-6 w-6">
+                            <Plus className="w-4 h-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6 text-destructive hover:text-destructive"
+                            onClick={(e) => handleDeleteClick(e, client.id, client.client)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </div>
 
           {/* Pagination */}
@@ -454,10 +420,40 @@ const Clients = () => {
             <Button variant="outline" size="icon" className="h-8 w-8" disabled>
               <ChevronLeft className="w-4 h-4" />
             </Button>
-            <span className="text-sm text-muted-foreground ml-2">1 to 9 of 9</span>
+            <span className="text-sm text-muted-foreground ml-2">
+              1 to {filteredClients.length} of {filteredClients.length}
+            </span>
           </div>
         </main>
       </div>
+
+      {/* Add Client Dialog */}
+      <AddClientDialog 
+        open={addDialogOpen} 
+        onOpenChange={setAddDialogOpen} 
+        onClientAdded={refetch}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Client</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{clientToDelete?.name}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

@@ -14,6 +14,183 @@ export type Database = {
   }
   public: {
     Tables: {
+      clients: {
+        Row: {
+          advisor: string | null
+          cell_number: string | null
+          client_type: string
+          country_of_issue: string | null
+          created_at: string
+          date_of_birth: string | null
+          disability_type: string | null
+          email: string | null
+          employer: string | null
+          facebook: string | null
+          fax_number: string | null
+          first_name: string
+          gender: string | null
+          home_number: string | null
+          id: string
+          id_number: string | null
+          industry: string | null
+          initials: string | null
+          is_hybrid_client: boolean | null
+          is_professional: boolean | null
+          is_smoker: boolean | null
+          language: string | null
+          linkedin: string | null
+          nationality: string | null
+          occupation: string | null
+          otp_delivery_method: string | null
+          passport_number: string | null
+          person_type: string | null
+          postal_address: Json | null
+          preferred_contact: string | null
+          preferred_email: string | null
+          preferred_name: string | null
+          preferred_phone: string | null
+          profession: string | null
+          profile_state: string
+          profile_type: string
+          race: string | null
+          rating: number | null
+          relationship: string | null
+          religion: string | null
+          residential_address: Json | null
+          skype: string | null
+          sports_interests: string[] | null
+          surname: string
+          tax_number: string | null
+          tax_resident_country: string | null
+          title: string | null
+          twitter: string | null
+          updated_at: string
+          user_id: string
+          wealth_manager: string | null
+          website: string | null
+          work_email: string | null
+          work_extension: string | null
+          work_number: string | null
+          youtube: string | null
+        }
+        Insert: {
+          advisor?: string | null
+          cell_number?: string | null
+          client_type?: string
+          country_of_issue?: string | null
+          created_at?: string
+          date_of_birth?: string | null
+          disability_type?: string | null
+          email?: string | null
+          employer?: string | null
+          facebook?: string | null
+          fax_number?: string | null
+          first_name: string
+          gender?: string | null
+          home_number?: string | null
+          id?: string
+          id_number?: string | null
+          industry?: string | null
+          initials?: string | null
+          is_hybrid_client?: boolean | null
+          is_professional?: boolean | null
+          is_smoker?: boolean | null
+          language?: string | null
+          linkedin?: string | null
+          nationality?: string | null
+          occupation?: string | null
+          otp_delivery_method?: string | null
+          passport_number?: string | null
+          person_type?: string | null
+          postal_address?: Json | null
+          preferred_contact?: string | null
+          preferred_email?: string | null
+          preferred_name?: string | null
+          preferred_phone?: string | null
+          profession?: string | null
+          profile_state?: string
+          profile_type?: string
+          race?: string | null
+          rating?: number | null
+          relationship?: string | null
+          religion?: string | null
+          residential_address?: Json | null
+          skype?: string | null
+          sports_interests?: string[] | null
+          surname: string
+          tax_number?: string | null
+          tax_resident_country?: string | null
+          title?: string | null
+          twitter?: string | null
+          updated_at?: string
+          user_id: string
+          wealth_manager?: string | null
+          website?: string | null
+          work_email?: string | null
+          work_extension?: string | null
+          work_number?: string | null
+          youtube?: string | null
+        }
+        Update: {
+          advisor?: string | null
+          cell_number?: string | null
+          client_type?: string
+          country_of_issue?: string | null
+          created_at?: string
+          date_of_birth?: string | null
+          disability_type?: string | null
+          email?: string | null
+          employer?: string | null
+          facebook?: string | null
+          fax_number?: string | null
+          first_name?: string
+          gender?: string | null
+          home_number?: string | null
+          id?: string
+          id_number?: string | null
+          industry?: string | null
+          initials?: string | null
+          is_hybrid_client?: boolean | null
+          is_professional?: boolean | null
+          is_smoker?: boolean | null
+          language?: string | null
+          linkedin?: string | null
+          nationality?: string | null
+          occupation?: string | null
+          otp_delivery_method?: string | null
+          passport_number?: string | null
+          person_type?: string | null
+          postal_address?: Json | null
+          preferred_contact?: string | null
+          preferred_email?: string | null
+          preferred_name?: string | null
+          preferred_phone?: string | null
+          profession?: string | null
+          profile_state?: string
+          profile_type?: string
+          race?: string | null
+          rating?: number | null
+          relationship?: string | null
+          religion?: string | null
+          residential_address?: Json | null
+          skype?: string | null
+          sports_interests?: string[] | null
+          surname?: string
+          tax_number?: string | null
+          tax_resident_country?: string | null
+          title?: string | null
+          twitter?: string | null
+          updated_at?: string
+          user_id?: string
+          wealth_manager?: string | null
+          website?: string | null
+          work_email?: string | null
+          work_extension?: string | null
+          work_number?: string | null
+          youtube?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           business_name: string | null
