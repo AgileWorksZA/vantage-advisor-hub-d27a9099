@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -9,58 +10,8 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Pencil, Download, Search, List, FileText } from "lucide-react";
-
-const clientDocuments = [
-  { name: "Tandocument Notes", status: "complete", workflow: null },
-  { name: "Power of Attorney", status: "complete", workflow: null },
-  { name: "Will (Version 2)", status: "complete", workflow: null },
-  { name: "Qualifications", status: "complete", workflow: null },
-  { name: "Policy Documents Notes", status: "complete", workflow: null },
-];
-
-const ficaDocuments = [
-  { name: "Proof of address", status: "pending", workflow: "FICA - Address change" },
-  { name: "Identity document (Version 3) - RSAID", status: "complete", workflow: null },
-  { name: "Proof of bank details", status: "complete", workflow: null },
-  { name: "Proof of address", status: "complete", workflow: "FICA - Address change" },
-  { name: "Proof of tax registration", status: "complete", workflow: null },
-  { name: "Proof of address (Version 2)", status: "complete", workflow: null },
-];
-
-const productDocuments = [
-  {
-    productName: "Allan Gray - Retirement Annuity (Inactive)",
-    documents: [
-      { name: "Application form (Version 4)", status: "complete" },
-      { name: "Cancellation instruction", status: "cancelled" },
-    ],
-  },
-  {
-    productName: "Allan Gray - Retirement Annuity (Inactive)",
-    documents: [
-      { name: "Cancellation instruction", status: "cancelled" },
-    ],
-  },
-  {
-    productName: "PSG Securities Ltd Local - Share portfolio (Offshore) (Inactive)",
-    documents: [
-      { name: "Cancellation instruction", status: "cancelled" },
-    ],
-  },
-  {
-    productName: "PSG Securities Ltd Local - Derivatives (Inactive)",
-    documents: [
-      { name: "Cancellation instruction", status: "cancelled" },
-    ],
-  },
-  {
-    productName: "Glacier - Collective Investments (Local) - ABC1234567 (Inactive)",
-    documents: [
-      { name: "Application form", status: "complete" },
-    ],
-  },
-];
+import { Pencil, Download, Search, List, FileText, Loader2 } from "lucide-react";
+import { useClientDocuments } from "@/hooks/useClientDocuments";
 
 const DocumentRow = ({ name, status, workflow }: { name: string; status: string; workflow?: string | null }) => (
   <div className={`flex items-center justify-between py-2 px-4 border-b border-border last:border-0 ${
@@ -94,7 +45,20 @@ const DocumentRow = ({ name, status, workflow }: { name: string; status: string;
 );
 
 const ClientDocumentsTab = () => {
+  const { clientId } = useParams<{ clientId: string }>();
   const [showInactiveProducts, setShowInactiveProducts] = useState(true);
+  
+  const { documents, loading, getDocumentsByCategory } = useClientDocuments(clientId || "");
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  const { clientDocs, ficaDocs, productGroups } = getDocumentsByCategory();
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -107,9 +71,15 @@ const ClientDocumentsTab = () => {
               <span className="font-medium">Client documentation</span>
             </AccordionTrigger>
             <AccordionContent className="p-0">
-              {clientDocuments.map((doc, index) => (
-                <DocumentRow key={index} name={doc.name} status={doc.status} workflow={doc.workflow} />
-              ))}
+              {clientDocs.length === 0 ? (
+                <div className="p-4 text-center text-muted-foreground text-sm">
+                  No client documents found.
+                </div>
+              ) : (
+                clientDocs.map((doc) => (
+                  <DocumentRow key={doc.id} name={doc.name} status={doc.status} workflow={doc.workflow} />
+                ))
+              )}
             </AccordionContent>
           </AccordionItem>
 
@@ -119,9 +89,15 @@ const ClientDocumentsTab = () => {
               <span className="font-medium">FICA documentation</span>
             </AccordionTrigger>
             <AccordionContent className="p-0">
-              {ficaDocuments.map((doc, index) => (
-                <DocumentRow key={index} name={doc.name} status={doc.status} workflow={doc.workflow} />
-              ))}
+              {ficaDocs.length === 0 ? (
+                <div className="p-4 text-center text-muted-foreground text-sm">
+                  No FICA documents found.
+                </div>
+              ) : (
+                ficaDocs.map((doc) => (
+                  <DocumentRow key={doc.id} name={doc.name} status={doc.status} workflow={doc.workflow} />
+                ))
+              )}
             </AccordionContent>
           </AccordionItem>
         </Accordion>
@@ -143,20 +119,26 @@ const ClientDocumentsTab = () => {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <Accordion type="multiple" className="space-y-0">
-            {productDocuments.map((product, productIndex) => (
-              <AccordionItem key={productIndex} value={`product-${productIndex}`} className="border-b last:border-0">
-                <AccordionTrigger className="px-4 py-3 hover:no-underline text-left">
-                  <span className="text-sm">{product.productName}</span>
-                </AccordionTrigger>
-                <AccordionContent className="p-0 pl-4">
-                  {product.documents.map((doc, docIndex) => (
-                    <DocumentRow key={docIndex} name={doc.name} status={doc.status} />
-                  ))}
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
+          {Object.keys(productGroups).length === 0 ? (
+            <div className="p-4 text-center text-muted-foreground text-sm">
+              No product documents found.
+            </div>
+          ) : (
+            <Accordion type="multiple" className="space-y-0">
+              {Object.entries(productGroups).map(([productName, docs], productIndex) => (
+                <AccordionItem key={productIndex} value={`product-${productIndex}`} className="border-b last:border-0">
+                  <AccordionTrigger className="px-4 py-3 hover:no-underline text-left">
+                    <span className="text-sm">{productName}</span>
+                  </AccordionTrigger>
+                  <AccordionContent className="p-0 pl-4">
+                    {docs.map((doc) => (
+                      <DocumentRow key={doc.id} name={doc.name} status={doc.status} />
+                    ))}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          )}
         </CardContent>
       </Card>
     </div>

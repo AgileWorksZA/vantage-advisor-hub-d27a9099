@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,28 +10,26 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ChevronLeft, ChevronRight, ChevronFirst, ChevronLast } from "lucide-react";
-
-const workflowsData = [
-  { service: "General", name: "FICA - Individual", adviser: "Jordaan, Danile", endDate: "15 Jan 2026", status: "Complete" },
-  { service: "General", name: "FICA - Address change", adviser: "Jordaan, Danile", endDate: "20 Feb 2026", status: "Complete" },
-  { service: "Fiduciary Services", name: "Service Level Agreement documentation", adviser: "Van Zyl, Christo", endDate: "01 Mar 2026", status: "Active" },
-  { service: "General", name: "Documents", adviser: "Jordaan, Danile", endDate: "10 Mar 2026", status: "Complete" },
-  { service: "General", name: "Advice Cycle", adviser: "Jordaan, Danile", endDate: "15 Mar 2026", status: "Active" },
-  { service: "General", name: "Archived Documents", adviser: "Jordaan, Danile", endDate: "20 Mar 2026", status: "Complete" },
-];
-
-const adviceWorkflowsData = [
-  { id: 1, name: "Annual Review 2026", currentStep: "Implementation", status: "Open", adviser: "Jordaan, Danile", date: "28 Jan 2026" },
-  { id: 2, name: "Risk Assessment", currentStep: "Design a plan", status: "Open", adviser: "Jordaan, Danile", date: "25 Jan 2026" },
-  { id: 3, name: "Investment Strategy", currentStep: "Complete", status: "Open", adviser: "Jordaan, Danile", date: "20 Jan 2026" },
-  { id: 4, name: "Estate Planning", currentStep: "Proposal/Report", status: "Open", adviser: "Jordaan, Danile", date: "15 Jan 2026" },
-  { id: 5, name: "Insurance Review", currentStep: "Basic information", status: "Open", adviser: "Jordaan, Danile", date: "10 Jan 2026" },
-];
+import { ChevronLeft, ChevronRight, ChevronFirst, ChevronLast, Loader2 } from "lucide-react";
+import { useClientWorkflows } from "@/hooks/useClientWorkflows";
 
 const ClientWorkflowsTab = () => {
+  const { clientId } = useParams<{ clientId: string }>();
   const [workflowPage, setWorkflowPage] = useState(1);
   const [advicePage, setAdvicePage] = useState(1);
+  
+  const { workflows, adviceWorkflows, workflowCount, adviceCount, loading } = useClientWorkflows(clientId || "");
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  const workflowPages = Math.ceil(workflowCount / 20) || 1;
+  const advicePages = Math.ceil(adviceCount / 20) || 1;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -50,23 +49,31 @@ const ClientWorkflowsTab = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {workflowsData.map((workflow, index) => (
-                <TableRow 
-                  key={index} 
-                  className={workflow.status === "Complete" ? "bg-green-50 dark:bg-green-950/20" : ""}
-                >
-                  <TableCell className="text-sm">{workflow.service}</TableCell>
-                  <TableCell className="text-sm">{workflow.name}</TableCell>
-                  <TableCell className="text-sm">{workflow.adviser}</TableCell>
-                  <TableCell className="text-sm">{workflow.endDate}</TableCell>
+              {workflows.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                    No workflows found.
+                  </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                workflows.map((workflow) => (
+                  <TableRow 
+                    key={workflow.id} 
+                    className={workflow.status === "Complete" ? "bg-green-50 dark:bg-green-950/20" : ""}
+                  >
+                    <TableCell className="text-sm">{workflow.service}</TableCell>
+                    <TableCell className="text-sm">{workflow.name}</TableCell>
+                    <TableCell className="text-sm">{workflow.adviser}</TableCell>
+                    <TableCell className="text-sm">{workflow.endDate}</TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
           
           {/* Pagination */}
           <div className="flex items-center justify-between px-4 py-3 border-t">
-            <span className="text-sm text-muted-foreground">89 items, page {workflowPage} of 5</span>
+            <span className="text-sm text-muted-foreground">{workflowCount} items, page {workflowPage} of {workflowPages}</span>
             <div className="flex items-center gap-1">
               <Button variant="outline" size="icon" className="h-8 w-8" disabled={workflowPage === 1}>
                 <ChevronFirst className="w-4 h-4" />
@@ -74,7 +81,7 @@ const ClientWorkflowsTab = () => {
               <Button variant="outline" size="icon" className="h-8 w-8" disabled={workflowPage === 1}>
                 <ChevronLeft className="w-4 h-4" />
               </Button>
-              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setWorkflowPage(p => Math.min(5, p + 1))}>
+              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setWorkflowPage(p => Math.min(workflowPages, p + 1))}>
                 <ChevronRight className="w-4 h-4" />
               </Button>
               <Button variant="outline" size="icon" className="h-8 w-8">
@@ -103,26 +110,34 @@ const ClientWorkflowsTab = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {adviceWorkflowsData.map((workflow) => (
-                <TableRow key={workflow.id}>
-                  <TableCell className="text-sm">{workflow.id}</TableCell>
-                  <TableCell className="text-sm">{workflow.name}</TableCell>
-                  <TableCell className="text-sm">{workflow.currentStep}</TableCell>
-                  <TableCell className="text-sm">
-                    <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded text-xs">
-                      {workflow.status}
-                    </span>
+              {adviceWorkflows.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    No advice workflows found.
                   </TableCell>
-                  <TableCell className="text-sm">{workflow.adviser}</TableCell>
-                  <TableCell className="text-sm">{workflow.date}</TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                adviceWorkflows.map((workflow) => (
+                  <TableRow key={workflow.id}>
+                    <TableCell className="text-sm">{workflow.id}</TableCell>
+                    <TableCell className="text-sm">{workflow.name}</TableCell>
+                    <TableCell className="text-sm">{workflow.currentStep}</TableCell>
+                    <TableCell className="text-sm">
+                      <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded text-xs">
+                        {workflow.status}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-sm">{workflow.adviser}</TableCell>
+                    <TableCell className="text-sm">{workflow.date}</TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
           
           {/* Pagination */}
           <div className="flex items-center justify-between px-4 py-3 border-t">
-            <span className="text-sm text-muted-foreground">15 items, page {advicePage} of 1</span>
+            <span className="text-sm text-muted-foreground">{adviceCount} items, page {advicePage} of {advicePages}</span>
             <div className="flex items-center gap-1">
               <Button variant="outline" size="icon" className="h-8 w-8" disabled>
                 <ChevronFirst className="w-4 h-4" />

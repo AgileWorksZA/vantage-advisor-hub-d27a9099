@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -17,22 +18,39 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ChevronLeft, ChevronRight, ChevronFirst, ChevronLast, Plus } from "lucide-react";
-
-const clientProductsData = [
-  { product: "Tax Planning", adviser: "Jordaan, Danile", role: "Owner", premium: "R 0.00", frequency: "Monthly", value: "R 0.00", valueUpdated: "15 Jan 2026", inactive: false, linked: true },
-  { product: "Estate Planning - Will", adviser: "Jordaan, Danile", role: "Owner", premium: "R 0.00", frequency: "Monthly", value: "R 0.00", valueUpdated: "10 Jan 2026", inactive: false, linked: true },
-  { product: "Estate Planning Will", adviser: "Van Zyl, Christo", role: "Owner", premium: "R 0.00", frequency: "Monthly", value: "R 0.00", valueUpdated: "05 Jan 2026", inactive: true, linked: false },
-];
-
-const investmentProductsData = [
-  { product: "Allan Gray - Retirement Annuity", adviser: "Jordaan, Danile", role: "Owner", premium: "R 0.00", frequency: "Monthly", value: "R 1,250,000.00", valueUpdated: "28 Jan 2026", inactive: false, linked: true },
-];
+import { ChevronLeft, ChevronRight, ChevronFirst, ChevronLast, Plus, Loader2 } from "lucide-react";
+import { useClientProducts } from "@/hooks/useClientProducts";
 
 const ClientProductsTab = () => {
+  const { clientId } = useParams<{ clientId: string }>();
   const [showInactive, setShowInactive] = useState(false);
   const [productPage, setProductPage] = useState(1);
   const [subTab, setSubTab] = useState("products");
+  
+  const { products, loading, refetch } = useClientProducts(clientId || "");
+
+  const handleShowInactiveChange = (checked: boolean) => {
+    setShowInactive(checked);
+    refetch(checked);
+  };
+
+  // Group products by category
+  const productsByCategory: Record<string, typeof products> = {};
+  products.forEach(product => {
+    const category = product.category || "Other Products";
+    if (!productsByCategory[category]) {
+      productsByCategory[category] = [];
+    }
+    productsByCategory[category].push(product);
+  });
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -60,94 +78,60 @@ const ClientProductsTab = () => {
               <Checkbox 
                 id="show-inactive" 
                 checked={showInactive} 
-                onCheckedChange={(checked) => setShowInactive(checked as boolean)} 
+                onCheckedChange={(checked) => handleShowInactiveChange(checked as boolean)} 
               />
               <Label htmlFor="show-inactive">Show Inactive products</Label>
             </div>
           </div>
 
           {/* Products Accordion */}
-          <Accordion type="multiple" defaultValue={["client-products", "investments"]} className="space-y-4">
-            {/* Fiduciary Services */}
-            <AccordionItem value="client-products" className="border rounded-lg">
-              <AccordionTrigger className="px-4 py-3 hover:no-underline">
-                <span className="font-medium">PSG Trust (Pty) Ltd - Estate</span>
-              </AccordionTrigger>
-              <AccordionContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="text-xs">Product</TableHead>
-                      <TableHead className="text-xs">Adviser</TableHead>
-                      <TableHead className="text-xs">Role</TableHead>
-                      <TableHead className="text-xs">Premium</TableHead>
-                      <TableHead className="text-xs">Frequency</TableHead>
-                      <TableHead className="text-xs">Value</TableHead>
-                      <TableHead className="text-xs">Value updated</TableHead>
-                      <TableHead className="text-xs">Inactive</TableHead>
-                      <TableHead className="text-xs">Linked</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {clientProductsData
-                      .filter(p => showInactive || !p.inactive)
-                      .map((product, index) => (
-                        <TableRow key={index} className={product.inactive ? "opacity-50" : ""}>
-                          <TableCell className="text-sm">{product.product}</TableCell>
-                          <TableCell className="text-sm">{product.adviser}</TableCell>
-                          <TableCell className="text-sm">{product.role}</TableCell>
-                          <TableCell className="text-sm">{product.premium}</TableCell>
-                          <TableCell className="text-sm">{product.frequency}</TableCell>
-                          <TableCell className="text-sm">{product.value}</TableCell>
-                          <TableCell className="text-sm">{product.valueUpdated}</TableCell>
-                          <TableCell className="text-sm">{product.inactive ? "Yes" : "No"}</TableCell>
-                          <TableCell className="text-sm">{product.linked ? "Yes" : "No"}</TableCell>
+          {Object.keys(productsByCategory).length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground border rounded-lg">
+              No products found. Click "Add new product" to add a product.
+            </div>
+          ) : (
+            <Accordion type="multiple" defaultValue={Object.keys(productsByCategory)} className="space-y-4">
+              {Object.entries(productsByCategory).map(([category, categoryProducts]) => (
+                <AccordionItem key={category} value={category} className="border rounded-lg">
+                  <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                    <span className="font-medium">{category}</span>
+                  </AccordionTrigger>
+                  <AccordionContent className="p-0">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="text-xs">Product</TableHead>
+                          <TableHead className="text-xs">Adviser</TableHead>
+                          <TableHead className="text-xs">Role</TableHead>
+                          <TableHead className="text-xs">Premium</TableHead>
+                          <TableHead className="text-xs">Frequency</TableHead>
+                          <TableHead className="text-xs">Value</TableHead>
+                          <TableHead className="text-xs">Value updated</TableHead>
+                          <TableHead className="text-xs">Inactive</TableHead>
+                          <TableHead className="text-xs">Linked</TableHead>
                         </TableRow>
-                      ))}
-                  </TableBody>
-                </Table>
-              </AccordionContent>
-            </AccordionItem>
-
-            {/* Investments */}
-            <AccordionItem value="investments" className="border rounded-lg">
-              <AccordionTrigger className="px-4 py-3 hover:no-underline">
-                <span className="font-medium">Investments</span>
-              </AccordionTrigger>
-              <AccordionContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="text-xs">Product</TableHead>
-                      <TableHead className="text-xs">Adviser</TableHead>
-                      <TableHead className="text-xs">Role</TableHead>
-                      <TableHead className="text-xs">Premium</TableHead>
-                      <TableHead className="text-xs">Frequency</TableHead>
-                      <TableHead className="text-xs">Value</TableHead>
-                      <TableHead className="text-xs">Value updated</TableHead>
-                      <TableHead className="text-xs">Inactive</TableHead>
-                      <TableHead className="text-xs">Linked</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {investmentProductsData.map((product, index) => (
-                      <TableRow key={index}>
-                        <TableCell className="text-sm">{product.product}</TableCell>
-                        <TableCell className="text-sm">{product.adviser}</TableCell>
-                        <TableCell className="text-sm">{product.role}</TableCell>
-                        <TableCell className="text-sm">{product.premium}</TableCell>
-                        <TableCell className="text-sm">{product.frequency}</TableCell>
-                        <TableCell className="text-sm">{product.value}</TableCell>
-                        <TableCell className="text-sm">{product.valueUpdated}</TableCell>
-                        <TableCell className="text-sm">{product.inactive ? "Yes" : "No"}</TableCell>
-                        <TableCell className="text-sm">{product.linked ? "Yes" : "No"}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
+                      </TableHeader>
+                      <TableBody>
+                        {categoryProducts.map((product) => (
+                          <TableRow key={product.id} className={product.inactive ? "opacity-50" : ""}>
+                            <TableCell className="text-sm">{product.product}</TableCell>
+                            <TableCell className="text-sm">{product.adviser}</TableCell>
+                            <TableCell className="text-sm">{product.role}</TableCell>
+                            <TableCell className="text-sm">{product.premium}</TableCell>
+                            <TableCell className="text-sm">{product.frequency}</TableCell>
+                            <TableCell className="text-sm">{product.value}</TableCell>
+                            <TableCell className="text-sm">{product.valueUpdated}</TableCell>
+                            <TableCell className="text-sm">{product.inactive ? "Yes" : "No"}</TableCell>
+                            <TableCell className="text-sm">{product.linked ? "Yes" : "No"}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          )}
 
           {/* Pagination */}
           <div className="flex items-center gap-2 mt-4">
@@ -157,11 +141,11 @@ const ClientProductsTab = () => {
             <Button variant="outline" size="icon" className="h-8 w-8" disabled={productPage === 1}>
               <ChevronLeft className="w-4 h-4" />
             </Button>
-            <span className="text-sm text-muted-foreground mx-2">Page {productPage} of 4</span>
-            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setProductPage(p => Math.min(4, p + 1))}>
+            <span className="text-sm text-muted-foreground mx-2">Page {productPage} of 1</span>
+            <Button variant="outline" size="icon" className="h-8 w-8" disabled>
               <ChevronRight className="w-4 h-4" />
             </Button>
-            <Button variant="outline" size="icon" className="h-8 w-8">
+            <Button variant="outline" size="icon" className="h-8 w-8" disabled>
               <ChevronLast className="w-4 h-4" />
             </Button>
           </div>

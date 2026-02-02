@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,26 +17,30 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ChevronLeft, ChevronRight, ChevronFirst, ChevronLast, FileText } from "lucide-react";
-
-const faisControlData = [
-  { id: 1, name: "FAIS Disclosure 2026", products: ["Investment", "Insurance"], step: "Active", date: "28 Jan 2026" },
-  { id: 2, name: "Consent Form - Investment", products: ["Investment"], step: "Consent", date: "25 Jan 2026" },
-  { id: 3, name: "FAIS Disclosure 2025", products: ["Investment", "Insurance"], step: "Complete", date: "20 Jan 2025" },
-  { id: 4, name: "Disclosure - Risk Products", products: ["Insurance"], step: "Disclosure", date: "15 Dec 2025" },
-  { id: 5, name: "Annual FAIS Update", products: ["Investment"], step: "Active", date: "10 Dec 2025" },
-];
-
-const workflowsData = [
-  { service: "Compliance", name: "FAIS Review", adviser: "Jordaan, Danile", endDate: "28 Jan 2026", status: "Complete" },
-  { service: "Compliance", name: "Consent Collection", adviser: "Jordaan, Danile", endDate: "25 Jan 2026", status: "Complete" },
-  { service: "General", name: "Annual Review", adviser: "Van Zyl, Christo", endDate: "20 Jan 2026", status: "Inactive" },
-];
+import { ChevronLeft, ChevronRight, ChevronFirst, ChevronLast, FileText, Loader2 } from "lucide-react";
+import { useClientWorkflows } from "@/hooks/useClientWorkflows";
 
 const ClientComplianceTab = () => {
+  const { clientId } = useParams<{ clientId: string }>();
   const [faisPage, setFaisPage] = useState(1);
   const [workflowPage, setWorkflowPage] = useState(1);
   const [faisFilter, setFaisFilter] = useState("all");
+
+  const { workflows, faisControls, workflowCount, faisCount, loading } = useClientWorkflows(clientId || "");
+
+  // Filter to only compliance-related workflows
+  const complianceWorkflows = workflows.filter(w => w.service === "Compliance" || w.name.toLowerCase().includes("fais"));
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  const faisPages = Math.ceil(faisCount / 20) || 1;
+  const workflowPages = Math.ceil(complianceWorkflows.length / 20) || 1;
 
   return (
     <div className="space-y-6">
@@ -76,39 +81,47 @@ const ClientComplianceTab = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {faisControlData.map((item) => (
-                  <TableRow 
-                    key={item.id}
-                    className={item.step === "Active" ? "bg-green-50 dark:bg-green-950/20" : ""}
-                  >
-                    <TableCell className="text-sm">{item.id}</TableCell>
-                    <TableCell className="text-sm">{item.name}</TableCell>
-                    <TableCell className="text-sm">
-                      <div className="flex items-center gap-1">
-                        {item.products.map((product, i) => (
-                          <FileText key={i} className="w-4 h-4 text-muted-foreground" />
-                        ))}
-                      </div>
+                {faisControls.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                      No FAIS controls found.
                     </TableCell>
-                    <TableCell className="text-sm">
-                      <span className={`px-2 py-1 rounded text-xs ${
-                        item.step === "Active" ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300" :
-                        item.step === "Consent" ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300" :
-                        item.step === "Disclosure" ? "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300" :
-                        "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300"
-                      }`}>
-                        {item.step}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-sm">{item.date}</TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  faisControls.map((item) => (
+                    <TableRow 
+                      key={item.id}
+                      className={item.step === "Active" ? "bg-green-50 dark:bg-green-950/20" : ""}
+                    >
+                      <TableCell className="text-sm">{item.id}</TableCell>
+                      <TableCell className="text-sm">{item.name}</TableCell>
+                      <TableCell className="text-sm">
+                        <div className="flex items-center gap-1">
+                          {item.products.map((_, i) => (
+                            <FileText key={i} className="w-4 h-4 text-muted-foreground" />
+                          ))}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        <span className={`px-2 py-1 rounded text-xs ${
+                          item.step === "Active" ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300" :
+                          item.step === "Consent" ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300" :
+                          item.step === "Disclosure" ? "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300" :
+                          "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+                        }`}>
+                          {item.step}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-sm">{item.date}</TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
             
             {/* Pagination */}
             <div className="flex items-center justify-between px-4 py-3 border-t">
-              <span className="text-sm text-muted-foreground">190 items, page {faisPage} of 10</span>
+              <span className="text-sm text-muted-foreground">{faisCount} items, page {faisPage} of {faisPages}</span>
               <div className="flex items-center gap-1">
                 <Button variant="outline" size="icon" className="h-8 w-8" disabled={faisPage === 1}>
                   <ChevronFirst className="w-4 h-4" />
@@ -116,7 +129,7 @@ const ClientComplianceTab = () => {
                 <Button variant="outline" size="icon" className="h-8 w-8" disabled={faisPage === 1}>
                   <ChevronLeft className="w-4 h-4" />
                 </Button>
-                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setFaisPage(p => Math.min(10, p + 1))}>
+                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setFaisPage(p => Math.min(faisPages, p + 1))}>
                   <ChevronRight className="w-4 h-4" />
                 </Button>
                 <Button variant="outline" size="icon" className="h-8 w-8">
@@ -132,7 +145,7 @@ const ClientComplianceTab = () => {
           <CardHeader className="pb-4">
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg">Workflows</CardTitle>
-              <span className="text-sm text-muted-foreground">Complete, Inactive - 82 items</span>
+              <span className="text-sm text-muted-foreground">Complete, Inactive - {complianceWorkflows.length} items</span>
             </div>
           </CardHeader>
           <CardContent className="p-0">
@@ -146,23 +159,31 @@ const ClientComplianceTab = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {workflowsData.map((workflow, index) => (
-                  <TableRow 
-                    key={index}
-                    className={workflow.status === "Complete" ? "bg-green-50 dark:bg-green-950/20" : ""}
-                  >
-                    <TableCell className="text-sm">{workflow.service}</TableCell>
-                    <TableCell className="text-sm">{workflow.name}</TableCell>
-                    <TableCell className="text-sm">{workflow.adviser}</TableCell>
-                    <TableCell className="text-sm">{workflow.endDate}</TableCell>
+                {complianceWorkflows.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                      No compliance workflows found.
+                    </TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  complianceWorkflows.map((workflow) => (
+                    <TableRow 
+                      key={workflow.id}
+                      className={workflow.status === "Complete" ? "bg-green-50 dark:bg-green-950/20" : ""}
+                    >
+                      <TableCell className="text-sm">{workflow.service}</TableCell>
+                      <TableCell className="text-sm">{workflow.name}</TableCell>
+                      <TableCell className="text-sm">{workflow.adviser}</TableCell>
+                      <TableCell className="text-sm">{workflow.endDate}</TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
             
             {/* Pagination */}
             <div className="flex items-center justify-between px-4 py-3 border-t">
-              <span className="text-sm text-muted-foreground">82 items, page {workflowPage} of 5</span>
+              <span className="text-sm text-muted-foreground">{complianceWorkflows.length} items, page {workflowPage} of {workflowPages}</span>
               <div className="flex items-center gap-1">
                 <Button variant="outline" size="icon" className="h-8 w-8" disabled>
                   <ChevronFirst className="w-4 h-4" />
