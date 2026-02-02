@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTheme } from "next-themes";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import AIOrb from "@/components/ai-assistant/AIOrb";
@@ -69,12 +70,26 @@ interface Message {
 
 const AIAssistant = () => {
   const navigate = useNavigate();
+  const { theme, setTheme } = useTheme();
+  const previousThemeRef = useRef<string | undefined>(undefined);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [displayedOpportunities, setDisplayedOpportunities] = useState<ClientOpportunity[]>([]);
+
+  // Force dark mode on this page
+  useEffect(() => {
+    previousThemeRef.current = theme;
+    setTheme("dark");
+    
+    return () => {
+      if (previousThemeRef.current) {
+        setTheme(previousThemeRef.current);
+      }
+    };
+  }, []);
 
   const counts = {
     upsell: mockOpportunities.filter((o) => o.opportunityType === "upsell").length,
@@ -177,11 +192,6 @@ const AIAssistant = () => {
 
       {/* Main content */}
       <main className="relative z-10 flex flex-col items-center justify-center min-h-[calc(100vh-80px)] p-8">
-        {/* AI Orb */}
-        <div className="mb-12">
-          <AIOrb isProcessing={isProcessing} onClick={handleOrbClick} />
-        </div>
-
         {/* Insight Categories */}
         <div className="mb-12">
           <InsightOrbit
@@ -200,6 +210,11 @@ const AIAssistant = () => {
           </div>
         )}
       </main>
+
+      {/* AI Orb - Fixed bottom right */}
+      <div className="fixed bottom-8 right-8 z-40">
+        <AIOrb isProcessing={isProcessing} isChatOpen={isChatOpen} onClick={handleOrbClick} />
+      </div>
 
       {/* Chat Panel */}
       <ChatPanel
