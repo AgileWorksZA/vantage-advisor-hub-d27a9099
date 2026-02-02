@@ -70,8 +70,9 @@ interface Message {
 
 const AIAssistant = () => {
   const navigate = useNavigate();
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, resolvedTheme } = useTheme();
   const previousThemeRef = useRef<string | undefined>(undefined);
+  const hasStoredThemeRef = useRef(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
@@ -79,17 +80,24 @@ const AIAssistant = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [displayedOpportunities, setDisplayedOpportunities] = useState<ClientOpportunity[]>([]);
 
-  // Force dark mode on this page
+  // Store the initial theme before forcing dark mode
   useEffect(() => {
-    previousThemeRef.current = theme;
-    setTheme("dark");
-    
+    // Only store theme once, when it's first resolved
+    if (!hasStoredThemeRef.current && resolvedTheme) {
+      previousThemeRef.current = theme || resolvedTheme;
+      hasStoredThemeRef.current = true;
+      setTheme("dark");
+    }
+  }, [resolvedTheme, theme, setTheme]);
+
+  // Restore theme on unmount
+  useEffect(() => {
     return () => {
-      if (previousThemeRef.current) {
+      if (previousThemeRef.current && previousThemeRef.current !== "dark") {
         setTheme(previousThemeRef.current);
       }
     };
-  }, []);
+  }, [setTheme]);
 
   const counts = {
     upsell: mockOpportunities.filter((o) => o.opportunityType === "upsell").length,
