@@ -4,10 +4,9 @@ import {
   isSameDay,
   isToday,
   setHours,
+  setMinutes,
   differenceInMinutes,
   startOfDay,
-  addDays,
-  subDays,
 } from "date-fns";
 import { CalendarEvent, CalendarEventType } from "@/hooks/useCalendarEvents";
 import { cn } from "@/lib/utils";
@@ -129,7 +128,7 @@ export function DayView({
                 style={{ height: HOUR_HEIGHT }}
               >
                 <span className="relative -top-3">
-                  {hour === 0 ? "" : format(setHours(new Date(), hour), "h:mm a")}
+                  {hour === 0 ? "" : format(setMinutes(setHours(new Date(), hour), 0), "h:mm a")}
                 </span>
               </div>
             ))}
