@@ -8,8 +8,8 @@ import { LayoutDashboard, Users, Mail, CalendarIcon, ListTodo, LineChart, Buildi
 import commandCenterIcon from "@/assets/command-center-icon.png";
 import vantageLogo from "@/assets/vantage-logo.png";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
-import { getRegionalData } from "@/data/regionalData";
 import { AppHeader } from "@/components/layout/AppHeader";
+import { useRegion } from "@/contexts/RegionContext";
 
 const sidebarItems = [{
   icon: LayoutDashboard,
@@ -45,10 +45,9 @@ const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedRegion, setSelectedRegion] = useState<string>("ZA");
-
-  // Get regional data based on selected region
-  const regionalData = getRegionalData(selectedRegion);
+  
+  // Use global region context
+  const { selectedRegion, setSelectedRegion, regionalData } = useRegion();
 
   useEffect(() => {
     const {
