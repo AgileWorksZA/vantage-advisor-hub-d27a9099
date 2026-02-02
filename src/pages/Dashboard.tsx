@@ -6,146 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LayoutDashboard, Users, Mail, CalendarIcon, ListTodo, LineChart, Building2, Plus, X, Search, LogOut } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { AdvisorFilter } from "@/components/dashboard/AdvisorFilter";
 import { NotificationDropdown } from "@/components/dashboard/NotificationDropdown";
-const providerData = [{
-  name: "Ninety One",
-  bookPercent: "55.3 %",
-  value: "R 2,026,539,331"
-}, {
-  name: "Old Mutual International",
-  bookPercent: "10.6 %",
-  value: "R 387,751,193"
-}, {
-  name: "Allan Gray",
-  bookPercent: "9.5 %",
-  value: "R 348,470,019"
-}, {
-  name: "Sanlam Glacier",
-  bookPercent: "4.9 %",
-  value: "R 178,833,622"
-}, {
-  name: "Investec Corporate Cash Management",
-  bookPercent: "3.8 %",
-  value: "R 139,656,065"
-}];
-const topAccountsData = [{
-  investor: "NG Kerk Sinode Oos-Kaapland",
-  bookPercent: "1.1 %",
-  value: "R 41,926,359.70"
-}, {
-  investor: "De Villiers, Jean",
-  bookPercent: "1.0 %",
-  value: "R 36,258,037.37"
-}, {
-  investor: "Louw, Rudolph",
-  bookPercent: "0.9 %",
-  value: "R 34,277,493.78"
-}, {
-  investor: "Daan Van Der Sijde",
-  bookPercent: "0.9 %",
-  value: "R 31,913,925.69"
-}, {
-  investor: "Philippus Koon",
-  bookPercent: "0.8 %",
-  value: "R 28,160,599.60"
-}];
-const aumByProductData = [{
-  name: "Cash Management",
-  value: 12.2,
-  color: "hsl(210, 70%, 40%)"
-}, {
-  name: "Endowment",
-  value: 14.0,
-  color: "hsl(142, 76%, 36%)"
-}, {
-  name: "Investment Plan",
-  value: 5.8,
-  color: "hsl(45, 93%, 47%)"
-}, {
-  name: "Living Annuity",
-  value: 21.2,
-  color: "hsl(280, 65%, 50%)"
-}, {
-  name: "Other",
-  value: 1.3,
-  color: "hsl(0, 0%, 60%)"
-}, {
-  name: "Pension Preservation Fund",
-  value: 5.9,
-  color: "hsl(210, 100%, 50%)"
-}, {
-  name: "Preservation Fund",
-  value: 39.1,
-  color: "hsl(160, 60%, 45%)"
-}, {
-  name: "Provident Preservation Fund",
-  value: 0.5,
-  color: "hsl(18, 86%, 56%)"
-}];
-const birthdaysData = [{
-  name: "Andre Thomas Coetzer",
-  nextBirthday: "28 January",
-  age: 42
-}, {
-  name: "Elsie Sophia Lourens",
-  nextBirthday: "28 January",
-  age: 65
-}, {
-  name: "Samuel de Jager",
-  nextBirthday: "28 January",
-  age: 69
-}, {
-  name: "Elana Wasmuth",
-  nextBirthday: "28 January",
-  age: 34
-}, {
-  name: "Angeline Loraine Mostert",
-  nextBirthday: "28 January",
-  age: 63
-}, {
-  name: "Esther Amanda Nieman",
-  nextBirthday: "28 January",
-  age: 74
-}, {
-  name: "Melia Nocwaka Malgas",
-  nextBirthday: "28 January",
-  age: 73
-}, {
-  name: "Denise Thiart",
-  nextBirthday: "28 January",
-  age: 69
-}, {
-  name: "Elizabeth Saunders",
-  nextBirthday: "28 January",
-  age: 77
-}, {
-  name: "Zonwabele Harry Molefe",
-  nextBirthday: "28 January",
-  age: 64
-}];
-const clientsByValueData = [{
-  range: "R0 – R100 000",
-  value: "R 15,579,983",
-  investors: 468
-}, {
-  range: "R100 001 – R1M",
-  value: "R 371,511,255",
-  investors: 850
-}, {
-  range: "R1 000 001 – R3M",
-  value: "R 831,330,967",
-  investors: 469
-}, {
-  range: "R3 000 001 – R10M",
-  value: "R 1,501,814,056",
-  investors: 286
-}, {
-  range: "> R10M",
-  value: "R 947,490,312",
-  investors: 52
-}];
+import { RegionSelector } from "@/components/dashboard/RegionSelector";
+import { getRegionalData } from "@/data/regionalData";
+
 const sidebarItems = [{
   icon: LayoutDashboard,
   label: "Dash",
@@ -180,6 +46,11 @@ const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedRegion, setSelectedRegion] = useState<string>("ZA");
+
+  // Get regional data based on selected region
+  const regionalData = getRegionalData(selectedRegion);
+
   useEffect(() => {
     const {
       data: {
@@ -207,16 +78,20 @@ const Dashboard = () => {
     });
     return () => subscription.unsubscribe();
   }, [navigate]);
+
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     navigate("/auth");
   };
+
   if (loading) {
     return <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>;
   }
+
   const userName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Adviser";
+
   return <div className="min-h-screen bg-muted/30 flex">
       {/* Sidebar */}
       <aside className="w-16 bg-[hsl(180,25%,25%)] flex flex-col items-center py-4 gap-1">
@@ -246,6 +121,10 @@ const Dashboard = () => {
           <div className="flex items-center gap-4">
             <AdvisorFilter />
             <NotificationDropdown />
+            <RegionSelector 
+              selectedRegion={selectedRegion} 
+              onRegionChange={setSelectedRegion} 
+            />
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium">{userName}</span>
               <Button variant="ghost" size="icon" onClick={handleSignOut} title="Sign out">
@@ -278,7 +157,7 @@ const Dashboard = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {providerData.map(provider => <tr key={provider.name} className="border-t border-border">
+                    {regionalData.providers.map(provider => <tr key={provider.name} className="border-t border-border">
                         <td className="py-2">{provider.name}</td>
                         <td className="py-2 text-right text-muted-foreground">{provider.bookPercent}</td>
                         <td className="py-2 text-right">{provider.value}</td>
@@ -306,7 +185,7 @@ const Dashboard = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {topAccountsData.map(account => <tr key={account.investor} className="border-t border-border">
+                    {regionalData.topAccounts.map(account => <tr key={account.investor} className="border-t border-border">
                         <td className="py-2">{account.investor}</td>
                         <td className="py-2 text-right text-muted-foreground">{account.bookPercent}</td>
                         <td className="py-2 text-right">{account.value}</td>
@@ -325,19 +204,19 @@ const Dashboard = () => {
                 </Button>
               </CardHeader>
               <CardContent className="px-4 pb-4">
-                <p className="text-xl font-semibold mb-2">3,667,726,572.38</p>
+                <p className="text-xl font-semibold mb-2">{regionalData.totalAUM}</p>
                 <div className="h-48">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
-                      <Pie data={aumByProductData} cx="50%" cy="50%" innerRadius={40} outerRadius={70} paddingAngle={2} dataKey="value">
-                        {aumByProductData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
+                      <Pie data={regionalData.products} cx="50%" cy="50%" innerRadius={40} outerRadius={70} paddingAngle={2} dataKey="value">
+                        {regionalData.products.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
                       </Pie>
                       <Tooltip formatter={value => `${value}%`} />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
                 <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs mt-2">
-                  {aumByProductData.map(item => <div key={item.name} className="flex items-center gap-1">
+                  {regionalData.products.map(item => <div key={item.name} className="flex items-center gap-1">
                       <span className="w-2 h-2 rounded-full" style={{
                     backgroundColor: item.color
                   }}></span>
@@ -365,7 +244,7 @@ const Dashboard = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {birthdaysData.map(person => <tr key={person.name} className="border-t border-border">
+                    {regionalData.birthdays.map(person => <tr key={person.name} className="border-t border-border">
                         <td className="py-1.5">{person.name}</td>
                         <td className="py-1.5 text-right text-muted-foreground">{person.nextBirthday}</td>
                         <td className="py-1.5 text-right">{person.age}</td>
@@ -393,7 +272,7 @@ const Dashboard = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {clientsByValueData.map(row => <tr key={row.range} className="border-t border-border">
+                    {regionalData.clientsByValue.map(row => <tr key={row.range} className="border-t border-border">
                         <td className="py-2">{row.range}</td>
                         <td className="py-2 text-right">{row.value}</td>
                         <td className="py-2 text-right text-muted-foreground">{row.investors}</td>
