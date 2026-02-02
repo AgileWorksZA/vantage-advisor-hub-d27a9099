@@ -46,6 +46,7 @@ import ClientProductsTab from "@/components/client-detail/ClientProductsTab";
 import ClientNotesTab from "@/components/client-detail/ClientNotesTab";
 import ClientCommunicationTab from "@/components/client-detail/ClientCommunicationTab";
 import ClientDocumentsTab from "@/components/client-detail/ClientDocumentsTab";
+import ClientMeetingsTab from "@/components/client-detail/ClientMeetingsTab";
 import { useClientDetail } from "@/hooks/useClientDetail";
 import { getDisplayName } from "@/types/client";
 
@@ -238,6 +239,7 @@ const ClientDetail = () => {
                 { value: "summary", label: "Summary" },
                 { value: "details", label: "Details" },
                 { value: "crm", label: "CRM" },
+                { value: "meetings", label: "Meetings" },
                 { value: "family", label: "Family" },
                 { value: "businesses", label: "Businesses" },
                 { value: "contacts", label: "Contacts" },
@@ -267,6 +269,9 @@ const ClientDetail = () => {
               </TabsContent>
               <TabsContent value="crm" className="mt-0">
                 <ClientCRMTab client={client} onUpdate={updateClient} />
+              </TabsContent>
+              <TabsContent value="meetings" className="mt-0">
+                <ClientMeetingsTab />
               </TabsContent>
               <TabsContent value="family" className="mt-0">
                 <ClientFamilyTab />

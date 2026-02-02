@@ -70,6 +70,10 @@ import {
 } from "date-fns";
 import { useCalendarEvents, CalendarEvent, CalendarEventType, CreateCalendarEventInput } from "@/hooks/useCalendarEvents";
 import { useClients } from "@/hooks/useClients";
+import { useMeetingRecordings } from "@/hooks/useMeetingRecordings";
+import { MeetingRecorder } from "@/components/calendar/MeetingRecorder";
+import { TranscriptionPanel } from "@/components/calendar/TranscriptionPanel";
+import { ActionItemsList } from "@/components/calendar/ActionItemsList";
 import { cn } from "@/lib/utils";
 
 const sidebarItems = [
@@ -133,6 +137,18 @@ const CalendarPage = () => {
 
   const { events, loading: eventsLoading, createEvent, updateEvent, deleteEvent, refetch } = useCalendarEvents(viewDate, viewMode);
   const { clients } = useClients();
+  
+  // Meeting recordings for the selected event
+  const {
+    recordings: eventRecordings,
+    recordingState,
+    processingState,
+    startRecording,
+    stopRecording,
+    transcribeRecording,
+    processRecording,
+    refetch: refetchRecordings,
+  } = useMeetingRecordings(selectedEvent?.id);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -606,7 +622,7 @@ const CalendarPage = () => {
 
       {/* Event Detail Sheet */}
       <Sheet open={eventSheetOpen} onOpenChange={setEventSheetOpen}>
-        <SheetContent className="w-[400px] sm:w-[540px]">
+        <SheetContent className="w-[400px] sm:w-[600px] overflow-y-auto">
           {selectedEvent && (
             <>
               <SheetHeader>
@@ -653,6 +669,40 @@ const CalendarPage = () => {
                     <p>{selectedEvent.description}</p>
                   </div>
                 )}
+
+                {/* Meeting Recorder Section */}
+                <div className="pt-4 border-t space-y-4">
+                  <MeetingRecorder
+                    isRecording={recordingState.isRecording}
+                    duration={recordingState.duration}
+                    transcriptionStatus={eventRecordings[0]?.transcriptionStatus}
+                    isTranscribing={processingState.transcribing}
+                    isAnalyzing={processingState.analyzing}
+                    hasTranscription={!!eventRecordings[0]?.transcription}
+                    hasAnalysis={!!eventRecordings[0]?.aiActionItems}
+                    onStartRecording={() => startRecording(selectedEvent.title, selectedEvent.id, selectedEvent.clientId || undefined)}
+                    onStopRecording={stopRecording}
+                    onTranscribe={() => eventRecordings[0] && transcribeRecording(eventRecordings[0].id)}
+                    onAnalyze={() => eventRecordings[0] && processRecording(eventRecordings[0].id)}
+                  />
+
+                  {/* Transcription Panel */}
+                  {eventRecordings[0] && (
+                    <TranscriptionPanel
+                      transcription={eventRecordings[0].transcription}
+                      aiSummary={eventRecordings[0].aiSummary}
+                      isLoading={processingState.transcribing || processingState.analyzing}
+                    />
+                  )}
+
+                  {/* Action Items */}
+                  {eventRecordings[0] && (
+                    <ActionItemsList
+                      actionItems={eventRecordings[0].aiActionItems}
+                      clientId={selectedEvent.clientId}
+                    />
+                  )}
+                </div>
 
                 <div className="pt-4 border-t flex gap-2">
                   <Button variant="outline" className="flex-1" onClick={() => setEventSheetOpen(false)}>
