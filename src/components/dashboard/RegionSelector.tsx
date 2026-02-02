@@ -60,7 +60,7 @@ export function RegionSelector({ selectedRegion, onRegionChange }: RegionSelecto
           className="h-9 w-9 rounded-full hover:bg-muted/50 transition-colors flex items-center justify-center"
           title={currentRegion.name}
         >
-          <FlagIcon code={currentRegion.flagCode} width={22} />
+          <FlagIcon code={currentRegion.flagCode} width={28} />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-56 p-2 bg-popover border border-border shadow-lg" align="end">
