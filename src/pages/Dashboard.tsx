@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LayoutDashboard, Users, Mail, ListTodo, LineChart, Building2, Plus, X, Search, Bell, LogOut } from "lucide-react";
+import { LayoutDashboard, Users, Mail, CalendarIcon, ListTodo, LineChart, Building2, Plus, X, Search, Bell, LogOut } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 import { AdvisorFilter } from "@/components/dashboard/AdvisorFilter";
@@ -157,6 +157,10 @@ const sidebarItems = [{
   icon: Mail,
   label: "Email",
   path: "/email"
+}, {
+  icon: CalendarIcon,
+  label: "Calendar",
+  path: "/calendar"
 }, {
   icon: ListTodo,
   label: "Tasks",
