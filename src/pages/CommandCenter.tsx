@@ -1,17 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import {
-  Search,
-  Bell,
   Users,
   PieChart,
   Briefcase,
   Settings,
   ArrowLeft,
-  TrendingUp,
   Heart,
 } from "lucide-react";
 import { TaxLossHarvestingNudge } from "@/components/command-center/TaxLossHarvestingNudge";
@@ -22,6 +20,7 @@ import { CommissionNudge } from "@/components/command-center/CommissionNudge";
 import { ComplianceNudge } from "@/components/command-center/ComplianceNudge";
 import { ReviewRemindersNudge } from "@/components/command-center/ReviewRemindersNudge";
 import { DocumentExpiryNudge } from "@/components/command-center/DocumentExpiryNudge";
+import { AppHeader } from "@/components/layout/AppHeader";
 
 const sidebarItems = [
   { icon: Users, label: "CRM", active: false },
@@ -32,8 +31,45 @@ const sidebarItems = [
 
 const CommandCenter = () => {
   const navigate = useNavigate();
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
   const [activeSection, setActiveSection] = useState("all");
   const practiceHealthScore = 78;
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user ?? null);
+      setLoading(false);
+      if (!session?.user) {
+        navigate("/auth");
+      }
+    });
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setLoading(false);
+      if (!session?.user) {
+        navigate("/auth");
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    navigate("/auth");
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  const userName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Adviser";
 
   return (
     <div className="h-screen bg-muted/30 flex overflow-hidden">
@@ -65,41 +101,13 @@ const CommandCenter = () => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Top Bar - Sticky */}
-        <header className="h-14 bg-background border-b border-border flex items-center justify-between px-6 shrink-0 z-10">
-          <div className="flex items-center gap-4">
-            <div className="relative w-80">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Search clients, accounts, nudges..."
-                className="pl-10 bg-muted/50 border-0"
-              />
-            </div>
-          </div>
-
-          <div className="flex items-center gap-6">
-            {/* Practice Health Score */}
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <Heart className="w-4 h-4 text-[hsl(142,76%,36%)]" />
-                <span className="text-sm font-medium">Practice Health</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Progress value={practiceHealthScore} className="w-24 h-2" />
-                <span className="text-sm font-semibold text-[hsl(142,76%,36%)]">
-                  {practiceHealthScore}%
-                </span>
-              </div>
-            </div>
-
-            {/* Notifications */}
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="w-5 h-5" />
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-destructive-foreground text-xs rounded-full flex items-center justify-center">
-                12
-              </span>
-            </Button>
-          </div>
-        </header>
+        <AppHeader
+          searchPlaceholder="Search clients, accounts, nudges..."
+          userName={userName}
+          userEmail={user?.email}
+          onSignOut={handleSignOut}
+          onAccountSettings={() => navigate("/practice")}
+        />
 
         {/* Main Workspace - Scrollable */}
         <main className="flex-1 p-6 overflow-auto">
