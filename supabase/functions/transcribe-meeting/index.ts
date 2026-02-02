@@ -93,7 +93,7 @@ Instructions:
 
 Please provide only the transcription, nothing else.`;
 
-    const geminiResponse = await fetch('https://api.lovable.dev/v1/chat/completions', {
+    const geminiResponse = await fetch('https://ai.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${lovableApiKey}`,
