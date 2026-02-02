@@ -4,10 +4,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LayoutDashboard, Users, Mail, CalendarIcon, ListTodo, LineChart, Building2, Plus, X, Search, Bell, LogOut } from "lucide-react";
+import { LayoutDashboard, Users, Mail, CalendarIcon, ListTodo, LineChart, Building2, Plus, X, Search, LogOut } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 import { AdvisorFilter } from "@/components/dashboard/AdvisorFilter";
+import { NotificationDropdown } from "@/components/dashboard/NotificationDropdown";
 const providerData = [{
   name: "Ninety One",
   bookPercent: "55.3 %",
@@ -244,10 +245,7 @@ const Dashboard = () => {
           </div>
           <div className="flex items-center gap-4">
             <AdvisorFilter />
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="w-5 h-5" />
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">1</span>
-            </Button>
+            <NotificationDropdown />
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium">{userName}</span>
               <Button variant="ghost" size="icon" onClick={handleSignOut} title="Sign out">
