@@ -306,8 +306,10 @@ const Insights = () => {
     },
     series: [{
       type: 'pie' as const,
-      radius: ['50%', '80%'],
+      radius: ['45%', '85%'],
       center: ['50%', '50%'],
+      selectedMode: 'single' as const,
+      selectedOffset: 12,
       data: monthlyCommissionData.map(d => ({
         name: d.name,
         value: d.value,
@@ -320,7 +322,7 @@ const Insights = () => {
           shadowColor: 'rgba(0, 0, 0, 0.3)',
         },
         scale: true,
-        scaleSize: 10,
+        scaleSize: 12,
       },
       animationType: 'scale' as const,
       animationEasing: 'elasticOut' as const,
@@ -569,9 +571,9 @@ const Insights = () => {
                 </Button>
               </CardHeader>
               <CardContent className="px-4 pb-4">
-                <div className="h-48 flex items-center justify-center">
+                <div className="h-64 flex items-center justify-center">
                   <EChartsWrapper
-                    height={192}
+                    height={256}
                     option={monthlyCommissionOption}
                   />
                 </div>
@@ -593,7 +595,7 @@ const Insights = () => {
             </Card>
 
             {/* Commission Snapshot */}
-            <Card className="col-span-3 row-span-2">
+            <Card className="col-span-3">
               <CardHeader className="flex flex-row items-center justify-between py-3 px-4">
                 <CardTitle className="text-sm font-medium">COMMISSION SNAPSHOT</CardTitle>
                 <Button variant="ghost" size="icon" className="h-6 w-6">
