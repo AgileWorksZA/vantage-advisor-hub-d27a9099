@@ -31,12 +31,15 @@ import {
   Umbrella,
   Clock,
   ChevronDown,
+  GripVertical,
 } from "lucide-react";
 import commandCenterIcon from "@/assets/command-center-icon.png";
 import vantageLogo from "@/assets/vantage-logo.png";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { EChartsWrapper, createGradient } from "@/components/ui/echarts-wrapper";
 import { format, subMonths } from "date-fns";
+import { DraggableWidgetGrid, WidgetLayout } from "@/components/widgets/DraggableWidgetGrid";
+import { useWidgetLayout } from "@/hooks/useWidgetLayout";
 
 // Generate 60 months of commission by type data (5 years)
 const generateCommissionByTypeData = () => {
@@ -159,6 +162,15 @@ const filterDataByPeriod = <T,>(data: T[], period: string): T[] => {
   return data.slice(-monthsToShow);
 };
 
+const defaultInsightsLayout: WidgetLayout[] = [
+  { i: 'commission-type', x: 0, y: 0, w: 3, h: 4 },
+  { i: 'commission-earned', x: 3, y: 0, w: 3, h: 4 },
+  { i: 'monthly-commission', x: 6, y: 0, w: 3, h: 4 },
+  { i: 'commission-snapshot', x: 9, y: 0, w: 3, h: 4 },
+  { i: 'commission-summary', x: 0, y: 4, w: 6, h: 4 },
+  { i: 'leaderboard', x: 6, y: 4, w: 3, h: 4 },
+];
+
 const Insights = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
@@ -168,6 +180,13 @@ const Insights = () => {
   const [commissionByTypePeriod, setCommissionByTypePeriod] = useState<string>("3m");
   const [commissionEarnedPeriod, setCommissionEarnedPeriod] = useState<string>("3m");
   const [commissionSummaryPeriod, setCommissionSummaryPeriod] = useState<string>("1y");
+
+  // Widget layout hook
+  const { layout, onLayoutChange } = useWidgetLayout({
+    pageId: 'insights',
+    defaultLayout: defaultInsightsLayout,
+    userId: user?.id,
+  });
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -469,253 +488,283 @@ const Insights = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-12 gap-4">
+          <DraggableWidgetGrid layout={layout} onLayoutChange={onLayoutChange}>
             {/* Commission by Type */}
-            <Card className="col-span-3">
-              <CardHeader className="flex flex-row items-center justify-between py-3 px-4">
-                <CardTitle className="text-sm font-medium">COMMISSION BY TYPE</CardTitle>
-                <Button variant="ghost" size="icon" className="h-6 w-6">
-                  <X className="w-4 h-4" />
-                </Button>
-              </CardHeader>
-              <CardContent className="px-4 pb-4">
-                <Select value={commissionByTypePeriod} onValueChange={setCommissionByTypePeriod}>
-                  <SelectTrigger className="w-[130px] h-8 bg-[hsl(180,25%,25%)] text-white border-0 mb-4">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {periodOptions.map(option => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs mb-4">
-                  <div className="flex items-center gap-1">
-                    <span className="w-3 h-3 rounded-sm bg-[hsl(210,70%,50%)]"></span>
-                    <span>PUFs</span>
+            <div key="commission-type">
+              <Card className="h-full">
+                <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
+                  <div className="flex items-center gap-2">
+                    <GripVertical className="w-4 h-4 text-muted-foreground" />
+                    <CardTitle className="text-sm font-medium">COMMISSION BY TYPE</CardTitle>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <span className="w-3 h-3 rounded-sm bg-[hsl(180,70%,45%)]"></span>
-                    <span>Ongoing</span>
+                  <Button variant="ghost" size="icon" className="h-6 w-6">
+                    <X className="w-4 h-4" />
+                  </Button>
+                </CardHeader>
+                <CardContent className="px-4 pb-4">
+                  <Select value={commissionByTypePeriod} onValueChange={setCommissionByTypePeriod}>
+                    <SelectTrigger className="w-[130px] h-8 bg-[hsl(180,25%,25%)] text-white border-0 mb-4">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {periodOptions.map(option => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs mb-4">
+                    <div className="flex items-center gap-1">
+                      <span className="w-3 h-3 rounded-sm bg-[hsl(210,70%,50%)]"></span>
+                      <span>PUFs</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="w-3 h-3 rounded-sm bg-[hsl(180,70%,45%)]"></span>
+                      <span>Ongoing</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="w-3 h-3 rounded-sm bg-[hsl(45,93%,47%)]"></span>
+                      <span>Lapses</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="w-3 h-3 rounded-sm bg-[hsl(0,70%,50%)]"></span>
+                      <span>Initial</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="w-3 h-3 rounded-sm bg-[hsl(280,65%,50%)]"></span>
+                      <span>2nd Year</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <span className="w-3 h-3 rounded-sm bg-[hsl(45,93%,47%)]"></span>
-                    <span>Lapses</span>
+                  <div className="h-48">
+                    <EChartsWrapper
+                      height={192}
+                      option={commissionByTypeOption}
+                    />
                   </div>
-                  <div className="flex items-center gap-1">
-                    <span className="w-3 h-3 rounded-sm bg-[hsl(0,70%,50%)]"></span>
-                    <span>Initial</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span className="w-3 h-3 rounded-sm bg-[hsl(280,65%,50%)]"></span>
-                    <span>2nd Year</span>
-                  </div>
-                </div>
-                <div className="h-48">
-                  <EChartsWrapper
-                    height={192}
-                    option={commissionByTypeOption}
-                  />
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </div>
 
             {/* Commission Earned */}
-            <Card className="col-span-3">
-              <CardHeader className="flex flex-row items-center justify-between py-3 px-4">
-                <CardTitle className="text-sm font-medium">COMMISSION EARNED</CardTitle>
-                <Button variant="ghost" size="icon" className="h-6 w-6">
-                  <X className="w-4 h-4" />
-                </Button>
-              </CardHeader>
-              <CardContent className="px-4 pb-4">
-                <div className="flex items-center justify-between mb-4">
-                  <Select value={commissionEarnedPeriod} onValueChange={setCommissionEarnedPeriod}>
-                    <SelectTrigger className="w-[130px] h-8 bg-[hsl(180,25%,25%)] text-white border-0">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {periodOptions.map(option => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <div className="text-right">
-                    <p className="text-xs text-muted-foreground">Last Month</p>
-                    <p className="text-sm font-semibold">R800,561.87</p>
+            <div key="commission-earned">
+              <Card className="h-full">
+                <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
+                  <div className="flex items-center gap-2">
+                    <GripVertical className="w-4 h-4 text-muted-foreground" />
+                    <CardTitle className="text-sm font-medium">COMMISSION EARNED</CardTitle>
                   </div>
-                  <div className="text-right">
-                    <p className="text-xs text-muted-foreground">Current Month</p>
-                    <p className="text-sm font-semibold">R784,650.28</p>
-                  </div>
-                </div>
-                <div className="h-48">
-                  <EChartsWrapper
-                    height={192}
-                    option={commissionEarnedOption}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Monthly Commission */}
-            <Card className="col-span-3">
-              <CardHeader className="flex flex-row items-center justify-between py-3 px-4">
-                <CardTitle className="text-sm font-medium">MONTHLY COMMISSION</CardTitle>
-                <Button variant="ghost" size="icon" className="h-6 w-6">
-                  <X className="w-4 h-4" />
-                </Button>
-              </CardHeader>
-              <CardContent className="px-4 pb-4">
-                <div className="h-48 flex items-center justify-center">
-                  <EChartsWrapper
-                    height={192}
-                    option={monthlyCommissionOption}
-                  />
-                </div>
-                <div className="flex justify-between text-center mt-2">
-                  <div>
-                    <p className="text-sm font-semibold">R 843,734.04</p>
-                    <p className="text-xs text-muted-foreground">Target</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold">R 784,650.28</p>
-                    <p className="text-xs text-muted-foreground">Actual</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold">R 59,083.76</p>
-                    <p className="text-xs text-muted-foreground">Shortfall</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Commission Snapshot */}
-            <Card className="col-span-3">
-              <CardHeader className="flex flex-row items-center justify-between py-3 px-4">
-                <CardTitle className="text-sm font-medium">COMMISSION SNAPSHOT</CardTitle>
-                <Button variant="ghost" size="icon" className="h-6 w-6">
-                  <X className="w-4 h-4" />
-                </Button>
-              </CardHeader>
-              <CardContent className="px-4 pb-4 space-y-4">
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-                    <Award className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Rank Status</p>
-                    <p className="text-sm font-medium">Platinum (Millionaires' Club)</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-                    <Target className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Position</p>
-                    <p className="text-sm font-medium">7/212</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-                    <DollarSign className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Commission due next payment</p>
-                    <p className="text-sm font-medium">R49,545.15</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-                    <Target className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Monthly Target Commission</p>
-                    <p className="text-sm font-medium">R843,734.04</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-                    <TrendingUp className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Monthly adjusted target</p>
-                    <p className="text-sm font-medium">R874,183.83</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Commission Summary */}
-            <Card className="col-span-6">
-              <CardHeader className="flex flex-row items-center justify-between py-3 px-4">
-                <CardTitle className="text-sm font-medium">COMMISSION SUMMARY</CardTitle>
-                <Button variant="ghost" size="icon" className="h-6 w-6">
-                  <X className="w-4 h-4" />
-                </Button>
-              </CardHeader>
-              <CardContent className="px-4 pb-4">
-                <div className="flex items-center justify-between mb-4">
-                  <Select value={commissionSummaryPeriod} onValueChange={setCommissionSummaryPeriod}>
-                    <SelectTrigger className="w-[130px] h-8 bg-[hsl(180,25%,25%)] text-white border-0">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {periodOptions.map(option => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <div className="flex gap-8">
-                    <div>
-                      <p className="text-xs text-muted-foreground">Annual earned commission YTD</p>
-                      <p className="text-sm font-semibold text-[hsl(180,70%,45%)]">R4,879,705.54</p>
+                  <Button variant="ghost" size="icon" className="h-6 w-6">
+                    <X className="w-4 h-4" />
+                  </Button>
+                </CardHeader>
+                <CardContent className="px-4 pb-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <Select value={commissionEarnedPeriod} onValueChange={setCommissionEarnedPeriod}>
+                      <SelectTrigger className="w-[130px] h-8 bg-[hsl(180,25%,25%)] text-white border-0">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {periodOptions.map(option => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <div className="text-right">
+                      <p className="text-xs text-muted-foreground">Last Month</p>
+                      <p className="text-sm font-semibold">R800,561.87</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-xs text-muted-foreground">Annual Target Commission</p>
-                      <p className="text-sm font-semibold">R10,124,808.49</p>
+                      <p className="text-xs text-muted-foreground">Current Month</p>
+                      <p className="text-sm font-semibold">R784,650.28</p>
                     </div>
                   </div>
-                </div>
-                <div className="h-56">
-                  <EChartsWrapper
-                    height={224}
-                    option={commissionSummaryOption}
-                  />
-                </div>
-              </CardContent>
-            </Card>
+                  <div className="h-48">
+                    <EChartsWrapper
+                      height={192}
+                      option={commissionEarnedOption}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Monthly Commission */}
+            <div key="monthly-commission">
+              <Card className="h-full">
+                <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
+                  <div className="flex items-center gap-2">
+                    <GripVertical className="w-4 h-4 text-muted-foreground" />
+                    <CardTitle className="text-sm font-medium">MONTHLY COMMISSION</CardTitle>
+                  </div>
+                  <Button variant="ghost" size="icon" className="h-6 w-6">
+                    <X className="w-4 h-4" />
+                  </Button>
+                </CardHeader>
+                <CardContent className="px-4 pb-4">
+                  <div className="h-48 flex items-center justify-center">
+                    <EChartsWrapper
+                      height={192}
+                      option={monthlyCommissionOption}
+                    />
+                  </div>
+                  <div className="flex justify-between text-center mt-2">
+                    <div>
+                      <p className="text-sm font-semibold">R 843,734.04</p>
+                      <p className="text-xs text-muted-foreground">Target</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold">R 784,650.28</p>
+                      <p className="text-xs text-muted-foreground">Actual</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold">R 59,083.76</p>
+                      <p className="text-xs text-muted-foreground">Shortfall</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Commission Snapshot */}
+            <div key="commission-snapshot">
+              <Card className="h-full">
+                <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
+                  <div className="flex items-center gap-2">
+                    <GripVertical className="w-4 h-4 text-muted-foreground" />
+                    <CardTitle className="text-sm font-medium">COMMISSION SNAPSHOT</CardTitle>
+                  </div>
+                  <Button variant="ghost" size="icon" className="h-6 w-6">
+                    <X className="w-4 h-4" />
+                  </Button>
+                </CardHeader>
+                <CardContent className="px-4 pb-4 space-y-4">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                      <Award className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Rank Status</p>
+                      <p className="text-sm font-medium">Platinum (Millionaires' Club)</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                      <Target className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Position</p>
+                      <p className="text-sm font-medium">7/212</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                      <DollarSign className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Commission due next payment</p>
+                      <p className="text-sm font-medium">R49,545.15</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                      <Target className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Monthly Target Commission</p>
+                      <p className="text-sm font-medium">R843,734.04</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                      <TrendingUp className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Monthly adjusted target</p>
+                      <p className="text-sm font-medium">R874,183.83</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Commission Summary */}
+            <div key="commission-summary">
+              <Card className="h-full">
+                <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
+                  <div className="flex items-center gap-2">
+                    <GripVertical className="w-4 h-4 text-muted-foreground" />
+                    <CardTitle className="text-sm font-medium">COMMISSION SUMMARY</CardTitle>
+                  </div>
+                  <Button variant="ghost" size="icon" className="h-6 w-6">
+                    <X className="w-4 h-4" />
+                  </Button>
+                </CardHeader>
+                <CardContent className="px-4 pb-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <Select value={commissionSummaryPeriod} onValueChange={setCommissionSummaryPeriod}>
+                      <SelectTrigger className="w-[130px] h-8 bg-[hsl(180,25%,25%)] text-white border-0">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {periodOptions.map(option => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <div className="flex gap-8">
+                      <div>
+                        <p className="text-xs text-muted-foreground">Annual earned commission YTD</p>
+                        <p className="text-sm font-semibold text-[hsl(180,70%,45%)]">R4,879,705.54</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-muted-foreground">Annual Target Commission</p>
+                        <p className="text-sm font-semibold">R10,124,808.49</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="h-56">
+                    <EChartsWrapper
+                      height={224}
+                      option={commissionSummaryOption}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
 
             {/* Leaderboard Snapshot */}
-            <Card className="col-span-3">
-              <CardHeader className="flex flex-row items-center justify-between py-3 px-4">
-                <CardTitle className="text-sm font-medium">LEADERBOARD SNAPSHOT</CardTitle>
-                <Button variant="ghost" size="icon" className="h-6 w-6">
-                  <X className="w-4 h-4" />
-                </Button>
-              </CardHeader>
-              <CardContent className="px-4 pb-4 space-y-3">
-                {leaderboardData.map((item) => (
-                  <div key={item.label} className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-                      <item.icon className="w-4 h-4" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm">{item.label}</p>
-                      <p className="text-sm font-semibold">{item.value}</p>
-                    </div>
+            <div key="leaderboard">
+              <Card className="h-full">
+                <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
+                  <div className="flex items-center gap-2">
+                    <GripVertical className="w-4 h-4 text-muted-foreground" />
+                    <CardTitle className="text-sm font-medium">LEADERBOARD SNAPSHOT</CardTitle>
                   </div>
-                ))}
-              </CardContent>
-            </Card>
-          </div>
+                  <Button variant="ghost" size="icon" className="h-6 w-6">
+                    <X className="w-4 h-4" />
+                  </Button>
+                </CardHeader>
+                <CardContent className="px-4 pb-4 space-y-3">
+                  {leaderboardData.map((item) => (
+                    <div key={item.label} className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                        <item.icon className="w-4 h-4" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm">{item.label}</p>
+                        <p className="text-sm font-semibold">{item.value}</p>
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            </div>
+          </DraggableWidgetGrid>
         </main>
       </div>
     </div>
