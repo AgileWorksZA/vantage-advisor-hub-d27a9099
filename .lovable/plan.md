@@ -1,188 +1,229 @@
 
 
-# Plan: Add New Employee Detail Sections to Practice Management
+# Plan: Add Regional Settings Selector to Dashboard Header
 
 ## Overview
-This plan adds 4 new sections to the employee settings menu in Practice Management, plus updates the existing Activity Log tab with enhanced data. These sections will appear in the left sidebar when viewing an employee's record.
+This plan adds a regional settings button (flag selector) to the right of the notification bell in the dashboard header. Selecting a different country will dynamically update all dashboard data to reflect that region's currency, local providers, client names, and product types.
 
 ---
 
 ## Current State
-The Practice page (`src/pages/Practice.tsx`) currently has these tabs in the employee detail view:
-- Profile
-- Preferences  
-- Communication
-- Integrations
-- VoIP
-- Referrals
-- Mailbox
-- Activity Log
+- The dashboard header contains: Search, AdvisorFilter, NotificationDropdown, and User info
+- All dashboard data is hardcoded as South African data (ZAR currency, SA providers, Afrikaans names)
+- Data arrays are defined at the top of `Dashboard.tsx`
 
 ---
 
 ## Proposed Changes
 
-### 1. Add "Roles" Tab
-Based on the screenshot provided, this tab will:
-- Display a numbered table of assigned roles for the employee
-- Include a dropdown to add new roles from a predefined list
-- Show 14 available role types: Accountant, Administrator, Assistant, Campaign Support, Client, Compliance, Compliance PSL, Financial Adviser, Financial Planning Support, Guest, Head Office Support, Marketing, Provider, Regional Officer
-- Allow removal of roles via an "X" button per row
-- Include a settings gear icon for role configuration
+### 1. Create RegionSelector Component
+A new component `src/components/dashboard/RegionSelector.tsx` that:
+- Displays a circular flag button showing the currently selected country
+- Uses emoji flags for clean, universal display: ZA, AU, CA, GB, US
+- Opens a dropdown popover with all 5 country options when clicked
+- Stores selected region in state and provides it via callback
 
-### 2. Add "Teams" Tab  
-Based on the "myPractice Teams" screenshot, this tab will:
-- Show teams the employee belongs to in a table format
-- Columns: #, Name, Office, Role, Leader, Is Primary, ID
-- Include toolbar with: "Add new" button, "Reset" button, search field, settings gear
-- Show item count (e.g., "6 items")
-- Allow edit (pencil icon) and delete (X) actions per row
-- Mark primary team membership with a checkmark indicator
+### 2. Create Regional Data Configuration
+A new data file `src/data/regionalData.ts` containing region-specific data for each of the 5 countries:
 
-### 3. Add "Broker Codes" Tab
-Based on the screenshot provided, this tab will:
-- Display broker/provider codes linked to the employee
-- Columns: #, Provider, Code, House code, Umbrella provider, Is primary, For finance use only, Income split %, Asset split %, ID
-- Show info message: "Broker codes may only be added from iBase. If you would like to add one, please contact the iBase support staff."
-- Include toolbar with: item count, Reset button, search field, settings gear, "Inactive" toggle
-- Show checkmarks (green) and X marks (red) for boolean fields
-- Display percentage values for split columns
+**Countries supported:**
+- South Africa (default) - ZAR (R)
+- Australia - AUD (A$)
+- Canada - CAD (C$)
+- United Kingdom - GBP (pound)
+- United States - USD ($)
 
-### 4. Enhance "Communication" Tab
-Update the existing Communication tab to add:
-- **Notification Activation Section**: Grouped toggles for various notification types the user wants to receive
-- **Email Signature Section**: 
-  - Rich text or textarea for default mail signature
-  - Preview of the signature
-  - Save/reset functionality
+**Data per region:**
+- **Currency symbol** and formatting
+- **Providers** (local custody platforms)
+- **Top 5 Accounts** (local names)
+- **Birthdays** (culturally appropriate names)
+- **Products** (region-specific investment products)
+- **Clients by Value** (currency ranges)
 
-### 5. Enhance "Activity Log" Tab (Event Log)
-Based on the screenshot provided, update the table with:
-- Additional columns: Client (clickable), Note, Active person
-- Full column set: #, Date, Type, Subtype, Client, Entity name, Note, Active person, ID
-- Pagination controls: first, previous, page number input, next, last
-- Page indicator (e.g., "Page 1 of 1244")
-- Sample data from the screenshot including:
-  - Add product, iComply created, Consent created, Last review date updated, Note added, Person updated, Banking details viewed, Advice process: document download events
-- Export button functionality
+### 3. Update Dashboard to Use Regional Data
+- Add region state management in `Dashboard.tsx`
+- Import and use regional data based on selected region
+- Pass region setter to RegionSelector component
+- All cards dynamically render based on selected region
 
 ---
 
 ## Technical Details
 
-### File Changes
+### New Files
 
-#### `src/pages/Practice.tsx`
-1. **Update `settingsTabs` array** (line ~39):
+#### `src/components/dashboard/RegionSelector.tsx`
+```typescript
+// Core structure
+interface Region {
+  code: string;        // "ZA", "AU", "CA", "GB", "US"
+  name: string;        // "South Africa", etc.
+  flag: string;        // Emoji flag
+  currencyCode: string; // "ZAR", "AUD", etc.
+  currencySymbol: string; // "R", "A$", etc.
+}
+
+// Component using Popover similar to AdvisorFilter
+// Flag button with dropdown list of countries
+// onClick updates parent state via callback
+```
+
+#### `src/data/regionalData.ts`
+Region-specific data including:
+
+**South Africa (ZA):**
+- Currency: R (ZAR)
+- Providers: Ninety One, Old Mutual, Allan Gray, Sanlam Glacier, Investec
+- Names: Afrikaans/South African (e.g., Van der Merwe, Botha, De Villiers)
+- Products: Living Annuity, Endowment, Preservation Fund, Tax-Free Savings
+
+**Australia (AU):**
+- Currency: A$ (AUD)
+- Providers: Macquarie, AMP, BT Wrap, Colonial First State, Hub24
+- Names: Australian (e.g., Smith, Williams, Brown, O'Connor)
+- Products: Superannuation, SMSF, Pension Phase, Investment Bond
+
+**Canada (CA):**
+- Currency: C$ (CAD)
+- Providers: RBC Dominion, TD Direct, CIBC Wood Gundy, BMO Nesbitt Burns, National Bank
+- Names: Canadian (e.g., Tremblay, Roy, Gagnon, MacDonald)
+- Products: RRSP, TFSA, RRIF, RESP, Non-Registered
+
+**United Kingdom (GB):**
+- Currency: pound (GBP)
+- Providers: Hargreaves Lansdown, AJ Bell, Interactive Investor, Fidelity, Vanguard UK
+- Names: British (e.g., Smith, Jones, Williams, Taylor)
+- Products: ISA, SIPP, GIA, Junior ISA, Stocks & Shares ISA
+
+**United States (US):**
+- Currency: $ (USD)
+- Providers: Fidelity, Charles Schwab, Vanguard, TD Ameritrade, E*TRADE
+- Names: American (e.g., Johnson, Williams, Garcia, Martinez)
+- Products: 401(k), IRA, Roth IRA, 529 Plan, Brokerage Account
+
+### File Modifications
+
+#### `src/pages/Dashboard.tsx`
+1. **Add import** for RegionSelector component and regional data
+2. **Add state**: `const [selectedRegion, setSelectedRegion] = useState<string>("ZA")`
+3. **Replace hardcoded data** with dynamic data lookup:
    ```typescript
-   const settingsTabs = [
-     { id: "profile", label: "Profile", icon: UserIcon },
-     { id: "roles", label: "Roles", icon: ShieldCheck },        // NEW
-     { id: "teams", label: "Teams", icon: Users2 },             // NEW
-     { id: "broker-codes", label: "Broker Codes", icon: Building }, // NEW
-     { id: "preferences", label: "Preferences", icon: Settings },
-     { id: "communication", label: "Communication", icon: MessageSquare },
-     { id: "integrations", label: "Integrations", icon: CreditCard },
-     { id: "voip", label: "VoIP", icon: Phone },
-     { id: "referrals", label: "Referrals", icon: Shield },
-     { id: "mailbox", label: "Mailbox", icon: Mail },
-     { id: "activity", label: "Activity Log", icon: Activity },
-   ];
+   const currentData = getRegionalData(selectedRegion);
+   const { providers, topAccounts, birthdays, products, clientsByValue, currency } = currentData;
    ```
-
-2. **Add new icon imports** from `lucide-react`:
-   - `ShieldCheck` for Roles
-   - `Users2` for Teams  
-   - `Building` for Broker Codes
-   - `ChevronLeft`, `ChevronRight`, `ChevronsLeft`, `ChevronsRight` for pagination
-
-3. **Add sample data constants** for roles, teams, broker codes, and activity log entries
-
-4. **Create `RolesTab` component**:
-   - Role assignment table with edit/delete capability
-   - "Add new role" dropdown selector
-   - Role list from predefined options
-
-5. **Create `TeamsTab` component**:
-   - Teams table with columns matching screenshot
-   - Add/Edit/Delete functionality
-   - Search and filter controls
-
-6. **Create `BrokerCodesTab` component**:
-   - Provider codes table
-   - Read-only indication with info message
-   - Inactive filter toggle
-
-7. **Update `CommunicationTab` component**:
-   - Add email signature textarea with preview
-   - Add notification preference toggles
-
-8. **Update `ActivityLogTab` component**:
-   - Add Client column (between Subtype and Entity name)
-   - Add Note column
-   - Rename "Active person" column appropriately
-   - Add ID column
-   - Add pagination component with page controls
-   - Populate with sample data from the screenshot
-
-9. **Update `PersonnelSettings` render section** to include new tabs
+4. **Add RegionSelector** to header between NotificationDropdown and user info:
+   ```tsx
+   <NotificationDropdown />
+   <RegionSelector selectedRegion={selectedRegion} onRegionChange={setSelectedRegion} />
+   <div className="flex items-center gap-2">...</div>
+   ```
+5. **Update currency display** in all value columns to use dynamic currency symbol
+6. **Update AUM total** to reflect regional data
 
 ---
 
-## Sample Data to Add
+## Regional Data Samples
 
-### Roles Data
+### Australia
 ```typescript
-const availableRoles = [
-  "Accountant", "Administrator", "Assistant", "Campaign Support", 
-  "Client", "Compliance", "Compliance PSL", "Financial Adviser",
-  "Financial Planning Support", "Guest", "Head Office Support", 
-  "Marketing", "Provider", "Regional Officer"
-];
+{
+  providers: [
+    { name: "Macquarie Wrap", bookPercent: "42.1 %", value: "A$ 1,847,293,441" },
+    { name: "AMP North", bookPercent: "18.3 %", value: "A$ 803,156,229" },
+    { name: "BT Wrap", bookPercent: "15.7 %", value: "A$ 689,321,847" },
+    { name: "Colonial First State", bookPercent: "12.4 %", value: "A$ 544,871,203" },
+    { name: "Hub24", bookPercent: "11.5 %", value: "A$ 504,983,152" }
+  ],
+  topAccounts: [
+    { investor: "Melbourne Grammar School Foundation", bookPercent: "1.3 %", value: "A$ 57,182,341.50" },
+    { investor: "O'Connor, Michael", bookPercent: "1.1 %", value: "A$ 48,347,892.30" },
+    ...
+  ],
+  birthdays: [
+    { name: "William James Mitchell", nextBirthday: "3 February", age: 58 },
+    { name: "Sarah Elizabeth Thompson", nextBirthday: "3 February", age: 44 },
+    ...
+  ],
+  products: [
+    { name: "Superannuation", value: 35.2, color: "hsl(210, 70%, 40%)" },
+    { name: "SMSF", value: 22.8, color: "hsl(142, 76%, 36%)" },
+    { name: "Pension Phase", value: 18.4, color: "hsl(45, 93%, 47%)" },
+    ...
+  ]
+}
 ```
 
-### Teams Data
+### United States
 ```typescript
-const teamsData = [
-  { id: 1, name: "Danie Jordaan Financial Planning LTD", office: "Tygerwaterfront The Edge", role: "Financial planner", leader: "Jordaan, Danie", isPrimary: true, dbId: 629 },
-  { id: 2, name: "Danie Jordaan Financial Planning LTD", office: "Tygerwaterfront The Edge", role: "Assistant", leader: "Jordaan, Danie", isPrimary: true, dbId: 629 },
-  // ...more entries
-];
-```
-
-### Broker Codes Data  
-```typescript
-const brokerCodesData = [
-  { id: 1, provider: "PSG Asset Management Administration Services Ltd", code: "DDDD", houseCode: "PSG Asset Management", umbrellaProvider: "", isPrimary: true, forFinanceOnly: false, incomeSplit: 100, assetSplit: 100, dbId: 194696 },
-  // ...more entries from screenshot
-];
-```
-
-### Activity Log Data
-```typescript
-const activityLogData = [
-  { id: 1, date: "2026-01-19 15:17:33", type: "Add product", subtype: "", client: "Botha, Karel", entityName: "PSG Securities Ltd Local - Share portfolio (Local)", note: "", activePerson: "Jordaan, Danie", dbId: 47159690 },
-  { id: 2, date: "2026-01-14 12:10:10", type: "iComply created", subtype: "Two step", client: "Botha, Karel", entityName: "FAIS Control for Karel Botha on 2026-01-14", note: "", activePerson: "Jordaan, Danie", dbId: 47105064 },
-  // ...20 entries from screenshot
-];
+{
+  providers: [
+    { name: "Fidelity Investments", bookPercent: "38.7 %", value: "$ 2,156,842,193" },
+    { name: "Charles Schwab", bookPercent: "24.2 %", value: "$ 1,348,291,847" },
+    { name: "Vanguard", bookPercent: "19.8 %", value: "$ 1,103,284,621" },
+    { name: "TD Ameritrade", bookPercent: "10.1 %", value: "$ 562,947,382" },
+    { name: "E*TRADE", bookPercent: "7.2 %", value: "$ 401,283,947" }
+  ],
+  topAccounts: [
+    { investor: "St. Mary's Hospital Foundation", bookPercent: "1.4 %", value: "$ 78,012,493.20" },
+    { investor: "Johnson, Robert", bookPercent: "1.2 %", value: "$ 66,847,291.80" },
+    ...
+  ],
+  birthdays: [
+    { name: "Michael David Johnson", nextBirthday: "5 February", age: 52 },
+    { name: "Jennifer Marie Williams", nextBirthday: "5 February", age: 47 },
+    ...
+  ],
+  products: [
+    { name: "401(k)", value: 32.1, color: "hsl(210, 70%, 40%)" },
+    { name: "IRA", value: 24.3, color: "hsl(142, 76%, 36%)" },
+    { name: "Roth IRA", value: 18.9, color: "hsl(45, 93%, 47%)" },
+    ...
+  ]
+}
 ```
 
 ---
 
-## UI Components Needed
+## Visual Design
 
-All components will use existing UI primitives:
-- `Table`, `TableHeader`, `TableBody`, `TableRow`, `TableHead`, `TableCell` from `@/components/ui/table`
-- `Button`, `Input`, `Select`, `Switch`, `Checkbox` from existing UI
-- `Textarea` for email signature
-- Custom pagination controls using Button components
+### Flag Button
+- Circular button (same size as notification bell ~36px)
+- Shows emoji flag of current country
+- Subtle hover effect matching existing header buttons
+- Positioned between notification bell and user name
+
+### Dropdown Menu
+- Clean popover matching existing design patterns
+- Country name with flag emoji for each option
+- Check mark or highlight for selected country
+- Smooth transition when switching regions
 
 ---
 
-## Visual Styling
-- Maintain teal accent color: `hsl(180, 70%, 45%)` for active states
-- Green checkmark: `text-green-500` 
-- Red X mark: `text-red-500`
-- Clickable links in teal color for client names and provider names
-- Gray background for table headers: `bg-muted/50`
+## UI Component Structure
+```text
+Header
+|-- Search Input
+|-- AdvisorFilter
+|-- NotificationDropdown
+|-- RegionSelector (NEW)
+|   |-- Flag Button (trigger)
+|   |-- Popover Content
+|       |-- South Africa
+|       |-- Australia
+|       |-- Canada
+|       |-- United Kingdom
+|       |-- United States
+|-- User Name + Logout
+```
+
+---
+
+## Files to Create
+1. `src/components/dashboard/RegionSelector.tsx` - Flag dropdown component
+2. `src/data/regionalData.ts` - All region-specific data configurations
+
+## Files to Modify
+1. `src/pages/Dashboard.tsx` - Integrate region state and dynamic data rendering
 
