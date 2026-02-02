@@ -20,17 +20,43 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { EChartsWrapper } from "@/components/ui/echarts-wrapper";
 
-// Simple sparkline component
+// Sparkline data
+const sparklineData = [20, 18, 15, 16, 12, 10, 8, 6, 4];
+
+// ECharts sparkline component
 const Sparkline = () => (
-  <svg width="80" height="24" className="text-[hsl(142,76%,36%)]">
-    <path
-      d="M0,20 L10,18 L20,15 L30,16 L40,12 L50,10 L60,8 L70,6 L80,4"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-    />
-  </svg>
+  <EChartsWrapper
+    height={24}
+    className="echarts-sparkline w-20"
+    transparent={false}
+    option={{
+      grid: { left: 0, right: 0, top: 0, bottom: 0 },
+      xAxis: { type: 'category', show: false, data: sparklineData.map((_, i) => i) },
+      yAxis: { type: 'value', show: false, min: 0, max: 25 },
+      series: [{
+        type: 'line',
+        data: sparklineData,
+        smooth: true,
+        symbol: 'none',
+        lineStyle: {
+          color: 'hsl(142, 76%, 36%)',
+          width: 2,
+        },
+        areaStyle: {
+          color: {
+            type: 'linear',
+            x: 0, y: 0, x2: 0, y2: 1,
+            colorStops: [
+              { offset: 0, color: 'hsla(142, 76%, 36%, 0.3)' },
+              { offset: 1, color: 'hsla(142, 76%, 36%, 0)' },
+            ],
+          },
+        },
+      }],
+    }}
+  />
 );
 
 const commissionData = [
