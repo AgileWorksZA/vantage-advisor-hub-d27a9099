@@ -14,6 +14,345 @@ export type Database = {
   }
   public: {
     Tables: {
+      advice_workflows: {
+        Row: {
+          adviser_id: string | null
+          client_id: string
+          created_at: string
+          current_step: number
+          date: string | null
+          deleted_at: string | null
+          id: string
+          is_deleted: boolean
+          name: string
+          status: Database["public"]["Enums"]["workflow_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          adviser_id?: string | null
+          client_id: string
+          created_at?: string
+          current_step?: number
+          date?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_deleted?: boolean
+          name: string
+          status?: Database["public"]["Enums"]["workflow_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          adviser_id?: string | null
+          client_id?: string
+          created_at?: string
+          current_step?: number
+          date?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_deleted?: boolean
+          name?: string
+          status?: Database["public"]["Enums"]["workflow_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "advice_workflows_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_contacts: {
+        Row: {
+          client_id: string
+          company: string | null
+          created_at: string
+          deleted_at: string | null
+          email: string | null
+          id: string
+          is_deleted: boolean
+          job_title: string | null
+          name: string
+          notes: string | null
+          phone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          client_id: string
+          company?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          email?: string | null
+          id?: string
+          is_deleted?: boolean
+          job_title?: string | null
+          name: string
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          client_id?: string
+          company?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          email?: string | null
+          id?: string
+          is_deleted?: boolean
+          job_title?: string | null
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_contacts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_notes: {
+        Row: {
+          attachment_count: number | null
+          client_id: string
+          completed_at: string | null
+          content: string
+          created_at: string
+          deleted_at: string | null
+          id: string
+          interaction_type: string
+          is_complete: boolean
+          is_deleted: boolean
+          is_visible_portal: boolean
+          owner_user_id: string | null
+          priority: Database["public"]["Enums"]["task_priority"] | null
+          responsible_user_id: string | null
+          subject: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attachment_count?: number | null
+          client_id: string
+          completed_at?: string | null
+          content: string
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          interaction_type?: string
+          is_complete?: boolean
+          is_deleted?: boolean
+          is_visible_portal?: boolean
+          owner_user_id?: string | null
+          priority?: Database["public"]["Enums"]["task_priority"] | null
+          responsible_user_id?: string | null
+          subject?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          attachment_count?: number | null
+          client_id?: string
+          completed_at?: string | null
+          content?: string
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          interaction_type?: string
+          is_complete?: boolean
+          is_deleted?: boolean
+          is_visible_portal?: boolean
+          owner_user_id?: string | null
+          priority?: Database["public"]["Enums"]["task_priority"] | null
+          responsible_user_id?: string | null
+          subject?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_notes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_products: {
+        Row: {
+          adviser_id: string | null
+          client_id: string
+          created_at: string
+          created_by: string | null
+          current_value: number | null
+          deleted_at: string | null
+          end_date: string | null
+          frequency: string | null
+          id: string
+          is_deleted: boolean
+          is_linked: boolean
+          notes: string | null
+          policy_number: string | null
+          premium_amount: number | null
+          product_id: string | null
+          role: string
+          start_date: string | null
+          status: string
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+          value_updated_at: string | null
+        }
+        Insert: {
+          adviser_id?: string | null
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          current_value?: number | null
+          deleted_at?: string | null
+          end_date?: string | null
+          frequency?: string | null
+          id?: string
+          is_deleted?: boolean
+          is_linked?: boolean
+          notes?: string | null
+          policy_number?: string | null
+          premium_amount?: number | null
+          product_id?: string | null
+          role?: string
+          start_date?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id: string
+          value_updated_at?: string | null
+        }
+        Update: {
+          adviser_id?: string | null
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          current_value?: number | null
+          deleted_at?: string | null
+          end_date?: string | null
+          frequency?: string | null
+          id?: string
+          is_deleted?: boolean
+          is_linked?: boolean
+          notes?: string | null
+          policy_number?: string | null
+          premium_amount?: number | null
+          product_id?: string | null
+          role?: string
+          start_date?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+          value_updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_products_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_relationships: {
+        Row: {
+          client_id: string
+          created_at: string
+          deleted_at: string | null
+          entity_type: Database["public"]["Enums"]["entity_type"]
+          family_name: string | null
+          id: string
+          id_type: string | null
+          identification: string | null
+          is_deleted: boolean
+          name: string
+          product_viewing_level: string | null
+          related_client_id: string | null
+          relationship_type: Database["public"]["Enums"]["relationship_type"]
+          share_percentage: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          deleted_at?: string | null
+          entity_type?: Database["public"]["Enums"]["entity_type"]
+          family_name?: string | null
+          id?: string
+          id_type?: string | null
+          identification?: string | null
+          is_deleted?: boolean
+          name: string
+          product_viewing_level?: string | null
+          related_client_id?: string | null
+          relationship_type?: Database["public"]["Enums"]["relationship_type"]
+          share_percentage?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          deleted_at?: string | null
+          entity_type?: Database["public"]["Enums"]["entity_type"]
+          family_name?: string | null
+          id?: string
+          id_type?: string | null
+          identification?: string | null
+          is_deleted?: boolean
+          name?: string
+          product_viewing_level?: string | null
+          related_client_id?: string | null
+          relationship_type?: Database["public"]["Enums"]["relationship_type"]
+          share_percentage?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_relationships_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_relationships_related_client_id_fkey"
+            columns: ["related_client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           advisor: string | null
@@ -191,6 +530,779 @@ export type Database = {
         }
         Relationships: []
       }
+      commissions: {
+        Row: {
+          client_product_id: string | null
+          created_at: string
+          deleted_at: string | null
+          discrepancy_notes: string | null
+          expected_amount: number | null
+          id: string
+          is_deleted: boolean
+          payment_date: string | null
+          period_end: string | null
+          period_start: string | null
+          policy_reference: string | null
+          provider_id: string | null
+          received_amount: number | null
+          reconciled_at: string | null
+          reconciled_by: string | null
+          status: Database["public"]["Enums"]["commission_status"]
+          updated_at: string
+          user_id: string
+          variance_percentage: number | null
+        }
+        Insert: {
+          client_product_id?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          discrepancy_notes?: string | null
+          expected_amount?: number | null
+          id?: string
+          is_deleted?: boolean
+          payment_date?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          policy_reference?: string | null
+          provider_id?: string | null
+          received_amount?: number | null
+          reconciled_at?: string | null
+          reconciled_by?: string | null
+          status?: Database["public"]["Enums"]["commission_status"]
+          updated_at?: string
+          user_id: string
+          variance_percentage?: number | null
+        }
+        Update: {
+          client_product_id?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          discrepancy_notes?: string | null
+          expected_amount?: number | null
+          id?: string
+          is_deleted?: boolean
+          payment_date?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          policy_reference?: string | null
+          provider_id?: string | null
+          received_amount?: number | null
+          reconciled_at?: string | null
+          reconciled_by?: string | null
+          status?: Database["public"]["Enums"]["commission_status"]
+          updated_at?: string
+          user_id?: string
+          variance_percentage?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commissions_client_product_id_fkey"
+            columns: ["client_product_id"]
+            isOneToOne: false
+            referencedRelation: "client_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commissions_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "product_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      communications: {
+        Row: {
+          channel: Database["public"]["Enums"]["communication_channel"]
+          client_id: string
+          content: string | null
+          created_at: string
+          deleted_at: string | null
+          direction: string
+          from_identifier: string | null
+          id: string
+          is_deleted: boolean
+          sent_at: string | null
+          status: string | null
+          subject: string | null
+          to_identifier: string | null
+          user_id: string
+        }
+        Insert: {
+          channel?: Database["public"]["Enums"]["communication_channel"]
+          client_id: string
+          content?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          direction?: string
+          from_identifier?: string | null
+          id?: string
+          is_deleted?: boolean
+          sent_at?: string | null
+          status?: string | null
+          subject?: string | null
+          to_identifier?: string | null
+          user_id: string
+        }
+        Update: {
+          channel?: Database["public"]["Enums"]["communication_channel"]
+          client_id?: string
+          content?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          direction?: string
+          from_identifier?: string | null
+          id?: string
+          is_deleted?: boolean
+          sent_at?: string | null
+          status?: string | null
+          subject?: string | null
+          to_identifier?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communications_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cpd_cycles: {
+        Row: {
+          created_at: string
+          cycle_end: string
+          cycle_start: string
+          ethics_required: number
+          id: string
+          product_required: number
+          professional_required: number
+          regulatory_required: number
+          status: Database["public"]["Enums"]["workflow_status"]
+          total_hours_required: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          cycle_end: string
+          cycle_start: string
+          ethics_required?: number
+          id?: string
+          product_required?: number
+          professional_required?: number
+          regulatory_required?: number
+          status?: Database["public"]["Enums"]["workflow_status"]
+          total_hours_required?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          cycle_end?: string
+          cycle_start?: string
+          ethics_required?: number
+          id?: string
+          product_required?: number
+          professional_required?: number
+          regulatory_required?: number
+          status?: Database["public"]["Enums"]["workflow_status"]
+          total_hours_required?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      cpd_records: {
+        Row: {
+          category: Database["public"]["Enums"]["cpd_category"]
+          certificate_url: string | null
+          completion_date: string
+          course_name: string
+          cpd_cycle_id: string | null
+          created_at: string
+          hours: number
+          id: string
+          provider: string | null
+          updated_at: string
+          user_id: string
+          verified: boolean
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["cpd_category"]
+          certificate_url?: string | null
+          completion_date: string
+          course_name: string
+          cpd_cycle_id?: string | null
+          created_at?: string
+          hours: number
+          id?: string
+          provider?: string | null
+          updated_at?: string
+          user_id: string
+          verified?: boolean
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["cpd_category"]
+          certificate_url?: string | null
+          completion_date?: string
+          course_name?: string
+          cpd_cycle_id?: string | null
+          created_at?: string
+          hours?: number
+          id?: string
+          provider?: string | null
+          updated_at?: string
+          user_id?: string
+          verified?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cpd_records_cpd_cycle_id_fkey"
+            columns: ["cpd_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "cpd_cycles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_types: {
+        Row: {
+          category: string
+          code: string
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          retention_days: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string
+          code: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          retention_days?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          code?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          retention_days?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      documents: {
+        Row: {
+          approval_date: string | null
+          approved_by: string | null
+          client_id: string | null
+          created_at: string
+          deleted_at: string | null
+          document_type_id: string | null
+          expiry_date: string | null
+          file_path: string | null
+          file_size: number | null
+          id: string
+          is_deleted: boolean
+          mime_type: string | null
+          name: string
+          product_id: string | null
+          status: Database["public"]["Enums"]["document_status"]
+          updated_at: string
+          uploaded_by: string | null
+          user_id: string
+          version: number | null
+          workflow_id: string | null
+        }
+        Insert: {
+          approval_date?: string | null
+          approved_by?: string | null
+          client_id?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          document_type_id?: string | null
+          expiry_date?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          id?: string
+          is_deleted?: boolean
+          mime_type?: string | null
+          name: string
+          product_id?: string | null
+          status?: Database["public"]["Enums"]["document_status"]
+          updated_at?: string
+          uploaded_by?: string | null
+          user_id: string
+          version?: number | null
+          workflow_id?: string | null
+        }
+        Update: {
+          approval_date?: string | null
+          approved_by?: string | null
+          client_id?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          document_type_id?: string | null
+          expiry_date?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          id?: string
+          is_deleted?: boolean
+          mime_type?: string | null
+          name?: string
+          product_id?: string | null
+          status?: Database["public"]["Enums"]["document_status"]
+          updated_at?: string
+          uploaded_by?: string | null
+          user_id?: string
+          version?: number | null
+          workflow_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_document_type_id_fkey"
+            columns: ["document_type_id"]
+            isOneToOne: false
+            referencedRelation: "document_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      emails: {
+        Row: {
+          body_html: string | null
+          body_preview: string | null
+          cc_addresses: Json | null
+          client_id: string | null
+          created_at: string
+          deleted_at: string | null
+          direction: string
+          external_id: string | null
+          folder: Database["public"]["Enums"]["email_folder"]
+          from_address: string
+          has_attachments: boolean
+          id: string
+          is_deleted: boolean
+          is_read: boolean
+          received_at: string | null
+          sent_at: string | null
+          status: string | null
+          subject: string | null
+          to_addresses: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          body_html?: string | null
+          body_preview?: string | null
+          cc_addresses?: Json | null
+          client_id?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          direction?: string
+          external_id?: string | null
+          folder?: Database["public"]["Enums"]["email_folder"]
+          from_address: string
+          has_attachments?: boolean
+          id?: string
+          is_deleted?: boolean
+          is_read?: boolean
+          received_at?: string | null
+          sent_at?: string | null
+          status?: string | null
+          subject?: string | null
+          to_addresses?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          body_html?: string | null
+          body_preview?: string | null
+          cc_addresses?: Json | null
+          client_id?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          direction?: string
+          external_id?: string | null
+          folder?: Database["public"]["Enums"]["email_folder"]
+          from_address?: string
+          has_attachments?: boolean
+          id?: string
+          is_deleted?: boolean
+          is_read?: boolean
+          received_at?: string | null
+          sent_at?: string | null
+          status?: string | null
+          subject?: string | null
+          to_addresses?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "emails_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fais_controls: {
+        Row: {
+          client_id: string
+          created_at: string
+          current_step: number
+          date: string | null
+          deleted_at: string | null
+          id: string
+          is_deleted: boolean
+          name: string
+          products: Json | null
+          status: Database["public"]["Enums"]["workflow_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          current_step?: number
+          date?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_deleted?: boolean
+          name: string
+          products?: Json | null
+          status?: Database["public"]["Enums"]["workflow_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          current_step?: number
+          date?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_deleted?: boolean
+          name?: string
+          products?: Json | null
+          status?: Database["public"]["Enums"]["workflow_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fais_controls_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      portfolio_holdings: {
+        Row: {
+          created_at: string
+          current_value: number | null
+          fee_percentage: number | null
+          fund_name: string
+          id: string
+          percentage_allocation: number | null
+          performance_12m: number | null
+          portfolio_id: string
+          product_id: string | null
+          unit_price: number | null
+          units: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_value?: number | null
+          fee_percentage?: number | null
+          fund_name: string
+          id?: string
+          percentage_allocation?: number | null
+          performance_12m?: number | null
+          portfolio_id: string
+          product_id?: string | null
+          unit_price?: number | null
+          units?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_value?: number | null
+          fee_percentage?: number | null
+          fund_name?: string
+          id?: string
+          percentage_allocation?: number | null
+          performance_12m?: number | null
+          portfolio_id?: string
+          product_id?: string | null
+          unit_price?: number | null
+          units?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portfolio_holdings_portfolio_id_fkey"
+            columns: ["portfolio_id"]
+            isOneToOne: false
+            referencedRelation: "portfolios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "portfolio_holdings_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      portfolios: {
+        Row: {
+          benchmark: string | null
+          client_id: string
+          created_at: string
+          created_by: string | null
+          current_risk_score: number | null
+          deleted_at: string | null
+          id: string
+          is_deleted: boolean
+          last_valuation_date: string | null
+          name: string
+          portfolio_type: string
+          status: Database["public"]["Enums"]["workflow_status"]
+          target_risk_score: number | null
+          total_value: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          benchmark?: string | null
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          current_risk_score?: number | null
+          deleted_at?: string | null
+          id?: string
+          is_deleted?: boolean
+          last_valuation_date?: string | null
+          name: string
+          portfolio_type?: string
+          status?: Database["public"]["Enums"]["workflow_status"]
+          target_risk_score?: number | null
+          total_value?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          benchmark?: string | null
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          current_risk_score?: number | null
+          deleted_at?: string | null
+          id?: string
+          is_deleted?: boolean
+          last_valuation_date?: string | null
+          name?: string
+          portfolio_type?: string
+          status?: Database["public"]["Enums"]["workflow_status"]
+          target_risk_score?: number | null
+          total_value?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portfolios_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_categories: {
+        Row: {
+          code: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      product_providers: {
+        Row: {
+          code: string
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          provider_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          code: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          provider_type?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          code?: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          provider_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      products: {
+        Row: {
+          category_id: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          description: string | null
+          frequency_options: Json | null
+          id: string
+          is_active: boolean
+          is_deleted: boolean
+          max_premium: number | null
+          min_premium: number | null
+          name: string
+          premium_type: string | null
+          product_code: string | null
+          provider_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          frequency_options?: Json | null
+          id?: string
+          is_active?: boolean
+          is_deleted?: boolean
+          max_premium?: number | null
+          min_premium?: number | null
+          name: string
+          premium_type?: string | null
+          product_code?: string | null
+          provider_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          frequency_options?: Json | null
+          id?: string
+          is_active?: boolean
+          is_deleted?: boolean
+          max_premium?: number | null
+          min_premium?: number | null
+          name?: string
+          premium_type?: string | null
+          product_code?: string | null
+          provider_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "product_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "product_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           business_name: string | null
@@ -221,6 +1333,182 @@ export type Database = {
         }
         Relationships: []
       }
+      tasks: {
+        Row: {
+          assigned_to_user_id: string | null
+          client_id: string | null
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          description: string | null
+          due_date: string | null
+          id: string
+          is_deleted: boolean
+          is_practice_task: boolean
+          notes: Json | null
+          priority: Database["public"]["Enums"]["task_priority"]
+          status: Database["public"]["Enums"]["task_status"]
+          task_type: Database["public"]["Enums"]["task_type"]
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assigned_to_user_id?: string | null
+          client_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          is_deleted?: boolean
+          is_practice_task?: boolean
+          notes?: Json | null
+          priority?: Database["public"]["Enums"]["task_priority"]
+          status?: Database["public"]["Enums"]["task_status"]
+          task_type?: Database["public"]["Enums"]["task_type"]
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assigned_to_user_id?: string | null
+          client_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          is_deleted?: boolean
+          is_practice_task?: boolean
+          notes?: Json | null
+          priority?: Database["public"]["Enums"]["task_priority"]
+          status?: Database["public"]["Enums"]["task_status"]
+          task_type?: Database["public"]["Enums"]["task_type"]
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workflow_templates: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          service_area: string | null
+          steps: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          service_area?: string | null
+          steps?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          service_area?: string | null
+          steps?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      workflows: {
+        Row: {
+          adviser_id: string | null
+          client_id: string | null
+          created_at: string
+          current_step: number
+          deleted_at: string | null
+          end_date: string | null
+          id: string
+          is_deleted: boolean
+          name: string
+          service_area: string | null
+          start_date: string | null
+          status: Database["public"]["Enums"]["workflow_status"]
+          template_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          adviser_id?: string | null
+          client_id?: string | null
+          created_at?: string
+          current_step?: number
+          deleted_at?: string | null
+          end_date?: string | null
+          id?: string
+          is_deleted?: boolean
+          name: string
+          service_area?: string | null
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["workflow_status"]
+          template_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          adviser_id?: string | null
+          client_id?: string | null
+          created_at?: string
+          current_step?: number
+          deleted_at?: string | null
+          end_date?: string | null
+          id?: string
+          is_deleted?: boolean
+          name?: string
+          service_area?: string | null
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["workflow_status"]
+          template_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflows_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflows_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "workflow_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -229,7 +1517,58 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      commission_status:
+        | "Matched"
+        | "Pending"
+        | "Disputed"
+        | "Excessive"
+        | "Reconciled"
+      communication_channel:
+        | "Email"
+        | "SMS"
+        | "Phone"
+        | "WhatsApp"
+        | "Push"
+        | "Webinar"
+        | "Office Event"
+      cpd_category:
+        | "Ethics"
+        | "Regulatory"
+        | "Professional"
+        | "Product Knowledge"
+      document_status: "Pending" | "Complete" | "Cancelled" | "Expired"
+      email_folder:
+        | "Task Pool"
+        | "Inbox"
+        | "Draft"
+        | "Sent"
+        | "Queue"
+        | "Failed"
+        | "Archived"
+      entity_type: "Individual" | "Trust" | "Company" | "Close Corporation"
+      relationship_type:
+        | "Spouse"
+        | "Child"
+        | "Parent"
+        | "Sibling"
+        | "Business Partner"
+        | "Trustee"
+      task_priority: "Low" | "Medium" | "High" | "Urgent"
+      task_status:
+        | "Not Started"
+        | "In Progress"
+        | "Pending Client"
+        | "Completed"
+        | "Cancelled"
+      task_type:
+        | "Client Complaint"
+        | "Follow-up"
+        | "Annual Review"
+        | "Portfolio Review"
+        | "Compliance"
+        | "Onboarding"
+        | "Document Request"
+      workflow_status: "Active" | "Complete" | "Inactive" | "Cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -356,6 +1695,66 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      commission_status: [
+        "Matched",
+        "Pending",
+        "Disputed",
+        "Excessive",
+        "Reconciled",
+      ],
+      communication_channel: [
+        "Email",
+        "SMS",
+        "Phone",
+        "WhatsApp",
+        "Push",
+        "Webinar",
+        "Office Event",
+      ],
+      cpd_category: [
+        "Ethics",
+        "Regulatory",
+        "Professional",
+        "Product Knowledge",
+      ],
+      document_status: ["Pending", "Complete", "Cancelled", "Expired"],
+      email_folder: [
+        "Task Pool",
+        "Inbox",
+        "Draft",
+        "Sent",
+        "Queue",
+        "Failed",
+        "Archived",
+      ],
+      entity_type: ["Individual", "Trust", "Company", "Close Corporation"],
+      relationship_type: [
+        "Spouse",
+        "Child",
+        "Parent",
+        "Sibling",
+        "Business Partner",
+        "Trustee",
+      ],
+      task_priority: ["Low", "Medium", "High", "Urgent"],
+      task_status: [
+        "Not Started",
+        "In Progress",
+        "Pending Client",
+        "Completed",
+        "Cancelled",
+      ],
+      task_type: [
+        "Client Complaint",
+        "Follow-up",
+        "Annual Review",
+        "Portfolio Review",
+        "Compliance",
+        "Onboarding",
+        "Document Request",
+      ],
+      workflow_status: ["Active", "Complete", "Inactive", "Cancelled"],
+    },
   },
 } as const
