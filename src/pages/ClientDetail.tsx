@@ -262,7 +262,7 @@ const ClientDetail = () => {
 
             <div className="mt-6">
               <TabsContent value="summary" className="mt-0">
-                <ClientSummaryTab client={client} />
+                <ClientSummaryTab client={client} clientId={clientId!} />
               </TabsContent>
               <TabsContent value="details" className="mt-0">
                 <ClientDetailsTab client={client} onUpdate={updateClient} />
