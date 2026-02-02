@@ -3,16 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
 import {
-  Search,
-  Filter,
-  Calendar,
   Clock,
   AlertTriangle,
   CheckCircle2,
   User as UserIcon,
   MoreHorizontal,
-  ChevronDown,
-  ChevronRight,
   Users,
   FileText,
   Phone,
@@ -25,7 +20,11 @@ import {
   ListTodo,
   LineChart,
   Building2,
+  Filter,
+  ChevronDown,
+  Calendar,
 } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 import commandCenterIcon from "@/assets/command-center-icon.png";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { Button } from "@/components/ui/button";
@@ -54,12 +53,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Separator } from "@/components/ui/separator";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 import { useTasks, TaskListItem } from "@/hooks/useTasks";
 
 interface Task extends TaskListItem {}
@@ -334,60 +327,6 @@ const Tasks = () => {
             <span>{item.label}</span>
           </button>
         ))}
-
-        {/* Task Filters Section */}
-        <Separator className="my-3 w-10 bg-white/20" />
-        <div className="w-full px-1">
-          <p className="text-[10px] text-white/40 text-center mb-2 uppercase tracking-wider">Filters</p>
-          {taskFilterItems.map((item) => (
-            <button
-              key={item.filter}
-              onClick={() => setSidebarFilter(item.filter)}
-              className={`w-full flex flex-col items-center py-2 text-[10px] gap-1 rounded ${
-                sidebarFilter === item.filter
-                  ? "bg-white/10 text-white"
-                  : "text-white/50 hover:bg-white/5 hover:text-white/70"
-              }`}
-              title={item.label}
-            >
-              <item.icon className="w-4 h-4" />
-              <span className="truncate w-full text-center">{item.label.split(" ")[0]}</span>
-            </button>
-          ))}
-
-          {/* By Type Collapsible */}
-          <Collapsible open={typeFilterOpen} onOpenChange={setTypeFilterOpen}>
-            <CollapsibleTrigger asChild>
-              <button className="w-full flex flex-col items-center py-2 text-[10px] gap-1 text-white/50 hover:bg-white/5 hover:text-white/70 rounded">
-                <Filter className="w-4 h-4" />
-                <div className="flex items-center gap-0.5">
-                  <span>Type</span>
-                  {typeFilterOpen ? (
-                    <ChevronDown className="w-3 h-3" />
-                  ) : (
-                    <ChevronRight className="w-3 h-3" />
-                  )}
-                </div>
-              </button>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="space-y-0.5">
-              {taskTypeFilters.map((item) => (
-                <button
-                  key={item.filter}
-                  onClick={() => setSidebarFilter(item.filter)}
-                  className={`w-full py-1.5 text-[9px] rounded ${
-                    sidebarFilter === item.filter
-                      ? "bg-white/10 text-white"
-                      : "text-white/40 hover:bg-white/5 hover:text-white/60"
-                  }`}
-                  title={item.label}
-                >
-                  {item.label.slice(0, 8)}
-                </button>
-              ))}
-            </CollapsibleContent>
-          </Collapsible>
-        </div>
       </aside>
 
       {/* Main Content */}
