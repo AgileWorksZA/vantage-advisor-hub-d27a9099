@@ -308,7 +308,7 @@ const Tasks = () => {
   const userName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Adviser";
 
   return (
-    <div className="min-h-screen bg-muted/30 flex">
+    <div className="h-screen bg-muted/30 flex overflow-hidden">
       {/* Sidebar */}
       <aside className="w-16 bg-[hsl(180,25%,25%)] flex flex-col items-center py-4 gap-1 shrink-0">
         <Button
@@ -391,9 +391,9 @@ const Tasks = () => {
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Header */}
-        <header className="h-14 bg-background border-b border-border flex items-center justify-between px-6 shrink-0">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {/* Header - Sticky */}
+        <header className="h-14 bg-background border-b border-border flex items-center justify-between px-6 shrink-0 z-10">
           <div className="relative w-96">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input

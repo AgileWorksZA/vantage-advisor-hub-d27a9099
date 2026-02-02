@@ -36,9 +36,9 @@ const CommandCenter = () => {
   const practiceHealthScore = 78;
 
   return (
-    <div className="min-h-screen bg-muted/30 flex">
-      {/* Sidebar */}
-      <aside className="w-16 bg-[hsl(222,76%,25%)] flex flex-col items-center py-4 gap-1">
+    <div className="h-screen bg-muted/30 flex overflow-hidden">
+      {/* Sidebar - Fixed */}
+      <aside className="w-16 bg-[hsl(222,76%,25%)] flex flex-col items-center py-4 gap-1 shrink-0">
         <Button
           variant="ghost"
           size="icon"
@@ -63,9 +63,9 @@ const CommandCenter = () => {
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
-        {/* Top Bar */}
-        <header className="h-14 bg-background border-b border-border flex items-center justify-between px-6">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {/* Top Bar - Sticky */}
+        <header className="h-14 bg-background border-b border-border flex items-center justify-between px-6 shrink-0 z-10">
           <div className="flex items-center gap-4">
             <div className="relative w-80">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -101,7 +101,7 @@ const CommandCenter = () => {
           </div>
         </header>
 
-        {/* Main Workspace */}
+        {/* Main Workspace - Scrollable */}
         <main className="flex-1 p-6 overflow-auto">
           <div className="flex items-center justify-between mb-6">
             <div>

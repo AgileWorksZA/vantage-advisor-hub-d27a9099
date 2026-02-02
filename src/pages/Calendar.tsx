@@ -296,9 +296,9 @@ const CalendarPage = () => {
   const userName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Adviser";
 
   return (
-    <div className="min-h-screen bg-muted/30 flex">
-      {/* Sidebar */}
-      <aside className="w-16 bg-[hsl(180,25%,25%)] flex flex-col items-center py-4 gap-1">
+    <div className="h-screen bg-muted/30 flex overflow-hidden">
+      {/* Sidebar - Fixed */}
+      <aside className="w-16 bg-[hsl(180,25%,25%)] flex flex-col items-center py-4 gap-1 shrink-0">
         <Button
           variant="ghost"
           size="icon"
@@ -325,9 +325,9 @@ const CalendarPage = () => {
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
-        {/* Header */}
-        <header className="h-14 bg-background border-b border-border flex items-center justify-between px-6">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {/* Header - Sticky */}
+        <header className="h-14 bg-background border-b border-border flex items-center justify-between px-6 shrink-0 z-10">
           <div className="relative w-96">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input placeholder="Search events..." className="pl-10 bg-muted/50 border-0" />
@@ -353,7 +353,7 @@ const CalendarPage = () => {
           </div>
         </header>
 
-        {/* Calendar Content */}
+        {/* Calendar Content - Scrollable */}
         <main className="flex-1 flex overflow-hidden">
           {/* Left Sidebar */}
           <div className="w-64 bg-background border-r border-border p-4 flex flex-col gap-4">
