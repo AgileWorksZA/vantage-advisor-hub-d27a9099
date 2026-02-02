@@ -1,302 +1,188 @@
 
-# AI Meeting Notetaker Implementation Plan
+
+# Plan: Add New Employee Detail Sections to Practice Management
 
 ## Overview
-
-This plan adds Zocks-like AI notetaker functionality to the advisor portal, enabling meeting recordings, AI-powered transcriptions, automated note generation, and action item extraction that can be converted into CRM tasks. The feature will integrate with the existing Calendar and Client Detail pages.
-
----
-
-## Key Features
-
-1. **Meeting Recording & Transcription**
-   - Record audio during meetings (via browser microphone)
-   - AI-powered speech-to-text transcription using ElevenLabs STT
-   - Store recordings securely in file storage
-
-2. **AI Meeting Notes Generation**
-   - Automatically generate structured meeting summaries
-   - Extract key discussion topics, decisions, and client facts
-   - Identify client life events and priorities
-
-3. **Action Item Extraction**
-   - AI identifies actionable items from the conversation
-   - One-click conversion to CRM tasks linked to the client
-   - Pre-populated with extracted details from the transcription
-
-4. **Client Profile Integration**
-   - New "Meetings" tab in Client Detail showing all recorded meetings
-   - View transcriptions, notes, and extracted data per meeting
-   - Quick-create tasks from any meeting
+This plan adds 4 new sections to the employee settings menu in Practice Management, plus updates the existing Activity Log tab with enhanced data. These sections will appear in the left sidebar when viewing an employee's record.
 
 ---
 
-## Visual Structure
-
-### Calendar Event Detail Panel (Enhanced)
-
-```text
-+--------------------------------------------------+
-| Meeting: Annual Review - John Smith              |
-|--------------------------------------------------|
-| [Record] [Stop] [Transcribe]    Status: Recording|
-|                                                  |
-| 00:02:34 ●                                       |
-|--------------------------------------------------|
-| Transcription                                    |
-| "John mentioned he's planning to retire in 2027"|
-| "Discussed 529 plan for daughter's college..."  |
-|--------------------------------------------------|
-| AI Generated Notes                               |
-| - Client retiring in 2 years                     |
-| - Child going to college next year               |
-| - Interested in 529 education savings            |
-|--------------------------------------------------|
-| Suggested Actions                    [Create All]|
-| [ ] Set up 529 account for daughter        [+]   |
-| [ ] Review retirement projections          [+]   |
-| [ ] Send college planning resources        [+]   |
-+--------------------------------------------------+
-```
-
-### Client Detail - Meetings Tab
-
-```text
-+--------------------------------------------------+
-| Meetings                     [Search] [Filter]   |
-|--------------------------------------------------|
-| Date        | Title              | Duration | AI |
-|-------------|--------------------| ---------|----| 
-| 02 Feb 2026 | Annual Review      | 45 min   | ✓ |
-| 15 Jan 2026 | Portfolio Review   | 30 min   | ✓ |
-| 10 Dec 2025 | Initial Meeting    | 60 min   | ✓ |
-|--------------------------------------------------|
-| Click to view transcription and notes            |
-+--------------------------------------------------+
-```
+## Current State
+The Practice page (`src/pages/Practice.tsx`) currently has these tabs in the employee detail view:
+- Profile
+- Preferences  
+- Communication
+- Integrations
+- VoIP
+- Referrals
+- Mailbox
+- Activity Log
 
 ---
 
-## Implementation Steps
+## Proposed Changes
 
-### Step 1: Database Schema for Meeting Recordings
+### 1. Add "Roles" Tab
+Based on the screenshot provided, this tab will:
+- Display a numbered table of assigned roles for the employee
+- Include a dropdown to add new roles from a predefined list
+- Show 14 available role types: Accountant, Administrator, Assistant, Campaign Support, Client, Compliance, Compliance PSL, Financial Adviser, Financial Planning Support, Guest, Head Office Support, Marketing, Provider, Regional Officer
+- Allow removal of roles via an "X" button per row
+- Include a settings gear icon for role configuration
 
-Create a `meeting_recordings` table to store recordings and transcriptions:
+### 2. Add "Teams" Tab  
+Based on the "myPractice Teams" screenshot, this tab will:
+- Show teams the employee belongs to in a table format
+- Columns: #, Name, Office, Role, Leader, Is Primary, ID
+- Include toolbar with: "Add new" button, "Reset" button, search field, settings gear
+- Show item count (e.g., "6 items")
+- Allow edit (pencil icon) and delete (X) actions per row
+- Mark primary team membership with a checkmark indicator
 
-**Table: `meeting_recordings`**
-| Column | Type | Description |
-|--------|------|-------------|
-| id | UUID | Primary key |
-| user_id | UUID | Owner (advisor) |
-| calendar_event_id | UUID | Link to calendar_events (nullable) |
-| client_id | UUID | Associated client (nullable) |
-| title | text | Meeting title |
-| recording_url | text | URL to audio file in storage |
-| duration_seconds | integer | Recording duration |
-| transcription | text | Full transcription text |
-| transcription_status | enum | pending, processing, completed, failed |
-| ai_summary | JSONB | Structured AI-generated summary |
-| ai_action_items | JSONB | Extracted action items |
-| recording_started_at | timestamptz | When recording started |
-| recording_ended_at | timestamptz | When recording ended |
-| created_at, updated_at | timestamptz | Audit timestamps |
-| is_deleted, deleted_at | boolean, timestamptz | Soft delete |
+### 3. Add "Broker Codes" Tab
+Based on the screenshot provided, this tab will:
+- Display broker/provider codes linked to the employee
+- Columns: #, Provider, Code, House code, Umbrella provider, Is primary, For finance use only, Income split %, Asset split %, ID
+- Show info message: "Broker codes may only be added from iBase. If you would like to add one, please contact the iBase support staff."
+- Include toolbar with: item count, Reset button, search field, settings gear, "Inactive" toggle
+- Show checkmarks (green) and X marks (red) for boolean fields
+- Display percentage values for split columns
 
-**Indexes:** user_id, client_id, calendar_event_id, transcription_status
+### 4. Enhance "Communication" Tab
+Update the existing Communication tab to add:
+- **Notification Activation Section**: Grouped toggles for various notification types the user wants to receive
+- **Email Signature Section**: 
+  - Rich text or textarea for default mail signature
+  - Preview of the signature
+  - Save/reset functionality
 
-**RLS Policies:** Users can only access their own recordings
-
-### Step 2: Create Storage Bucket for Audio Files
-
-Set up a Supabase Storage bucket `meeting-recordings` with:
-- Authenticated uploads only
-- RLS policies for user-specific access
-- Max file size appropriate for audio (100MB)
-
-### Step 3: Connect ElevenLabs for Speech-to-Text
-
-Use the ElevenLabs connector for realtime transcription:
-- Connect ElevenLabs API via standard connector
-- Implement edge function `transcribe-meeting` for batch processing
-- Support both realtime transcription during meeting and batch post-upload
-
-### Step 4: Create AI Processing Edge Function
-
-**File: `supabase/functions/process-meeting/index.ts`**
-
-Uses Lovable AI (Gemini) to:
-- Generate structured meeting summary from transcription
-- Extract key topics, decisions, and client facts
-- Identify action items with priority and due date suggestions
-- Format output as structured JSON for the frontend
-
-### Step 5: Create Meeting Recording Hook
-
-**File: `src/hooks/useMeetingRecordings.ts`**
-
-Provides:
-- Start/stop recording (MediaRecorder API)
-- Upload recording to storage
-- Fetch recordings for event/client
-- Trigger transcription processing
-- Create tasks from action items
-
-### Step 6: Enhance Calendar Event Sheet
-
-**File: `src/pages/Calendar.tsx` (modifications)**
-
-Add to event detail Sheet:
-- Recording controls (Start/Stop buttons)
-- Live recording timer and status indicator
-- Transcription display panel
-- AI-generated notes section
-- Action items list with "Create Task" buttons
-
-### Step 7: Create Client Meetings Tab
-
-**File: `src/components/client-detail/ClientMeetingsTab.tsx`**
-
-Features:
-- List of all recorded meetings for the client
-- Expandable rows showing transcription and notes
-- Search and filter by date/title
-- Quick-create tasks from any meeting
-- Audio playback capability
-
-### Step 8: Update Client Detail Page
-
-**File: `src/pages/ClientDetail.tsx`**
-
-Add new "Meetings" tab to the tab navigation.
+### 5. Enhance "Activity Log" Tab (Event Log)
+Based on the screenshot provided, update the table with:
+- Additional columns: Client (clickable), Note, Active person
+- Full column set: #, Date, Type, Subtype, Client, Entity name, Note, Active person, ID
+- Pagination controls: first, previous, page number input, next, last
+- Page indicator (e.g., "Page 1 of 1244")
+- Sample data from the screenshot including:
+  - Add product, iComply created, Consent created, Last review date updated, Note added, Person updated, Banking details viewed, Advice process: document download events
+- Export button functionality
 
 ---
 
 ## Technical Details
 
-### Recording Implementation
+### File Changes
 
-Using the browser's MediaRecorder API:
-```text
-1. Request microphone permission
-2. Create MediaRecorder with audio/webm format
-3. Collect audio chunks during recording
-4. On stop, create Blob and upload to Supabase Storage
-5. Create database record with recording metadata
+#### `src/pages/Practice.tsx`
+1. **Update `settingsTabs` array** (line ~39):
+   ```typescript
+   const settingsTabs = [
+     { id: "profile", label: "Profile", icon: UserIcon },
+     { id: "roles", label: "Roles", icon: ShieldCheck },        // NEW
+     { id: "teams", label: "Teams", icon: Users2 },             // NEW
+     { id: "broker-codes", label: "Broker Codes", icon: Building }, // NEW
+     { id: "preferences", label: "Preferences", icon: Settings },
+     { id: "communication", label: "Communication", icon: MessageSquare },
+     { id: "integrations", label: "Integrations", icon: CreditCard },
+     { id: "voip", label: "VoIP", icon: Phone },
+     { id: "referrals", label: "Referrals", icon: Shield },
+     { id: "mailbox", label: "Mailbox", icon: Mail },
+     { id: "activity", label: "Activity Log", icon: Activity },
+   ];
+   ```
+
+2. **Add new icon imports** from `lucide-react`:
+   - `ShieldCheck` for Roles
+   - `Users2` for Teams  
+   - `Building` for Broker Codes
+   - `ChevronLeft`, `ChevronRight`, `ChevronsLeft`, `ChevronsRight` for pagination
+
+3. **Add sample data constants** for roles, teams, broker codes, and activity log entries
+
+4. **Create `RolesTab` component**:
+   - Role assignment table with edit/delete capability
+   - "Add new role" dropdown selector
+   - Role list from predefined options
+
+5. **Create `TeamsTab` component**:
+   - Teams table with columns matching screenshot
+   - Add/Edit/Delete functionality
+   - Search and filter controls
+
+6. **Create `BrokerCodesTab` component**:
+   - Provider codes table
+   - Read-only indication with info message
+   - Inactive filter toggle
+
+7. **Update `CommunicationTab` component**:
+   - Add email signature textarea with preview
+   - Add notification preference toggles
+
+8. **Update `ActivityLogTab` component**:
+   - Add Client column (between Subtype and Entity name)
+   - Add Note column
+   - Rename "Active person" column appropriately
+   - Add ID column
+   - Add pagination component with page controls
+   - Populate with sample data from the screenshot
+
+9. **Update `PersonnelSettings` render section** to include new tabs
+
+---
+
+## Sample Data to Add
+
+### Roles Data
+```typescript
+const availableRoles = [
+  "Accountant", "Administrator", "Assistant", "Campaign Support", 
+  "Client", "Compliance", "Compliance PSL", "Financial Adviser",
+  "Financial Planning Support", "Guest", "Head Office Support", 
+  "Marketing", "Provider", "Regional Officer"
+];
 ```
 
-### AI Summary Structure (JSONB)
-
-```text
-{
-  "summary": "Brief overview of the meeting...",
-  "key_topics": ["Retirement planning", "529 education savings", ...],
-  "decisions_made": ["Will proceed with 529 account", ...],
-  "client_facts": {
-    "retirement_date": "2027",
-    "children": [{ "name": "Sarah", "event": "college next year" }],
-    "life_events": ["Job change", "Home purchase planned"]
-  },
-  "follow_up_date": "2026-03-15"
-}
+### Teams Data
+```typescript
+const teamsData = [
+  { id: 1, name: "Danie Jordaan Financial Planning LTD", office: "Tygerwaterfront The Edge", role: "Financial planner", leader: "Jordaan, Danie", isPrimary: true, dbId: 629 },
+  { id: 2, name: "Danie Jordaan Financial Planning LTD", office: "Tygerwaterfront The Edge", role: "Assistant", leader: "Jordaan, Danie", isPrimary: true, dbId: 629 },
+  // ...more entries
+];
 ```
 
-### Action Items Structure (JSONB)
-
-```text
-[
-  {
-    "title": "Set up 529 account for Sarah",
-    "description": "Client requested education savings account...",
-    "priority": "High",
-    "suggested_due_date": "2026-02-15",
-    "task_type": "Follow-up",
-    "source_quote": "Let's set up the 529 account"
-  },
-  ...
-]
+### Broker Codes Data  
+```typescript
+const brokerCodesData = [
+  { id: 1, provider: "PSG Asset Management Administration Services Ltd", code: "DDDD", houseCode: "PSG Asset Management", umbrellaProvider: "", isPrimary: true, forFinanceOnly: false, incomeSplit: 100, assetSplit: 100, dbId: 194696 },
+  // ...more entries from screenshot
+];
 ```
 
-### Create Task from Action Item
-
-When user clicks [+] on an action item:
-1. Open pre-filled task creation dialog
-2. Title, description, priority auto-populated from AI
-3. Client automatically linked
-4. User can edit before saving
-5. Task created using existing `useTasks` hook
-
----
-
-## Files to Create
-
-| File | Purpose |
-|------|---------|
-| `supabase/functions/transcribe-meeting/index.ts` | ElevenLabs transcription wrapper |
-| `supabase/functions/process-meeting/index.ts` | Lovable AI meeting analysis |
-| `src/hooks/useMeetingRecordings.ts` | Recording and transcription hook |
-| `src/components/calendar/MeetingRecorder.tsx` | Recording UI component |
-| `src/components/calendar/TranscriptionPanel.tsx` | Transcription display |
-| `src/components/calendar/ActionItemsList.tsx` | Action items with task creation |
-| `src/components/client-detail/ClientMeetingsTab.tsx` | Meetings list for client |
-
-## Files to Modify
-
-| File | Change |
-|------|--------|
-| `src/pages/Calendar.tsx` | Add recording UI to event sheet |
-| `src/pages/ClientDetail.tsx` | Add Meetings tab |
-| `supabase/config.toml` | Add edge function configurations |
-
-## Database Migration
-
-Creates:
-- `transcription_status_enum` - Status enum for transcription
-- `meeting_recordings` table with all fields
-- Storage bucket `meeting-recordings`
-- Indexes for performance
-- RLS policies for security
+### Activity Log Data
+```typescript
+const activityLogData = [
+  { id: 1, date: "2026-01-19 15:17:33", type: "Add product", subtype: "", client: "Botha, Karel", entityName: "PSG Securities Ltd Local - Share portfolio (Local)", note: "", activePerson: "Jordaan, Danie", dbId: 47159690 },
+  { id: 2, date: "2026-01-14 12:10:10", type: "iComply created", subtype: "Two step", client: "Botha, Karel", entityName: "FAIS Control for Karel Botha on 2026-01-14", note: "", activePerson: "Jordaan, Danie", dbId: 47105064 },
+  // ...20 entries from screenshot
+];
+```
 
 ---
 
-## Connector Requirements
+## UI Components Needed
 
-**ElevenLabs** (for Speech-to-Text)
-- Will be connected via the connectors system
-- Provides `ELEVENLABS_API_KEY` for transcription
-
-**Lovable AI** (already available)
-- Uses `LOVABLE_API_KEY` (pre-configured)
-- For meeting analysis and action extraction
+All components will use existing UI primitives:
+- `Table`, `TableHeader`, `TableBody`, `TableRow`, `TableHead`, `TableCell` from `@/components/ui/table`
+- `Button`, `Input`, `Select`, `Switch`, `Checkbox` from existing UI
+- `Textarea` for email signature
+- Custom pagination controls using Button components
 
 ---
 
-## User Flow
+## Visual Styling
+- Maintain teal accent color: `hsl(180, 70%, 45%)` for active states
+- Green checkmark: `text-green-500` 
+- Red X mark: `text-red-500`
+- Clickable links in teal color for client names and provider names
+- Gray background for table headers: `bg-muted/50`
 
-1. **During Meeting**
-   - Advisor opens calendar event
-   - Clicks "Start Recording"
-   - Conducts meeting normally
-   - Clicks "Stop Recording"
-
-2. **Post-Meeting Processing**
-   - Audio uploaded to storage
-   - Transcription generated (30-60 seconds)
-   - AI analysis produces summary and actions
-   - Results appear in event detail panel
-
-3. **Action Item Conversion**
-   - Advisor reviews suggested actions
-   - Clicks [+] to create CRM task
-   - Task pre-filled from transcription context
-   - Task saved and linked to client
-
-4. **Client Profile Access**
-   - All meetings visible in client's Meetings tab
-   - Full transcription and notes accessible
-   - Historical meeting context available
-
----
-
-## Summary
-
-This implementation brings Zocks-like AI notetaker capabilities to the advisor portal, automating the capture and processing of client meetings. Advisors can focus on their clients while the system handles note-taking, summarization, and action item extraction. The deep integration with the existing Calendar and CRM ensures seamless workflow without context switching.
