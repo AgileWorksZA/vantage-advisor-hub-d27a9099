@@ -87,7 +87,8 @@ const Dashboard = () => {
       </div>;
   }
 
-  const userName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Adviser";
+  const userName = user?.user_metadata?.full_name || "Adviser";
+  const userEmail = user?.email || "adviser@vantage.co";
 
   return <div className="h-screen bg-muted/30 flex overflow-hidden">
       {/* Sidebar - Fixed */}
@@ -112,7 +113,7 @@ const Dashboard = () => {
         {/* Header - Sticky */}
         <AppHeader
           userName={userName}
-          userEmail={user?.email}
+          userEmail={userEmail}
           onSignOut={handleSignOut}
           onAccountSettings={() => navigate("/practice")}
           selectedRegion={selectedRegion}
