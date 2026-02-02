@@ -1,18 +1,16 @@
 
-
-# Make VANTAGE Logo 2.5x Bigger
+# Keep Original Aspect Ratio for VANTAGE Logo
 
 ## Overview
-Increase the size of the VANTAGE logo at the bottom of all sidebars by 2.5 times.
+Update the VANTAGE logo styling to ensure the original aspect ratio is preserved while maintaining the 2.5x size increase.
 
 ---
 
-## Current State
-The logo currently uses `h-4` (16px height).
+## Current Issue
+The current implementation uses `h-10 w-auto` which sets a fixed height and lets width adjust. This should technically preserve aspect ratio, but may be causing unexpected display issues.
 
-## New Size
-- **Current**: `h-4` = 16px
-- **New**: 16px × 2.5 = 40px = `h-10`
+## Solution
+Change from height-constrained to a more flexible approach using `object-contain` which explicitly preserves the original aspect ratio of the image, combined with appropriate sizing.
 
 ---
 
@@ -37,7 +35,7 @@ The logo currently uses `h-4` (16px height).
 <img 
   src={vantageLogo} 
   alt="Vantage" 
-  className="h-4 w-auto -rotate-90 origin-center"
+  className="h-10 w-auto -rotate-90 origin-center"
 />
 ```
 
@@ -46,12 +44,13 @@ The logo currently uses `h-4` (16px height).
 <img 
   src={vantageLogo} 
   alt="Vantage" 
-  className="h-10 w-auto -rotate-90 origin-center"
+  className="h-10 object-contain -rotate-90 origin-center"
 />
 ```
+
+The `object-contain` class ensures the image scales to fit within its container while preserving its original aspect ratio. Combined with `h-10`, this will maintain the 2.5x size while respecting the logo's natural proportions.
 
 ---
 
 ## Expected Outcome
-The VANTAGE logo will be 2.5 times larger (40px height instead of 16px) while maintaining its vertical orientation and position at the bottom of all sidebars.
-
+The VANTAGE logo will display at the larger size while maintaining its original aspect ratio exactly as designed in the source image.
