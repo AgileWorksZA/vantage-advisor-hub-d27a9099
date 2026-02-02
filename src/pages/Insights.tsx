@@ -139,9 +139,9 @@ const Insights = () => {
   const userName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Adviser";
 
   return (
-    <div className="min-h-screen bg-muted/30 flex">
-      {/* Sidebar */}
-      <aside className="w-16 bg-[hsl(180,25%,25%)] flex flex-col items-center py-4 gap-1">
+    <div className="h-screen bg-muted/30 flex overflow-hidden">
+      {/* Sidebar - Fixed */}
+      <aside className="w-16 bg-[hsl(180,25%,25%)] flex flex-col items-center py-4 gap-1 shrink-0">
         <Button variant="ghost" size="icon" className="w-10 h-10 text-white/80 hover:bg-white/10 mb-4">
           <Plus className="w-5 h-5" />
         </Button>
@@ -162,9 +162,9 @@ const Insights = () => {
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
-        {/* Header */}
-        <header className="h-14 bg-background border-b border-border flex items-center justify-between px-6">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {/* Header - Sticky */}
+        <header className="h-14 bg-background border-b border-border flex items-center justify-between px-6 shrink-0 z-10">
           <div className="relative w-96">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input placeholder="Search..." className="pl-10 bg-muted/50 border-0" />
@@ -190,7 +190,7 @@ const Insights = () => {
           </div>
         </header>
 
-        {/* Dashboard Content */}
+        {/* Dashboard Content - Scrollable */}
         <main className="flex-1 p-6 overflow-auto">
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-2xl font-semibold">Insights Dashboard</h1>
