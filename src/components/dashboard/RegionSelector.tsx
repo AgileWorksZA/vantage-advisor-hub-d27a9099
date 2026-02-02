@@ -11,18 +11,30 @@ import { cn } from "@/lib/utils";
 export interface Region {
   code: string;
   name: string;
-  flag: string;
+  flagCode: string;
   currencyCode: string;
   currencySymbol: string;
 }
 
 export const regions: Region[] = [
-  { code: "ZA", name: "South Africa", flag: "🇿🇦", currencyCode: "ZAR", currencySymbol: "R" },
-  { code: "AU", name: "Australia", flag: "🇦🇺", currencyCode: "AUD", currencySymbol: "A$" },
-  { code: "CA", name: "Canada", flag: "🇨🇦", currencyCode: "CAD", currencySymbol: "C$" },
-  { code: "GB", name: "United Kingdom", flag: "🇬🇧", currencyCode: "GBP", currencySymbol: "£" },
-  { code: "US", name: "United States", flag: "🇺🇸", currencyCode: "USD", currencySymbol: "$" },
+  { code: "ZA", name: "South Africa", flagCode: "za", currencyCode: "ZAR", currencySymbol: "R" },
+  { code: "AU", name: "Australia", flagCode: "au", currencyCode: "AUD", currencySymbol: "A$" },
+  { code: "CA", name: "Canada", flagCode: "ca", currencyCode: "CAD", currencySymbol: "C$" },
+  { code: "GB", name: "United Kingdom", flagCode: "gb", currencyCode: "GBP", currencySymbol: "£" },
+  { code: "US", name: "United States", flagCode: "us", currencyCode: "USD", currencySymbol: "$" },
 ];
+
+const FlagIcon = ({ code, size = 24 }: { code: string; size?: number }) => (
+  <img
+    src={`https://flagcdn.com/w40/${code}.png`}
+    srcSet={`https://flagcdn.com/w80/${code}.png 2x`}
+    alt={`${code.toUpperCase()} flag`}
+    width={size}
+    height={Math.round(size * 0.75)}
+    className="rounded-sm object-cover"
+    style={{ minWidth: size }}
+  />
+);
 
 interface RegionSelectorProps {
   selectedRegion: string;
@@ -45,10 +57,10 @@ export function RegionSelector({ selectedRegion, onRegionChange }: RegionSelecto
         <Button
           variant="ghost"
           size="icon"
-          className="h-9 w-9 rounded-full text-xl hover:bg-muted/50 transition-colors"
+          className="h-9 w-9 rounded-full hover:bg-muted/50 transition-colors flex items-center justify-center"
           title={currentRegion.name}
         >
-          {currentRegion.flag}
+          <FlagIcon code={currentRegion.flagCode} size={22} />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-56 p-2 bg-popover border border-border shadow-lg" align="end">
@@ -63,7 +75,7 @@ export function RegionSelector({ selectedRegion, onRegionChange }: RegionSelecto
                 selectedRegion === region.code && "bg-muted"
               )}
             >
-              <span className="text-lg">{region.flag}</span>
+              <FlagIcon code={region.flagCode} size={20} />
               <span className="flex-1 text-left">{region.name}</span>
               {selectedRegion === region.code && (
                 <Check className="h-4 w-4 text-primary" />
