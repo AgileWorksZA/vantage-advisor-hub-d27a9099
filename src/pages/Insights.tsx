@@ -306,7 +306,7 @@ const Insights = () => {
     },
     series: [{
       type: 'pie' as const,
-      radius: ['45%', '85%'],
+      radius: ['40%', '75%'],
       center: ['50%', '50%'],
       selectedMode: 'single' as const,
       selectedOffset: 12,
@@ -571,9 +571,9 @@ const Insights = () => {
                 </Button>
               </CardHeader>
               <CardContent className="px-4 pb-4">
-                <div className="h-[400px] flex items-center justify-center">
+                <div className="h-48 flex items-center justify-center">
                   <EChartsWrapper
-                    height={400}
+                    height={192}
                     option={monthlyCommissionOption}
                   />
                 </div>
