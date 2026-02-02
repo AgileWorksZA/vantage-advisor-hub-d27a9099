@@ -136,7 +136,18 @@ const Dashboard = () => {
 
         {/* Dashboard Content - Scrollable */}
         <main className="flex-1 p-6 overflow-auto">
-          <h1 className="text-2xl font-semibold mb-6">Advisor Dashboard</h1>
+          <h1 className="text-2xl font-semibold mb-6">
+            Advisor Dashboard
+            <button 
+              onClick={() => navigate("/ai-assistant")}
+              className="ml-2 inline-flex items-center px-2 py-0.5 text-xs font-bold 
+                         bg-gradient-to-r from-violet-500 to-cyan-500 text-white 
+                         rounded-full animate-pulse hover:scale-110 transition-transform
+                         align-super cursor-pointer"
+            >
+              AI
+            </button>
+          </h1>
           
           <div className="grid grid-cols-12 gap-4">
             {/* Provider View */}

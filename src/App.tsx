@@ -22,6 +22,7 @@ import Calendar from "./pages/Calendar";
 import Insights from "./pages/Insights";
 import Tasks from "./pages/Tasks";
 import Practice from "./pages/Practice";
+import AIAssistant from "./pages/AIAssistant";
 
 const queryClient = new QueryClient();
 
@@ -44,6 +45,7 @@ const App = () => (
             <Route path="/insights" element={<Insights />} />
             <Route path="/tasks" element={<Tasks />} />
             <Route path="/practice" element={<Practice />} />
+            <Route path="/ai-assistant" element={<AIAssistant />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/signup-confirmation" element={<SignupConfirmation />} />
             <Route path="/terms-of-use" element={<TermsOfUse />} />
