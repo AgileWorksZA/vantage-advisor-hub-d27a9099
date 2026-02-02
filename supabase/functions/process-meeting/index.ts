@@ -121,7 +121,7 @@ Important guidelines:
 
 Respond ONLY with valid JSON, no additional text.`;
 
-    const geminiResponse = await fetch('https://ai.lovable.dev/v1/chat/completions', {
+    const geminiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${lovableApiKey}`,
