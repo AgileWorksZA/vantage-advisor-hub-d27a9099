@@ -75,7 +75,7 @@ export function RegionSelector({ selectedRegion, onRegionChange }: RegionSelecto
                 selectedRegion === region.code && "bg-muted"
               )}
             >
-              <FlagIcon code={region.flagCode} width={20} />
+              <FlagIcon code={region.flagCode} width={28} />
               <span className="flex-1 text-left">{region.name}</span>
               {selectedRegion === region.code && (
                 <Check className="h-4 w-4 text-primary" />
