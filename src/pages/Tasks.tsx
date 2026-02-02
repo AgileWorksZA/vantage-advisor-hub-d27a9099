@@ -60,21 +60,9 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { useTasks, TaskListItem } from "@/hooks/useTasks";
 
-interface Task {
-  id: string;
-  title: string;
-  clientName: string;
-  clientId: string;
-  taskType: "Client Complaint" | "Follow-up" | "Annual Review" | "Portfolio Review" | "Compliance" | "Onboarding" | "Document Request";
-  priority: "High" | "Medium" | "Low";
-  status: "Not Started" | "In Progress" | "Pending Client" | "Completed";
-  dueDate: Date;
-  createdDate: Date;
-  assignedTo: { name: string; initials: string };
-  description?: string;
-  notes?: string[];
-}
+interface Task extends TaskListItem {}
 
 const teamMembers = [
   { name: "Sarah Johnson", initials: "SJ" },
@@ -83,139 +71,7 @@ const teamMembers = [
   { name: "David Thompson", initials: "DT" },
 ];
 
-const sampleTasks: Task[] = [
-  {
-    id: "1",
-    title: "Resolve fee dispute inquiry",
-    clientName: "Robert Mitchell",
-    clientId: "c1",
-    taskType: "Client Complaint",
-    priority: "High",
-    status: "In Progress",
-    dueDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-    createdDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-    assignedTo: teamMembers[0],
-    description: "Client raised concerns about management fees on quarterly statement. Requires detailed fee breakdown and explanation.",
-    notes: ["Called client on Monday - left voicemail", "Prepared fee comparison document"],
-  },
-  {
-    id: "2",
-    title: "Annual portfolio review meeting",
-    clientName: "Jennifer Adams",
-    clientId: "c2",
-    taskType: "Annual Review",
-    priority: "High",
-    status: "Not Started",
-    dueDate: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000),
-    createdDate: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
-    assignedTo: teamMembers[1],
-    description: "Scheduled annual review to discuss performance and rebalancing strategy.",
-  },
-  {
-    id: "3",
-    title: "Service quality escalation",
-    clientName: "William Carter",
-    clientId: "c3",
-    taskType: "Client Complaint",
-    priority: "High",
-    status: "Pending Client",
-    dueDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-    createdDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-    assignedTo: teamMembers[0],
-    description: "Client unhappy with response times. Need to schedule call to address concerns.",
-  },
-  {
-    id: "4",
-    title: "Investment switch follow-up",
-    clientName: "Patricia Brown",
-    clientId: "c4",
-    taskType: "Follow-up",
-    priority: "Medium",
-    status: "In Progress",
-    dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
-    createdDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-    assignedTo: teamMembers[2],
-    description: "Follow up on recent fund switch to ensure client understands new allocation.",
-  },
-  {
-    id: "5",
-    title: "Quarterly compliance audit prep",
-    clientName: "N/A - Practice Task",
-    clientId: "practice",
-    taskType: "Compliance",
-    priority: "High",
-    status: "Not Started",
-    dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
-    createdDate: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000),
-    assignedTo: teamMembers[3],
-    description: "Prepare documentation for upcoming FSCA compliance audit.",
-  },
-  {
-    id: "6",
-    title: "New client onboarding - FICA docs",
-    clientName: "Elizabeth Turner",
-    clientId: "c5",
-    taskType: "Onboarding",
-    priority: "Medium",
-    status: "Pending Client",
-    dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
-    createdDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-    assignedTo: teamMembers[1],
-    description: "Awaiting FICA documentation from new client to complete onboarding.",
-  },
-  {
-    id: "7",
-    title: "Risk profile reassessment",
-    clientName: "George Henderson",
-    clientId: "c6",
-    taskType: "Portfolio Review",
-    priority: "Low",
-    status: "Not Started",
-    dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-    createdDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-    assignedTo: teamMembers[2],
-    description: "Client turned 60 - review and update risk profile accordingly.",
-  },
-  {
-    id: "8",
-    title: "Beneficiary update request",
-    clientName: "Nancy Phillips",
-    clientId: "c7",
-    taskType: "Document Request",
-    priority: "Medium",
-    status: "In Progress",
-    dueDate: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000),
-    createdDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-    assignedTo: teamMembers[0],
-    description: "Client requested beneficiary changes following recent marriage.",
-  },
-  {
-    id: "9",
-    title: "Retirement planning consultation",
-    clientName: "Charles Robinson",
-    clientId: "c8",
-    taskType: "Follow-up",
-    priority: "Medium",
-    status: "Not Started",
-    dueDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000),
-    createdDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-    assignedTo: teamMembers[3],
-    description: "Schedule consultation to discuss early retirement options.",
-  },
-  {
-    id: "10",
-    title: "Portfolio performance review",
-    clientName: "Margaret Davis",
-    clientId: "c9",
-    taskType: "Portfolio Review",
-    priority: "Low",
-    status: "Completed",
-    dueDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-    createdDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-    assignedTo: teamMembers[1],
-    description: "Completed quarterly performance review and sent report to client.",
-  },
-];
+// Sample tasks removed - now using useTasks hook
 
 const sidebarItems = [
   { icon: LayoutDashboard, label: "Dash", path: "/dashboard" },
@@ -311,8 +167,8 @@ const Tasks = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [tasks, setTasks] = useState<Task[]>(sampleTasks);
+  const [authLoading, setAuthLoading] = useState(true);
+  const { tasks, loading: tasksLoading, updateTask, refetch } = useTasks();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterAssignee, setFilterAssignee] = useState<string>("all");
   const [filterType, setFilterType] = useState<string>("all");
@@ -326,7 +182,7 @@ const Tasks = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
-      setLoading(false);
+      setAuthLoading(false);
       if (!session?.user) {
         navigate("/auth");
       }
@@ -335,7 +191,7 @@ const Tasks = () => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      setLoading(false);
+      setAuthLoading(false);
       if (!session?.user) {
         navigate("/auth");
       }
@@ -348,6 +204,9 @@ const Tasks = () => {
     await supabase.auth.signOut();
     navigate("/auth");
   };
+
+  const loading = authLoading || tasksLoading;
+
 
   const now = new Date();
   const twoDaysAgo = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000);
@@ -424,10 +283,8 @@ const Tasks = () => {
     (t) => t.status !== "Completed" && t.dueDate < now
   ).length;
 
-  const handleMarkComplete = (taskId: string) => {
-    setTasks((prev) =>
-      prev.map((t) => (t.id === taskId ? { ...t, status: "Completed" as const } : t))
-    );
+  const handleMarkComplete = async (taskId: string) => {
+    await updateTask(taskId, { status: "Completed" });
     if (selectedTask?.id === taskId) {
       setSelectedTask({ ...selectedTask, status: "Completed" });
     }

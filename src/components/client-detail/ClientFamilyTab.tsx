@@ -1,3 +1,4 @@
+import { useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -8,48 +9,21 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Pencil, Trash2, Plus, RotateCcw } from "lucide-react";
-
-const familyData = [
-  {
-    name: "Bothma, Anna",
-    type: "Individual",
-    identification: "7708150081089",
-    identificationType: "SA ID",
-    productViewing: "Full access",
-    familyType: "Spouse",
-    familyName: "BothamaJOB79",
-  },
-  {
-    name: "Jordaan, Chuck",
-    type: "Individual",
-    identification: "0104155081082",
-    identificationType: "SA ID",
-    productViewing: "Limited",
-    familyType: "Child",
-    familyName: "BothamaJOB79",
-  },
-  {
-    name: "Jordaan, Sara",
-    type: "Individual",
-    identification: "0306125081086",
-    identificationType: "SA ID",
-    productViewing: "Limited",
-    familyType: "Child",
-    familyName: "BothamaJOB79",
-  },
-  {
-    name: "Botha, Willem",
-    type: "Individual",
-    identification: "4502105081084",
-    identificationType: "SA ID",
-    productViewing: "None",
-    familyType: "Parent",
-    familyName: "BothamaJOB79",
-  },
-];
+import { Pencil, Trash2, Plus, RotateCcw, Loader2 } from "lucide-react";
+import { useClientRelationships } from "@/hooks/useClientRelationships";
 
 const ClientFamilyTab = () => {
+  const { clientId } = useParams<{ clientId: string }>();
+  const { familyMembers, loading, refetch, deleteRelationship } = useClientRelationships(clientId || "");
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       {/* Action Buttons */}
@@ -58,7 +32,7 @@ const ClientFamilyTab = () => {
           <Plus className="w-4 h-4" />
           Add new
         </Button>
-        <Button variant="outline" className="gap-2">
+        <Button variant="outline" className="gap-2" onClick={() => refetch()}>
           <RotateCcw className="w-4 h-4" />
           Reset
         </Button>
@@ -82,27 +56,40 @@ const ClientFamilyTab = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {familyData.map((member, index) => (
-              <TableRow key={index} className="hover:bg-muted/50">
-                <TableCell className="text-sm font-medium">{member.name}</TableCell>
-                <TableCell className="text-sm">{member.type}</TableCell>
-                <TableCell className="text-sm">{member.identification}</TableCell>
-                <TableCell className="text-sm">{member.identificationType}</TableCell>
-                <TableCell className="text-sm">{member.productViewing}</TableCell>
-                <TableCell className="text-sm">{member.familyType}</TableCell>
-                <TableCell className="text-sm">{member.familyName}</TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-1">
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <Pencil className="w-4 h-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
+            {familyMembers.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                  No family members found. Click "Add new" to add a family member.
                 </TableCell>
               </TableRow>
-            ))}
+            ) : (
+              familyMembers.map((member) => (
+                <TableRow key={member.id} className="hover:bg-muted/50">
+                  <TableCell className="text-sm font-medium">{member.name}</TableCell>
+                  <TableCell className="text-sm">{member.type}</TableCell>
+                  <TableCell className="text-sm">{member.identification}</TableCell>
+                  <TableCell className="text-sm">{member.identificationType}</TableCell>
+                  <TableCell className="text-sm">{member.productViewing}</TableCell>
+                  <TableCell className="text-sm">{member.familyType}</TableCell>
+                  <TableCell className="text-sm">{member.familyName}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8 text-destructive hover:text-destructive"
+                        onClick={() => deleteRelationship(member.id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </div>

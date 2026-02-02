@@ -1,3 +1,4 @@
+import { useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -8,48 +9,21 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Pencil, Trash2, Plus, RotateCcw } from "lucide-react";
-
-const businessesData = [
-  {
-    name: "Die Familia Trust",
-    type: "Trust",
-    identification: "IT12345/2010",
-    identificationType: "Trust Number",
-    productViewing: "Full access",
-    share: "100%",
-    familyName: "BothamaJOB79",
-  },
-  {
-    name: "Jordaan, Danile",
-    type: "Individual",
-    identification: "7503155081084",
-    identificationType: "SA ID",
-    productViewing: "Full access",
-    share: "50%",
-    familyName: "BothamaJOB79",
-  },
-  {
-    name: "Botha Holdings (Pty) Ltd",
-    type: "Company",
-    identification: "2015/123456/07",
-    identificationType: "Registration",
-    productViewing: "Limited",
-    share: "25%",
-    familyName: "BothamaJOB79",
-  },
-  {
-    name: "KB Investments CC",
-    type: "Close Corporation",
-    identification: "CK2010/098765",
-    identificationType: "CK Number",
-    productViewing: "Full access",
-    share: "33%",
-    familyName: "-",
-  },
-];
+import { Pencil, Trash2, Plus, RotateCcw, Loader2 } from "lucide-react";
+import { useClientRelationships } from "@/hooks/useClientRelationships";
 
 const ClientBusinessesTab = () => {
+  const { clientId } = useParams<{ clientId: string }>();
+  const { businesses, loading, refetch, deleteRelationship } = useClientRelationships(clientId || "");
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       {/* Action Buttons */}
@@ -58,7 +32,7 @@ const ClientBusinessesTab = () => {
           <Plus className="w-4 h-4" />
           Add new
         </Button>
-        <Button variant="outline" className="gap-2">
+        <Button variant="outline" className="gap-2" onClick={() => refetch()}>
           <RotateCcw className="w-4 h-4" />
           Reset
         </Button>
@@ -82,27 +56,40 @@ const ClientBusinessesTab = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {businessesData.map((business, index) => (
-              <TableRow key={index} className="hover:bg-muted/50">
-                <TableCell className="text-sm font-medium">{business.name}</TableCell>
-                <TableCell className="text-sm">{business.type}</TableCell>
-                <TableCell className="text-sm">{business.identification}</TableCell>
-                <TableCell className="text-sm">{business.identificationType}</TableCell>
-                <TableCell className="text-sm">{business.productViewing}</TableCell>
-                <TableCell className="text-sm">{business.share}</TableCell>
-                <TableCell className="text-sm">{business.familyName}</TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-1">
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <Pencil className="w-4 h-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
+            {businesses.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                  No businesses found. Click "Add new" to add a business relationship.
                 </TableCell>
               </TableRow>
-            ))}
+            ) : (
+              businesses.map((business) => (
+                <TableRow key={business.id} className="hover:bg-muted/50">
+                  <TableCell className="text-sm font-medium">{business.name}</TableCell>
+                  <TableCell className="text-sm">{business.type}</TableCell>
+                  <TableCell className="text-sm">{business.identification}</TableCell>
+                  <TableCell className="text-sm">{business.identificationType}</TableCell>
+                  <TableCell className="text-sm">{business.productViewing}</TableCell>
+                  <TableCell className="text-sm">{business.share}</TableCell>
+                  <TableCell className="text-sm">{business.familyName}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8 text-destructive hover:text-destructive"
+                        onClick={() => deleteRelationship(business.id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </div>

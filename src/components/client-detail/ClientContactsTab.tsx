@@ -1,3 +1,4 @@
+import { useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -8,36 +9,21 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Search } from "lucide-react";
-
-const contactsData = [
-  {
-    name: "Van der Merwe, Johan",
-    jobTitle: "Accountant",
-    email: "johan@accountants.co.za",
-    phone: "+27 21 555 1234",
-  },
-  {
-    name: "Pretorius, Marie",
-    jobTitle: "Executor",
-    email: "marie.pretorius@legal.co.za",
-    phone: "+27 21 555 5678",
-  },
-  {
-    name: "Smith, David",
-    jobTitle: "Attorney",
-    email: "david.smith@law.co.za",
-    phone: "+27 21 555 9012",
-  },
-  {
-    name: "Johnson, Sarah",
-    jobTitle: "Tax Consultant",
-    email: "sarah@taxconsult.co.za",
-    phone: "+27 21 555 3456",
-  },
-];
+import { Plus, Search, Loader2 } from "lucide-react";
+import { useClientContacts } from "@/hooks/useClientContacts";
 
 const ClientContactsTab = () => {
+  const { clientId } = useParams<{ clientId: string }>();
+  const { contacts, loading } = useClientContacts(clientId || "");
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       {/* Action Buttons */}
@@ -65,14 +51,22 @@ const ClientContactsTab = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {contactsData.map((contact, index) => (
-              <TableRow key={index} className="hover:bg-muted/50">
-                <TableCell className="text-sm font-medium">{contact.name}</TableCell>
-                <TableCell className="text-sm">{contact.jobTitle}</TableCell>
-                <TableCell className="text-sm text-[hsl(180,70%,45%)]">{contact.email}</TableCell>
-                <TableCell className="text-sm">{contact.phone}</TableCell>
+            {contacts.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                  No contacts found. Click "Add new" to add a professional contact.
+                </TableCell>
               </TableRow>
-            ))}
+            ) : (
+              contacts.map((contact) => (
+                <TableRow key={contact.id} className="hover:bg-muted/50">
+                  <TableCell className="text-sm font-medium">{contact.name}</TableCell>
+                  <TableCell className="text-sm">{contact.jobTitle}</TableCell>
+                  <TableCell className="text-sm text-[hsl(180,70%,45%)]">{contact.email}</TableCell>
+                  <TableCell className="text-sm">{contact.phone}</TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </div>

@@ -33,128 +33,20 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
+  Loader2,
 } from "lucide-react";
+import { useEmails, Email } from "@/hooks/useEmails";
 
-const emailsData = [
-  {
-    id: 1,
-    from: "Wei-Wei Wu",
-    subject: "Re: Schedule your Momentic demo",
-    receivedOn: "02/09/2025 03:10 PM",
-    clients: "Wegner, C (Jonathan)",
-    hasAttachment: false,
-    isLink: false,
-  },
-  {
-    id: 2,
-    from: "Andre Grobbelaar",
-    subject: "FW: BEE Certificate",
-    receivedOn: "01/09/2025 10:51 AM",
-    clients: "Andre Floris Grobbelaar + 2 more clients",
-    hasAttachment: true,
-    isLink: false,
-  },
-  {
-    id: 3,
-    from: "BrightTALK",
-    subject: "Watch the latest recommendations from your network",
-    receivedOn: "13/08/2025 08:16 AM",
-    clients: "Wegner, E (Emile)",
-    hasAttachment: false,
-    isLink: false,
-  },
-  {
-    id: 4,
-    from: "Brandwatch Consumer Research",
-    subject: "[Monthly newsletter] New analysis on each generation",
-    receivedOn: "01/07/2025 02:29 PM",
-    clients: "Wegner, E (Emile)",
-    hasAttachment: false,
-    isLink: false,
-  },
-  {
-    id: 5,
-    from: "Gerhard Richard Edens",
-    subject: "Re: AI Agents from InnTelligence on Low-Ops",
-    receivedOn: "02/06/2025 02:54 PM",
-    clients: "Abrahams, MS (Moira)",
-    hasAttachment: true,
-    isLink: false,
-  },
-  {
-    id: 6,
-    from: "Kobus Sadie",
-    subject: "Updates from All Company at Efficient Group Ltd",
-    receivedOn: "27/01/2025 10:39 AM",
-    clients: "Abrahams, MS (Moira)",
-    hasAttachment: false,
-    isLink: false,
-  },
-  {
-    id: 7,
-    from: "The MongoDB Team",
-    subject: "The AI vector search tutorial you've been looking for",
-    receivedOn: "04/12/2024 05:17 PM",
-    clients: "",
-    hasAttachment: false,
-    isLink: true,
-  },
-  {
-    id: 8,
-    from: "Citywire New Model Adviser",
-    subject: "Why FNZ's co-manufacturing label matters to advisers",
-    receivedOn: "04/12/2024 01:00 PM",
-    clients: "",
-    hasAttachment: false,
-    isLink: false,
-  },
-  {
-    id: 9,
-    from: "Bravura Solutions",
-    subject: "Live tomorrow: Intro to Orchestrator: making work flow with intelligent automation",
-    receivedOn: "04/12/2024 09:49 AM",
-    clients: "",
-    hasAttachment: true,
-    isLink: false,
-  },
-  {
-    id: 10,
-    from: "Citywire New Model Adviser",
-    subject: "Asset managers cannot play politics with clients' money",
-    receivedOn: "04/12/2024 09:13 AM",
-    clients: "",
-    hasAttachment: false,
-    isLink: true,
-  },
-  {
-    id: 11,
-    from: "Professional Adviser",
-    subject: "FCA has 'near impossible' job to balance growth and consumer protection",
-    receivedOn: "04/12/2024 08:59 AM",
-    clients: "",
-    hasAttachment: false,
-    isLink: true,
-  },
-  {
-    id: 12,
-    from: "BrightTALK",
-    subject: "Join your colleagues and peers at these presentations",
-    receivedOn: "04/12/2024 08:17 AM",
-    clients: "",
-    hasAttachment: false,
-    isLink: false,
-  },
-];
+type EmailFolder = Email["folder"];
 
-const folderItems = [
-  { icon: Inbox, label: "Task Pool", count: 3, active: true },
-  { icon: Inbox, label: "Inbox", count: null, active: false },
-  { icon: FileText, label: "Draft", count: null, active: false },
-  { icon: Send, label: "Sent", count: null, active: false },
-  { icon: Clock, label: "Queue", count: null, active: false },
-  { icon: XCircle, label: "Failed", count: null, active: false },
-  { icon: FolderArchive, label: "Archived", count: null, active: false },
-  { icon: Unlink, label: "Non-linked Archived", count: null, active: false },
+const folderItems: { icon: React.ComponentType<any>; label: string; folder: EmailFolder | null }[] = [
+  { icon: Inbox, label: "Task Pool", folder: "Task Pool" },
+  { icon: Inbox, label: "Inbox", folder: "Inbox" },
+  { icon: FileText, label: "Draft", folder: "Draft" },
+  { icon: Send, label: "Sent", folder: "Sent" },
+  { icon: Clock, label: "Queue", folder: "Queue" },
+  { icon: XCircle, label: "Failed", folder: "Failed" },
+  { icon: FolderArchive, label: "Archived", folder: "Archived" },
 ];
 
 const sidebarItems = [
@@ -166,16 +58,19 @@ const sidebarItems = [
   { icon: Building2, label: "Practice", path: "/practice" },
 ];
 
-const Email = () => {
+const EmailPage = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [selectedEmails, setSelectedEmails] = useState<number[]>([]);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
+  const [activeFolder, setActiveFolder] = useState<EmailFolder>("Task Pool");
+
+  const { emails, loading: emailsLoading, folderCounts, refetch, moveToFolder, markAsRead } = useEmails(activeFolder);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null);
-      setLoading(false);
+      setAuthLoading(false);
       if (!session?.user) {
         navigate("/auth");
       }
@@ -183,7 +78,7 @@ const Email = () => {
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
-      setLoading(false);
+      setAuthLoading(false);
       if (!session?.user) {
         navigate("/auth");
       }
@@ -197,13 +92,29 @@ const Email = () => {
     navigate("/auth");
   };
 
-  const toggleEmailSelection = (id: number) => {
+  const toggleEmailSelection = (id: string) => {
     setSelectedEmails((prev) =>
       prev.includes(id) ? prev.filter((emailId) => emailId !== id) : [...prev, id]
     );
   };
 
-  if (loading) {
+  const handleMoveToInbox = async () => {
+    if (selectedEmails.length > 0) {
+      await moveToFolder(selectedEmails, "Inbox");
+      setSelectedEmails([]);
+    }
+  };
+
+  const handleMoveToArchive = async () => {
+    if (selectedEmails.length > 0) {
+      await moveToFolder(selectedEmails, "Archived");
+      setSelectedEmails([]);
+    }
+  };
+
+  const loading = authLoading || emailsLoading;
+
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -280,15 +191,15 @@ const Email = () => {
                 <PenSquare className="w-4 h-4 mr-1" />
                 Compose
               </Button>
-              <Button size="sm" variant="outline" className="text-xs">
+              <Button size="sm" variant="outline" className="text-xs" onClick={handleMoveToInbox} disabled={selectedEmails.length === 0}>
                 <Inbox className="w-3 h-3 mr-1" />
                 Move to inbox
               </Button>
-              <Button size="sm" variant="outline" className="text-xs">
+              <Button size="sm" variant="outline" className="text-xs" onClick={handleMoveToArchive} disabled={selectedEmails.length === 0}>
                 <Archive className="w-3 h-3 mr-1" />
                 Move to archive
               </Button>
-              <Button size="sm" variant="outline" className="text-xs">
+              <Button size="sm" variant="outline" className="text-xs" onClick={() => refetch()}>
                 <RefreshCw className="w-3 h-3 mr-1" />
                 Refresh emails
               </Button>
@@ -299,16 +210,17 @@ const Email = () => {
               {folderItems.map((folder) => (
                 <button
                   key={folder.label}
+                  onClick={() => folder.folder && setActiveFolder(folder.folder)}
                   className={`w-full flex items-center gap-2 px-4 py-2 text-sm ${
-                    folder.active
+                    activeFolder === folder.folder
                       ? "text-[hsl(180,70%,45%)] bg-[hsl(180,70%,45%)]/10"
                       : "text-foreground hover:bg-muted/50"
                   }`}
                 >
                   <folder.icon className="w-4 h-4" />
                   <span className="flex-1 text-left">{folder.label}</span>
-                  {folder.count !== null && (
-                    <span className="text-[hsl(180,70%,45%)] font-medium">{folder.count}</span>
+                  {folder.folder && folderCounts[folder.folder] !== undefined && folderCounts[folder.folder] > 0 && (
+                    <span className="text-[hsl(180,70%,45%)] font-medium">{folderCounts[folder.folder]}</span>
                   )}
                 </button>
               ))}
@@ -334,53 +246,61 @@ const Email = () => {
 
             {/* Email Table */}
             <div className="flex-1 overflow-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/30 sticky top-0">
-                  <tr className="border-b border-border">
-                    <th className="w-10 p-3"></th>
-                    <th className="w-10 p-3"></th>
-                    <th className="text-left p-3 font-medium text-muted-foreground">From</th>
-                    <th className="text-left p-3 font-medium text-muted-foreground">Subject</th>
-                    <th className="text-left p-3 font-medium text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        Received on
-                        <span className="text-xs">↓</span>
-                      </div>
-                    </th>
-                    <th className="text-left p-3 font-medium text-muted-foreground">Clients</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {emailsData.map((email) => (
-                    <tr
-                      key={email.id}
-                      className="border-b border-border hover:bg-muted/30 cursor-pointer"
-                    >
-                      <td className="p-3">
-                        <Checkbox
-                          checked={selectedEmails.includes(email.id)}
-                          onCheckedChange={() => toggleEmailSelection(email.id)}
-                        />
-                      </td>
-                      <td className="p-3">
-                        {email.hasAttachment && (
-                          <Paperclip className="w-4 h-4 text-muted-foreground" />
-                        )}
-                      </td>
-                      <td className={`p-3 ${email.isLink ? "text-[hsl(180,70%,45%)]" : ""}`}>
-                        {email.from}
-                      </td>
-                      <td className={`p-3 ${email.isLink ? "text-[hsl(180,70%,45%)]" : ""}`}>
-                        {email.subject}
-                      </td>
-                      <td className={`p-3 ${email.isLink ? "text-[hsl(180,70%,45%)]" : "text-muted-foreground"}`}>
-                        {email.receivedOn}
-                      </td>
-                      <td className="p-3 text-muted-foreground">{email.clients}</td>
+              {emailsLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : (
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/30 sticky top-0">
+                    <tr className="border-b border-border">
+                      <th className="w-10 p-3"></th>
+                      <th className="w-10 p-3"></th>
+                      <th className="text-left p-3 font-medium text-muted-foreground">From</th>
+                      <th className="text-left p-3 font-medium text-muted-foreground">Subject</th>
+                      <th className="text-left p-3 font-medium text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          Received on
+                          <span className="text-xs">↓</span>
+                        </div>
+                      </th>
+                      <th className="text-left p-3 font-medium text-muted-foreground">Clients</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {emails.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="text-center py-12 text-muted-foreground">
+                          No emails in this folder.
+                        </td>
+                      </tr>
+                    ) : (
+                      emails.map((email) => (
+                        <tr
+                          key={email.id}
+                          className={`border-b border-border hover:bg-muted/30 cursor-pointer ${!email.isRead ? "font-medium" : ""}`}
+                        >
+                          <td className="p-3">
+                            <Checkbox
+                              checked={selectedEmails.includes(email.id)}
+                              onCheckedChange={() => toggleEmailSelection(email.id)}
+                            />
+                          </td>
+                          <td className="p-3">
+                            {email.hasAttachment && (
+                              <Paperclip className="w-4 h-4 text-muted-foreground" />
+                            )}
+                          </td>
+                          <td className="p-3">{email.from}</td>
+                          <td className="p-3">{email.subject}</td>
+                          <td className="p-3 text-muted-foreground">{email.receivedOn}</td>
+                          <td className="p-3 text-muted-foreground">{email.clients}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              )}
             </div>
 
             {/* Pagination */}
@@ -391,7 +311,7 @@ const Email = () => {
               <Button variant="ghost" size="icon" className="h-6 w-6" disabled>
                 <ChevronLeft className="w-4 h-4" />
               </Button>
-              <span>1 to 12 of 12</span>
+              <span>1 to {emails.length} of {emails.length}</span>
               <Button variant="ghost" size="icon" className="h-6 w-6" disabled>
                 <ChevronRight className="w-4 h-4" />
               </Button>
@@ -406,4 +326,4 @@ const Email = () => {
   );
 };
 
-export default Email;
+export default EmailPage;
