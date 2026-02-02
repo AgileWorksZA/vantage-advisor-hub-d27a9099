@@ -304,7 +304,8 @@ const Tasks = () => {
     );
   }
 
-  const userName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Adviser";
+  const userName = user?.user_metadata?.full_name || "Adviser";
+  const userEmail = user?.email || "adviser@vantage.co";
 
   return (
     <div className="h-screen bg-muted/30 flex overflow-hidden">
@@ -395,7 +396,7 @@ const Tasks = () => {
         <AppHeader
           searchPlaceholder="Search tasks or clients..."
           userName={userName}
-          userEmail={user?.email}
+          userEmail={userEmail}
           onSignOut={handleSignOut}
           onAccountSettings={() => navigate("/practice")}
           searchValue={searchQuery}

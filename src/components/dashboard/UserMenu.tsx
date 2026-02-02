@@ -1,12 +1,14 @@
-import { useState } from "react";
-import { Settings, LogOut } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Settings, LogOut, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
+import { useTheme } from "next-themes";
 
 interface UserMenuProps {
   userName: string;
@@ -17,6 +19,13 @@ interface UserMenuProps {
 
 export function UserMenu({ userName, userEmail, onSignOut, onAccountSettings }: UserMenuProps) {
   const [open, setOpen] = useState(false);
+  const { theme, setTheme, resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  // Prevent hydration mismatch
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Get initials from userName (first letter of first word)
   const getInitial = (name: string) => {
@@ -32,6 +41,12 @@ export function UserMenu({ userName, userEmail, onSignOut, onAccountSettings }: 
     setOpen(false);
     onAccountSettings?.();
   };
+
+  const toggleTheme = () => {
+    setTheme(resolvedTheme === "dark" ? "light" : "dark");
+  };
+
+  const isDark = mounted && resolvedTheme === "dark";
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -70,6 +85,29 @@ export function UserMenu({ userName, userEmail, onSignOut, onAccountSettings }: 
           >
             <Settings className="h-4 w-4 text-muted-foreground" />
             <span className="flex-1 text-left">Account Settings</span>
+          </button>
+          <button
+            onClick={toggleTheme}
+            className={cn(
+              "w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors",
+              "hover:bg-muted/50"
+            )}
+          >
+            {mounted ? (
+              isDark ? (
+                <Sun className="h-4 w-4 text-muted-foreground" />
+              ) : (
+                <Moon className="h-4 w-4 text-muted-foreground" />
+              )
+            ) : (
+              <Moon className="h-4 w-4 text-muted-foreground" />
+            )}
+            <span className="flex-1 text-left">Dark Mode</span>
+            <Switch
+              checked={isDark}
+              onCheckedChange={toggleTheme}
+              className="pointer-events-none"
+            />
           </button>
           <button
             onClick={handleSignOut}

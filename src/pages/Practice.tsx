@@ -100,7 +100,8 @@ const Practice = () => {
     );
   }
 
-  const userName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Adviser";
+  const userName = user?.user_metadata?.full_name || "Adviser";
+  const userEmail = user?.email || "adviser@vantage.co";
   const filteredPersonnel = personnelData.filter(p => 
     p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     p.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -142,7 +143,7 @@ const Practice = () => {
         <AppHeader
           searchPlaceholder="Search..."
           userName={userName}
-          userEmail={user?.email}
+          userEmail={userEmail}
           onSignOut={handleSignOut}
           onAccountSettings={() => {}}
         />
