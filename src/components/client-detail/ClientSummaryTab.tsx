@@ -10,28 +10,18 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Client, getDisplayName, getInitials, calculateAge, formatBirthday } from "@/types/client";
+import { useClientProducts, ProductListItem } from "@/hooks/useClientProducts";
 
 interface ClientSummaryTabProps {
   client: Client;
+  clientId: string;
 }
 
 const advisorData = [
   { type: "Primary", advisor: "Jordaan, Danile", relationship: "Owner", rating: "5", role: "Financial Planner" },
   { type: "Secondary", advisor: "Van Zyl, Christo", relationship: "Shared", rating: "4", role: "Investment Advisor" },
-];
-
-const productsData = [
-  { category: "PSG Trust (Pty) Ltd - Estate", products: [
-    { name: "Tax Planning", premium: "R 0.00", frequency: "Monthly", percentage: "100%", value: "R 0.00" },
-    { name: "Estate Planning - Will", premium: "R 0.00", frequency: "Monthly", percentage: "100%", value: "R 0.00" },
-  ]},
-  { category: "Allan Gray - Preservation Fund", products: [
-    { name: "Retirement Annuity", premium: "R 2,500.00", frequency: "Monthly", percentage: "100%", value: "R 1,250,000.00" },
-  ]},
-  { category: "PSG Securities Ltd - Share Portfolio", products: [
-    { name: "Local Equities", premium: "R 0.00", frequency: "N/A", percentage: "100%", value: "R 850,000.00" },
-  ]},
 ];
 
 const outstandingDocs = [
@@ -40,15 +30,36 @@ const outstandingDocs = [
   { document: "Risk profile questionnaire", workflow: "Advice Cycle" },
 ];
 
-const ClientSummaryTab = ({ client }: ClientSummaryTabProps) => {
+// Group products by category
+const groupProductsByCategory = (products: ProductListItem[]) => {
+  const grouped: Record<string, ProductListItem[]> = {};
+  
+  products.forEach(product => {
+    const category = product.category || "Uncategorized";
+    if (!grouped[category]) {
+      grouped[category] = [];
+    }
+    grouped[category].push(product);
+  });
+  
+  return grouped;
+};
+
+// Parse currency string to number
+const parseCurrency = (value: string): number => {
+  return parseFloat(value.replace(/[R\s,]/g, '')) || 0;
+};
+
+const ClientSummaryTab = ({ client, clientId }: ClientSummaryTabProps) => {
+  const { products, loading: productsLoading } = useClientProducts(clientId);
+  
   const displayName = getDisplayName(client);
   const initials = getInitials(client);
   const age = calculateAge(client.date_of_birth);
   const birthday = formatBirthday(client.date_of_birth);
 
-  const totalValue = productsData.reduce((acc, cat) => 
-    acc + cat.products.reduce((sum, p) => sum + parseFloat(p.value.replace(/[R\s,]/g, '')), 0), 0
-  );
+  const groupedProducts = groupProductsByCategory(products);
+  const totalValue = products.reduce((acc, p) => acc + parseCurrency(p.value), 0);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -158,41 +169,57 @@ const ClientSummaryTab = ({ client }: ClientSummaryTabProps) => {
           </CardHeader>
           <CardContent className="p-0">
             <ScrollArea className="h-[300px]">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-xs">Name</TableHead>
-                    <TableHead className="text-xs">Premium</TableHead>
-                    <TableHead className="text-xs">Frequency</TableHead>
-                    <TableHead className="text-xs">%</TableHead>
-                    <TableHead className="text-xs text-right">Value</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {productsData.map((category, catIndex) => (
-                    <React.Fragment key={`category-${catIndex}`}>
-                      <TableRow className="bg-muted/50">
-                        <TableCell colSpan={5} className="text-sm font-medium py-2">
-                          {category.category}
-                        </TableCell>
-                      </TableRow>
-                      {category.products.map((product, prodIndex) => (
-                        <TableRow key={`prod-${catIndex}-${prodIndex}`}>
-                          <TableCell className="text-sm pl-6">{product.name}</TableCell>
-                          <TableCell className="text-sm">{product.premium}</TableCell>
-                          <TableCell className="text-sm">{product.frequency}</TableCell>
-                          <TableCell className="text-sm">{product.percentage}</TableCell>
-                          <TableCell className="text-sm text-right">{product.value}</TableCell>
+              {productsLoading ? (
+                <div className="p-4 space-y-3">
+                  <Skeleton className="h-8 w-full" />
+                  <Skeleton className="h-6 w-full" />
+                  <Skeleton className="h-6 w-full" />
+                  <Skeleton className="h-6 w-full" />
+                </div>
+              ) : products.length === 0 ? (
+                <div className="p-8 text-center text-muted-foreground">
+                  <p>No products found for this client.</p>
+                  <p className="text-sm mt-1">Add products in the Products tab.</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-xs">Name</TableHead>
+                      <TableHead className="text-xs">Premium</TableHead>
+                      <TableHead className="text-xs">Frequency</TableHead>
+                      <TableHead className="text-xs">Role</TableHead>
+                      <TableHead className="text-xs text-right">Value</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {Object.entries(groupedProducts).map(([category, categoryProducts]) => (
+                      <React.Fragment key={category}>
+                        <TableRow className="bg-muted/50">
+                          <TableCell colSpan={5} className="text-sm font-medium py-2">
+                            {category}
+                          </TableCell>
                         </TableRow>
-                      ))}
-                    </React.Fragment>
-                  ))}
-                  <TableRow className="bg-muted font-medium">
-                    <TableCell colSpan={4} className="text-sm">Total</TableCell>
-                    <TableCell className="text-sm text-right">R {totalValue.toLocaleString('en-ZA', { minimumFractionDigits: 2 })}</TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
+                        {categoryProducts.map((product) => (
+                          <TableRow key={product.id}>
+                            <TableCell className="text-sm pl-6">{product.product}</TableCell>
+                            <TableCell className="text-sm">{product.premium}</TableCell>
+                            <TableCell className="text-sm">{product.frequency}</TableCell>
+                            <TableCell className="text-sm">{product.role}</TableCell>
+                            <TableCell className="text-sm text-right">{product.value}</TableCell>
+                          </TableRow>
+                        ))}
+                      </React.Fragment>
+                    ))}
+                    <TableRow className="bg-muted font-medium">
+                      <TableCell colSpan={4} className="text-sm">Total</TableCell>
+                      <TableCell className="text-sm text-right">
+                        R {totalValue.toLocaleString('en-ZA', { minimumFractionDigits: 2 })}
+                      </TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              )}
             </ScrollArea>
           </CardContent>
         </Card>
