@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LayoutDashboard, Users, Mail, ListTodo, LineChart, Building2, Plus, X, Search, Bell, LogOut } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
+import { AdvisorFilter } from "@/components/dashboard/AdvisorFilter";
 const providerData = [{
   name: "Ninety One",
   bookPercent: "55.3 %",
@@ -238,13 +239,7 @@ const Dashboard = () => {
             <Input placeholder="Search..." className="pl-10 bg-muted/50 border-0" />
           </div>
           <div className="flex items-center gap-4">
-            <div className="flex gap-1">
-              <span className="w-6 h-6 rounded-full bg-green-500 text-white text-xs flex items-center justify-center font-medium">CZ</span>
-              <span className="w-6 h-6 rounded-full bg-orange-500 text-white text-xs flex items-center justify-center font-medium">DH</span>
-              <span className="w-6 h-6 rounded-full bg-blue-500 text-white text-xs flex items-center justify-center font-medium">EW</span>
-              <span className="w-6 h-6 rounded-full bg-green-600 text-white text-xs flex items-center justify-center font-medium">IN</span>
-              <span className="w-6 h-6 rounded-full bg-red-500 text-white text-xs flex items-center justify-center font-medium">RS</span>
-            </div>
+            <AdvisorFilter />
             <Button variant="ghost" size="icon" className="relative">
               <Bell className="w-5 h-5" />
               <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">1</span>
