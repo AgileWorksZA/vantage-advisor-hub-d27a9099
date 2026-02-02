@@ -1,10 +1,16 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
+
+// Input validation schema
+const requestSchema = z.object({
+  recordingId: z.string().uuid({ message: "recordingId must be a valid UUID" })
+});
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -19,26 +25,48 @@ serve(async (req) => {
 
     // Get the authorization header to verify user
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('No authorization header');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+      );
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Verify the user's JWT
-    const { data: { user }, error: userError } = await supabase.auth.getUser(
-      authHeader.replace('Bearer ', '')
-    );
+    // Verify the user's JWT using getClaims
+    const token = authHeader.replace('Bearer ', '');
+    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
 
-    if (userError || !user) {
-      throw new Error('Unauthorized');
+    if (claimsError || !claimsData?.claims) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+      );
     }
 
-    const { recordingId } = await req.json();
+    const userId = claimsData.claims.sub;
 
-    if (!recordingId) {
-      throw new Error('Recording ID is required');
+    // Parse and validate input
+    let body;
+    try {
+      body = await req.json();
+    } catch {
+      return new Response(
+        JSON.stringify({ error: 'Invalid JSON body' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
     }
+
+    const validation = requestSchema.safeParse(body);
+    if (!validation.success) {
+      return new Response(
+        JSON.stringify({ error: 'Validation failed', details: validation.error.errors }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
+    }
+
+    const { recordingId } = validation.data;
 
     console.log(`Processing meeting analysis for recording: ${recordingId}`);
 
@@ -47,15 +75,21 @@ serve(async (req) => {
       .from('meeting_recordings')
       .select('*')
       .eq('id', recordingId)
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .single();
 
     if (recordingError || !recording) {
-      throw new Error('Recording not found');
+      return new Response(
+        JSON.stringify({ error: 'Recording not found' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
+      );
     }
 
     if (!recording.transcription) {
-      throw new Error('No transcription available for this recording');
+      return new Response(
+        JSON.stringify({ error: 'No transcription available for this recording' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
     }
 
     // Get client info if linked
@@ -143,7 +177,10 @@ Respond ONLY with valid JSON, no additional text.`;
     if (!geminiResponse.ok) {
       const errorText = await geminiResponse.text();
       console.error('Gemini API error:', errorText);
-      throw new Error(`Analysis failed: ${errorText}`);
+      return new Response(
+        JSON.stringify({ error: 'Analysis failed' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      );
     }
 
     const geminiResult = await geminiResponse.json();
@@ -159,8 +196,10 @@ Respond ONLY with valid JSON, no additional text.`;
       analysis = JSON.parse(analysisText);
     } catch (parseError) {
       console.error('JSON parse error:', parseError);
-      console.error('Raw response:', analysisText);
-      throw new Error('Failed to parse AI analysis response');
+      return new Response(
+        JSON.stringify({ error: 'Failed to parse AI analysis response' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      );
     }
 
     // Separate summary and action items
@@ -186,7 +225,10 @@ Respond ONLY with valid JSON, no additional text.`;
 
     if (updateError) {
       console.error('Update error:', updateError);
-      throw new Error('Failed to save analysis');
+      return new Response(
+        JSON.stringify({ error: 'Failed to save analysis' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      );
     }
 
     console.log(`Analysis saved successfully for recording: ${recordingId}`);
@@ -207,7 +249,7 @@ Respond ONLY with valid JSON, no additional text.`;
   } catch (error) {
     console.error('Processing error:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: 'Internal server error' }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500
