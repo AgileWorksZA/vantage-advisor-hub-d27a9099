@@ -1,9 +1,7 @@
-import { ReactNode } from 'react';
-import GridLayout from 'react-grid-layout';
+import { ReactNode, useRef, useState, useEffect } from 'react';
+import { Responsive, WidthProvider } from 'react-grid-layout/legacy';
 import 'react-grid-layout/css/styles.css';
 
-const Responsive = (GridLayout as any).Responsive;
-const WidthProvider = (GridLayout as any).WidthProvider;
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
 export interface WidgetLayout {
@@ -69,10 +67,10 @@ export const DraggableWidgetGrid = ({
       breakpoints={breakpoints}
       cols={cols}
       rowHeight={rowHeight}
-      onLayoutChange={(currentLayout: WidgetLayout[]) => onLayoutChange(currentLayout)}
+      onLayoutChange={(currentLayout: any) => onLayoutChange(currentLayout as WidgetLayout[])}
       draggableHandle=".widget-drag-handle"
-      margin={[16, 16]}
-      containerPadding={[0, 0]}
+      margin={[16, 16] as [number, number]}
+      containerPadding={[0, 0] as [number, number]}
       isResizable={false}
       compactType="vertical"
       preventCollision={false}
