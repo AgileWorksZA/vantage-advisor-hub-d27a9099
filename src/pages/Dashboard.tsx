@@ -4,14 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LayoutDashboard, Users, Mail, CalendarIcon, ListTodo, LineChart, Building2, Plus, X, Search } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { LayoutDashboard, Users, Mail, CalendarIcon, ListTodo, LineChart, Building2, Plus, X } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
-import { AdvisorFilter } from "@/components/dashboard/AdvisorFilter";
-import { NotificationDropdown } from "@/components/dashboard/NotificationDropdown";
-import { RegionSelector } from "@/components/dashboard/RegionSelector";
-import { UserMenu } from "@/components/dashboard/UserMenu";
 import { getRegionalData } from "@/data/regionalData";
+import { AppHeader } from "@/components/layout/AppHeader";
 
 const sidebarItems = [{
   icon: LayoutDashboard,
@@ -114,26 +110,14 @@ const Dashboard = () => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Header - Sticky */}
-        <header className="h-14 bg-background border-b border-border flex items-center justify-between px-6 shrink-0 z-10">
-          <div className="relative w-96">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input placeholder="Search..." className="pl-10 bg-muted/50 border-0" />
-          </div>
-          <div className="flex items-center gap-4">
-            <AdvisorFilter />
-            <NotificationDropdown />
-            <RegionSelector 
-              selectedRegion={selectedRegion} 
-              onRegionChange={setSelectedRegion} 
-            />
-            <UserMenu 
-              userName={userName}
-              userEmail={user?.email}
-              onSignOut={handleSignOut}
-              onAccountSettings={() => navigate("/practice")}
-            />
-          </div>
-        </header>
+        <AppHeader
+          userName={userName}
+          userEmail={user?.email}
+          onSignOut={handleSignOut}
+          onAccountSettings={() => navigate("/practice")}
+          selectedRegion={selectedRegion}
+          onRegionChange={setSelectedRegion}
+        />
 
         {/* Dashboard Content - Scrollable */}
         <main className="flex-1 p-6 overflow-auto">

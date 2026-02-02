@@ -39,9 +39,6 @@ import {
   LineChart,
   Building2,
   Plus,
-  Search,
-  Bell,
-  LogOut,
   ChevronLeft,
   ChevronRight,
   Clock,
@@ -50,6 +47,7 @@ import {
   Edit,
   X,
 } from "lucide-react";
+import { AppHeader } from "@/components/layout/AppHeader";
 import { WeekView } from "@/components/calendar/WeekView";
 import { DayView } from "@/components/calendar/DayView";
 import {
@@ -327,31 +325,13 @@ const CalendarPage = () => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Header - Sticky */}
-        <header className="h-14 bg-background border-b border-border flex items-center justify-between px-6 shrink-0 z-10">
-          <div className="relative w-96">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input placeholder="Search events..." className="pl-10 bg-muted/50 border-0" />
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="flex gap-1">
-              <span className="w-6 h-6 rounded-full bg-green-500 text-white text-xs flex items-center justify-center font-medium">CZ</span>
-              <span className="w-6 h-6 rounded-full bg-orange-500 text-white text-xs flex items-center justify-center font-medium">DH</span>
-              <span className="w-6 h-6 rounded-full bg-blue-500 text-white text-xs flex items-center justify-center font-medium">EW</span>
-              <span className="w-6 h-6 rounded-full bg-green-600 text-white text-xs flex items-center justify-center font-medium">IN</span>
-              <span className="w-6 h-6 rounded-full bg-red-500 text-white text-xs flex items-center justify-center font-medium">RS</span>
-            </div>
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="w-5 h-5" />
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">1</span>
-            </Button>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">{userName}</span>
-              <Button variant="ghost" size="icon" onClick={handleSignOut} title="Sign out">
-                <LogOut className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-        </header>
+        <AppHeader
+          searchPlaceholder="Search events..."
+          userName={userName}
+          userEmail={user?.email}
+          onSignOut={handleSignOut}
+          onAccountSettings={() => navigate("/practice")}
+        />
 
         {/* Calendar Content - Scrollable */}
         <main className="flex-1 flex overflow-hidden">
