@@ -17,6 +17,7 @@ import CommandCenter from "./pages/CommandCenter";
 import Clients from "./pages/Clients";
 import ClientDetail from "./pages/ClientDetail";
 import Email from "./pages/Email";
+import Calendar from "./pages/Calendar";
 import Insights from "./pages/Insights";
 import Tasks from "./pages/Tasks";
 import Practice from "./pages/Practice";
@@ -37,6 +38,7 @@ const App = () => (
           <Route path="/clients" element={<Clients />} />
           <Route path="/clients/:clientId" element={<ClientDetail />} />
           <Route path="/email" element={<Email />} />
+          <Route path="/calendar" element={<Calendar />} />
           <Route path="/insights" element={<Insights />} />
           <Route path="/tasks" element={<Tasks />} />
           <Route path="/practice" element={<Practice />} />

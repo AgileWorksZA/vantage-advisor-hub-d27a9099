@@ -67,6 +67,86 @@ export type Database = {
           },
         ]
       }
+      calendar_events: {
+        Row: {
+          all_day: boolean
+          attendees: Json | null
+          client_id: string | null
+          color: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          description: string | null
+          end_time: string
+          event_type: Database["public"]["Enums"]["calendar_event_type"]
+          id: string
+          is_deleted: boolean
+          is_recurring: boolean
+          location: string | null
+          recurrence_rule: string | null
+          reminder_minutes: number | null
+          start_time: string
+          status: Database["public"]["Enums"]["calendar_event_status"]
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          all_day?: boolean
+          attendees?: Json | null
+          client_id?: string | null
+          color?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          end_time: string
+          event_type?: Database["public"]["Enums"]["calendar_event_type"]
+          id?: string
+          is_deleted?: boolean
+          is_recurring?: boolean
+          location?: string | null
+          recurrence_rule?: string | null
+          reminder_minutes?: number | null
+          start_time: string
+          status?: Database["public"]["Enums"]["calendar_event_status"]
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          all_day?: boolean
+          attendees?: Json | null
+          client_id?: string | null
+          color?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          end_time?: string
+          event_type?: Database["public"]["Enums"]["calendar_event_type"]
+          id?: string
+          is_deleted?: boolean
+          is_recurring?: boolean
+          location?: string | null
+          recurrence_rule?: string | null
+          reminder_minutes?: number | null
+          start_time?: string
+          status?: Database["public"]["Enums"]["calendar_event_status"]
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendar_events_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_contacts: {
         Row: {
           client_id: string
@@ -1517,6 +1597,16 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      calendar_event_status: "Scheduled" | "Completed" | "Cancelled"
+      calendar_event_type:
+        | "Meeting"
+        | "Annual Review"
+        | "Portfolio Review"
+        | "Compliance Review"
+        | "Reminder"
+        | "Personal"
+        | "Team Event"
+        | "Client Call"
       commission_status:
         | "Matched"
         | "Pending"
@@ -1696,6 +1786,17 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      calendar_event_status: ["Scheduled", "Completed", "Cancelled"],
+      calendar_event_type: [
+        "Meeting",
+        "Annual Review",
+        "Portfolio Review",
+        "Compliance Review",
+        "Reminder",
+        "Personal",
+        "Team Event",
+        "Client Call",
+      ],
       commission_status: [
         "Matched",
         "Pending",
