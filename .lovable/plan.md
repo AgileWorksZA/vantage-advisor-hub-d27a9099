@@ -1,138 +1,84 @@
 
 
-# Insights Page: Pie Chart Enhancement & Widget Height Alignment
+# Widget Size Alignment: Insights to Match Dashboard
 
 ## Overview
-Three changes to improve the visual consistency and interactivity of the Insights page:
-1. Increase the size of the Monthly Commission pie chart
-2. Add pie slice separation effect on mouse hover
-3. Reduce the Commission Snapshot widget height to align with other widgets
+Standardize the widget heights on the Insights page to match the Dashboard page, while keeping the Commission Summary widget spanning two columns.
 
 ---
 
-## Changes Summary
+## Current State Analysis
 
-### 1. Increase Pie Chart Size
+### Dashboard Widgets
+- Grid: `grid-cols-12 gap-4`
+- All cards: `col-span-3` (4 cards per row)
+- Chart heights: `h-48` (192px) with `EChartsWrapper height={192}`
 
-**Current State:**
-- Chart container: `h-48` (192px)
-- EChartsWrapper height: 192px
-- Pie radius: `['50%', '80%']` (inner to outer)
-
-**Proposed Change:**
-- Increase container to `h-64` (256px)
-- Increase EChartsWrapper height to 256px
-- Adjust pie radius to `['45%', '85%']` for better proportions at larger size
+### Insights Widgets (Current Issues)
+| Widget | Current Size | Issue |
+|--------|--------------|-------|
+| Commission by Type | `col-span-3`, `h-48` (192px) | ✓ Correct |
+| Commission Earned | `col-span-3`, `h-48` (192px) | ✓ Correct |
+| Monthly Commission | `col-span-3`, `h-[400px]` (400px) | ✗ Too tall - needs to be 192px |
+| Commission Snapshot | `col-span-3` | ✓ Correct |
+| Commission Summary | `col-span-6`, `h-56` (224px) | ✓ Correct (wider, slightly taller is OK) |
+| Leaderboard Snapshot | `col-span-3` | ✓ Correct |
 
 ---
 
-### 2. Add Pie Slice Separation on Hover
+## Changes Required
 
-**Current Emphasis Configuration:**
-```typescript
-emphasis: {
-  itemStyle: {
-    shadowBlur: 20,
-    shadowColor: 'rgba(0, 0, 0, 0.3)',
-  },
-  scale: true,
-  scaleSize: 10,
-}
+### 1. Reduce Monthly Commission Pie Chart Height
+
+**File:** `src/pages/Insights.tsx`
+
+**Line 574:** Change container height
+```diff
+- <div className="h-[400px] flex items-center justify-center">
++ <div className="h-48 flex items-center justify-center">
 ```
 
-**Proposed Enhancement:**
-Add `selectedMode: 'single'` and configure emphasis to "explode" the hovered slice outward:
-
-```typescript
-series: [{
-  type: 'pie',
-  radius: ['45%', '85%'],
-  center: ['50%', '50%'],
-  selectedMode: 'single',        // Allow single selection
-  selectedOffset: 12,            // Distance to move selected slice
-  data: monthlyCommissionData.map(d => ({
-    name: d.name,
-    value: d.value,
-    itemStyle: { color: d.color },
-  })),
-  label: { show: false },
-  emphasis: {
-    itemStyle: {
-      shadowBlur: 20,
-      shadowColor: 'rgba(0, 0, 0, 0.3)',
-    },
-    scale: true,
-    scaleSize: 12,               // Increase scale on hover
-  },
-  animationType: 'scale',
-  animationEasing: 'elasticOut',
-}]
+**Line 575-576:** Change EChartsWrapper height
+```diff
+  <EChartsWrapper
+-   height={400}
++   height={192}
+    option={monthlyCommissionOption}
+  />
 ```
 
-The `selectedOffset` property creates the visual separation when a slice is selected/hovered.
+### 2. Adjust Pie Chart Radius for Smaller Size
+
+Since the chart will be smaller, the radius should be adjusted to maintain good proportions within the 192px container.
+
+**In the `monthlyCommissionOption` configuration (around line 307-310):**
+```diff
+  series: [{
+    type: 'pie',
+-   radius: ['45%', '85%'],
++   radius: ['40%', '75%'],
+    center: ['50%', '50%'],
+```
+
+This matches the Dashboard's pie chart proportions.
 
 ---
 
-### 3. Reduce Commission Snapshot Widget Height
+## Summary of Changes
 
-**Current State:**
-- Line 596: `<Card className="col-span-3 row-span-2">`
-- The `row-span-2` makes the widget span 2 rows, making it significantly taller than adjacent widgets
-
-**Proposed Change:**
-- Remove `row-span-2` class to make it a single-row widget
-- This will align its height with the other cards in the same row (Commission by Type, Commission Earned, Monthly Commission)
-
-The Commission Snapshot widget contains 5 info items which will fit comfortably in a single-row card.
+| Line | Current | New |
+|------|---------|-----|
+| 309 | `radius: ['45%', '85%']` | `radius: ['40%', '75%']` |
+| 574 | `h-[400px]` | `h-48` |
+| 576 | `height={400}` | `height={192}` |
 
 ---
 
-## Files to Modify
+## Visual Result
 
-### `src/pages/Insights.tsx`
-
-| Line | Current | Change |
-|------|---------|--------|
-| 309 | `radius: ['50%', '80%']` | `radius: ['45%', '85%']` |
-| 307-328 | Pie series config | Add `selectedMode` and `selectedOffset` |
-| 572 | `<div className="h-48 ...">` | `<div className="h-64 ...">` |
-| 573-576 | `height={192}` | `height={256}` |
-| 596 | `col-span-3 row-span-2` | `col-span-3` (remove row-span-2) |
-
----
-
-## Visual Comparison
-
-### Pie Chart Before vs After
-
-| Property | Before | After |
-|----------|--------|-------|
-| Container height | 192px | 256px |
-| Inner radius | 50% | 45% |
-| Outer radius | 80% | 85% |
-| Hover scale | 10px | 12px |
-| Slice separation | None | 12px offset on hover |
-
-### Commission Snapshot Before vs After
-
-| Property | Before | After |
-|----------|--------|-------|
-| Row span | 2 rows | 1 row |
-| Height | ~2x other cards | Same as other cards |
-
----
-
-## Technical Details
-
-### ECharts Pie Separation Behavior
-
-ECharts provides two ways to separate pie slices:
-1. **`selectedOffset`**: Moves the slice away from center when selected
-2. **`emphasis.scale`**: Scales the slice larger on hover
-
-Combining both creates a pronounced visual effect where:
-- On hover, the slice scales up slightly (scaleSize: 12)
-- On click/select, the slice moves outward (selectedOffset: 12)
-
-For hover-only separation without requiring click, we can use the emphasis configuration with the scale property, which is already partially implemented. The `selectedOffset` provides additional separation when users interact.
+After changes:
+- All standard widgets will have consistent heights matching Dashboard
+- Commission Summary remains `col-span-6` (spanning 2 columns as requested)
+- Monthly Commission pie chart will be proportional to the card size
+- Grid layout will align properly across both pages
 
