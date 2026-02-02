@@ -13,8 +13,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { 
   LayoutDashboard, Users, Mail, CalendarIcon, ListTodo, LineChart, Building2, Plus, 
   Search, Bell, LogOut, ArrowLeft, User as UserIcon, Settings, 
-  Phone, FileText, MessageSquare, Shield, Activity, CreditCard
+  Phone, FileText, MessageSquare, Shield, Activity, CreditCard, ShieldCheck, Users2, Building
 } from "lucide-react";
+import { RolesTab } from "@/components/practice/RolesTab";
+import { TeamsTab } from "@/components/practice/TeamsTab";
+import { BrokerCodesTab } from "@/components/practice/BrokerCodesTab";
+import { CommunicationTabEnhanced } from "@/components/practice/CommunicationTabEnhanced";
+import { ActivityLogTabEnhanced } from "@/components/practice/ActivityLogTabEnhanced";
 
 // Sample personnel data
 const personnelData = [
@@ -38,6 +43,9 @@ const sidebarItems = [
 
 const settingsTabs = [
   { id: "profile", label: "Profile", icon: UserIcon },
+  { id: "roles", label: "Roles", icon: ShieldCheck },
+  { id: "teams", label: "Teams", icon: Users2 },
+  { id: "broker-codes", label: "Broker Codes", icon: Building },
   { id: "preferences", label: "Preferences", icon: Settings },
   { id: "communication", label: "Communication", icon: MessageSquare },
   { id: "integrations", label: "Integrations", icon: CreditCard },
@@ -330,13 +338,16 @@ const PersonnelSettings = ({
         <Card>
           <CardContent className="p-6">
             {activeTab === "profile" && <ProfileTab person={person} />}
+            {activeTab === "roles" && <RolesTab />}
+            {activeTab === "teams" && <TeamsTab />}
+            {activeTab === "broker-codes" && <BrokerCodesTab />}
             {activeTab === "preferences" && <PreferencesTab />}
-            {activeTab === "communication" && <CommunicationTab />}
+            {activeTab === "communication" && <CommunicationTabEnhanced />}
             {activeTab === "integrations" && <IntegrationsTab />}
             {activeTab === "voip" && <VoIPTab />}
             {activeTab === "referrals" && <ReferralsTab />}
             {activeTab === "mailbox" && <MailboxTab person={person} />}
-            {activeTab === "activity" && <ActivityLogTab />}
+            {activeTab === "activity" && <ActivityLogTabEnhanced />}
           </CardContent>
         </Card>
       </div>
