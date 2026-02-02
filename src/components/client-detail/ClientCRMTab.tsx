@@ -38,9 +38,13 @@ const ClientCRMTab = ({ client, onUpdate }: ClientCRMTabProps) => {
     occupation: client.occupation || "",
     industry: client.industry || "",
     disability_type: client.disability_type || "",
+    // DB constraint: Email, Phone, SMS, Post
     preferred_contact: client.preferred_contact || "",
+    // DB constraint: Cell, Work, Home
     preferred_phone: client.preferred_phone || "",
+    // DB constraint: Personal, Work
     preferred_email: client.preferred_email || "",
+    // DB constraint: SMS, Email
     otp_delivery_method: client.otp_delivery_method || "SMS",
     sports_interests: client.sports_interests || [],
   });
@@ -62,9 +66,51 @@ const ClientCRMTab = ({ client, onUpdate }: ClientCRMTabProps) => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await onUpdate(formData);
+      // Only include fields that have values to avoid constraint violations
+      const updates: Partial<Client> = {
+        language: formData.language || null,
+        race: formData.race || null,
+        nationality: formData.nationality || null,
+        religion: formData.religion || null,
+        is_smoker: formData.is_smoker,
+        is_professional: formData.is_professional,
+        is_hybrid_client: formData.is_hybrid_client,
+        profession: formData.profession || null,
+        occupation: formData.occupation || null,
+        industry: formData.industry || null,
+        disability_type: formData.disability_type || null,
+        sports_interests: formData.sports_interests.length > 0 ? formData.sports_interests : null,
+      };
+
+      // Only include preference fields if they have valid values (match DB constraints)
+      if (formData.preferred_contact && ["Email", "Phone", "SMS", "Post"].includes(formData.preferred_contact)) {
+        updates.preferred_contact = formData.preferred_contact;
+      } else {
+        updates.preferred_contact = null;
+      }
+
+      if (formData.preferred_phone && ["Cell", "Work", "Home"].includes(formData.preferred_phone)) {
+        updates.preferred_phone = formData.preferred_phone;
+      } else {
+        updates.preferred_phone = null;
+      }
+
+      if (formData.preferred_email && ["Personal", "Work"].includes(formData.preferred_email)) {
+        updates.preferred_email = formData.preferred_email;
+      } else {
+        updates.preferred_email = null;
+      }
+
+      if (formData.otp_delivery_method && ["SMS", "Email"].includes(formData.otp_delivery_method)) {
+        updates.otp_delivery_method = formData.otp_delivery_method;
+      } else {
+        updates.otp_delivery_method = "SMS";
+      }
+
+      await onUpdate(updates);
       toast.success("CRM details saved successfully");
     } catch (error) {
+      console.error("Save error:", error);
       toast.error("Failed to save CRM details");
     } finally {
       setSaving(false);
@@ -96,17 +142,17 @@ const ClientCRMTab = ({ client, onUpdate }: ClientCRMTabProps) => {
               <div className="space-y-2">
                 <Label>Language</Label>
                 <Select 
-                  value={formData.language.toLowerCase()} 
-                  onValueChange={(v) => handleChange("language", v.charAt(0).toUpperCase() + v.slice(1))}
+                  value={formData.language || ""} 
+                  onValueChange={(v) => handleChange("language", v)}
                 >
                   <SelectTrigger>
-                    <SelectValue />
+                    <SelectValue placeholder="Select" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="english">English</SelectItem>
-                    <SelectItem value="afrikaans">Afrikaans</SelectItem>
-                    <SelectItem value="zulu">Zulu</SelectItem>
-                    <SelectItem value="xhosa">Xhosa</SelectItem>
+                    <SelectItem value="English">English</SelectItem>
+                    <SelectItem value="Afrikaans">Afrikaans</SelectItem>
+                    <SelectItem value="Zulu">Zulu</SelectItem>
+                    <SelectItem value="Xhosa">Xhosa</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -114,18 +160,18 @@ const ClientCRMTab = ({ client, onUpdate }: ClientCRMTabProps) => {
               <div className="space-y-2">
                 <Label>Race</Label>
                 <Select 
-                  value={formData.race?.toLowerCase() || ""} 
-                  onValueChange={(v) => handleChange("race", v.charAt(0).toUpperCase() + v.slice(1))}
+                  value={formData.race || ""} 
+                  onValueChange={(v) => handleChange("race", v)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="african">African</SelectItem>
-                    <SelectItem value="coloured">Coloured</SelectItem>
-                    <SelectItem value="indian">Indian</SelectItem>
-                    <SelectItem value="white">White</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
+                    <SelectItem value="African">African</SelectItem>
+                    <SelectItem value="Coloured">Coloured</SelectItem>
+                    <SelectItem value="Indian">Indian</SelectItem>
+                    <SelectItem value="White">White</SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -133,16 +179,16 @@ const ClientCRMTab = ({ client, onUpdate }: ClientCRMTabProps) => {
               <div className="space-y-2">
                 <Label>Nationality</Label>
                 <Select 
-                  value={formData.nationality?.toLowerCase().replace(" ", "-") || ""} 
-                  onValueChange={(v) => handleChange("nationality", v.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" "))}
+                  value={formData.nationality || ""} 
+                  onValueChange={(v) => handleChange("nationality", v)}
                 >
                   <SelectTrigger>
-                    <SelectValue />
+                    <SelectValue placeholder="Select" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="south-african">South African</SelectItem>
-                    <SelectItem value="namibian">Namibian</SelectItem>
-                    <SelectItem value="zimbabwean">Zimbabwean</SelectItem>
+                    <SelectItem value="South African">South African</SelectItem>
+                    <SelectItem value="Namibian">Namibian</SelectItem>
+                    <SelectItem value="Zimbabwean">Zimbabwean</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -150,19 +196,19 @@ const ClientCRMTab = ({ client, onUpdate }: ClientCRMTabProps) => {
               <div className="space-y-2">
                 <Label>Religion</Label>
                 <Select 
-                  value={formData.religion?.toLowerCase() || ""} 
-                  onValueChange={(v) => handleChange("religion", v.charAt(0).toUpperCase() + v.slice(1))}
+                  value={formData.religion || ""} 
+                  onValueChange={(v) => handleChange("religion", v)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="christian">Christian</SelectItem>
-                    <SelectItem value="muslim">Muslim</SelectItem>
-                    <SelectItem value="hindu">Hindu</SelectItem>
-                    <SelectItem value="jewish">Jewish</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                    <SelectItem value="none">None</SelectItem>
+                    <SelectItem value="Christian">Christian</SelectItem>
+                    <SelectItem value="Muslim">Muslim</SelectItem>
+                    <SelectItem value="Hindu">Hindu</SelectItem>
+                    <SelectItem value="Jewish">Jewish</SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
+                    <SelectItem value="None">None</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -188,18 +234,18 @@ const ClientCRMTab = ({ client, onUpdate }: ClientCRMTabProps) => {
               <div className="space-y-2">
                 <Label>Profession</Label>
                 <Select 
-                  value={formData.profession?.toLowerCase() || ""} 
-                  onValueChange={(v) => handleChange("profession", v.charAt(0).toUpperCase() + v.slice(1))}
+                  value={formData.profession || ""} 
+                  onValueChange={(v) => handleChange("profession", v)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="accountant">Accountant</SelectItem>
-                    <SelectItem value="attorney">Attorney</SelectItem>
-                    <SelectItem value="doctor">Doctor</SelectItem>
-                    <SelectItem value="engineer">Engineer</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
+                    <SelectItem value="Accountant">Accountant</SelectItem>
+                    <SelectItem value="Attorney">Attorney</SelectItem>
+                    <SelectItem value="Doctor">Doctor</SelectItem>
+                    <SelectItem value="Engineer">Engineer</SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -207,17 +253,17 @@ const ClientCRMTab = ({ client, onUpdate }: ClientCRMTabProps) => {
               <div className="space-y-2">
                 <Label>Occupation</Label>
                 <Select 
-                  value={formData.occupation?.toLowerCase() || ""} 
-                  onValueChange={(v) => handleChange("occupation", v.charAt(0).toUpperCase() + v.slice(1))}
+                  value={formData.occupation || ""} 
+                  onValueChange={(v) => handleChange("occupation", v)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="attorney">Attorney</SelectItem>
-                    <SelectItem value="advocate">Advocate</SelectItem>
-                    <SelectItem value="director">Director</SelectItem>
-                    <SelectItem value="manager">Manager</SelectItem>
+                    <SelectItem value="Attorney">Attorney</SelectItem>
+                    <SelectItem value="Advocate">Advocate</SelectItem>
+                    <SelectItem value="Director">Director</SelectItem>
+                    <SelectItem value="Manager">Manager</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -225,18 +271,18 @@ const ClientCRMTab = ({ client, onUpdate }: ClientCRMTabProps) => {
               <div className="space-y-2">
                 <Label>Industry</Label>
                 <Select 
-                  value={formData.industry?.toLowerCase().replace(" ", "-") || ""} 
-                  onValueChange={(v) => handleChange("industry", v.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" "))}
+                  value={formData.industry || ""} 
+                  onValueChange={(v) => handleChange("industry", v)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="nuclear-industry">Nuclear Industry</SelectItem>
-                    <SelectItem value="finance">Finance</SelectItem>
-                    <SelectItem value="technology">Technology</SelectItem>
-                    <SelectItem value="healthcare">Healthcare</SelectItem>
-                    <SelectItem value="legal">Legal</SelectItem>
+                    <SelectItem value="Nuclear Industry">Nuclear Industry</SelectItem>
+                    <SelectItem value="Finance">Finance</SelectItem>
+                    <SelectItem value="Technology">Technology</SelectItem>
+                    <SelectItem value="Healthcare">Healthcare</SelectItem>
+                    <SelectItem value="Legal">Legal</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -244,17 +290,17 @@ const ClientCRMTab = ({ client, onUpdate }: ClientCRMTabProps) => {
               <div className="space-y-2">
                 <Label>Disability type</Label>
                 <Select 
-                  value={formData.disability_type?.toLowerCase() || ""} 
-                  onValueChange={(v) => handleChange("disability_type", v === "none" ? "" : v.charAt(0).toUpperCase() + v.slice(1))}
+                  value={formData.disability_type || ""} 
+                  onValueChange={(v) => handleChange("disability_type", v === "None" ? "" : v)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="None" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">None</SelectItem>
-                    <SelectItem value="physical">Physical</SelectItem>
-                    <SelectItem value="visual">Visual</SelectItem>
-                    <SelectItem value="hearing">Hearing</SelectItem>
+                    <SelectItem value="None">None</SelectItem>
+                    <SelectItem value="Physical">Physical</SelectItem>
+                    <SelectItem value="Visual">Visual</SelectItem>
+                    <SelectItem value="Hearing">Hearing</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -282,17 +328,17 @@ const ClientCRMTab = ({ client, onUpdate }: ClientCRMTabProps) => {
                 <div className="space-y-2">
                   <Label>Preferred contact</Label>
                   <Select 
-                    value={formData.preferred_contact?.toLowerCase() || ""} 
-                    onValueChange={(v) => handleChange("preferred_contact", v.charAt(0).toUpperCase() + v.slice(1))}
+                    value={formData.preferred_contact || ""} 
+                    onValueChange={(v) => handleChange("preferred_contact", v)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="phone">Phone</SelectItem>
-                      <SelectItem value="email">Email</SelectItem>
-                      <SelectItem value="sms">SMS</SelectItem>
-                      <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                      <SelectItem value="Phone">Phone</SelectItem>
+                      <SelectItem value="Email">Email</SelectItem>
+                      <SelectItem value="SMS">SMS</SelectItem>
+                      <SelectItem value="Post">Post</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -300,16 +346,16 @@ const ClientCRMTab = ({ client, onUpdate }: ClientCRMTabProps) => {
                 <div className="space-y-2">
                   <Label>Preferred phone</Label>
                   <Select 
-                    value={formData.preferred_phone?.toLowerCase() || ""} 
-                    onValueChange={(v) => handleChange("preferred_phone", v.charAt(0).toUpperCase() + v.slice(1))}
+                    value={formData.preferred_phone || ""} 
+                    onValueChange={(v) => handleChange("preferred_phone", v)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="cell">Cell</SelectItem>
-                      <SelectItem value="work">Work</SelectItem>
-                      <SelectItem value="home">Home</SelectItem>
+                      <SelectItem value="Cell">Cell</SelectItem>
+                      <SelectItem value="Work">Work</SelectItem>
+                      <SelectItem value="Home">Home</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -317,15 +363,15 @@ const ClientCRMTab = ({ client, onUpdate }: ClientCRMTabProps) => {
                 <div className="space-y-2">
                   <Label>Preferred email</Label>
                   <Select 
-                    value={formData.preferred_email?.toLowerCase() || ""} 
-                    onValueChange={(v) => handleChange("preferred_email", v.charAt(0).toUpperCase() + v.slice(1))}
+                    value={formData.preferred_email || ""} 
+                    onValueChange={(v) => handleChange("preferred_email", v)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="personal">Personal</SelectItem>
-                      <SelectItem value="work">Work</SelectItem>
+                      <SelectItem value="Personal">Personal</SelectItem>
+                      <SelectItem value="Work">Work</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -338,16 +384,15 @@ const ClientCRMTab = ({ client, onUpdate }: ClientCRMTabProps) => {
                 <div className="space-y-2">
                   <Label>OTP delivery method</Label>
                   <Select 
-                    value={formData.otp_delivery_method?.toLowerCase() || "sms"} 
-                    onValueChange={(v) => handleChange("otp_delivery_method", v.toUpperCase())}
+                    value={formData.otp_delivery_method || "SMS"} 
+                    onValueChange={(v) => handleChange("otp_delivery_method", v)}
                   >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="sms">SMS</SelectItem>
-                      <SelectItem value="email">Email</SelectItem>
-                      <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                      <SelectItem value="SMS">SMS</SelectItem>
+                      <SelectItem value="Email">Email</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

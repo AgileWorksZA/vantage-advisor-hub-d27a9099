@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,7 +17,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Client, getDisplayName } from "@/types/client";
+import { Client } from "@/types/client";
 import { toast } from "sonner";
 
 interface ClientDetailsTabProps {
@@ -36,6 +36,7 @@ const ClientDetailsTab = ({ client, onUpdate }: ClientDetailsTabProps) => {
     id_number: client.id_number || "",
     passport_number: client.passport_number || "",
     country_of_issue: client.country_of_issue || "South Africa",
+    // DB constraint: Male, Female, Other
     gender: client.gender || "",
     date_of_birth: client.date_of_birth || "",
     nationality: client.nationality || "South African",
@@ -56,6 +57,37 @@ const ClientDetailsTab = ({ client, onUpdate }: ClientDetailsTabProps) => {
 
   const [saving, setSaving] = useState(false);
 
+  // Update form data when client prop changes
+  useEffect(() => {
+    setFormData({
+      title: client.title || "",
+      first_name: client.first_name,
+      surname: client.surname,
+      initials: client.initials || "",
+      preferred_name: client.preferred_name || "",
+      person_type: client.person_type || "Individual",
+      id_number: client.id_number || "",
+      passport_number: client.passport_number || "",
+      country_of_issue: client.country_of_issue || "South Africa",
+      gender: client.gender || "",
+      date_of_birth: client.date_of_birth || "",
+      nationality: client.nationality || "South African",
+      home_number: client.home_number || "",
+      work_number: client.work_number || "",
+      work_extension: client.work_extension || "",
+      cell_number: client.cell_number || "",
+      fax_number: client.fax_number || "",
+      email: client.email || "",
+      work_email: client.work_email || "",
+      website: client.website || "",
+      skype: client.skype || "",
+      facebook: client.facebook || "",
+      linkedin: client.linkedin || "",
+      twitter: client.twitter || "",
+      youtube: client.youtube || "",
+    });
+  }, [client]);
+
   const handleChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
@@ -63,9 +95,45 @@ const ClientDetailsTab = ({ client, onUpdate }: ClientDetailsTabProps) => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await onUpdate(formData);
+      // Prepare updates with proper null handling for constraints
+      const updates: Partial<Client> = {
+        title: formData.title || null,
+        first_name: formData.first_name,
+        surname: formData.surname,
+        initials: formData.initials || null,
+        preferred_name: formData.preferred_name || null,
+        person_type: formData.person_type || "Individual",
+        id_number: formData.id_number || null,
+        passport_number: formData.passport_number || null,
+        country_of_issue: formData.country_of_issue || null,
+        date_of_birth: formData.date_of_birth || null,
+        nationality: formData.nationality || null,
+        home_number: formData.home_number || null,
+        work_number: formData.work_number || null,
+        work_extension: formData.work_extension || null,
+        cell_number: formData.cell_number || null,
+        fax_number: formData.fax_number || null,
+        email: formData.email || null,
+        work_email: formData.work_email || null,
+        website: formData.website || null,
+        skype: formData.skype || null,
+        facebook: formData.facebook || null,
+        linkedin: formData.linkedin || null,
+        twitter: formData.twitter || null,
+        youtube: formData.youtube || null,
+      };
+
+      // Gender has DB constraint: Male, Female, Other
+      if (formData.gender && ["Male", "Female", "Other"].includes(formData.gender)) {
+        updates.gender = formData.gender;
+      } else {
+        updates.gender = null;
+      }
+
+      await onUpdate(updates);
       toast.success("Client details saved successfully");
     } catch (error) {
+      console.error("Save error:", error);
       toast.error("Failed to save client details");
     } finally {
       setSaving(false);
@@ -115,16 +183,16 @@ const ClientDetailsTab = ({ client, onUpdate }: ClientDetailsTabProps) => {
                 <div className="space-y-2">
                   <Label>Person type</Label>
                   <Select 
-                    value={formData.person_type.toLowerCase()} 
-                    onValueChange={(v) => handleChange("person_type", v.charAt(0).toUpperCase() + v.slice(1))}
+                    value={formData.person_type || "Individual"} 
+                    onValueChange={(v) => handleChange("person_type", v)}
                   >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="individual">Individual</SelectItem>
-                      <SelectItem value="trust">Trust</SelectItem>
-                      <SelectItem value="company">Company</SelectItem>
+                      <SelectItem value="Individual">Individual</SelectItem>
+                      <SelectItem value="Trust">Trust</SelectItem>
+                      <SelectItem value="Company">Company</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -149,16 +217,16 @@ const ClientDetailsTab = ({ client, onUpdate }: ClientDetailsTabProps) => {
                 <div className="space-y-2">
                   <Label>Country of issue</Label>
                   <Select 
-                    value={formData.country_of_issue.toLowerCase().replace(" ", "-")} 
-                    onValueChange={(v) => handleChange("country_of_issue", v.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" "))}
+                    value={formData.country_of_issue || "South Africa"} 
+                    onValueChange={(v) => handleChange("country_of_issue", v)}
                   >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="south-africa">South Africa</SelectItem>
-                      <SelectItem value="namibia">Namibia</SelectItem>
-                      <SelectItem value="botswana">Botswana</SelectItem>
+                      <SelectItem value="South Africa">South Africa</SelectItem>
+                      <SelectItem value="Namibia">Namibia</SelectItem>
+                      <SelectItem value="Botswana">Botswana</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -166,16 +234,16 @@ const ClientDetailsTab = ({ client, onUpdate }: ClientDetailsTabProps) => {
                 <div className="space-y-2">
                   <Label>Gender</Label>
                   <Select 
-                    value={formData.gender?.toLowerCase() || ""} 
-                    onValueChange={(v) => handleChange("gender", v.charAt(0).toUpperCase() + v.slice(1))}
+                    value={formData.gender || ""} 
+                    onValueChange={(v) => handleChange("gender", v)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select gender" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="male">Male</SelectItem>
-                      <SelectItem value="female">Female</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
+                      <SelectItem value="Male">Male</SelectItem>
+                      <SelectItem value="Female">Female</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -183,18 +251,18 @@ const ClientDetailsTab = ({ client, onUpdate }: ClientDetailsTabProps) => {
                 <div className="space-y-2">
                   <Label>Title</Label>
                   <Select 
-                    value={formData.title?.toLowerCase() || ""} 
-                    onValueChange={(v) => handleChange("title", v.charAt(0).toUpperCase() + v.slice(1))}
+                    value={formData.title || ""} 
+                    onValueChange={(v) => handleChange("title", v)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select title" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="mr">Mr</SelectItem>
-                      <SelectItem value="mrs">Mrs</SelectItem>
-                      <SelectItem value="ms">Ms</SelectItem>
-                      <SelectItem value="dr">Dr</SelectItem>
-                      <SelectItem value="adv">Adv</SelectItem>
+                      <SelectItem value="Mr">Mr</SelectItem>
+                      <SelectItem value="Mrs">Mrs</SelectItem>
+                      <SelectItem value="Ms">Ms</SelectItem>
+                      <SelectItem value="Dr">Dr</SelectItem>
+                      <SelectItem value="Adv">Adv</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -288,16 +356,16 @@ const ClientDetailsTab = ({ client, onUpdate }: ClientDetailsTabProps) => {
                 <div className="space-y-2">
                   <Label>Nationality</Label>
                   <Select 
-                    value={formData.nationality?.toLowerCase().replace(" ", "-") || ""} 
-                    onValueChange={(v) => handleChange("nationality", v.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" "))}
+                    value={formData.nationality || ""} 
+                    onValueChange={(v) => handleChange("nationality", v)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select nationality" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="south-african">South African</SelectItem>
-                      <SelectItem value="namibian">Namibian</SelectItem>
-                      <SelectItem value="zimbabwean">Zimbabwean</SelectItem>
+                      <SelectItem value="South African">South African</SelectItem>
+                      <SelectItem value="Namibian">Namibian</SelectItem>
+                      <SelectItem value="Zimbabwean">Zimbabwean</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
