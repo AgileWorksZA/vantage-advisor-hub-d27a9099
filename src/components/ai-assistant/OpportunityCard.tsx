@@ -16,6 +16,7 @@ export interface ClientOpportunity {
 interface OpportunityCardProps {
   opportunity: ClientOpportunity;
   index: number;
+  formatCurrency: (value: number) => string;
 }
 
 const typeConfig = {
@@ -45,16 +46,7 @@ const typeConfig = {
   },
 };
 
-const formatCurrency = (value: number) => {
-  return new Intl.NumberFormat("en-ZA", {
-    style: "currency",
-    currency: "ZAR",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
-};
-
-const OpportunityCard = ({ opportunity, index }: OpportunityCardProps) => {
+const OpportunityCard = ({ opportunity, index, formatCurrency }: OpportunityCardProps) => {
   const config = typeConfig[opportunity.opportunityType];
   const initials = opportunity.clientName
     .split(" ")

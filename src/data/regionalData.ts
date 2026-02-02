@@ -285,3 +285,292 @@ const regionalDataMap: Record<string, RegionalData> = {
 export function getRegionalData(regionCode: string): RegionalData {
   return regionalDataMap[regionCode] || southAfricaData;
 }
+
+// Regional Opportunity Data for AI Assistant
+export interface RegionalOpportunity {
+  clientId: string;
+  clientName: string;
+  currentValue: number;
+  opportunityType: "upsell" | "cross-sell" | "migration" | "platform";
+  potentialRevenue: number;
+  confidence: number;
+  reasoning: string;
+  suggestedAction: string;
+}
+
+const southAfricaOpportunities: RegionalOpportunity[] = [
+  {
+    clientId: "za-1",
+    clientName: "Johan van der Merwe",
+    currentValue: 2500000,
+    opportunityType: "upsell",
+    potentialRevenue: 125000,
+    reasoning: "Client has excess liquidity in low-yield savings. Strong candidate for Living Annuity expansion.",
+    suggestedAction: "Recommend diversified Living Annuity portfolio",
+    confidence: 85,
+  },
+  {
+    clientId: "za-2",
+    clientName: "Thandi Nkosi",
+    currentValue: 4200000,
+    opportunityType: "migration",
+    potentialRevenue: 210000,
+    reasoning: "Preservation Fund with external manager underperforming by 3.2%. Ready for house view migration.",
+    suggestedAction: "Present house view performance comparison",
+    confidence: 92,
+  },
+  {
+    clientId: "za-3",
+    clientName: "Pieter du Plessis",
+    currentValue: 1800000,
+    opportunityType: "cross-sell",
+    potentialRevenue: 45000,
+    reasoning: "No life cover despite dependents. Gap analysis shows significant protection need.",
+    suggestedAction: "Schedule protection needs analysis",
+    confidence: 78,
+  },
+  {
+    clientId: "za-4",
+    clientName: "Nomvula Dlamini",
+    currentValue: 3600000,
+    opportunityType: "platform",
+    potentialRevenue: 180000,
+    reasoning: "Assets spread across 4 providers. Consolidation to Ninety One would reduce fees.",
+    suggestedAction: "Propose platform consolidation strategy",
+    confidence: 88,
+  },
+  {
+    clientId: "za-5",
+    clientName: "Willem Botha",
+    currentValue: 890000,
+    opportunityType: "upsell",
+    potentialRevenue: 35000,
+    reasoning: "Recent inheritance not yet invested. Conservative profile but open to Endowment products.",
+    suggestedAction: "Discuss balanced Endowment approach",
+    confidence: 72,
+  },
+];
+
+const australiaOpportunities: RegionalOpportunity[] = [
+  {
+    clientId: "au-1",
+    clientName: "James Mitchell",
+    currentValue: 3200000,
+    opportunityType: "upsell",
+    potentialRevenue: 160000,
+    reasoning: "Superannuation balance well below contribution cap. Strong salary supports additional contributions.",
+    suggestedAction: "Recommend salary sacrifice strategy for Super",
+    confidence: 87,
+  },
+  {
+    clientId: "au-2",
+    clientName: "Sarah Thompson",
+    currentValue: 5100000,
+    opportunityType: "migration",
+    potentialRevenue: 255000,
+    reasoning: "Industry super fund underperforming. SMSF setup would provide better control and returns.",
+    suggestedAction: "Present SMSF establishment proposal",
+    confidence: 91,
+  },
+  {
+    clientId: "au-3",
+    clientName: "Michael O'Brien",
+    currentValue: 2100000,
+    opportunityType: "cross-sell",
+    potentialRevenue: 52500,
+    reasoning: "No income protection despite high earning role. Risk assessment shows coverage gap.",
+    suggestedAction: "Schedule income protection review",
+    confidence: 76,
+  },
+  {
+    clientId: "au-4",
+    clientName: "Emily Anderson",
+    currentValue: 4400000,
+    opportunityType: "platform",
+    potentialRevenue: 220000,
+    reasoning: "Assets across multiple wrap platforms. Macquarie Wrap consolidation would streamline.",
+    suggestedAction: "Propose wrap platform consolidation",
+    confidence: 84,
+  },
+  {
+    clientId: "au-5",
+    clientName: "David Wilson",
+    currentValue: 1200000,
+    opportunityType: "upsell",
+    potentialRevenue: 48000,
+    reasoning: "Approaching preservation age. Pension phase transition opportunity.",
+    suggestedAction: "Discuss transition to pension strategy",
+    confidence: 79,
+  },
+];
+
+const canadaOpportunities: RegionalOpportunity[] = [
+  {
+    clientId: "ca-1",
+    clientName: "Pierre Tremblay",
+    currentValue: 2800000,
+    opportunityType: "upsell",
+    potentialRevenue: 140000,
+    reasoning: "RRSP contribution room unused for 3 years. Tax optimization opportunity significant.",
+    suggestedAction: "Recommend RRSP catch-up strategy",
+    confidence: 88,
+  },
+  {
+    clientId: "ca-2",
+    clientName: "Marie-Claire Bouchard",
+    currentValue: 4600000,
+    opportunityType: "migration",
+    potentialRevenue: 230000,
+    reasoning: "Portfolio with bank advisor underperforming. Independent management would improve returns.",
+    suggestedAction: "Present fee and performance comparison",
+    confidence: 90,
+  },
+  {
+    clientId: "ca-3",
+    clientName: "James MacDonald",
+    currentValue: 1900000,
+    opportunityType: "cross-sell",
+    potentialRevenue: 47500,
+    reasoning: "TFSA not maximized. Children approaching university age - RESP opportunity.",
+    suggestedAction: "Schedule RESP and TFSA optimization review",
+    confidence: 81,
+  },
+  {
+    clientId: "ca-4",
+    clientName: "Sophie Gagnon",
+    currentValue: 3800000,
+    opportunityType: "platform",
+    potentialRevenue: 190000,
+    reasoning: "Accounts spread across RBC, TD, and CIBC. Consolidation would reduce complexity.",
+    suggestedAction: "Propose single-platform consolidation",
+    confidence: 86,
+  },
+  {
+    clientId: "ca-5",
+    clientName: "Robert Singh",
+    currentValue: 950000,
+    opportunityType: "upsell",
+    potentialRevenue: 38000,
+    reasoning: "Recent business sale proceeds in high-interest savings. Investment planning needed.",
+    suggestedAction: "Discuss corporate investment structure",
+    confidence: 74,
+  },
+];
+
+const unitedKingdomOpportunities: RegionalOpportunity[] = [
+  {
+    clientId: "gb-1",
+    clientName: "William Smith",
+    currentValue: 2200000,
+    opportunityType: "upsell",
+    potentialRevenue: 110000,
+    reasoning: "ISA allowance underutilized for 4 years. Significant tax-free growth opportunity.",
+    suggestedAction: "Recommend ISA maximization strategy",
+    confidence: 86,
+  },
+  {
+    clientId: "gb-2",
+    clientName: "Elizabeth Jones",
+    currentValue: 4800000,
+    opportunityType: "migration",
+    potentialRevenue: 240000,
+    reasoning: "SIPP with high-fee provider. Transfer to lower-cost platform would save significantly.",
+    suggestedAction: "Present SIPP transfer analysis",
+    confidence: 93,
+  },
+  {
+    clientId: "gb-3",
+    clientName: "Thomas Williams",
+    currentValue: 1600000,
+    opportunityType: "cross-sell",
+    potentialRevenue: 40000,
+    reasoning: "No Junior ISA for children despite high net worth. Intergenerational planning gap.",
+    suggestedAction: "Schedule family wealth planning session",
+    confidence: 77,
+  },
+  {
+    clientId: "gb-4",
+    clientName: "Victoria Brown",
+    currentValue: 3400000,
+    opportunityType: "platform",
+    potentialRevenue: 170000,
+    reasoning: "Assets across Hargreaves, AJ Bell, and II. Single platform would improve oversight.",
+    suggestedAction: "Propose platform consolidation",
+    confidence: 85,
+  },
+  {
+    clientId: "gb-5",
+    clientName: "James Taylor",
+    currentValue: 780000,
+    opportunityType: "upsell",
+    potentialRevenue: 31200,
+    reasoning: "Lifetime ISA not utilized. First-time buyer or retirement savings opportunity.",
+    suggestedAction: "Discuss LISA benefits and strategy",
+    confidence: 71,
+  },
+];
+
+const unitedStatesOpportunities: RegionalOpportunity[] = [
+  {
+    clientId: "us-1",
+    clientName: "Michael Johnson",
+    currentValue: 2900000,
+    opportunityType: "upsell",
+    potentialRevenue: 145000,
+    reasoning: "401(k) not maxed despite high income. Catch-up contributions available at 50+.",
+    suggestedAction: "Recommend 401(k) maximization strategy",
+    confidence: 89,
+  },
+  {
+    clientId: "us-2",
+    clientName: "Patricia Williams",
+    currentValue: 5200000,
+    opportunityType: "migration",
+    potentialRevenue: 260000,
+    reasoning: "Old employer 401(k) with limited options. IRA rollover would expand investment choices.",
+    suggestedAction: "Present IRA rollover benefits",
+    confidence: 94,
+  },
+  {
+    clientId: "us-3",
+    clientName: "Robert Brown",
+    currentValue: 2000000,
+    opportunityType: "cross-sell",
+    potentialRevenue: 50000,
+    reasoning: "No 529 Plan despite children approaching college age. Tax-advantaged savings gap.",
+    suggestedAction: "Schedule 529 Plan consultation",
+    confidence: 80,
+  },
+  {
+    clientId: "us-4",
+    clientName: "Maria Garcia",
+    currentValue: 4000000,
+    opportunityType: "platform",
+    potentialRevenue: 200000,
+    reasoning: "Accounts at Fidelity, Schwab, and Vanguard. Consolidation would simplify management.",
+    suggestedAction: "Propose brokerage consolidation",
+    confidence: 87,
+  },
+  {
+    clientId: "us-5",
+    clientName: "David Martinez",
+    currentValue: 850000,
+    opportunityType: "upsell",
+    potentialRevenue: 34000,
+    reasoning: "Roth IRA conversion opportunity during lower income year. Tax planning potential.",
+    suggestedAction: "Discuss Roth conversion strategy",
+    confidence: 73,
+  },
+];
+
+const regionalOpportunitiesMap: Record<string, RegionalOpportunity[]> = {
+  ZA: southAfricaOpportunities,
+  AU: australiaOpportunities,
+  CA: canadaOpportunities,
+  GB: unitedKingdomOpportunities,
+  US: unitedStatesOpportunities,
+};
+
+export function getRegionalOpportunities(regionCode: string): RegionalOpportunity[] {
+  return regionalOpportunitiesMap[regionCode] || southAfricaOpportunities;
+}

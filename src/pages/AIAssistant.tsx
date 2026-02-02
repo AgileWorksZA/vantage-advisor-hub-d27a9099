@@ -7,60 +7,7 @@ import AIOrb from "@/components/ai-assistant/AIOrb";
 import InsightOrbit from "@/components/ai-assistant/InsightOrbit";
 import ChatPanel from "@/components/ai-assistant/ChatPanel";
 import OpportunityCard, { ClientOpportunity } from "@/components/ai-assistant/OpportunityCard";
-
-// Mock data for demonstration
-const mockOpportunities: ClientOpportunity[] = [
-  {
-    clientId: "1",
-    clientName: "Sarah Johnson",
-    currentValue: 2500000,
-    opportunityType: "upsell",
-    potentialRevenue: 125000,
-    confidence: 85,
-    reasoning: "Client has excess liquidity in low-yield savings. Strong candidate for investment portfolio expansion.",
-    suggestedAction: "Recommend diversified equity portfolio",
-  },
-  {
-    clientId: "2",
-    clientName: "Michael Chen",
-    currentValue: 4200000,
-    opportunityType: "migration",
-    potentialRevenue: 210000,
-    confidence: 92,
-    reasoning: "Portfolio with external manager underperforming benchmark by 3.2%. Ready for house view migration.",
-    suggestedAction: "Present house view performance comparison",
-  },
-  {
-    clientId: "3",
-    clientName: "Emma Williams",
-    currentValue: 1800000,
-    opportunityType: "cross-sell",
-    potentialRevenue: 45000,
-    confidence: 78,
-    reasoning: "No life insurance coverage despite dependents. Gap analysis shows significant protection need.",
-    suggestedAction: "Schedule protection needs analysis",
-  },
-  {
-    clientId: "4",
-    clientName: "James Peterson",
-    currentValue: 3600000,
-    opportunityType: "platform",
-    potentialRevenue: 180000,
-    confidence: 88,
-    reasoning: "Assets spread across 4 platforms. Consolidation would reduce fees and improve oversight.",
-    suggestedAction: "Propose platform consolidation strategy",
-  },
-  {
-    clientId: "5",
-    clientName: "Lisa Thompson",
-    currentValue: 890000,
-    opportunityType: "upsell",
-    potentialRevenue: 35000,
-    confidence: 72,
-    reasoning: "Recent inheritance not yet invested. Conservative profile but open to growth opportunities.",
-    suggestedAction: "Discuss balanced investment approach",
-  },
-];
+import { useRegion } from "@/contexts/RegionContext";
 
 interface Message {
   id: string;
@@ -71,6 +18,7 @@ interface Message {
 const AIAssistant = () => {
   const navigate = useNavigate();
   const { theme, setTheme, resolvedTheme } = useTheme();
+  const { opportunities, formatCurrency, currencySymbol } = useRegion();
   const previousThemeRef = useRef<string | undefined>(undefined);
   const hasStoredThemeRef = useRef(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -100,10 +48,10 @@ const AIAssistant = () => {
   }, [setTheme]);
 
   const counts = {
-    upsell: mockOpportunities.filter((o) => o.opportunityType === "upsell").length,
-    crossSell: mockOpportunities.filter((o) => o.opportunityType === "cross-sell").length,
-    migration: mockOpportunities.filter((o) => o.opportunityType === "migration").length,
-    platform: mockOpportunities.filter((o) => o.opportunityType === "platform").length,
+    upsell: opportunities.filter((o) => o.opportunityType === "upsell").length,
+    crossSell: opportunities.filter((o) => o.opportunityType === "cross-sell").length,
+    migration: opportunities.filter((o) => o.opportunityType === "migration").length,
+    platform: opportunities.filter((o) => o.opportunityType === "platform").length,
     atRisk: 2, // Mock count for at-risk clients
   };
 
@@ -122,7 +70,7 @@ const AIAssistant = () => {
           "migration": "migration",
           "platform": "platform",
         };
-        filtered = mockOpportunities.filter((o) => o.opportunityType === typeMap[category]);
+        filtered = opportunities.filter((o) => o.opportunityType === typeMap[category]);
       }
       setDisplayedOpportunities(filtered);
     } else {
@@ -145,13 +93,19 @@ const AIAssistant = () => {
     setMessages((prev) => [...prev, userMessage]);
     setIsTyping(true);
 
-    // Simulate AI response
+    // Simulate AI response with regional data
     setTimeout(() => {
+      // Get top opportunity for each category
+      const topUpsell = opportunities.find(o => o.opportunityType === "upsell");
+      const topCrossSell = opportunities.find(o => o.opportunityType === "cross-sell");
+      const topMigration = opportunities.find(o => o.opportunityType === "migration");
+      const topPlatform = opportunities.find(o => o.opportunityType === "platform");
+
       const responses: Record<string, string> = {
-        "upsell": `I've identified ${counts.upsell} clients with upselling potential. Sarah Johnson shows the highest opportunity with R125,000 potential revenue from portfolio expansion.`,
-        "cross-sell": `There's ${counts.crossSell} cross-sell opportunity this month. Emma Williams needs protection products - a gap analysis could unlock R45,000 in new business.`,
-        "migration": `${counts.migration} client is ready for portfolio migration. Michael Chen's external portfolio is underperforming by 3.2% - perfect timing to present our house view.`,
-        "platform": `${counts.platform} client would benefit from platform consolidation. James Peterson has assets across 4 platforms - consolidation could save them significant fees.`,
+        "upsell": `I've identified ${counts.upsell} clients with upselling potential. ${topUpsell?.clientName || "A client"} shows the highest opportunity with ${formatCurrency(topUpsell?.potentialRevenue || 0)} potential revenue from portfolio expansion.`,
+        "cross-sell": `There's ${counts.crossSell} cross-sell opportunity this month. ${topCrossSell?.clientName || "A client"} needs protection products - a gap analysis could unlock ${formatCurrency(topCrossSell?.potentialRevenue || 0)} in new business.`,
+        "migration": `${counts.migration} client is ready for portfolio migration. ${topMigration?.clientName || "A client"}'s external portfolio is underperforming - perfect timing to present our house view.`,
+        "platform": `${counts.platform} client would benefit from platform consolidation. ${topPlatform?.clientName || "A client"} has assets across multiple platforms - consolidation could save them significant fees.`,
         "default": `Based on your client base analysis, I've identified several opportunities:\n\n• ${counts.upsell} upsell opportunities\n• ${counts.crossSell} cross-sell potential\n• ${counts.migration} migration candidate\n• ${counts.platform} platform consolidation\n\nClick on any category above to see detailed client opportunities.`,
       };
 
@@ -213,7 +167,12 @@ const AIAssistant = () => {
         {displayedOpportunities.length > 0 && (
           <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-4">
             {displayedOpportunities.map((opportunity, index) => (
-              <OpportunityCard key={opportunity.clientId} opportunity={opportunity} index={index} />
+              <OpportunityCard 
+                key={opportunity.clientId} 
+                opportunity={opportunity} 
+                index={index} 
+                formatCurrency={formatCurrency}
+              />
             ))}
           </div>
         )}
