@@ -10,9 +10,9 @@ import {
   ListTodo,
   LineChart,
   Building2,
-  Plus,
   Search,
 } from "lucide-react";
+import commandCenterIcon from "@/assets/command-center-icon.png";
 
 const sidebarItems = [
   { icon: LayoutDashboard, label: "Dash", path: "/dashboard" },
@@ -52,7 +52,7 @@ export const AppLayout = ({
           onClick={() => navigate("/command-center")}
           title="Practice Overview"
         >
-          <Plus className="w-5 h-5" />
+          <img src={commandCenterIcon} alt="Command Center" className="w-5 h-5" />
         </Button>
         {sidebarItems.map((item) => (
           <button

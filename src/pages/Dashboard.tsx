@@ -4,7 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LayoutDashboard, Users, Mail, CalendarIcon, ListTodo, LineChart, Building2, Plus, X } from "lucide-react";
+import { LayoutDashboard, Users, Mail, CalendarIcon, ListTodo, LineChart, Building2, X } from "lucide-react";
+import commandCenterIcon from "@/assets/command-center-icon.png";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { getRegionalData } from "@/data/regionalData";
 import { AppHeader } from "@/components/layout/AppHeader";
@@ -100,7 +101,7 @@ const Dashboard = () => {
           onClick={() => navigate("/command-center")}
           title="Practice Overview"
         >
-          <Plus className="w-5 h-5" />
+          <img src={commandCenterIcon} alt="Command Center" className="w-5 h-5" />
         </Button>
         {sidebarItems.map(item => <button key={item.label} onClick={() => navigate(item.path)} className={`w-full flex flex-col items-center py-2 text-xs gap-1 ${item.path === "/dashboard" ? "bg-white/10 text-white" : "text-white/60 hover:bg-white/5 hover:text-white/80"}`}>
             <item.icon className="w-5 h-5" />

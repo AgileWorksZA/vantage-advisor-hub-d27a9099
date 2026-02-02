@@ -11,10 +11,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { 
-  LayoutDashboard, Users, Mail, CalendarIcon, ListTodo, LineChart, Building2, Plus, 
+  LayoutDashboard, Users, Mail, CalendarIcon, ListTodo, LineChart, Building2, Plus,
   Search, ArrowLeft, User as UserIcon, Settings, 
   Phone, FileText, MessageSquare, Shield, Activity, CreditCard, ShieldCheck, Users2, Building
 } from "lucide-react";
+import commandCenterIcon from "@/assets/command-center-icon.png";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { RolesTab } from "@/components/practice/RolesTab";
 import { TeamsTab } from "@/components/practice/TeamsTab";
@@ -119,7 +120,7 @@ const Practice = () => {
           onClick={() => navigate("/command-center")}
           title="Practice Overview"
         >
-          <Plus className="w-5 h-5" />
+          <img src={commandCenterIcon} alt="Command Center" className="w-5 h-5" />
         </Button>
         {sidebarItems.map((item) => (
           <button

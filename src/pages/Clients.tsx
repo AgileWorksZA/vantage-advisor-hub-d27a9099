@@ -10,7 +10,7 @@ import {
   CalendarIcon,
   ListTodo, 
   LineChart, 
-  Building2, 
+  Building2,
   Plus,
   RefreshCw,
   ChevronLeft,
@@ -19,6 +19,7 @@ import {
   Building,
   Trash2
 } from "lucide-react";
+import commandCenterIcon from "@/assets/command-center-icon.png";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -178,8 +179,8 @@ const Clients = () => {
     <div className="h-screen bg-muted/30 flex overflow-hidden">
       {/* Sidebar - Fixed */}
       <aside className="w-16 bg-[hsl(180,25%,25%)] flex flex-col items-center py-4 gap-1 shrink-0">
-        <Button variant="ghost" size="icon" className="w-10 h-10 text-white/80 hover:bg-white/10 mb-4">
-          <Plus className="w-5 h-5" />
+        <Button variant="ghost" size="icon" className="w-10 h-10 text-white/80 hover:bg-white/10 mb-4" onClick={() => navigate("/command-center")} title="Practice Overview">
+          <img src={commandCenterIcon} alt="Command Center" className="w-5 h-5" />
         </Button>
         {sidebarItems.map((item) => (
           <button
