@@ -337,7 +337,7 @@ const Tasks = () => {
           <img 
             src={vantageLogo} 
             alt="Vantage" 
-            className="h-10 w-auto -rotate-90 origin-center"
+            className="h-10 object-contain -rotate-90 origin-center"
           />
         </div>
       </aside>
