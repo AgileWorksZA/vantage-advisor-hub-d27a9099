@@ -1108,6 +1108,81 @@ export type Database = {
           },
         ]
       }
+      meeting_recordings: {
+        Row: {
+          ai_action_items: Json | null
+          ai_summary: Json | null
+          calendar_event_id: string | null
+          client_id: string | null
+          created_at: string
+          deleted_at: string | null
+          duration_seconds: number | null
+          id: string
+          is_deleted: boolean
+          recording_ended_at: string | null
+          recording_started_at: string | null
+          recording_url: string | null
+          title: string
+          transcription: string | null
+          transcription_status: Database["public"]["Enums"]["transcription_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ai_action_items?: Json | null
+          ai_summary?: Json | null
+          calendar_event_id?: string | null
+          client_id?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          duration_seconds?: number | null
+          id?: string
+          is_deleted?: boolean
+          recording_ended_at?: string | null
+          recording_started_at?: string | null
+          recording_url?: string | null
+          title: string
+          transcription?: string | null
+          transcription_status?: Database["public"]["Enums"]["transcription_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ai_action_items?: Json | null
+          ai_summary?: Json | null
+          calendar_event_id?: string | null
+          client_id?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          duration_seconds?: number | null
+          id?: string
+          is_deleted?: boolean
+          recording_ended_at?: string | null
+          recording_started_at?: string | null
+          recording_url?: string | null
+          title?: string
+          transcription?: string | null
+          transcription_status?: Database["public"]["Enums"]["transcription_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_recordings_calendar_event_id_fkey"
+            columns: ["calendar_event_id"]
+            isOneToOne: false
+            referencedRelation: "calendar_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_recordings_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       portfolio_holdings: {
         Row: {
           created_at: string
@@ -1658,6 +1733,7 @@ export type Database = {
         | "Compliance"
         | "Onboarding"
         | "Document Request"
+      transcription_status: "pending" | "processing" | "completed" | "failed"
       workflow_status: "Active" | "Complete" | "Inactive" | "Cancelled"
     }
     CompositeTypes: {
@@ -1855,6 +1931,7 @@ export const Constants = {
         "Onboarding",
         "Document Request",
       ],
+      transcription_status: ["pending", "processing", "completed", "failed"],
       workflow_status: ["Active", "Complete", "Inactive", "Cancelled"],
     },
   },
