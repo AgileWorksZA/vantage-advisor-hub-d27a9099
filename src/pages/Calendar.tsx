@@ -50,6 +50,8 @@ import {
   Edit,
   X,
 } from "lucide-react";
+import { WeekView } from "@/components/calendar/WeekView";
+import { DayView } from "@/components/calendar/DayView";
 import {
   format,
   startOfMonth,
@@ -496,7 +498,11 @@ const CalendarPage = () => {
                   </Button>
                 </div>
                 <h2 className="text-xl font-semibold">
-                  {format(viewDate, "MMMM yyyy")}
+                  {viewMode === "day" 
+                    ? format(viewDate, "EEEE, MMMM d, yyyy")
+                    : viewMode === "week"
+                    ? `${format(startOfWeek(viewDate, { weekStartsOn: 0 }), "MMM d")} - ${format(endOfWeek(viewDate, { weekStartsOn: 0 }), "MMM d, yyyy")}`
+                    : format(viewDate, "MMMM yyyy")}
                 </h2>
               </div>
               <div className="flex items-center gap-2">
@@ -595,26 +601,48 @@ const CalendarPage = () => {
               </div>
             )}
 
-            {/* Week View Placeholder */}
+            {/* Week View */}
             {viewMode === "week" && (
-              <div className="flex-1 flex items-center justify-center text-muted-foreground">
-                <div className="text-center">
-                  <CalendarIcon className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>Week view coming soon</p>
-                  <p className="text-sm">Switch to Month view for now</p>
-                </div>
-              </div>
+              <WeekView
+                viewDate={viewDate}
+                events={filteredEvents}
+                selectedDate={selectedDate}
+                onEventClick={handleEventClick}
+                onDayClick={handleDayClick}
+                onTimeSlotClick={(day, hour) => {
+                  const startTime = setMinutes(setHours(day, hour), 0);
+                  const endTime = addHours(startTime, 1);
+                  setNewEvent({
+                    title: "",
+                    eventType: "Meeting",
+                    allDay: false,
+                    startTime,
+                    endTime,
+                  });
+                  setCreateDialogOpen(true);
+                }}
+              />
             )}
 
-            {/* Day View Placeholder */}
+            {/* Day View */}
             {viewMode === "day" && (
-              <div className="flex-1 flex items-center justify-center text-muted-foreground">
-                <div className="text-center">
-                  <CalendarIcon className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>Day view coming soon</p>
-                  <p className="text-sm">Switch to Month view for now</p>
-                </div>
-              </div>
+              <DayView
+                viewDate={viewDate}
+                events={filteredEvents}
+                onEventClick={handleEventClick}
+                onTimeSlotClick={(day, hour) => {
+                  const startTime = setMinutes(setHours(day, hour), 0);
+                  const endTime = addHours(startTime, 1);
+                  setNewEvent({
+                    title: "",
+                    eventType: "Meeting",
+                    allDay: false,
+                    startTime,
+                    endTime,
+                  });
+                  setCreateDialogOpen(true);
+                }}
+              />
             )}
           </div>
         </main>
