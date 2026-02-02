@@ -45,6 +45,8 @@ import ClientProductsTab from "@/components/client-detail/ClientProductsTab";
 import ClientNotesTab from "@/components/client-detail/ClientNotesTab";
 import ClientCommunicationTab from "@/components/client-detail/ClientCommunicationTab";
 import ClientDocumentsTab from "@/components/client-detail/ClientDocumentsTab";
+import { useClientDetail } from "@/hooks/useClientDetail";
+import { getDisplayName } from "@/types/client";
 
 const sidebarItems = [
   { icon: LayoutDashboard, label: "Dash", path: "/dashboard" },
@@ -55,259 +57,25 @@ const sidebarItems = [
   { icon: Building2, label: "Practice", path: "/practice" },
 ];
 
-// Helper to generate consistent client IDs from names
-const generateClientId = (name: string) => {
-  return name.toLowerCase().replace(/[^a-z]/g, "-").replace(/-+/g, "-").slice(0, 20);
-};
-
-// Mock client data - in real app this would come from API/database
-const clientsRaw = [
-  {
-    client: "Wegner, E (Emile)",
-    title: "Mr",
-    personType: "Individual",
-    idNumber: "8108255051081",
-    countryOfIssue: "South Africa",
-    gender: "Male",
-    age: 44,
-    birthday: "25 Aug 1981",
-    language: "English",
-    taxNumber: "1234567890",
-    phone: "+27762149144",
-    email: "emilewegner@efgroup.co.za",
-    workNumber: "+27 21 555 1234",
-    workExtension: "101",
-    homeNumber: "+27 21 555 5678",
-    cellNumber: "+27762149144",
-    advisor: "Emile Wegner",
-  },
-  {
-    client: "Johno, M (Mako)",
-    title: "Mrs",
-    personType: "Individual",
-    idNumber: "8002152190083",
-    countryOfIssue: "South Africa",
-    gender: "Female",
-    age: 45,
-    birthday: "15 Feb 1980",
-    language: "English",
-    taxNumber: "0987654321",
-    phone: "+27722031095",
-    email: "dale.harding@efgroup.co.za",
-    workNumber: "+27 21 555 2345",
-    workExtension: "102",
-    homeNumber: "+27 21 555 6789",
-    cellNumber: "+27722031095",
-    advisor: "Dale Harding",
-  },
-  {
-    client: "Jones, M (Michelle )",
-    title: "Mrs",
-    personType: "Individual",
-    idNumber: "6901190029085",
-    countryOfIssue: "South Africa",
-    gender: "Female",
-    age: 57,
-    birthday: "19 Jan 1969",
-    language: "Afrikaans",
-    taxNumber: "2345678901",
-    phone: "+27716733160",
-    email: "mhough1969@gmail.com",
-    workNumber: "+27 21 555 3456",
-    workExtension: "103",
-    homeNumber: "+27 21 555 7890",
-    cellNumber: "+27716733160",
-    advisor: "Christo van Zyl",
-  },
-  {
-    client: "Crowcamp, DI (Danny Junior)",
-    title: "",
-    personType: "Individual",
-    idNumber: "5306045081086",
-    countryOfIssue: "South Africa",
-    gender: "Male",
-    age: 72,
-    birthday: "04 Jun 1953",
-    language: "English",
-    taxNumber: "3456789012",
-    phone: "+27617532303",
-    email: "trisha@efgroup.co.za",
-    workNumber: "+27 21 555 4567",
-    workExtension: "104",
-    homeNumber: "+27 21 555 8901",
-    cellNumber: "+27617532303",
-    advisor: "Christo van Zyl",
-  },
-  {
-    client: "New TAU, NC (New CRM)",
-    title: "Adv",
-    personType: "Individual",
-    idNumber: "6802141451081",
-    countryOfIssue: "South Africa",
-    gender: "Female",
-    age: 57,
-    birthday: "14 Feb 1968",
-    language: "English",
-    taxNumber: "4567890123",
-    phone: "+27712223333",
-    email: "test@efgroup.co.za",
-    workNumber: "+27 21 555 5678",
-    workExtension: "105",
-    homeNumber: "+27 21 555 9012",
-    cellNumber: "+27712223333",
-    advisor: "Dale Harding",
-  },
-  {
-    client: "Harding, DS (Dale)",
-    title: "Mr",
-    personType: "Individual",
-    idNumber: "9206245170083",
-    countryOfIssue: "South Africa",
-    gender: "Male",
-    age: 33,
-    birthday: "24 Jun 1992",
-    language: "English",
-    taxNumber: "5678901234",
-    phone: "+27722031095",
-    email: "dale.harding@efgroup.co.za",
-    workNumber: "+27 21 555 6789",
-    workExtension: "106",
-    homeNumber: "+27 21 555 0123",
-    cellNumber: "+27722031095",
-    advisor: "Dale Harding",
-  },
-  {
-    client: "GAB Investments (PTY) Ltd",
-    title: "",
-    personType: "Company",
-    idNumber: "2025/523192/07",
-    countryOfIssue: "South Africa",
-    gender: "-",
-    age: 0,
-    birthday: "-",
-    language: "English",
-    taxNumber: "6789012345",
-    phone: "+27723458855",
-    email: "reg@quicksilverlogistics.co.za",
-    workNumber: "+27 21 555 7890",
-    workExtension: "107",
-    homeNumber: "-",
-    cellNumber: "+27723458855",
-    advisor: "Ihan Nel",
-  },
-  {
-    client: "Doe, J (John)",
-    title: "Dr",
-    personType: "Individual",
-    idNumber: "0404018797088",
-    countryOfIssue: "South Africa",
-    gender: "Male",
-    age: 21,
-    birthday: "01 Apr 2004",
-    language: "English",
-    taxNumber: "7890123456",
-    phone: "+27617532303",
-    email: "test@efgroup.co.za",
-    workNumber: "+27 21 555 8901",
-    workExtension: "108",
-    homeNumber: "+27 21 555 1234",
-    cellNumber: "+27617532303",
-    advisor: "Christo van Zyl",
-  },
-  {
-    client: "Dannheimer (Steenkamp), W (W.H.H )",
-    title: "Dr",
-    personType: "Individual",
-    idNumber: "5212095004087",
-    countryOfIssue: "South Africa",
-    gender: "Male",
-    age: 73,
-    birthday: "09 Dec 1952",
-    language: "English",
-    taxNumber: "8901234567",
-    phone: "",
-    email: "dannheimersteenkamp@gmail.com",
-    workNumber: "+27 21 555 9012",
-    workExtension: "109",
-    homeNumber: "+27 21 555 2345",
-    cellNumber: "",
-    advisor: "Christo van Zyl",
-  },
-];
-
-// Build lookup by generated ID
-const clientsData: Record<string, {
-  id: string;
-  name: string;
-  title: string;
-  initials: string;
-  personType: string;
-  idNumber: string;
-  countryOfIssue: string;
-  gender: string;
-  age: number;
-  birthday: string;
-  language: string;
-  taxNumber: string;
-  phone: string;
-  email: string;
-  workNumber: string;
-  workExtension: string;
-  homeNumber: string;
-  cellNumber: string;
-  advisor: string;
-}> = {};
-
-clientsRaw.forEach((c) => {
-  const id = generateClientId(c.client);
-  // Extract initials from name (first letter of each part before parenthesis)
-  const nameParts = c.client.split(",")[0] || c.client;
-  const initialsMatch = c.client.match(/\(([^)]+)\)/);
-  const initials = initialsMatch 
-    ? initialsMatch[1].split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2)
-    : nameParts.slice(0, 2).toUpperCase();
-  
-  clientsData[id] = {
-    id,
-    name: c.client,
-    title: c.title,
-    initials,
-    personType: c.personType,
-    idNumber: c.idNumber,
-    countryOfIssue: c.countryOfIssue,
-    gender: c.gender,
-    age: c.age,
-    birthday: c.birthday,
-    language: c.language,
-    taxNumber: c.taxNumber,
-    phone: c.phone,
-    email: c.email,
-    workNumber: c.workNumber,
-    workExtension: c.workExtension,
-    homeNumber: c.homeNumber,
-    cellNumber: c.cellNumber,
-    advisor: c.advisor,
-  };
-});
-
 const ClientDetail = () => {
   const navigate = useNavigate();
   const { clientId } = useParams<{ clientId: string }>();
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("summary");
 
-  // Get client data based on clientId
-  const client = clientId ? clientsData[clientId] : clientsData["botha-karel"];
-  const clientName = client?.name || "Botha, Karel";
+  // Fetch client data from Supabase
+  const { client, loading: clientLoading, error, updateClient, refetch } = useClientDetail(clientId);
+  
+  const clientName = client ? getDisplayName(client) : "Loading...";
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
-        setLoading(false);
+        setAuthLoading(false);
         
         if (!session?.user) {
           navigate("/auth");
@@ -318,7 +86,7 @@ const ClientDetail = () => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      setLoading(false);
+      setAuthLoading(false);
       
       if (!session?.user) {
         navigate("/auth");
@@ -328,10 +96,24 @@ const ClientDetail = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  if (loading) {
+  if (authLoading || clientLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (error || !client) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <p className="text-lg text-muted-foreground">{error || "Client not found"}</p>
+          <Button onClick={() => navigate("/clients")}>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Clients
+          </Button>
+        </div>
       </div>
     );
   }
@@ -479,10 +261,10 @@ const ClientDetail = () => {
                 <ClientSummaryTab client={client} />
               </TabsContent>
               <TabsContent value="details" className="mt-0">
-                <ClientDetailsTab client={client} />
+                <ClientDetailsTab client={client} onUpdate={updateClient} />
               </TabsContent>
               <TabsContent value="crm" className="mt-0">
-                <ClientCRMTab client={client} />
+                <ClientCRMTab client={client} onUpdate={updateClient} />
               </TabsContent>
               <TabsContent value="family" className="mt-0">
                 <ClientFamilyTab />

@@ -48,7 +48,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useClients, generateClientId } from "@/hooks/useClients";
+import { useClients } from "@/hooks/useClients";
 import AddClientDialog from "@/components/clients/AddClientDialog";
 
 const filterTabs = [
@@ -364,10 +364,7 @@ const Clients = () => {
                     <TableRow 
                       key={client.id} 
                       className="hover:bg-muted/50 cursor-pointer"
-                      onClick={() => {
-                        const clientId = generateClientId(client.client);
-                        navigate(`/clients/${clientId}`);
-                      }}
+                      onClick={() => navigate(`/clients/${client.id}`)}
                     >
                       <TableCell className="text-sm">{client.profileState}</TableCell>
                       <TableCell className="text-sm">{client.profileType}</TableCell>
