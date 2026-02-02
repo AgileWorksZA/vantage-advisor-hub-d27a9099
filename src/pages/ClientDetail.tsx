@@ -16,6 +16,7 @@ import {
   MoreHorizontal
 } from "lucide-react";
 import commandCenterIcon from "@/assets/command-center-icon.png";
+import vantageLogo from "@/assets/vantage-logo.png";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -148,6 +149,18 @@ const ClientDetail = () => {
             <span>{item.label}</span>
           </button>
         ))}
+        
+        {/* Spacer to push logo to bottom */}
+        <div className="flex-1" />
+        
+        {/* VANTAGE Logo - rotated to read bottom to top */}
+        <div className="mb-2">
+          <img 
+            src={vantageLogo} 
+            alt="Vantage" 
+            className="h-4 w-auto -rotate-90 origin-center"
+          />
+        </div>
       </aside>
 
       {/* Main Content */}

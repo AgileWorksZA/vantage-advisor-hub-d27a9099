@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LayoutDashboard, Users, Mail, CalendarIcon, ListTodo, LineChart, Building2, X } from "lucide-react";
 import commandCenterIcon from "@/assets/command-center-icon.png";
+import vantageLogo from "@/assets/vantage-logo.png";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { getRegionalData } from "@/data/regionalData";
 import { AppHeader } from "@/components/layout/AppHeader";
@@ -107,6 +108,18 @@ const Dashboard = () => {
             <item.icon className="w-5 h-5" />
             <span>{item.label}</span>
           </button>)}
+        
+        {/* Spacer to push logo to bottom */}
+        <div className="flex-1" />
+        
+        {/* VANTAGE Logo - rotated to read bottom to top */}
+        <div className="mb-2">
+          <img 
+            src={vantageLogo} 
+            alt="Vantage" 
+            className="h-4 w-auto -rotate-90 origin-center"
+          />
+        </div>
       </aside>
 
       {/* Main Content */}
