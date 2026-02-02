@@ -1,9 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   LayoutDashboard,
   Users,
@@ -29,38 +36,82 @@ import commandCenterIcon from "@/assets/command-center-icon.png";
 import vantageLogo from "@/assets/vantage-logo.png";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { EChartsWrapper, createGradient } from "@/components/ui/echarts-wrapper";
+import { format, subMonths } from "date-fns";
 
-const commissionByTypeData = [
-  { month: "Oct 2025", PUFs: -50000, Ongoing: 650000, Lapses: 100000, Initial: 50000, "2nd Year": 30000 },
-  { month: "Nov 2025", PUFs: -30000, Ongoing: 700000, Lapses: 80000, Initial: 60000, "2nd Year": 40000 },
-  { month: "Dec 2025", PUFs: -20000, Ongoing: 750000, Lapses: 70000, Initial: 45000, "2nd Year": 35000 },
-];
+// Generate 60 months of commission by type data (5 years)
+const generateCommissionByTypeData = () => {
+  const data = [];
+  const baseDate = new Date(2025, 11, 1); // December 2025
+  
+  for (let i = 59; i >= 0; i--) {
+    const date = subMonths(baseDate, i);
+    const monthStr = format(date, "MMM yyyy");
+    const yearFactor = 1 + ((59 - i) / 60) * 0.3; // Growth over time
+    const seasonalFactor = 1 + Math.sin((date.getMonth() + 1) * Math.PI / 6) * 0.15;
+    
+    data.push({
+      month: monthStr,
+      PUFs: Math.round((-40000 + Math.random() * 30000) * yearFactor),
+      Ongoing: Math.round((600000 + Math.random() * 200000) * yearFactor * seasonalFactor),
+      Lapses: Math.round((70000 + Math.random() * 50000) * yearFactor),
+      Initial: Math.round((40000 + Math.random() * 30000) * yearFactor * seasonalFactor),
+      "2nd Year": Math.round((25000 + Math.random() * 20000) * yearFactor),
+    });
+  }
+  return data;
+};
 
-const commissionEarnedData = [
-  { month: "Oct 2025", value: 650000 },
-  { month: "Nov 2025", value: 780000 },
-  { month: "Dec 2025", value: 720000 },
-];
+// Generate 60 months of commission earned data (5 years)
+const generateCommissionEarnedData = () => {
+  const data = [];
+  const baseDate = new Date(2025, 11, 1);
+  
+  for (let i = 59; i >= 0; i--) {
+    const date = subMonths(baseDate, i);
+    const monthStr = format(date, "MMM yyyy");
+    const yearFactor = 1 + ((59 - i) / 60) * 0.25;
+    const seasonalFactor = 1 + Math.sin((date.getMonth() + 1) * Math.PI / 6) * 0.1;
+    
+    data.push({
+      month: monthStr,
+      value: Math.round((650000 + Math.random() * 200000) * yearFactor * seasonalFactor),
+    });
+  }
+  return data;
+};
+
+// Generate 60 months of commission summary data (5 years)
+const generateCommissionSummaryData = () => {
+  const data = [];
+  const baseDate = new Date(2025, 11, 1);
+  
+  for (let i = 59; i >= 0; i--) {
+    const date = subMonths(baseDate, i);
+    const monthStr = format(date, "MMM yyyy");
+    const yearFactor = 1 + ((59 - i) / 60) * 0.2;
+    const seasonalFactor = 1 + Math.sin((date.getMonth() + 1) * Math.PI / 6) * 0.08;
+    
+    const target = Math.round(835764.76 * yearFactor);
+    const variance = 0.85 + Math.random() * 0.25; // 85% to 110% of target
+    
+    data.push({
+      month: monthStr,
+      target: target,
+      earned: Math.round(target * variance * seasonalFactor),
+    });
+  }
+  return data;
+};
+
+// Pre-generate all data with seeded randomness (using fixed seed for consistency)
+const allCommissionByTypeData = generateCommissionByTypeData();
+const allCommissionEarnedData = generateCommissionEarnedData();
+const allCommissionSummaryData = generateCommissionSummaryData();
 
 const monthlyCommissionData = [
   { name: "Target", value: 843734.04, color: "hsl(180, 70%, 45%)" },
   { name: "Actual", value: 784650.28, color: "hsl(45, 93%, 47%)" },
   { name: "Shortfall", value: 59083.76, color: "hsl(142, 76%, 36%)" },
-];
-
-const commissionSummaryData = [
-  { month: "Jan 2025", target: 835764.76, earned: 745702.7 },
-  { month: "Feb 2025", target: 835764.76, earned: 805731.88 },
-  { month: "Mar 2025", target: 835764.76, earned: 809900.1 },
-  { month: "Apr 2025", target: 835764.76, earned: 721512.82 },
-  { month: "May 2025", target: 835764.76, earned: 724693.32 },
-  { month: "Jun 2025", target: 835764.76, earned: 915570.04 },
-  { month: "Jul 2025", target: 843734.04, earned: 781904.53 },
-  { month: "Aug 2025", target: 843734.04, earned: 818029 },
-  { month: "Sep 2025", target: 843734.04, earned: 864200.56 },
-  { month: "Oct 2025", target: 843734.04, earned: 836458.8 },
-  { month: "Nov 2025", target: 843734.04, earned: 806561.87 },
-  { month: "Dec 2025", target: 843734.04, earned: 764650.28 },
 ];
 
 const leaderboardData = [
@@ -82,10 +133,41 @@ const sidebarItems = [
   { icon: Building2, label: "Practice", path: "/practice" },
 ];
 
+// Period options for dropdowns
+const periodOptions = [
+  { value: "3m", label: "3 Months" },
+  { value: "6m", label: "6 Months" },
+  { value: "1y", label: "1 Year" },
+  { value: "5y", label: "5 Years" },
+  { value: "ytd", label: "Year to Date" },
+];
+
+// Helper function to filter data by period
+const filterDataByPeriod = <T,>(data: T[], period: string): T[] => {
+  const now = new Date(2025, 11, 1); // December 2025
+  let monthsToShow: number;
+  
+  switch (period) {
+    case "3m": monthsToShow = 3; break;
+    case "6m": monthsToShow = 6; break;
+    case "1y": monthsToShow = 12; break;
+    case "5y": monthsToShow = 60; break;
+    case "ytd": monthsToShow = now.getMonth() + 1; break; // January to current month (December = 12)
+    default: monthsToShow = 3;
+  }
+  
+  return data.slice(-monthsToShow);
+};
+
 const Insights = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  // Time period states for each chart
+  const [commissionByTypePeriod, setCommissionByTypePeriod] = useState<string>("3m");
+  const [commissionEarnedPeriod, setCommissionEarnedPeriod] = useState<string>("3m");
+  const [commissionSummaryPeriod, setCommissionSummaryPeriod] = useState<string>("1y");
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -111,6 +193,22 @@ const Insights = () => {
     await supabase.auth.signOut();
     navigate("/auth");
   };
+
+  // Memoized filtered data
+  const filteredCommissionByTypeData = useMemo(
+    () => filterDataByPeriod(allCommissionByTypeData, commissionByTypePeriod),
+    [commissionByTypePeriod]
+  );
+  
+  const filteredCommissionEarnedData = useMemo(
+    () => filterDataByPeriod(allCommissionEarnedData, commissionEarnedPeriod),
+    [commissionEarnedPeriod]
+  );
+  
+  const filteredCommissionSummaryData = useMemo(
+    () => filterDataByPeriod(allCommissionSummaryData, commissionSummaryPeriod),
+    [commissionSummaryPeriod]
+  );
 
   if (loading) {
     return (
@@ -142,7 +240,11 @@ const Insights = () => {
     grid: { left: 8, right: 8, top: 8, bottom: 24, containLabel: true },
     xAxis: {
       type: 'category' as const,
-      data: commissionByTypeData.map(d => d.month),
+      data: filteredCommissionByTypeData.map(d => d.month),
+      axisLabel: {
+        rotate: filteredCommissionByTypeData.length > 12 ? 45 : 0,
+        fontSize: filteredCommissionByTypeData.length > 24 ? 9 : 11,
+      },
     },
     yAxis: {
       type: 'value' as const,
@@ -151,11 +253,11 @@ const Insights = () => {
       },
     },
     series: [
-      { name: 'PUFs', type: 'bar' as const, stack: 'total', data: commissionByTypeData.map(d => d.PUFs), itemStyle: { color: 'hsl(210, 70%, 50%)' } },
-      { name: 'Ongoing', type: 'bar' as const, stack: 'total', data: commissionByTypeData.map(d => d.Ongoing), itemStyle: { color: 'hsl(180, 70%, 45%)' } },
-      { name: 'Lapses', type: 'bar' as const, stack: 'total', data: commissionByTypeData.map(d => d.Lapses), itemStyle: { color: 'hsl(45, 93%, 47%)' } },
-      { name: 'Initial', type: 'bar' as const, stack: 'total', data: commissionByTypeData.map(d => d.Initial), itemStyle: { color: 'hsl(0, 70%, 50%)' } },
-      { name: '2nd Year', type: 'bar' as const, stack: 'total', data: commissionByTypeData.map(d => d["2nd Year"]), itemStyle: { color: 'hsl(280, 65%, 50%)' } },
+      { name: 'PUFs', type: 'bar' as const, stack: 'total', data: filteredCommissionByTypeData.map(d => d.PUFs), itemStyle: { color: 'hsl(210, 70%, 50%)' } },
+      { name: 'Ongoing', type: 'bar' as const, stack: 'total', data: filteredCommissionByTypeData.map(d => d.Ongoing), itemStyle: { color: 'hsl(180, 70%, 45%)' } },
+      { name: 'Lapses', type: 'bar' as const, stack: 'total', data: filteredCommissionByTypeData.map(d => d.Lapses), itemStyle: { color: 'hsl(45, 93%, 47%)' } },
+      { name: 'Initial', type: 'bar' as const, stack: 'total', data: filteredCommissionByTypeData.map(d => d.Initial), itemStyle: { color: 'hsl(0, 70%, 50%)' } },
+      { name: '2nd Year', type: 'bar' as const, stack: 'total', data: filteredCommissionByTypeData.map(d => d["2nd Year"]), itemStyle: { color: 'hsl(280, 65%, 50%)' } },
     ],
   };
 
@@ -168,7 +270,11 @@ const Insights = () => {
     grid: { left: 8, right: 8, top: 8, bottom: 24, containLabel: true },
     xAxis: {
       type: 'category' as const,
-      data: commissionEarnedData.map(d => d.month),
+      data: filteredCommissionEarnedData.map(d => d.month),
+      axisLabel: {
+        rotate: filteredCommissionEarnedData.length > 12 ? 45 : 0,
+        fontSize: filteredCommissionEarnedData.length > 24 ? 9 : 11,
+      },
     },
     yAxis: {
       type: 'value' as const,
@@ -178,7 +284,7 @@ const Insights = () => {
     },
     series: [{
       type: 'bar' as const,
-      data: commissionEarnedData.map(d => d.value),
+      data: filteredCommissionEarnedData.map(d => d.value),
       itemStyle: {
         color: createGradient('hsl(180, 70%, 55%)', 'hsl(180, 70%, 35%)'),
         borderRadius: [4, 4, 0, 0],
@@ -243,8 +349,12 @@ const Insights = () => {
     grid: { left: 8, right: 8, top: 8, bottom: 40, containLabel: true },
     xAxis: {
       type: 'category' as const,
-      data: commissionSummaryData.map(d => d.month),
+      data: filteredCommissionSummaryData.map(d => d.month),
       boundaryGap: false,
+      axisLabel: {
+        rotate: filteredCommissionSummaryData.length > 12 ? 45 : 0,
+        fontSize: filteredCommissionSummaryData.length > 24 ? 9 : 11,
+      },
     },
     yAxis: {
       type: 'value' as const,
@@ -271,7 +381,7 @@ const Insights = () => {
       {
         name: 'Annual Target',
         type: 'line' as const,
-        data: commissionSummaryData.map(d => d.target),
+        data: filteredCommissionSummaryData.map(d => d.target),
         smooth: true,
         lineStyle: { color: 'hsl(210, 70%, 50%)', width: 2 },
         itemStyle: { color: 'hsl(210, 70%, 50%)' },
@@ -285,7 +395,7 @@ const Insights = () => {
       {
         name: 'Annual Earned Commission',
         type: 'line' as const,
-        data: commissionSummaryData.map(d => d.earned),
+        data: filteredCommissionSummaryData.map(d => d.earned),
         smooth: true,
         lineStyle: { color: 'hsl(180, 70%, 45%)', width: 2 },
         itemStyle: { color: 'hsl(180, 70%, 45%)' },
@@ -367,9 +477,18 @@ const Insights = () => {
                 </Button>
               </CardHeader>
               <CardContent className="px-4 pb-4">
-                <Button size="sm" className="bg-[hsl(180,25%,25%)] hover:bg-[hsl(180,25%,20%)] text-white mb-4">
-                  3 Months
-                </Button>
+                <Select value={commissionByTypePeriod} onValueChange={setCommissionByTypePeriod}>
+                  <SelectTrigger className="w-[130px] h-8 bg-[hsl(180,25%,25%)] text-white border-0 mb-4">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {periodOptions.map(option => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs mb-4">
                   <div className="flex items-center gap-1">
                     <span className="w-3 h-3 rounded-sm bg-[hsl(210,70%,50%)]"></span>
@@ -411,9 +530,18 @@ const Insights = () => {
               </CardHeader>
               <CardContent className="px-4 pb-4">
                 <div className="flex items-center justify-between mb-4">
-                  <Button size="sm" className="bg-[hsl(180,25%,25%)] hover:bg-[hsl(180,25%,20%)] text-white">
-                    3 Months
-                  </Button>
+                  <Select value={commissionEarnedPeriod} onValueChange={setCommissionEarnedPeriod}>
+                    <SelectTrigger className="w-[130px] h-8 bg-[hsl(180,25%,25%)] text-white border-0">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {periodOptions.map(option => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <div className="text-right">
                     <p className="text-xs text-muted-foreground">Last Month</p>
                     <p className="text-sm font-semibold">R800,561.87</p>
@@ -531,9 +659,18 @@ const Insights = () => {
               </CardHeader>
               <CardContent className="px-4 pb-4">
                 <div className="flex items-center justify-between mb-4">
-                  <Button size="sm" className="bg-[hsl(180,25%,25%)] hover:bg-[hsl(180,25%,20%)] text-white">
-                    1 Year
-                  </Button>
+                  <Select value={commissionSummaryPeriod} onValueChange={setCommissionSummaryPeriod}>
+                    <SelectTrigger className="w-[130px] h-8 bg-[hsl(180,25%,25%)] text-white border-0">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {periodOptions.map(option => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <div className="flex gap-8">
                     <div>
                       <p className="text-xs text-muted-foreground">Annual earned commission YTD</p>
