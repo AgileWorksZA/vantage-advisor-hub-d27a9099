@@ -9,24 +9,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Client, getDisplayName, getInitials, calculateAge, formatBirthday } from "@/types/client";
 
 interface ClientSummaryTabProps {
-  client: {
-    name: string;
-    title: string;
-    initials: string;
-    personType: string;
-    idNumber: string;
-    countryOfIssue: string;
-    gender: string;
-    age: number;
-    birthday: string;
-    language: string;
-    taxNumber: string;
-    workNumber: string;
-    workExtension: string;
-    homeNumber: string;
-  } | undefined;
+  client: Client;
 }
 
 const advisorData = [
@@ -54,9 +40,10 @@ const outstandingDocs = [
 ];
 
 const ClientSummaryTab = ({ client }: ClientSummaryTabProps) => {
-  if (!client) {
-    return <div>Client not found</div>;
-  }
+  const displayName = getDisplayName(client);
+  const initials = getInitials(client);
+  const age = calculateAge(client.date_of_birth);
+  const birthday = formatBirthday(client.date_of_birth);
 
   const totalValue = productsData.reduce((acc, cat) => 
     acc + cat.products.reduce((sum, p) => sum + parseFloat(p.value.replace(/[R\s,]/g, '')), 0), 0
@@ -73,7 +60,7 @@ const ClientSummaryTab = ({ client }: ClientSummaryTabProps) => {
               <CardTitle className="text-lg">General details</CardTitle>
               <Avatar className="h-16 w-16">
                 <AvatarFallback className="bg-[hsl(180,70%,45%)] text-white text-xl">
-                  {client.initials}
+                  {initials}
                 </AvatarFallback>
               </Avatar>
             </div>
@@ -81,17 +68,17 @@ const ClientSummaryTab = ({ client }: ClientSummaryTabProps) => {
           <CardContent>
             <div className="space-y-3">
               {[
-                { label: "Name", value: client.name },
-                { label: "Title", value: client.title },
-                { label: "Initials", value: client.initials },
-                { label: "Person type", value: client.personType },
-                { label: "ID Number", value: client.idNumber },
-                { label: "Country of issue", value: client.countryOfIssue },
-                { label: "Gender", value: client.gender },
-                { label: "Age", value: client.age.toString() },
-                { label: "Birthday", value: client.birthday },
-                { label: "Language", value: client.language },
-                { label: "Tax number", value: client.taxNumber },
+                { label: "Name", value: displayName },
+                { label: "Title", value: client.title || "-" },
+                { label: "Initials", value: client.initials || initials },
+                { label: "Person type", value: client.person_type || "Individual" },
+                { label: "ID Number", value: client.id_number || "-" },
+                { label: "Country of issue", value: client.country_of_issue || "South Africa" },
+                { label: "Gender", value: client.gender || "-" },
+                { label: "Age", value: age.toString() },
+                { label: "Birthday", value: birthday },
+                { label: "Language", value: client.language || "English" },
+                { label: "Tax number", value: client.tax_number || "-" },
               ].map((item) => (
                 <div key={item.label} className="flex justify-between items-center py-1 border-b border-border/50 last:border-0">
                   <span className="text-sm text-muted-foreground">{item.label}</span>
@@ -110,10 +97,12 @@ const ClientSummaryTab = ({ client }: ClientSummaryTabProps) => {
           <CardContent>
             <div className="space-y-3">
               {[
-                { label: "Work number", value: client.workNumber },
-                { label: "Work extension", value: client.workExtension },
+                { label: "Work number", value: client.work_number || "-" },
+                { label: "Work extension", value: client.work_extension || "-" },
                 { label: "Work number secondary", value: "-" },
-                { label: "Home number", value: client.homeNumber },
+                { label: "Home number", value: client.home_number || "-" },
+                { label: "Cell number", value: client.cell_number || "-" },
+                { label: "Email", value: client.email || "-" },
               ].map((item) => (
                 <div key={item.label} className="flex justify-between items-center py-1 border-b border-border/50 last:border-0">
                   <span className="text-sm text-muted-foreground">{item.label}</span>
@@ -148,11 +137,11 @@ const ClientSummaryTab = ({ client }: ClientSummaryTabProps) => {
                     <TableCell className="text-sm">
                       <div>
                         <span className="text-xs text-muted-foreground">{row.type}</span>
-                        <div>{row.advisor}</div>
+                        <div>{client.advisor || row.advisor}</div>
                       </div>
                     </TableCell>
-                    <TableCell className="text-sm">{row.relationship}</TableCell>
-                    <TableCell className="text-sm">{row.rating}</TableCell>
+                    <TableCell className="text-sm">{client.relationship || row.relationship}</TableCell>
+                    <TableCell className="text-sm">{client.rating || row.rating}</TableCell>
                     <TableCell className="text-sm">{row.role}</TableCell>
                   </TableRow>
                 ))}

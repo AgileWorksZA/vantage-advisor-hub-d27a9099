@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Save } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -9,12 +11,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Client } from "@/types/client";
+import { toast } from "sonner";
 
 interface ClientCRMTabProps {
-  client: {
-    name: string;
-    language: string;
-  } | undefined;
+  client: Client;
+  onUpdate: (updates: Partial<Client>) => Promise<boolean | undefined>;
 }
 
 const sportsInterests = [
@@ -23,13 +25,66 @@ const sportsInterests = [
   ["Chess", "Fishing", "Hiking", "Mountain biking", "Scuba diving"],
 ];
 
-const ClientCRMTab = ({ client }: ClientCRMTabProps) => {
-  if (!client) {
-    return <div>Client not found</div>;
-  }
+const ClientCRMTab = ({ client, onUpdate }: ClientCRMTabProps) => {
+  const [formData, setFormData] = useState({
+    language: client.language || "English",
+    race: client.race || "",
+    nationality: client.nationality || "South African",
+    religion: client.religion || "",
+    is_smoker: client.is_smoker || false,
+    is_professional: client.is_professional || false,
+    is_hybrid_client: client.is_hybrid_client || false,
+    profession: client.profession || "",
+    occupation: client.occupation || "",
+    industry: client.industry || "",
+    disability_type: client.disability_type || "",
+    preferred_contact: client.preferred_contact || "",
+    preferred_phone: client.preferred_phone || "",
+    preferred_email: client.preferred_email || "",
+    otp_delivery_method: client.otp_delivery_method || "SMS",
+    sports_interests: client.sports_interests || [],
+  });
+
+  const [saving, setSaving] = useState(false);
+
+  const handleChange = (field: string, value: string | boolean | string[]) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSportToggle = (sport: string) => {
+    const current = formData.sports_interests || [];
+    const updated = current.includes(sport)
+      ? current.filter(s => s !== sport)
+      : [...current, sport];
+    handleChange("sports_interests", updated);
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await onUpdate(formData);
+      toast.success("CRM details saved successfully");
+    } catch (error) {
+      toast.error("Failed to save CRM details");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
+      {/* Save Button */}
+      <div className="flex items-center gap-2">
+        <Button 
+          className="bg-[hsl(180,70%,45%)] hover:bg-[hsl(180,70%,40%)] text-white gap-2"
+          onClick={handleSave}
+          disabled={saving}
+        >
+          <Save className="w-4 h-4" />
+          {saving ? "Saving..." : "Save changes"}
+        </Button>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left Column - Demographics */}
         <Card>
@@ -40,7 +95,10 @@ const ClientCRMTab = ({ client }: ClientCRMTabProps) => {
             <div className="grid gap-4">
               <div className="space-y-2">
                 <Label>Language</Label>
-                <Select defaultValue={client.language.toLowerCase()}>
+                <Select 
+                  value={formData.language.toLowerCase()} 
+                  onValueChange={(v) => handleChange("language", v.charAt(0).toUpperCase() + v.slice(1))}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -55,7 +113,10 @@ const ClientCRMTab = ({ client }: ClientCRMTabProps) => {
 
               <div className="space-y-2">
                 <Label>Race</Label>
-                <Select>
+                <Select 
+                  value={formData.race?.toLowerCase() || ""} 
+                  onValueChange={(v) => handleChange("race", v.charAt(0).toUpperCase() + v.slice(1))}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select" />
                   </SelectTrigger>
@@ -71,7 +132,10 @@ const ClientCRMTab = ({ client }: ClientCRMTabProps) => {
 
               <div className="space-y-2">
                 <Label>Nationality</Label>
-                <Select defaultValue="south-african">
+                <Select 
+                  value={formData.nationality?.toLowerCase().replace(" ", "-") || ""} 
+                  onValueChange={(v) => handleChange("nationality", v.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" "))}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -85,7 +149,10 @@ const ClientCRMTab = ({ client }: ClientCRMTabProps) => {
 
               <div className="space-y-2">
                 <Label>Religion</Label>
-                <Select>
+                <Select 
+                  value={formData.religion?.toLowerCase() || ""} 
+                  onValueChange={(v) => handleChange("religion", v.charAt(0).toUpperCase() + v.slice(1))}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select" />
                   </SelectTrigger>
@@ -101,33 +168,29 @@ const ClientCRMTab = ({ client }: ClientCRMTabProps) => {
               </div>
 
               <div className="flex items-center space-x-2">
-                <Checkbox id="smoker" />
+                <Checkbox 
+                  id="smoker" 
+                  checked={formData.is_smoker}
+                  onCheckedChange={(checked) => handleChange("is_smoker", !!checked)}
+                />
                 <Label htmlFor="smoker">Is smoker</Label>
               </div>
 
-              <div className="space-y-2">
-                <Label>Education</Label>
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="matric">Matric</SelectItem>
-                    <SelectItem value="diploma">Diploma</SelectItem>
-                    <SelectItem value="degree">Degree</SelectItem>
-                    <SelectItem value="postgrad">Postgraduate</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
               <div className="flex items-center space-x-2">
-                <Checkbox id="professional" />
+                <Checkbox 
+                  id="professional" 
+                  checked={formData.is_professional}
+                  onCheckedChange={(checked) => handleChange("is_professional", !!checked)}
+                />
                 <Label htmlFor="professional">Is professional person</Label>
               </div>
 
               <div className="space-y-2">
                 <Label>Profession</Label>
-                <Select>
+                <Select 
+                  value={formData.profession?.toLowerCase() || ""} 
+                  onValueChange={(v) => handleChange("profession", v.charAt(0).toUpperCase() + v.slice(1))}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select" />
                   </SelectTrigger>
@@ -143,9 +206,12 @@ const ClientCRMTab = ({ client }: ClientCRMTabProps) => {
 
               <div className="space-y-2">
                 <Label>Occupation</Label>
-                <Select defaultValue="attorney">
+                <Select 
+                  value={formData.occupation?.toLowerCase() || ""} 
+                  onValueChange={(v) => handleChange("occupation", v.charAt(0).toUpperCase() + v.slice(1))}
+                >
                   <SelectTrigger>
-                    <SelectValue />
+                    <SelectValue placeholder="Select" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="attorney">Attorney</SelectItem>
@@ -158,12 +224,15 @@ const ClientCRMTab = ({ client }: ClientCRMTabProps) => {
 
               <div className="space-y-2">
                 <Label>Industry</Label>
-                <Select defaultValue="nuclear">
+                <Select 
+                  value={formData.industry?.toLowerCase().replace(" ", "-") || ""} 
+                  onValueChange={(v) => handleChange("industry", v.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" "))}
+                >
                   <SelectTrigger>
-                    <SelectValue />
+                    <SelectValue placeholder="Select" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="nuclear">Nuclear Industry</SelectItem>
+                    <SelectItem value="nuclear-industry">Nuclear Industry</SelectItem>
                     <SelectItem value="finance">Finance</SelectItem>
                     <SelectItem value="technology">Technology</SelectItem>
                     <SelectItem value="healthcare">Healthcare</SelectItem>
@@ -174,7 +243,10 @@ const ClientCRMTab = ({ client }: ClientCRMTabProps) => {
 
               <div className="space-y-2">
                 <Label>Disability type</Label>
-                <Select>
+                <Select 
+                  value={formData.disability_type?.toLowerCase() || ""} 
+                  onValueChange={(v) => handleChange("disability_type", v === "none" ? "" : v.charAt(0).toUpperCase() + v.slice(1))}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="None" />
                   </SelectTrigger>
@@ -188,7 +260,11 @@ const ClientCRMTab = ({ client }: ClientCRMTabProps) => {
               </div>
 
               <div className="flex items-center space-x-2">
-                <Checkbox id="hybrid" defaultChecked />
+                <Checkbox 
+                  id="hybrid" 
+                  checked={formData.is_hybrid_client}
+                  onCheckedChange={(checked) => handleChange("is_hybrid_client", !!checked)}
+                />
                 <Label htmlFor="hybrid">Is hybrid client</Label>
               </div>
             </div>
@@ -205,7 +281,10 @@ const ClientCRMTab = ({ client }: ClientCRMTabProps) => {
               <div className="grid gap-4">
                 <div className="space-y-2">
                   <Label>Preferred contact</Label>
-                  <Select>
+                  <Select 
+                    value={formData.preferred_contact?.toLowerCase() || ""} 
+                    onValueChange={(v) => handleChange("preferred_contact", v.charAt(0).toUpperCase() + v.slice(1))}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select" />
                     </SelectTrigger>
@@ -220,7 +299,10 @@ const ClientCRMTab = ({ client }: ClientCRMTabProps) => {
 
                 <div className="space-y-2">
                   <Label>Preferred phone</Label>
-                  <Select>
+                  <Select 
+                    value={formData.preferred_phone?.toLowerCase() || ""} 
+                    onValueChange={(v) => handleChange("preferred_phone", v.charAt(0).toUpperCase() + v.slice(1))}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select" />
                     </SelectTrigger>
@@ -234,7 +316,10 @@ const ClientCRMTab = ({ client }: ClientCRMTabProps) => {
 
                 <div className="space-y-2">
                   <Label>Preferred email</Label>
-                  <Select>
+                  <Select 
+                    value={formData.preferred_email?.toLowerCase() || ""} 
+                    onValueChange={(v) => handleChange("preferred_email", v.charAt(0).toUpperCase() + v.slice(1))}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select" />
                     </SelectTrigger>
@@ -246,27 +331,16 @@ const ClientCRMTab = ({ client }: ClientCRMTabProps) => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Preferred social media</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="whatsapp">WhatsApp</SelectItem>
-                      <SelectItem value="facebook">Facebook</SelectItem>
-                      <SelectItem value="linkedin">LinkedIn</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
                   <Label>Document password</Label>
                   <Button variant="outline" size="sm">Reset to ID</Button>
                 </div>
 
                 <div className="space-y-2">
                   <Label>OTP delivery method</Label>
-                  <Select defaultValue="sms">
+                  <Select 
+                    value={formData.otp_delivery_method?.toLowerCase() || "sms"} 
+                    onValueChange={(v) => handleChange("otp_delivery_method", v.toUpperCase())}
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -309,18 +383,15 @@ const ClientCRMTab = ({ client }: ClientCRMTabProps) => {
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Name</p>
-                  <p className="font-medium">Danile Jordaan Financial Planning LTD</p>
+                  <p className="text-sm text-muted-foreground">Employer</p>
+                  <p className="font-medium">{client.employer || "-"}</p>
                 </div>
               </div>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Family name</p>
-                  <p className="font-medium">BothamaJOB79</p>
+                  <p className="text-sm text-muted-foreground">Wealth Manager</p>
+                  <p className="font-medium">{client.wealth_manager || "-"}</p>
                 </div>
-                <Button size="sm" className="bg-[hsl(180,70%,45%)] hover:bg-[hsl(180,70%,40%)] text-white">
-                  Create
-                </Button>
               </div>
             </CardContent>
           </Card>
@@ -332,8 +403,8 @@ const ClientCRMTab = ({ client }: ClientCRMTabProps) => {
             </CardHeader>
             <CardContent>
               <div>
-                <p className="text-sm text-muted-foreground">Name</p>
-                <p className="font-medium">Jordaan, Danile</p>
+                <p className="text-sm text-muted-foreground">Advisor</p>
+                <p className="font-medium">{client.advisor || "-"}</p>
               </div>
             </CardContent>
           </Card>
@@ -351,7 +422,11 @@ const ClientCRMTab = ({ client }: ClientCRMTabProps) => {
               <div key={colIndex} className="space-y-3">
                 {column.map((sport) => (
                   <div key={sport} className="flex items-center space-x-2">
-                    <Checkbox id={sport.toLowerCase().replace(/\s/g, "-")} />
+                    <Checkbox 
+                      id={sport.toLowerCase().replace(/\s/g, "-")} 
+                      checked={(formData.sports_interests || []).includes(sport)}
+                      onCheckedChange={() => handleSportToggle(sport)}
+                    />
                     <Label htmlFor={sport.toLowerCase().replace(/\s/g, "-")}>{sport}</Label>
                   </div>
                 ))}
