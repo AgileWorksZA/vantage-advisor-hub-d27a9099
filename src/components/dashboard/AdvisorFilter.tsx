@@ -1,11 +1,6 @@
 import { useState } from "react";
 import { Check } from "lucide-react";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import {
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -31,6 +26,7 @@ export const AdvisorFilter = () => {
     advisors.map((a) => a.initials)
   );
   const [isOpen, setIsOpen] = useState(false);
+  const [hoveredAdvisor, setHoveredAdvisor] = useState<string | null>(null);
 
   const toggleAdvisor = (initials: string) => {
     setSelectedAdvisors((prev) =>
@@ -45,30 +41,38 @@ export const AdvisorFilter = () => {
   };
 
   const isAllSelected = selectedAdvisors.length === advisors.length;
+  
+  // Filter to only show selected advisors in the pill display
+  const visibleAdvisors = advisors.filter((a) => 
+    selectedAdvisors.includes(a.initials)
+  );
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
         <button className="flex items-center focus:outline-none">
           <div className="flex -space-x-2">
-            {advisors.map((advisor, index) => (
-              <Tooltip key={advisor.initials}>
-                <TooltipTrigger asChild>
-                  <div
-                    className={cn(
-                      "w-7 h-7 rounded-full bg-[hsl(180,25%,25%)] text-white text-xs flex items-center justify-center font-medium border-2 border-background cursor-pointer hover:z-10 hover:scale-110 transition-transform",
-                      !selectedAdvisors.includes(advisor.initials) && "opacity-50"
-                    )}
-                    style={{ zIndex: advisors.length - index }}
-                  >
-                    {advisor.initials}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="text-xs">
-                  {advisor.name}
-                </TooltipContent>
-              </Tooltip>
-            ))}
+            {visibleAdvisors.map((advisor, index) => {
+              const isHovered = hoveredAdvisor === advisor.initials;
+              return (
+                <div
+                  key={advisor.initials}
+                  className={cn(
+                    "h-7 rounded-full bg-[hsl(180,25%,25%)] text-white text-xs flex items-center justify-center font-medium border-2 border-background cursor-pointer transition-all duration-300 ease-in-out",
+                    isHovered ? "px-3 z-20" : "w-7"
+                  )}
+                  style={{ zIndex: isHovered ? 20 : visibleAdvisors.length - index }}
+                  onMouseEnter={() => setHoveredAdvisor(advisor.initials)}
+                  onMouseLeave={() => setHoveredAdvisor(null)}
+                >
+                  {isHovered ? (
+                    <span className="whitespace-nowrap">{advisor.name}</span>
+                  ) : (
+                    advisor.initials
+                  )}
+                </div>
+              );
+            })}
           </div>
         </button>
       </PopoverTrigger>
