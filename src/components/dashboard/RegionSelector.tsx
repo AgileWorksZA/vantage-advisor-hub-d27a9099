@@ -24,15 +24,15 @@ export const regions: Region[] = [
   { code: "US", name: "United States", flagCode: "us", currencyCode: "USD", currencySymbol: "$" },
 ];
 
-const FlagIcon = ({ code, size = 24 }: { code: string; size?: number }) => (
+const FlagIcon = ({ code, width = 24 }: { code: string; width?: number }) => (
   <img
     src={`https://flagcdn.com/w40/${code}.png`}
     srcSet={`https://flagcdn.com/w80/${code}.png 2x`}
     alt={`${code.toUpperCase()} flag`}
-    width={size}
-    height={size}
+    width={width}
+    height={Math.round(width * 0.67)}
     className="object-cover"
-    style={{ minWidth: size, minHeight: size }}
+    style={{ minWidth: width }}
   />
 );
 
@@ -60,7 +60,7 @@ export function RegionSelector({ selectedRegion, onRegionChange }: RegionSelecto
           className="h-9 w-9 rounded-full hover:bg-muted/50 transition-colors flex items-center justify-center"
           title={currentRegion.name}
         >
-          <FlagIcon code={currentRegion.flagCode} size={22} />
+          <FlagIcon code={currentRegion.flagCode} width={22} />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-56 p-2 bg-popover border border-border shadow-lg" align="end">
@@ -75,7 +75,7 @@ export function RegionSelector({ selectedRegion, onRegionChange }: RegionSelecto
                 selectedRegion === region.code && "bg-muted"
               )}
             >
-              <FlagIcon code={region.flagCode} size={20} />
+              <FlagIcon code={region.flagCode} width={20} />
               <span className="flex-1 text-left">{region.name}</span>
               {selectedRegion === region.code && (
                 <Check className="h-4 w-4 text-primary" />
