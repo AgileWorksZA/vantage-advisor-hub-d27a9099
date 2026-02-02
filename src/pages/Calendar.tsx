@@ -361,28 +361,34 @@ const CalendarPage = () => {
             </Button>
 
             {/* Mini Calendar */}
-            <Card className="p-2 overflow-hidden">
-              <CalendarComponent
-                mode="single"
-                selected={selectedDate}
-                onSelect={(date) => date && setSelectedDate(date)}
-                className="w-full pointer-events-auto"
-                classNames={{
-                  months: "flex flex-col",
-                  month: "space-y-2",
-                  table: "w-full border-collapse",
-                  head_row: "flex justify-between",
-                  head_cell: "text-muted-foreground rounded-md w-8 font-normal text-[0.7rem]",
-                  row: "flex w-full justify-between mt-1",
-                  cell: "h-8 w-8 text-center text-sm p-0 relative",
-                  day: "h-8 w-8 p-0 font-normal text-xs hover:bg-accent rounded-md",
-                  day_selected: "bg-primary text-primary-foreground hover:bg-primary",
-                  day_today: "bg-accent text-accent-foreground",
-                  day_outside: "text-muted-foreground opacity-50",
-                  nav_button: "h-6 w-6 bg-transparent p-0 opacity-50 hover:opacity-100",
-                  caption_label: "text-xs font-medium",
-                }}
-              />
+            <Card className="p-2 overflow-hidden flex-shrink-0">
+              <div className="w-full max-w-[224px]">
+                <CalendarComponent
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={(date) => date && setSelectedDate(date)}
+                  className="w-full pointer-events-auto !p-0"
+                  classNames={{
+                    months: "flex flex-col w-full",
+                    month: "space-y-2 w-full",
+                    caption: "flex justify-center pt-1 relative items-center",
+                    caption_label: "text-xs font-medium",
+                    nav: "space-x-1 flex items-center",
+                    nav_button: "h-5 w-5 bg-transparent p-0 opacity-50 hover:opacity-100 inline-flex items-center justify-center",
+                    nav_button_previous: "absolute left-0",
+                    nav_button_next: "absolute right-0",
+                    table: "w-full border-collapse",
+                    head_row: "flex w-full",
+                    head_cell: "text-muted-foreground rounded-md flex-1 font-normal text-[0.65rem] text-center",
+                    row: "flex w-full mt-1",
+                    cell: "flex-1 aspect-square text-center text-xs p-0 relative",
+                    day: "h-full w-full p-0 font-normal text-[0.65rem] hover:bg-accent rounded-md flex items-center justify-center",
+                    day_selected: "bg-primary text-primary-foreground hover:bg-primary",
+                    day_today: "bg-accent text-accent-foreground",
+                    day_outside: "text-muted-foreground opacity-50",
+                  }}
+                />
+              </div>
             </Card>
 
             {/* Calendar Filters */}
