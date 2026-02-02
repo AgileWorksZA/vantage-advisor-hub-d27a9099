@@ -1,25 +1,18 @@
 
 
-# Add VANTAGE Logo to Sidebar Bottom
+# Make VANTAGE Logo 2.5x Bigger
 
 ## Overview
-Add the VANTAGE logo to the bottom of all left sidebars across the application. The text will be displayed vertically, reading from bottom to top, positioned at the bottom of the sidebar.
+Increase the size of the VANTAGE logo at the bottom of all sidebars by 2.5 times.
 
 ---
 
-## Implementation Approach
+## Current State
+The logo currently uses `h-4` (16px height).
 
-### Step 1: Copy the Logo Image
-Copy the uploaded VANTAGE logo image to the project assets folder.
-
-**Action**: Copy `user-uploads://image-20.png` to `src/assets/vantage-logo.png`
-
-### Step 2: Update Sidebar Structure
-Modify each sidebar to include a flex container with proper spacing so the navigation items stay at the top and the logo stays at the bottom. This requires:
-
-1. Wrap navigation items in a `div` that doesn't grow
-2. Add a spacer element (`flex-1`) to push the logo to the bottom
-3. Add the VANTAGE logo image with vertical rotation
+## New Size
+- **Current**: `h-4` = 16px
+- **New**: 16px × 2.5 = 40px = `h-10`
 
 ---
 
@@ -37,56 +30,28 @@ Modify each sidebar to include a flex container with proper spacing so the navig
 
 ---
 
-## Technical Details
+## Change Pattern
 
-### Import Statement
-Each file will add an import for the logo:
+**From:**
 ```typescript
-import vantageLogo from "@/assets/vantage-logo.png";
+<img 
+  src={vantageLogo} 
+  alt="Vantage" 
+  className="h-4 w-auto -rotate-90 origin-center"
+/>
 ```
 
-### Sidebar Structure Change
-
-**Current Pattern:**
+**To:**
 ```typescript
-<aside className="w-16 bg-[hsl(180,25%,25%)] flex flex-col items-center py-4 gap-1 shrink-0">
-  <Button>...</Button>  {/* Command Center */}
-  {sidebarItems.map(...)}  {/* Nav items */}
-</aside>
+<img 
+  src={vantageLogo} 
+  alt="Vantage" 
+  className="h-10 w-auto -rotate-90 origin-center"
+/>
 ```
-
-**New Pattern:**
-```typescript
-<aside className="w-16 bg-[hsl(180,25%,25%)] flex flex-col items-center py-4 gap-1 shrink-0">
-  <Button>...</Button>  {/* Command Center */}
-  {sidebarItems.map(...)}  {/* Nav items */}
-  
-  {/* Spacer to push logo to bottom */}
-  <div className="flex-1" />
-  
-  {/* VANTAGE Logo - rotated to read bottom to top */}
-  <div className="mb-2">
-    <img 
-      src={vantageLogo} 
-      alt="Vantage" 
-      className="h-4 w-auto -rotate-90 origin-center"
-    />
-  </div>
-</aside>
-```
-
-The logo will:
-- Be positioned at the very bottom of the sidebar
-- Be rotated 90 degrees counter-clockwise to read from bottom to top
-- Maintain its aspect ratio
-- Have consistent sizing across all pages
 
 ---
 
 ## Expected Outcome
-After implementation:
-- The VANTAGE logo will appear at the bottom of every sidebar
-- The logo reads vertically from bottom to top
-- Navigation items remain at the top, unaffected
-- The logo is consistently styled across all pages
+The VANTAGE logo will be 2.5 times larger (40px height instead of 16px) while maintaining its vertical orientation and position at the bottom of all sidebars.
 
