@@ -30,9 +30,9 @@ const FlagIcon = ({ code, size = 24 }: { code: string; size?: number }) => (
     srcSet={`https://flagcdn.com/w80/${code}.png 2x`}
     alt={`${code.toUpperCase()} flag`}
     width={size}
-    height={Math.round(size * 0.75)}
-    className="rounded-sm object-cover"
-    style={{ minWidth: size }}
+    height={size}
+    className="object-cover"
+    style={{ minWidth: size, minHeight: size }}
   />
 );
 
