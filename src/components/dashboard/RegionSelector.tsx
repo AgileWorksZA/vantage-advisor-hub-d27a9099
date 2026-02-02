@@ -24,17 +24,16 @@ export const regions: Region[] = [
   { code: "US", name: "United States", flagCode: "us", currencyCode: "USD", currencySymbol: "$" },
 ];
 
-const FlagIcon = ({ code, width = 24 }: { code: string; width?: number }) => (
-  <img
-    src={`https://flagcdn.com/w40/${code}.png`}
-    srcSet={`https://flagcdn.com/w80/${code}.png 2x`}
-    alt={`${code.toUpperCase()} flag`}
-    width={width}
-    height={Math.round(width * 0.67)}
-    className="object-cover"
-    style={{ minWidth: width }}
-  />
-);
+const FlagIcon = ({ code, height = 18 }: { code: string; height?: number }) => {
+  return (
+    <img
+      src={`https://flagcdn.com/h${Math.round(height * 2)}/${code}.png`}
+      alt={`${code.toUpperCase()} flag`}
+      className="object-contain"
+      style={{ height, width: 'auto' }}
+    />
+  );
+};
 
 interface RegionSelectorProps {
   selectedRegion: string;
@@ -60,7 +59,7 @@ export function RegionSelector({ selectedRegion, onRegionChange }: RegionSelecto
           className="h-9 w-9 rounded-full hover:bg-muted/50 transition-colors flex items-center justify-center"
           title={currentRegion.name}
         >
-          <FlagIcon code={currentRegion.flagCode} width={28} />
+          <FlagIcon code={currentRegion.flagCode} height={18} />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-56 p-2 bg-popover border border-border shadow-lg" align="end">
@@ -75,7 +74,7 @@ export function RegionSelector({ selectedRegion, onRegionChange }: RegionSelecto
                 selectedRegion === region.code && "bg-muted"
               )}
             >
-              <FlagIcon code={region.flagCode} width={28} />
+              <FlagIcon code={region.flagCode} height={18} />
               <span className="flex-1 text-left">{region.name}</span>
               {selectedRegion === region.code && (
                 <Check className="h-4 w-4 text-primary" />
