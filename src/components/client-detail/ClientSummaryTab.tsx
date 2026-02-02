@@ -1,3 +1,4 @@
+import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -169,8 +170,8 @@ const ClientSummaryTab = ({ client }: ClientSummaryTabProps) => {
                 </TableHeader>
                 <TableBody>
                   {productsData.map((category, catIndex) => (
-                    <>
-                      <TableRow key={`cat-${catIndex}`} className="bg-muted/50">
+                    <React.Fragment key={`category-${catIndex}`}>
+                      <TableRow className="bg-muted/50">
                         <TableCell colSpan={5} className="text-sm font-medium py-2">
                           {category.category}
                         </TableCell>
@@ -184,7 +185,7 @@ const ClientSummaryTab = ({ client }: ClientSummaryTabProps) => {
                           <TableCell className="text-sm text-right">{product.value}</TableCell>
                         </TableRow>
                       ))}
-                    </>
+                    </React.Fragment>
                   ))}
                   <TableRow className="bg-muted font-medium">
                     <TableCell colSpan={4} className="text-sm">Total</TableCell>
