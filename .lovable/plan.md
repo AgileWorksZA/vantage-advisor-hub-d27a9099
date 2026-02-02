@@ -1,192 +1,310 @@
 
-# Regional Context for AI Assistant
+
+# Chart Library Migration: Recharts to ECharts
 
 ## Overview
-Create a global region context to share the selected region (SA, UK, AUS, Canada, US) across the application. The AI Assistant page will consume this context to display region-appropriate data including client names, currency symbols, and product types.
+Migrate from Recharts to Apache ECharts (via `echarts-for-react`) to enable:
+- See-through/transparent effects with glassmorphism styling
+- Enhanced interactivity (zoom, pan, data brushing, 3D effects)
+- Dark mode support with theme switching
+- Cross-platform compatibility (React/Lovable and Mendix)
 
 ---
 
-## Current Architecture Problem
+## Why ECharts?
 
-The region state is currently stored locally in the `Dashboard` component:
-```typescript
-const [selectedRegion, setSelectedRegion] = useState<string>("ZA");
-```
-
-When navigating to the AI Assistant page, this state is lost because the Dashboard unmounts. The AI Assistant currently uses hardcoded mock data with no regional awareness.
+| Feature | Recharts (Current) | ECharts (Proposed) |
+|---------|-------------------|-------------------|
+| Transparency/Glass effects | Limited (SVG-based) | Full support via canvas |
+| Interactivity | Basic hover/click | Zoom, pan, brush, dataZoom |
+| Dark mode | Manual color override | Built-in theme support |
+| 3D Charts | Not supported | Supported via echarts-gl |
+| Animations | Basic transitions | Rich animation library |
+| Mendix Support | No official widget | Official Mendix widget available |
+| Bundle size | ~200KB | Modular (tree-shakeable) |
 
 ---
 
-## Solution: Global Region Context
+## Files Affected
 
-### 1. Create Region Context
+### Files to Create
+1. `src/components/ui/echarts-wrapper.tsx` - Reusable ECharts component with theme support
+2. `src/lib/echarts-themes.ts` - Custom light/dark themes matching the app's design system
 
-Create a new context provider that:
-- Stores the selected region in React context
-- Persists the selection in localStorage for session continuity
-- Provides region data (currency, products, client names) to any consuming component
+### Files to Modify
+1. `src/pages/Dashboard.tsx` - PieChart for product distribution
+2. `src/pages/Insights.tsx` - BarChart, PieChart, AreaChart for commissions
+3. `src/components/command-center/CommissionNudge.tsx` - Sparkline chart
+4. `src/components/HeroPortfolioCard.tsx` - SVG charts (evaluate migration)
 
-```text
-src/contexts/
-└── RegionContext.tsx   # New context provider
+---
+
+## Implementation Plan
+
+### Phase 1: Setup and Core Components
+
+**1. Install Dependencies**
+```bash
+npm install echarts echarts-for-react
 ```
 
-### 2. Context Structure
+**2. Create ECharts Wrapper Component**
+
+A reusable wrapper that:
+- Automatically switches between light/dark themes using `next-themes`
+- Applies glassmorphism styling to chart containers
+- Handles responsive sizing
+- Provides common configuration defaults
 
 ```typescript
-interface RegionContextType {
-  selectedRegion: string;
-  setSelectedRegion: (region: string) => void;
-  regionalData: RegionalData;
-  currencySymbol: string;
-  formatCurrency: (value: number) => string;
+// src/components/ui/echarts-wrapper.tsx
+interface EChartsWrapperProps {
+  option: EChartsOption;
+  height?: string | number;
+  className?: string;
+  transparent?: boolean; // Enable glass effect
+  loading?: boolean;
 }
 ```
 
-### 3. Add Regional Opportunity Data
+**3. Create Custom Themes**
 
-Extend `src/data/regionalData.ts` to include region-specific client opportunities for the AI Assistant:
+Define themes that match the app's design system:
 
-```typescript
-export interface RegionalOpportunityData {
-  clientName: string;
-  currentValue: number;
-  opportunityType: "upsell" | "cross-sell" | "migration" | "platform";
-  potentialRevenue: number;
-  confidence: number;
-  reasoning: string;
-  suggestedAction: string;
+Light Theme:
+- Background: transparent (for glass effect)
+- Text: hsl(222.2 84% 4.9%)
+- Grid lines: hsl(214.3 31.8% 91.4%)
+- Brand colors: orange, peach, blue, deep-blue
+
+Dark Theme:
+- Background: transparent
+- Text: hsl(210 40% 98%)
+- Grid lines: hsl(217.2 32.6% 17.5%)
+- Same brand colors with adjusted opacity
+
+---
+
+### Phase 2: Migrate Charts
+
+**Dashboard.tsx - Product Distribution Pie Chart**
+
+Current (Recharts):
+```tsx
+<PieChart>
+  <Pie data={regionalData.products} innerRadius={40} outerRadius={70} />
+  <Tooltip />
+</PieChart>
+```
+
+New (ECharts):
+```tsx
+<EChartsWrapper
+  transparent
+  height={192}
+  option={{
+    series: [{
+      type: 'pie',
+      radius: ['40%', '70%'],
+      data: regionalData.products.map(p => ({
+        name: p.name,
+        value: p.value,
+        itemStyle: { color: p.color }
+      })),
+      emphasis: {
+        itemStyle: {
+          shadowBlur: 10,
+          shadowColor: 'rgba(0, 0, 0, 0.5)'
+        }
+      },
+      label: { show: false },
+      animationType: 'scale',
+      animationEasing: 'elasticOut'
+    }],
+    tooltip: {
+      trigger: 'item',
+      backgroundColor: 'rgba(15, 23, 42, 0.9)',
+      borderColor: 'rgba(255, 255, 255, 0.1)',
+      textStyle: { color: '#fff' }
+    }
+  }}
+/>
+```
+
+**Insights.tsx - Commission Charts**
+
+Bar Chart with Glass Effect:
+- Transparent background
+- Gradient bars
+- Hover glow effects
+- Data zoom for larger datasets
+
+Area Chart with Gradient Fill:
+- Transparent gradient fills (0.3 to 0 opacity)
+- Smooth animations
+- Interactive legend
+
+Pie/Donut Chart:
+- Rose animation on hover
+- Glass tooltip with blur
+- Percentage labels on hover
+
+---
+
+### Phase 3: Enhanced Interactivity
+
+Add these interactive features:
+
+1. **DataZoom**: Allow users to zoom into specific date ranges on commission summary chart
+2. **Brush Selection**: Select data ranges for comparison
+3. **Tooltip Linking**: Hover on one chart highlights related data in others
+4. **Animation on Scroll**: Charts animate when scrolled into view
+5. **Click to Drill-Down**: Click on pie segments to see details
+
+---
+
+### Phase 4: Glassmorphism Styling
+
+Apply consistent glass effects to all charts:
+
+```css
+.echarts-glass-container {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 }
 
-// Each region will have localized client names and values
+.dark .echarts-glass-container {
+  background: rgba(15, 23, 42, 0.6);
+  border-color: rgba(255, 255, 255, 0.1);
+}
 ```
 
----
-
-## Files to Create
-
-### `src/contexts/RegionContext.tsx`
-
-New context provider with:
-- `RegionProvider` component wrapping the app
-- `useRegion` hook for consuming components
-- localStorage persistence for selected region
-- Memoized regional data lookup
-
----
-
-## Files to Modify
-
-### `src/App.tsx`
-
-Wrap the application with `RegionProvider`:
+ECharts options for transparency:
 ```typescript
-<RegionProvider>
-  <ThemeProvider>
-    {/* existing structure */}
-  </ThemeProvider>
-</RegionProvider>
-```
-
-### `src/pages/Dashboard.tsx`
-
-- Remove local `selectedRegion` state
-- Import and use `useRegion` hook
-- Pass context values to AppHeader
-
-### `src/data/regionalData.ts`
-
-Add region-specific opportunity data:
-
-| Region | Example Client Names | Currency | Product Types |
-|--------|---------------------|----------|---------------|
-| ZA | Johan van der Merwe, Thandi Nkosi | R | Living Annuity, Preservation Fund |
-| AU | James Mitchell, Sarah Thompson | A$ | Superannuation, SMSF |
-| CA | Pierre Tremblay, Marie-Claire Roy | C$ | RRSP, TFSA |
-| GB | William Smith, Elizabeth Jones | £ | SIPP, ISA |
-| US | Michael Johnson, Patricia Williams | $ | 401(k), IRA |
-
-### `src/pages/AIAssistant.tsx`
-
-- Import `useRegion` hook
-- Replace hardcoded `mockOpportunities` with region-specific data
-- Update currency formatting to use `formatCurrency` from context
-- Update AI chat responses to use regional currency
-
-### `src/components/ai-assistant/OpportunityCard.tsx`
-
-- Accept `currencySymbol` or `formatCurrency` function as prop
-- Use regional currency formatting instead of hardcoded ZAR
-
----
-
-## Regional Opportunity Data Structure
-
-Each region will have 5 sample client opportunities:
-
-**South Africa (ZA)**
-- Client names: Johan van der Merwe, Thandi Nkosi, Pieter du Plessis, etc.
-- Products: Living Annuity migration, Preservation Fund consolidation
-- Currency: R (ZAR)
-
-**Australia (AU)**
-- Client names: James Mitchell, Sarah Thompson, Michael O'Brien, etc.
-- Products: Superannuation growth, SMSF setup opportunity
-- Currency: A$ (AUD)
-
-**Canada (CA)**
-- Client names: Pierre Tremblay, Marie-Claire Bouchard, James MacDonald, etc.
-- Products: RRSP maximization, TFSA optimization
-- Currency: C$ (CAD)
-
-**United Kingdom (GB)**
-- Client names: William Smith, Elizabeth Jones, Thomas Williams, etc.
-- Products: ISA upsell, SIPP consolidation
-- Currency: £ (GBP)
-
-**United States (US)**
-- Client names: Michael Johnson, Patricia Williams, Robert Brown, etc.
-- Products: 401(k) rollover, Roth IRA conversion
-- Currency: $ (USD)
-
----
-
-## Implementation Flow
-
-```text
-+----------------+     +------------------+     +-----------------+
-|   App.tsx      | --> | RegionProvider   | --> | Dashboard.tsx   |
-|                |     | (stores region)  |     | (uses context)  |
-+----------------+     +------------------+     +-----------------+
-                              |
-                              v
-                       +-----------------+
-                       | AIAssistant.tsx |
-                       | (uses context)  |
-                       +-----------------+
+{
+  backgroundColor: 'transparent',
+  grid: {
+    backgroundColor: 'transparent'
+  },
+  series: [{
+    itemStyle: {
+      color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+        { offset: 0, color: 'rgba(var(--brand-blue), 0.8)' },
+        { offset: 1, color: 'rgba(var(--brand-blue), 0.2)' }
+      ])
+    }
+  }]
+}
 ```
 
 ---
 
-## Chat Response Updates
+## Technical Details
 
-The AI chat responses in `AIAssistant.tsx` will dynamically use:
-- Regional currency symbol for values
-- Region-appropriate client names from opportunities
-- Localized product terminology (e.g., "SIPP" in UK vs "401(k)" in US)
+### Theme Switching Logic
 
-Example for UK:
+```typescript
+// src/components/ui/echarts-wrapper.tsx
+import { useTheme } from 'next-themes';
+import * as echarts from 'echarts/core';
+import ReactECharts from 'echarts-for-react';
+import { lightTheme, darkTheme } from '@/lib/echarts-themes';
+
+// Register themes once
+echarts.registerTheme('vantage-light', lightTheme);
+echarts.registerTheme('vantage-dark', darkTheme);
+
+export function EChartsWrapper({ option, transparent, ...props }: EChartsWrapperProps) {
+  const { resolvedTheme } = useTheme();
+  const theme = resolvedTheme === 'dark' ? 'vantage-dark' : 'vantage-light';
+  
+  return (
+    <div className={cn(
+      transparent && 'echarts-glass-container',
+      props.className
+    )}>
+      <ReactECharts
+        theme={theme}
+        option={{
+          backgroundColor: 'transparent',
+          ...option
+        }}
+        {...props}
+      />
+    </div>
+  );
+}
 ```
-"I've identified 2 clients with upselling potential. 
-William Smith shows the highest opportunity with £125,000 
-potential revenue from ISA expansion."
+
+### Tree-Shaking for Bundle Size
+
+Import only what we need:
+```typescript
+import * as echarts from 'echarts/core';
+import { BarChart, PieChart, LineChart } from 'echarts/charts';
+import { GridComponent, TooltipComponent, LegendComponent } from 'echarts/components';
+import { CanvasRenderer } from 'echarts/renderers';
+
+echarts.use([
+  BarChart, PieChart, LineChart,
+  GridComponent, TooltipComponent, LegendComponent,
+  CanvasRenderer
+]);
 ```
+
+### Mendix Compatibility
+
+ECharts is available as an official Mendix widget in the Marketplace (Apache e-charts). The same chart configurations can be used in both:
+
+- **Lovable/React**: Use `echarts-for-react` wrapper
+- **Mendix**: Use the Apache e-charts widget with identical option objects
+
+The chart options are pure JavaScript objects that work in both environments, making it easy to share visualization logic between platforms.
 
 ---
 
-## Benefits
+## Migration Checklist
 
-1. **Consistent Experience**: Region selection persists across navigation
-2. **Localized Data**: Client names, currencies, and products match selected region
-3. **Scalable**: Easy to add more regions or region-specific features
-4. **Type Safety**: Full TypeScript support for regional data structures
+- [ ] Install echarts and echarts-for-react packages
+- [ ] Create EChartsWrapper component with theme support
+- [ ] Define custom light/dark themes
+- [ ] Add glassmorphism CSS classes
+- [ ] Migrate Dashboard.tsx PieChart
+- [ ] Migrate Insights.tsx BarCharts
+- [ ] Migrate Insights.tsx PieChart
+- [ ] Migrate Insights.tsx AreaChart
+- [ ] Update CommissionNudge sparkline
+- [ ] Add interactive features (zoom, brush)
+- [ ] Test dark mode switching
+- [ ] Test animations and transitions
+- [ ] Verify responsive behavior
+- [ ] Keep Recharts temporarily for HeroPortfolioCard (custom SVG animations)
+
+---
+
+## HeroPortfolioCard Consideration
+
+The `HeroPortfolioCard.tsx` uses custom SVG charts with complex animations (left-to-right line drawing, synchronized value counters). These are tightly integrated with the card's interaction model.
+
+**Recommendation**: Keep the existing SVG implementation for now, as:
+1. The animations are highly customized
+2. They're deeply integrated with the card state
+3. They work well with the current design
+
+These can be migrated to ECharts in a future phase if needed.
+
+---
+
+## Expected Outcome
+
+After migration:
+1. All major charts use ECharts with transparent/glass effects
+2. Dark mode switches chart themes automatically
+3. Enhanced interactivity with zoom, pan, and brush
+4. Consistent styling with the app's design system
+5. Chart configurations exportable for Mendix reuse
+6. Smaller bundle size via tree-shaking
+
