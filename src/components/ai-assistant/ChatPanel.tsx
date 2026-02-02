@@ -48,7 +48,7 @@ const ChatPanel = ({ isOpen, onClose, onSendMessage, messages, isTyping }: ChatP
   return (
     <div
       className={cn(
-        "fixed top-0 right-0 h-full w-full sm:w-[400px] glass-panel border-l border-white/10 z-50",
+        "fixed top-0 right-0 h-full w-[25vw] min-w-[320px] max-w-[400px] glass-panel border-l border-white/10 z-50",
         "transition-transform duration-300 ease-out",
         isOpen ? "translate-x-0" : "translate-x-full"
       )}
