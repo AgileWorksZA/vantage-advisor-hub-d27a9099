@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LayoutDashboard, Users, Mail, CalendarIcon, ListTodo, LineChart, Building2, X } from "lucide-react";
 import commandCenterIcon from "@/assets/command-center-icon.png";
 import vantageLogo from "@/assets/vantage-logo.png";
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { EChartsWrapper } from "@/components/ui/echarts-wrapper";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { useRegion } from "@/contexts/RegionContext";
 
@@ -216,14 +216,37 @@ const Dashboard = () => {
               <CardContent className="px-4 pb-4">
                 <p className="text-xl font-semibold mb-2">{regionalData.totalAUM}</p>
                 <div className="h-48">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie data={regionalData.products} cx="50%" cy="50%" innerRadius={40} outerRadius={70} paddingAngle={2} dataKey="value">
-                        {regionalData.products.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
-                      </Pie>
-                      <Tooltip formatter={value => `${value}%`} />
-                    </PieChart>
-                  </ResponsiveContainer>
+                  <EChartsWrapper
+                    height={192}
+                    option={{
+                      tooltip: {
+                        trigger: 'item',
+                        formatter: (params: any) => `${params.name}: ${params.value}%`,
+                      },
+                      series: [{
+                        type: 'pie',
+                        radius: ['45%', '75%'],
+                        center: ['50%', '50%'],
+                        data: regionalData.products.map(p => ({
+                          name: p.name,
+                          value: p.value,
+                          itemStyle: { color: p.color }
+                        })),
+                        label: { show: false },
+                        emphasis: {
+                          itemStyle: {
+                            shadowBlur: 20,
+                            shadowColor: 'rgba(0, 0, 0, 0.3)',
+                          },
+                          scale: true,
+                          scaleSize: 8,
+                        },
+                        animationType: 'scale',
+                        animationEasing: 'elasticOut',
+                        animationDelay: (idx: number) => idx * 100,
+                      }],
+                    }}
+                  />
                 </div>
                 <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs mt-2">
                   {regionalData.products.map(item => <div key={item.name} className="flex items-center gap-1">

@@ -4,7 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import {
   LayoutDashboard,
   Users,
@@ -29,21 +28,7 @@ import {
 import commandCenterIcon from "@/assets/command-center-icon.png";
 import vantageLogo from "@/assets/vantage-logo.png";
 import { AppHeader } from "@/components/layout/AppHeader";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  AreaChart,
-  Area,
-} from "recharts";
+import { EChartsWrapper, createGradient } from "@/components/ui/echarts-wrapper";
 
 const commissionByTypeData = [
   { month: "Oct 2025", PUFs: -50000, Ongoing: 650000, Lapses: 100000, Initial: 50000, "2nd Year": 30000 },
@@ -137,6 +122,182 @@ const Insights = () => {
 
   const userName = user?.user_metadata?.full_name || "Adviser";
   const userEmail = user?.email || "adviser@vantage.co";
+
+  // Commission by Type stacked bar chart options
+  const commissionByTypeOption = {
+    tooltip: {
+      trigger: 'axis' as const,
+      axisPointer: { type: 'shadow' as const },
+      formatter: (params: any) => {
+        let result = `<div style="font-weight:600;margin-bottom:4px">${params[0].axisValue}</div>`;
+        params.forEach((p: any) => {
+          result += `<div style="display:flex;justify-content:space-between;gap:16px">
+            <span>${p.marker} ${p.seriesName}</span>
+            <span style="font-weight:500">R ${p.value.toLocaleString()}</span>
+          </div>`;
+        });
+        return result;
+      },
+    },
+    grid: { left: 8, right: 8, top: 8, bottom: 24, containLabel: true },
+    xAxis: {
+      type: 'category' as const,
+      data: commissionByTypeData.map(d => d.month),
+    },
+    yAxis: {
+      type: 'value' as const,
+      axisLabel: {
+        formatter: (v: number) => `${(v / 1000).toFixed(0)}k`,
+      },
+    },
+    series: [
+      { name: 'PUFs', type: 'bar' as const, stack: 'total', data: commissionByTypeData.map(d => d.PUFs), itemStyle: { color: 'hsl(210, 70%, 50%)' } },
+      { name: 'Ongoing', type: 'bar' as const, stack: 'total', data: commissionByTypeData.map(d => d.Ongoing), itemStyle: { color: 'hsl(180, 70%, 45%)' } },
+      { name: 'Lapses', type: 'bar' as const, stack: 'total', data: commissionByTypeData.map(d => d.Lapses), itemStyle: { color: 'hsl(45, 93%, 47%)' } },
+      { name: 'Initial', type: 'bar' as const, stack: 'total', data: commissionByTypeData.map(d => d.Initial), itemStyle: { color: 'hsl(0, 70%, 50%)' } },
+      { name: '2nd Year', type: 'bar' as const, stack: 'total', data: commissionByTypeData.map(d => d["2nd Year"]), itemStyle: { color: 'hsl(280, 65%, 50%)' } },
+    ],
+  };
+
+  // Commission Earned bar chart options
+  const commissionEarnedOption = {
+    tooltip: {
+      trigger: 'axis' as const,
+      formatter: (params: any) => `${params[0].axisValue}<br/>R ${params[0].value.toLocaleString()}`,
+    },
+    grid: { left: 8, right: 8, top: 8, bottom: 24, containLabel: true },
+    xAxis: {
+      type: 'category' as const,
+      data: commissionEarnedData.map(d => d.month),
+    },
+    yAxis: {
+      type: 'value' as const,
+      axisLabel: {
+        formatter: (v: number) => `${(v / 1000).toFixed(0)}k`,
+      },
+    },
+    series: [{
+      type: 'bar' as const,
+      data: commissionEarnedData.map(d => d.value),
+      itemStyle: {
+        color: createGradient('hsl(180, 70%, 55%)', 'hsl(180, 70%, 35%)'),
+        borderRadius: [4, 4, 0, 0],
+      },
+      emphasis: {
+        itemStyle: {
+          shadowBlur: 10,
+          shadowColor: 'rgba(0, 180, 180, 0.3)',
+        },
+      },
+    }],
+  };
+
+  // Monthly Commission pie chart options
+  const monthlyCommissionOption = {
+    tooltip: {
+      trigger: 'item' as const,
+      formatter: (params: any) => `${params.name}: R ${params.value.toLocaleString()}`,
+    },
+    series: [{
+      type: 'pie' as const,
+      radius: ['50%', '80%'],
+      center: ['50%', '50%'],
+      data: monthlyCommissionData.map(d => ({
+        name: d.name,
+        value: d.value,
+        itemStyle: { color: d.color },
+      })),
+      label: { show: false },
+      emphasis: {
+        itemStyle: {
+          shadowBlur: 20,
+          shadowColor: 'rgba(0, 0, 0, 0.3)',
+        },
+        scale: true,
+        scaleSize: 10,
+      },
+      animationType: 'scale' as const,
+      animationEasing: 'elasticOut' as const,
+    }],
+  };
+
+  // Commission Summary area chart options
+  const commissionSummaryOption = {
+    tooltip: {
+      trigger: 'axis' as const,
+      formatter: (params: any) => {
+        let result = `<div style="font-weight:600;margin-bottom:4px">${params[0].axisValue}</div>`;
+        params.forEach((p: any) => {
+          result += `<div style="display:flex;justify-content:space-between;gap:16px">
+            <span>${p.marker} ${p.seriesName}</span>
+            <span style="font-weight:500">R ${p.value.toLocaleString()}</span>
+          </div>`;
+        });
+        return result;
+      },
+    },
+    legend: {
+      data: ['Annual Target', 'Annual Earned Commission'],
+      bottom: 0,
+    },
+    grid: { left: 8, right: 8, top: 8, bottom: 40, containLabel: true },
+    xAxis: {
+      type: 'category' as const,
+      data: commissionSummaryData.map(d => d.month),
+      boundaryGap: false,
+    },
+    yAxis: {
+      type: 'value' as const,
+      axisLabel: {
+        formatter: (v: number) => `${(v / 1000000).toFixed(1)}M`,
+      },
+    },
+    dataZoom: [
+      {
+        type: 'inside' as const,
+        start: 0,
+        end: 100,
+      },
+      {
+        type: 'slider' as const,
+        start: 0,
+        end: 100,
+        height: 16,
+        bottom: 24,
+        handleSize: '80%',
+      },
+    ],
+    series: [
+      {
+        name: 'Annual Target',
+        type: 'line' as const,
+        data: commissionSummaryData.map(d => d.target),
+        smooth: true,
+        lineStyle: { color: 'hsl(210, 70%, 50%)', width: 2 },
+        itemStyle: { color: 'hsl(210, 70%, 50%)' },
+        areaStyle: {
+          color: createGradient('hsla(210, 70%, 50%, 0.4)', 'hsla(210, 70%, 50%, 0.05)'),
+        },
+        emphasis: {
+          focus: 'series' as const,
+        },
+      },
+      {
+        name: 'Annual Earned Commission',
+        type: 'line' as const,
+        data: commissionSummaryData.map(d => d.earned),
+        smooth: true,
+        lineStyle: { color: 'hsl(180, 70%, 45%)', width: 2 },
+        itemStyle: { color: 'hsl(180, 70%, 45%)' },
+        areaStyle: {
+          color: createGradient('hsla(180, 70%, 45%, 0.5)', 'hsla(180, 70%, 45%, 0.05)'),
+        },
+        emphasis: {
+          focus: 'series' as const,
+        },
+      },
+    ],
+  };
 
   return (
     <div className="h-screen bg-muted/30 flex overflow-hidden">
@@ -232,19 +393,10 @@ const Insights = () => {
                   </div>
                 </div>
                 <div className="h-48">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={commissionByTypeData}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                      <XAxis dataKey="month" tick={{ fontSize: 10 }} />
-                      <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-                      <Tooltip formatter={(value: number) => `R ${value.toLocaleString()}`} />
-                      <Bar dataKey="PUFs" stackId="a" fill="hsl(210, 70%, 50%)" />
-                      <Bar dataKey="Ongoing" stackId="a" fill="hsl(180, 70%, 45%)" />
-                      <Bar dataKey="Lapses" stackId="a" fill="hsl(45, 93%, 47%)" />
-                      <Bar dataKey="Initial" stackId="a" fill="hsl(0, 70%, 50%)" />
-                      <Bar dataKey="2nd Year" stackId="a" fill="hsl(280, 65%, 50%)" />
-                    </BarChart>
-                  </ResponsiveContainer>
+                  <EChartsWrapper
+                    height={192}
+                    option={commissionByTypeOption}
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -272,15 +424,10 @@ const Insights = () => {
                   </div>
                 </div>
                 <div className="h-48">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={commissionEarnedData}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                      <XAxis dataKey="month" tick={{ fontSize: 10 }} />
-                      <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-                      <Tooltip formatter={(value: number) => `R ${value.toLocaleString()}`} />
-                      <Bar dataKey="value" fill="hsl(180, 70%, 45%)" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
+                  <EChartsWrapper
+                    height={192}
+                    option={commissionEarnedOption}
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -295,24 +442,10 @@ const Insights = () => {
               </CardHeader>
               <CardContent className="px-4 pb-4">
                 <div className="h-48 flex items-center justify-center">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={monthlyCommissionData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={50}
-                        outerRadius={80}
-                        paddingAngle={2}
-                        dataKey="value"
-                      >
-                        {monthlyCommissionData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip formatter={(value: number) => `R ${value.toLocaleString()}`} />
-                    </PieChart>
-                  </ResponsiveContainer>
+                  <EChartsWrapper
+                    height={192}
+                    option={monthlyCommissionOption}
+                  />
                 </div>
                 <div className="flex justify-between text-center mt-2">
                   <div>
@@ -413,33 +546,10 @@ const Insights = () => {
                   </div>
                 </div>
                 <div className="h-56">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={commissionSummaryData}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                      <XAxis dataKey="month" tick={{ fontSize: 9 }} />
-                      <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `${(v / 1000000).toFixed(1)}M`} />
-                      <Tooltip formatter={(value: number) => `R ${value.toLocaleString()}`} />
-                      <Legend />
-                      <Area
-                        type="monotone"
-                        dataKey="target"
-                        stackId="1"
-                        stroke="hsl(210, 70%, 50%)"
-                        fill="hsl(210, 70%, 50%)"
-                        fillOpacity={0.6}
-                        name="Annual Target"
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="earned"
-                        stackId="2"
-                        stroke="hsl(180, 70%, 45%)"
-                        fill="hsl(180, 70%, 45%)"
-                        fillOpacity={0.8}
-                        name="Annual Earned Commission"
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
+                  <EChartsWrapper
+                    height={224}
+                    option={commissionSummaryOption}
+                  />
                 </div>
               </CardContent>
             </Card>
