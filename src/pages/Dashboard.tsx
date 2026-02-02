@@ -4,12 +4,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LayoutDashboard, Users, Mail, CalendarIcon, ListTodo, LineChart, Building2, Plus, X, Search, LogOut } from "lucide-react";
+import { LayoutDashboard, Users, Mail, CalendarIcon, ListTodo, LineChart, Building2, Plus, X, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { AdvisorFilter } from "@/components/dashboard/AdvisorFilter";
 import { NotificationDropdown } from "@/components/dashboard/NotificationDropdown";
 import { RegionSelector } from "@/components/dashboard/RegionSelector";
+import { UserMenu } from "@/components/dashboard/UserMenu";
 import { getRegionalData } from "@/data/regionalData";
 
 const sidebarItems = [{
@@ -125,12 +126,12 @@ const Dashboard = () => {
               selectedRegion={selectedRegion} 
               onRegionChange={setSelectedRegion} 
             />
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">{userName}</span>
-              <Button variant="ghost" size="icon" onClick={handleSignOut} title="Sign out">
-                <LogOut className="w-4 h-4" />
-              </Button>
-            </div>
+            <UserMenu 
+              userName={userName}
+              userEmail={user?.email}
+              onSignOut={handleSignOut}
+              onAccountSettings={() => navigate("/practice")}
+            />
           </div>
         </header>
 
