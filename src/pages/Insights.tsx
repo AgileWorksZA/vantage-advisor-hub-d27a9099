@@ -571,9 +571,9 @@ const Insights = () => {
                 </Button>
               </CardHeader>
               <CardContent className="px-4 pb-4">
-                <div className="h-64 flex items-center justify-center">
+                <div className="h-[400px] flex items-center justify-center">
                   <EChartsWrapper
-                    height={256}
+                    height={400}
                     option={monthlyCommissionOption}
                   />
                 </div>
