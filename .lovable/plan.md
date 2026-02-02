@@ -1,75 +1,117 @@
 
-# Fix Products Display Consistency
+# Implement Consistent Top Bar Across All Pages
 
-## Problem Identified
-The Summary tab shows products using **hardcoded mock data**, while the Products tab correctly fetches from the **database** (which is currently empty). This creates a confusing experience where products appear on one tab but not the other.
+## Overview
+Create a shared header component that includes all the dashboard's interactive elements (AdvisorFilter, NotificationDropdown, RegionSelector, and UserMenu) and apply it consistently across all pages. This ensures a unified user experience with the same functionality available everywhere.
 
-## Solution Overview
-Make both tabs use the same data source (the database) by updating the Summary tab to use the `useClientProducts` hook, and ensure the database has proper foreign key relationships for data integrity.
+## Current State Analysis
+
+The Dashboard page has a fully functional header with:
+- **AdvisorFilter**: Interactive multi-select filter with hoverable circular avatars
+- **NotificationDropdown**: Grouped notifications with dismiss functionality
+- **RegionSelector**: Flag-based country/region picker
+- **UserMenu**: Circular avatar dropdown with account settings and sign out
+
+Other pages (Clients, Email, Calendar, Tasks, Insights, Practice, ClientDetail, CommandCenter) have a simplified header with:
+- Static hardcoded advisor avatars (non-interactive)
+- Static Bell icon with hardcoded count
+- Text-based username with separate LogOut button
 
 ---
 
-## Implementation Steps
+## Implementation Plan
 
-### Step 1: Add Missing Foreign Key Relationships
-Create database migration to add proper foreign keys between tables:
+### Step 1: Create a Reusable AppHeader Component
 
-- `client_products.product_id` → `products.id`
-- `client_products.client_id` → `clients.id`
-- `client_products.adviser_id` → `profiles.id`
-- `products.provider_id` → `product_providers.id`
-- `products.category_id` → `product_categories.id`
+Create `src/components/layout/AppHeader.tsx` that encapsulates all header elements:
+- Search input (with configurable placeholder)
+- AdvisorFilter component
+- NotificationDropdown component
+- RegionSelector component (with state management passed via props)
+- UserMenu component
 
-### Step 2: Update Summary Tab to Use Real Data
-Modify `ClientSummaryTab.tsx` to:
-- Accept `clientId` as a prop (instead of just `client`)
-- Use the `useClientProducts` hook to fetch real products
-- Replace the hardcoded `productsData` array with live database data
-- Show a loading state and empty state when appropriate
-- Calculate the total value from real data
+```text
++------------------------------------------------------------------+
+|  [Search...]              [Advisors] [Bell] [Flag] [Avatar Menu] |
++------------------------------------------------------------------+
+```
 
-### Step 3: Update ClientDetail Page
-Modify how `ClientSummaryTab` is called to pass the `clientId` prop.
+### Step 2: Update Each Page
+
+For each page, replace the current inline header with the new `AppHeader` component. The pages to update are:
+
+1. **Clients.tsx** - Replace static avatars, Bell, and LogOut with AppHeader
+2. **Email.tsx** - Replace static avatars, Bell, and LogOut with AppHeader
+3. **Calendar.tsx** - Replace static avatars, Bell, and LogOut with AppHeader
+4. **Tasks.tsx** - Replace static avatars, Bell, and LogOut with AppHeader
+5. **Insights.tsx** - Replace static avatars, Bell, and LogOut with AppHeader
+6. **Practice.tsx** - Replace static avatars, Bell, and LogOut with AppHeader
+7. **ClientDetail.tsx** - Replace static avatars, Bell, and LogOut with AppHeader
+8. **CommandCenter.tsx** - Add the full header components (currently has minimal header)
+9. **Dashboard.tsx** - Refactor to use the shared AppHeader component
+
+### Step 3: Region State Management
+
+Since RegionSelector requires state for the selected region, we have two options:
+- **Option A**: Keep region state local to Dashboard only (region selection only affects Dashboard)
+- **Option B**: Lift region state to a global context (region selection affects all pages)
+
+For this implementation, we will use **Option A** (local state) as the current architecture keeps region-specific data localized to the Dashboard. Pages that don't need region-specific data will show the RegionSelector as a visual element with a default region.
 
 ---
 
 ## Technical Details
 
-### Database Migration SQL
-```sql
--- Add foreign key from client_products to clients
-ALTER TABLE client_products
-ADD CONSTRAINT client_products_client_id_fkey
-FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE;
+### New Component: AppHeader.tsx
 
--- Add foreign key from client_products to products
-ALTER TABLE client_products
-ADD CONSTRAINT client_products_product_id_fkey
-FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE SET NULL;
-
--- Add foreign key from products to product_providers
-ALTER TABLE products
-ADD CONSTRAINT products_provider_id_fkey
-FOREIGN KEY (provider_id) REFERENCES product_providers(id) ON DELETE SET NULL;
-
--- Add foreign key from products to product_categories
-ALTER TABLE products
-ADD CONSTRAINT products_category_id_fkey
-FOREIGN KEY (category_id) REFERENCES product_categories(id) ON DELETE SET NULL;
+```typescript
+interface AppHeaderProps {
+  searchPlaceholder?: string;
+  userName: string;
+  userEmail?: string;
+  onSignOut: () => void;
+  selectedRegion?: string;
+  onRegionChange?: (region: string) => void;
+}
 ```
 
-### Summary Tab Changes
-- Import and use `useClientProducts` hook
-- Replace static `productsData` with dynamic products from hook
-- Group products by category for display
-- Handle loading and empty states gracefully
-- Format currency values consistently with Products tab
+This component will:
+- Import and render AdvisorFilter, NotificationDropdown, RegionSelector, and UserMenu
+- Accept props for customization (search placeholder, user info, region callbacks)
+- Provide sensible defaults for optional props
+
+### Changes Per Page
+
+Each page will:
+1. Remove inline header JSX containing static avatars and Bell icon
+2. Import and use the new AppHeader component
+3. Pass the required props (userName, userEmail, onSignOut)
+4. For Dashboard specifically, pass region state and callback
+
+---
+
+## Files to Create
+- `src/components/layout/AppHeader.tsx` - New shared header component
+
+## Files to Modify
+- `src/pages/Dashboard.tsx` - Refactor to use AppHeader
+- `src/pages/Clients.tsx` - Replace header with AppHeader
+- `src/pages/Email.tsx` - Replace header with AppHeader
+- `src/pages/Calendar.tsx` - Replace header with AppHeader
+- `src/pages/Tasks.tsx` - Replace header with AppHeader
+- `src/pages/Insights.tsx` - Replace header with AppHeader
+- `src/pages/Practice.tsx` - Replace header with AppHeader
+- `src/pages/ClientDetail.tsx` - Replace header with AppHeader
+- `src/pages/CommandCenter.tsx` - Add full header components
 
 ---
 
 ## Expected Outcome
+
 After implementation:
-- Both Summary and Products tabs will display the **same products** from the database
-- When products are added via the Products tab, they will appear on the Summary tab
-- Empty state will show on both tabs when no products exist
-- The data model will have proper referential integrity via foreign keys
+- All pages will have identical top bar functionality
+- Users can filter by advisors from any page
+- Notifications are accessible everywhere
+- Region selection is available on all pages
+- User menu with sign out is consistent across the app
+- The sticky header behavior (already implemented) will be preserved
