@@ -27,7 +27,8 @@ export const regions: Region[] = [
 const FlagIcon = ({ code, height = 18 }: { code: string; height?: number }) => {
   return (
     <img
-      src={`https://flagcdn.com/h${Math.round(height * 2)}/${code}.png`}
+      src={`https://flagcdn.com/w40/${code}.png`}
+      srcSet={`https://flagcdn.com/w80/${code}.png 2x`}
       alt={`${code.toUpperCase()} flag`}
       className="object-contain"
       style={{ height, width: 'auto' }}
