@@ -1,310 +1,216 @@
 
 
-# Chart Library Migration: Recharts to ECharts
+# Dynamic Time Period Dropdowns for Insights Charts
 
 ## Overview
-Migrate from Recharts to Apache ECharts (via `echarts-for-react`) to enable:
-- See-through/transparent effects with glassmorphism styling
-- Enhanced interactivity (zoom, pan, data brushing, 3D effects)
-- Dark mode support with theme switching
-- Cross-platform compatibility (React/Lovable and Mendix)
+Replace the static "3 Months" and "1 Year" buttons with interactive dropdown selects that allow users to choose different time periods. When a new period is selected, the charts will dynamically update to show the appropriate date range on the x-axis with corresponding data values.
 
 ---
 
-## Why ECharts?
+## Current State
 
-| Feature | Recharts (Current) | ECharts (Proposed) |
-|---------|-------------------|-------------------|
-| Transparency/Glass effects | Limited (SVG-based) | Full support via canvas |
-| Interactivity | Basic hover/click | Zoom, pan, brush, dataZoom |
-| Dark mode | Manual color override | Built-in theme support |
-| 3D Charts | Not supported | Supported via echarts-gl |
-| Animations | Basic transitions | Rich animation library |
-| Mendix Support | No official widget | Official Mendix widget available |
-| Bundle size | ~200KB | Modular (tree-shakeable) |
+The Insights page has three charts with time period buttons that are currently static:
 
----
+| Chart | Current Button | Location (Line) |
+|-------|----------------|-----------------|
+| Commission by Type | "3 Months" | Line 370-372 |
+| Commission Earned | "3 Months" | Line 414-416 |
+| Commission Summary | "1 Year" | Line 534-536 |
 
-## Files Affected
-
-### Files to Create
-1. `src/components/ui/echarts-wrapper.tsx` - Reusable ECharts component with theme support
-2. `src/lib/echarts-themes.ts` - Custom light/dark themes matching the app's design system
-
-### Files to Modify
-1. `src/pages/Dashboard.tsx` - PieChart for product distribution
-2. `src/pages/Insights.tsx` - BarChart, PieChart, AreaChart for commissions
-3. `src/components/command-center/CommissionNudge.tsx` - Sparkline chart
-4. `src/components/HeroPortfolioCard.tsx` - SVG charts (evaluate migration)
+These are plain `<Button>` components with no dropdown or state management.
 
 ---
 
-## Implementation Plan
+## Solution
 
-### Phase 1: Setup and Core Components
-
-**1. Install Dependencies**
-```bash
-npm install echarts echarts-for-react
-```
-
-**2. Create ECharts Wrapper Component**
-
-A reusable wrapper that:
-- Automatically switches between light/dark themes using `next-themes`
-- Applies glassmorphism styling to chart containers
-- Handles responsive sizing
-- Provides common configuration defaults
+### 1. Add State Variables for Each Period Selector
 
 ```typescript
-// src/components/ui/echarts-wrapper.tsx
-interface EChartsWrapperProps {
-  option: EChartsOption;
-  height?: string | number;
-  className?: string;
-  transparent?: boolean; // Enable glass effect
-  loading?: boolean;
-}
+// Time period states for each chart
+const [commissionByTypePeriod, setCommissionByTypePeriod] = useState<string>("3m");
+const [commissionEarnedPeriod, setCommissionEarnedPeriod] = useState<string>("3m");
+const [commissionSummaryPeriod, setCommissionSummaryPeriod] = useState<string>("1y");
 ```
 
-**3. Create Custom Themes**
+### 2. Define Period Options
 
-Define themes that match the app's design system:
+**For "3 Months" dropdowns (Commission by Type & Commission Earned):**
+- 3 Months
+- 6 Months
+- 1 Year
+- 5 Years
+- Year to Date
 
-Light Theme:
-- Background: transparent (for glass effect)
-- Text: hsl(222.2 84% 4.9%)
-- Grid lines: hsl(214.3 31.8% 91.4%)
-- Brand colors: orange, peach, blue, deep-blue
+**For "1 Year" dropdown (Commission Summary):**
+- 3 Months
+- 6 Months
+- 1 Year (existing)
+- 5 Years
+- Year to Date
 
-Dark Theme:
-- Background: transparent
-- Text: hsl(210 40% 98%)
-- Grid lines: hsl(217.2 32.6% 17.5%)
-- Same brand colors with adjusted opacity
+### 3. Create Extended Data Sets
+
+Each chart needs data for all time periods. The implementation will generate data dynamically based on the selected period:
+
+```text
+Period       | Months Shown    | X-Axis Format
+-------------|-----------------|----------------
+3 Months     | 3 data points   | "Oct 2025", "Nov 2025", "Dec 2025"
+6 Months     | 6 data points   | "Jul 2025" - "Dec 2025"
+1 Year       | 12 data points  | "Jan 2025" - "Dec 2025"
+5 Years      | 60 data points  | "Jan 2021" - "Dec 2025"
+Year to Date | Varies          | "Jan 2025" - "Dec 2025" (current month)
+```
 
 ---
 
-### Phase 2: Migrate Charts
+## Files to Modify
 
-**Dashboard.tsx - Product Distribution Pie Chart**
+### `src/pages/Insights.tsx`
 
-Current (Recharts):
-```tsx
-<PieChart>
-  <Pie data={regionalData.products} innerRadius={40} outerRadius={70} />
-  <Tooltip />
-</PieChart>
-```
+**Changes:**
 
-New (ECharts):
-```tsx
-<EChartsWrapper
-  transparent
-  height={192}
-  option={{
-    series: [{
-      type: 'pie',
-      radius: ['40%', '70%'],
-      data: regionalData.products.map(p => ({
-        name: p.name,
-        value: p.value,
-        itemStyle: { color: p.color }
-      })),
-      emphasis: {
-        itemStyle: {
-          shadowBlur: 10,
-          shadowColor: 'rgba(0, 0, 0, 0.5)'
-        }
-      },
-      label: { show: false },
-      animationType: 'scale',
-      animationEasing: 'elasticOut'
-    }],
-    tooltip: {
-      trigger: 'item',
-      backgroundColor: 'rgba(15, 23, 42, 0.9)',
-      borderColor: 'rgba(255, 255, 255, 0.1)',
-      textStyle: { color: '#fff' }
-    }
-  }}
-/>
-```
+1. **Add Import for Select component**
+   ```typescript
+   import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+   ```
 
-**Insights.tsx - Commission Charts**
+2. **Add State Variables**
+   Three new useState hooks for tracking selected periods
 
-Bar Chart with Glass Effect:
-- Transparent background
-- Gradient bars
-- Hover glow effects
-- Data zoom for larger datasets
+3. **Create Data Generation Functions**
+   Helper functions to generate chart data based on selected period:
+   ```typescript
+   const getFilteredCommissionByTypeData = (period: string) => { ... }
+   const getFilteredCommissionEarnedData = (period: string) => { ... }
+   const getFilteredCommissionSummaryData = (period: string) => { ... }
+   ```
 
-Area Chart with Gradient Fill:
-- Transparent gradient fills (0.3 to 0 opacity)
-- Smooth animations
-- Interactive legend
+4. **Expand Base Data**
+   Extend the existing static data arrays to include 5 years of data:
+   - `commissionByTypeData`: 60 months (Jan 2021 - Dec 2025)
+   - `commissionEarnedData`: 60 months
+   - `commissionSummaryData`: 60 months
 
-Pie/Donut Chart:
-- Rose animation on hover
-- Glass tooltip with blur
-- Percentage labels on hover
+5. **Replace Buttons with Select Components**
 
----
+   **Commission by Type (Line 370-372):**
+   ```tsx
+   <Select value={commissionByTypePeriod} onValueChange={setCommissionByTypePeriod}>
+     <SelectTrigger className="w-[120px] h-8 bg-[hsl(180,25%,25%)] text-white border-0">
+       <SelectValue />
+     </SelectTrigger>
+     <SelectContent>
+       <SelectItem value="3m">3 Months</SelectItem>
+       <SelectItem value="6m">6 Months</SelectItem>
+       <SelectItem value="1y">1 Year</SelectItem>
+       <SelectItem value="5y">5 Years</SelectItem>
+       <SelectItem value="ytd">Year to Date</SelectItem>
+     </SelectContent>
+   </Select>
+   ```
 
-### Phase 3: Enhanced Interactivity
+   **Commission Earned (Line 414-416):**
+   Same dropdown structure with `commissionEarnedPeriod` state
 
-Add these interactive features:
+   **Commission Summary (Line 534-536):**
+   Same dropdown structure with `commissionSummaryPeriod` state
 
-1. **DataZoom**: Allow users to zoom into specific date ranges on commission summary chart
-2. **Brush Selection**: Select data ranges for comparison
-3. **Tooltip Linking**: Hover on one chart highlights related data in others
-4. **Animation on Scroll**: Charts animate when scrolled into view
-5. **Click to Drill-Down**: Click on pie segments to see details
+6. **Update Chart Options to Use Filtered Data**
+   The chart option objects will use the filtered data functions:
+   ```typescript
+   const commissionByTypeOption = {
+     xAxis: {
+       data: getFilteredCommissionByTypeData(commissionByTypePeriod).map(d => d.month),
+     },
+     series: [
+       { data: getFilteredCommissionByTypeData(commissionByTypePeriod).map(d => d.PUFs) },
+       // ... other series
+     ],
+   };
+   ```
 
 ---
 
-### Phase 4: Glassmorphism Styling
+## Data Structure Details
 
-Apply consistent glass effects to all charts:
+### Extended Commission Data (5 Years)
 
-```css
-.echarts-glass-container {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-}
+Generate 60 months of realistic data with:
+- Seasonal variations (Q4 typically higher)
+- Year-over-year growth trend
+- Randomized but consistent values
 
-.dark .echarts-glass-container {
-  background: rgba(15, 23, 42, 0.6);
-  border-color: rgba(255, 255, 255, 0.1);
-}
-```
-
-ECharts options for transparency:
+Example data generation logic:
 ```typescript
-{
-  backgroundColor: 'transparent',
-  grid: {
-    backgroundColor: 'transparent'
-  },
-  series: [{
-    itemStyle: {
-      color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-        { offset: 0, color: 'rgba(var(--brand-blue), 0.8)' },
-        { offset: 1, color: 'rgba(var(--brand-blue), 0.2)' }
-      ])
-    }
-  }]
-}
+const generateMonthlyData = (baseValue: number, months: number, growthRate: number) => {
+  return Array.from({ length: months }, (_, i) => {
+    const date = subMonths(new Date(2025, 11, 1), months - 1 - i);
+    const seasonalFactor = 1 + (Math.sin(i * Math.PI / 6) * 0.1);
+    const growthFactor = Math.pow(1 + growthRate, i / 12);
+    return {
+      month: format(date, 'MMM yyyy'),
+      value: Math.round(baseValue * seasonalFactor * growthFactor),
+    };
+  });
+};
 ```
 
----
-
-## Technical Details
-
-### Theme Switching Logic
+### Period Filtering Logic
 
 ```typescript
-// src/components/ui/echarts-wrapper.tsx
-import { useTheme } from 'next-themes';
-import * as echarts from 'echarts/core';
-import ReactECharts from 'echarts-for-react';
-import { lightTheme, darkTheme } from '@/lib/echarts-themes';
-
-// Register themes once
-echarts.registerTheme('vantage-light', lightTheme);
-echarts.registerTheme('vantage-dark', darkTheme);
-
-export function EChartsWrapper({ option, transparent, ...props }: EChartsWrapperProps) {
-  const { resolvedTheme } = useTheme();
-  const theme = resolvedTheme === 'dark' ? 'vantage-dark' : 'vantage-light';
+const filterDataByPeriod = (data: any[], period: string) => {
+  const now = new Date(2025, 11, 1); // December 2025
+  let monthsToShow: number;
   
-  return (
-    <div className={cn(
-      transparent && 'echarts-glass-container',
-      props.className
-    )}>
-      <ReactECharts
-        theme={theme}
-        option={{
-          backgroundColor: 'transparent',
-          ...option
-        }}
-        {...props}
-      />
-    </div>
-  );
-}
+  switch (period) {
+    case "3m": monthsToShow = 3; break;
+    case "6m": monthsToShow = 6; break;
+    case "1y": monthsToShow = 12; break;
+    case "5y": monthsToShow = 60; break;
+    case "ytd": monthsToShow = 12; break; // January to current month
+    default: monthsToShow = 3;
+  }
+  
+  return data.slice(-monthsToShow);
+};
 ```
 
-### Tree-Shaking for Bundle Size
+---
 
-Import only what we need:
-```typescript
-import * as echarts from 'echarts/core';
-import { BarChart, PieChart, LineChart } from 'echarts/charts';
-import { GridComponent, TooltipComponent, LegendComponent } from 'echarts/components';
-import { CanvasRenderer } from 'echarts/renderers';
+## Visual Behavior
 
-echarts.use([
-  BarChart, PieChart, LineChart,
-  GridComponent, TooltipComponent, LegendComponent,
-  CanvasRenderer
-]);
-```
+When user selects a different time period:
 
-### Mendix Compatibility
-
-ECharts is available as an official Mendix widget in the Marketplace (Apache e-charts). The same chart configurations can be used in both:
-
-- **Lovable/React**: Use `echarts-for-react` wrapper
-- **Mendix**: Use the Apache e-charts widget with identical option objects
-
-The chart options are pure JavaScript objects that work in both environments, making it easy to share visualization logic between platforms.
+1. Dropdown shows checkmark next to current selection
+2. Chart smoothly animates to new data (ECharts handles this automatically)
+3. X-axis labels update to show appropriate date range
+4. Y-axis auto-scales to fit new data range
+5. DataZoom slider (on Commission Summary) resets to show full range
 
 ---
 
-## Migration Checklist
+## Technical Considerations
 
-- [ ] Install echarts and echarts-for-react packages
-- [ ] Create EChartsWrapper component with theme support
-- [ ] Define custom light/dark themes
-- [ ] Add glassmorphism CSS classes
-- [ ] Migrate Dashboard.tsx PieChart
-- [ ] Migrate Insights.tsx BarCharts
-- [ ] Migrate Insights.tsx PieChart
-- [ ] Migrate Insights.tsx AreaChart
-- [ ] Update CommissionNudge sparkline
-- [ ] Add interactive features (zoom, brush)
-- [ ] Test dark mode switching
-- [ ] Test animations and transitions
-- [ ] Verify responsive behavior
-- [ ] Keep Recharts temporarily for HeroPortfolioCard (custom SVG animations)
+- **Performance**: Data filtering uses `useMemo` to prevent recalculation on every render
+- **Animations**: ECharts' built-in animation will smoothly transition between data states
+- **Styling**: Select trigger styled to match existing teal button design
+- **Accessibility**: Select component provides keyboard navigation and screen reader support
 
 ---
 
-## HeroPortfolioCard Consideration
+## Summary of Changes
 
-The `HeroPortfolioCard.tsx` uses custom SVG charts with complex animations (left-to-right line drawing, synchronized value counters). These are tightly integrated with the card's interaction model.
-
-**Recommendation**: Keep the existing SVG implementation for now, as:
-1. The animations are highly customized
-2. They're deeply integrated with the card state
-3. They work well with the current design
-
-These can be migrated to ECharts in a future phase if needed.
-
----
-
-## Expected Outcome
-
-After migration:
-1. All major charts use ECharts with transparent/glass effects
-2. Dark mode switches chart themes automatically
-3. Enhanced interactivity with zoom, pan, and brush
-4. Consistent styling with the app's design system
-5. Chart configurations exportable for Mendix reuse
-6. Smaller bundle size via tree-shaking
+| Location | Change |
+|----------|--------|
+| Line 1-31 | Add Select import |
+| Line 85-89 | Add 3 new state variables |
+| Line 33-65 | Expand data arrays to 5 years |
+| After line 65 | Add data filtering helper functions |
+| Lines 127-160 | Update commissionByTypeOption to use filtered data |
+| Lines 163-193 | Update commissionEarnedOption to use filtered data |
+| Lines 225-300 | Update commissionSummaryOption to use filtered data |
+| Lines 370-372 | Replace Button with Select for Commission by Type |
+| Lines 414-416 | Replace Button with Select for Commission Earned |
+| Lines 534-536 | Replace Button with Select for Commission Summary |
 
