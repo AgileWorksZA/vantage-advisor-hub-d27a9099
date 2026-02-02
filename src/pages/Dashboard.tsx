@@ -4,12 +4,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LayoutDashboard, Users, Mail, CalendarIcon, ListTodo, LineChart, Building2, X } from "lucide-react";
+import { LayoutDashboard, Users, Mail, CalendarIcon, ListTodo, LineChart, Building2, X, GripVertical } from "lucide-react";
 import commandCenterIcon from "@/assets/command-center-icon.png";
 import vantageLogo from "@/assets/vantage-logo.png";
 import { EChartsWrapper } from "@/components/ui/echarts-wrapper";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { useRegion } from "@/contexts/RegionContext";
+import { DraggableWidgetGrid, WidgetLayout } from "@/components/widgets/DraggableWidgetGrid";
+import { useWidgetLayout } from "@/hooks/useWidgetLayout";
 
 const sidebarItems = [{
   icon: LayoutDashboard,
@@ -40,6 +42,15 @@ const sidebarItems = [{
   label: "Practice",
   path: "/practice"
 }];
+
+const defaultDashboardLayout: WidgetLayout[] = [
+  { i: 'provider-view', x: 0, y: 0, w: 3, h: 3 },
+  { i: 'top-accounts', x: 3, y: 0, w: 3, h: 3 },
+  { i: 'aum-product', x: 6, y: 0, w: 3, h: 3 },
+  { i: 'birthdays', x: 9, y: 0, w: 3, h: 3 },
+  { i: 'clients-value', x: 0, y: 3, w: 3, h: 3 },
+];
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
@@ -48,6 +59,13 @@ const Dashboard = () => {
   
   // Use global region context
   const { selectedRegion, setSelectedRegion, regionalData } = useRegion();
+
+  // Widget layout hook
+  const { layout, onLayoutChange, loading: layoutLoading } = useWidgetLayout({
+    pageId: 'dashboard',
+    defaultLayout: defaultDashboardLayout,
+    userId: user?.id,
+  });
 
   useEffect(() => {
     const {
@@ -148,173 +166,198 @@ const Dashboard = () => {
             </button>
           </h1>
           
-          <div className="grid grid-cols-12 gap-4">
+          <DraggableWidgetGrid layout={layout} onLayoutChange={onLayoutChange}>
             {/* Provider View */}
-            <Card className="col-span-3">
-              <CardHeader className="flex flex-row items-center justify-between py-3 px-4">
-                <CardTitle className="text-sm font-medium">Provider View</CardTitle>
-                <Button variant="ghost" size="icon" className="h-6 w-6">
-                  <X className="w-4 h-4" />
-                </Button>
-              </CardHeader>
-              <CardContent className="px-4 pb-4">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-muted-foreground text-xs">
-                      <th className="text-left pb-2 font-normal">Provider name</th>
-                      <th className="text-right pb-2 font-normal">Book%</th>
-                      <th className="text-right pb-2 font-normal">Value</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {regionalData.providers.map(provider => <tr key={provider.name} className="border-t border-border">
-                        <td className="py-2">{provider.name}</td>
-                        <td className="py-2 text-right text-muted-foreground">{provider.bookPercent}</td>
-                        <td className="py-2 text-right">{provider.value}</td>
-                      </tr>)}
-                  </tbody>
-                </table>
-              </CardContent>
-            </Card>
+            <div key="provider-view">
+              <Card className="h-full">
+                <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
+                  <div className="flex items-center gap-2">
+                    <GripVertical className="w-4 h-4 text-muted-foreground" />
+                    <CardTitle className="text-sm font-medium">Provider View</CardTitle>
+                  </div>
+                  <Button variant="ghost" size="icon" className="h-6 w-6">
+                    <X className="w-4 h-4" />
+                  </Button>
+                </CardHeader>
+                <CardContent className="px-4 pb-4">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-muted-foreground text-xs">
+                        <th className="text-left pb-2 font-normal">Provider name</th>
+                        <th className="text-right pb-2 font-normal">Book%</th>
+                        <th className="text-right pb-2 font-normal">Value</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {regionalData.providers.map(provider => <tr key={provider.name} className="border-t border-border">
+                          <td className="py-2">{provider.name}</td>
+                          <td className="py-2 text-right text-muted-foreground">{provider.bookPercent}</td>
+                          <td className="py-2 text-right">{provider.value}</td>
+                        </tr>)}
+                    </tbody>
+                  </table>
+                </CardContent>
+              </Card>
+            </div>
 
             {/* Top 5 Accounts */}
-            <Card className="col-span-3">
-              <CardHeader className="flex flex-row items-center justify-between py-3 px-4">
-                <CardTitle className="text-sm font-medium">Top 5 Accounts</CardTitle>
-                <Button variant="ghost" size="icon" className="h-6 w-6">
-                  <X className="w-4 h-4" />
-                </Button>
-              </CardHeader>
-              <CardContent className="px-4 pb-4">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-muted-foreground text-xs">
-                      <th className="text-left pb-2 font-normal">Investor</th>
-                      <th className="text-right pb-2 font-normal">Book%</th>
-                      <th className="text-right pb-2 font-normal">Value</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {regionalData.topAccounts.map(account => <tr key={account.investor} className="border-t border-border">
-                        <td className="py-2">{account.investor}</td>
-                        <td className="py-2 text-right text-muted-foreground">{account.bookPercent}</td>
-                        <td className="py-2 text-right">{account.value}</td>
-                      </tr>)}
-                  </tbody>
-                </table>
-              </CardContent>
-            </Card>
+            <div key="top-accounts">
+              <Card className="h-full">
+                <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
+                  <div className="flex items-center gap-2">
+                    <GripVertical className="w-4 h-4 text-muted-foreground" />
+                    <CardTitle className="text-sm font-medium">Top 5 Accounts</CardTitle>
+                  </div>
+                  <Button variant="ghost" size="icon" className="h-6 w-6">
+                    <X className="w-4 h-4" />
+                  </Button>
+                </CardHeader>
+                <CardContent className="px-4 pb-4">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-muted-foreground text-xs">
+                        <th className="text-left pb-2 font-normal">Investor</th>
+                        <th className="text-right pb-2 font-normal">Book%</th>
+                        <th className="text-right pb-2 font-normal">Value</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {regionalData.topAccounts.map(account => <tr key={account.investor} className="border-t border-border">
+                          <td className="py-2">{account.investor}</td>
+                          <td className="py-2 text-right text-muted-foreground">{account.bookPercent}</td>
+                          <td className="py-2 text-right">{account.value}</td>
+                        </tr>)}
+                    </tbody>
+                  </table>
+                </CardContent>
+              </Card>
+            </div>
 
             {/* AUM by Product */}
-            <Card className="col-span-3">
-              <CardHeader className="flex flex-row items-center justify-between py-3 px-4">
-                <CardTitle className="text-sm font-medium">AUM by Product</CardTitle>
-                <Button variant="ghost" size="icon" className="h-6 w-6">
-                  <X className="w-4 h-4" />
-                </Button>
-              </CardHeader>
-              <CardContent className="px-4 pb-4">
-                <p className="text-xl font-semibold mb-2">{regionalData.totalAUM}</p>
-                <div className="h-48">
-                  <EChartsWrapper
-                    height={192}
-                    option={{
-                      tooltip: {
-                        trigger: 'item',
-                        formatter: (params: any) => `${params.name}: ${params.value}%`,
-                      },
-                      series: [{
-                        type: 'pie',
-                        radius: ['45%', '75%'],
-                        center: ['50%', '50%'],
-                        data: regionalData.products.map(p => ({
-                          name: p.name,
-                          value: p.value,
-                          itemStyle: { color: p.color }
-                        })),
-                        label: { show: false },
-                        emphasis: {
-                          itemStyle: {
-                            shadowBlur: 20,
-                            shadowColor: 'rgba(0, 0, 0, 0.3)',
-                          },
-                          scale: true,
-                          scaleSize: 8,
+            <div key="aum-product">
+              <Card className="h-full">
+                <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
+                  <div className="flex items-center gap-2">
+                    <GripVertical className="w-4 h-4 text-muted-foreground" />
+                    <CardTitle className="text-sm font-medium">AUM by Product</CardTitle>
+                  </div>
+                  <Button variant="ghost" size="icon" className="h-6 w-6">
+                    <X className="w-4 h-4" />
+                  </Button>
+                </CardHeader>
+                <CardContent className="px-4 pb-4">
+                  <p className="text-xl font-semibold mb-2">{regionalData.totalAUM}</p>
+                  <div className="h-32">
+                    <EChartsWrapper
+                      height={128}
+                      option={{
+                        tooltip: {
+                          trigger: 'item',
+                          formatter: (params: any) => `${params.name}: ${params.value}%`,
                         },
-                        animationType: 'scale',
-                        animationEasing: 'elasticOut',
-                        animationDelay: (idx: number) => idx * 100,
-                      }],
-                    }}
-                  />
-                </div>
-                <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs mt-2">
-                  {regionalData.products.map(item => <div key={item.name} className="flex items-center gap-1">
-                      <span className="w-2 h-2 rounded-full" style={{
-                    backgroundColor: item.color
-                  }}></span>
-                      <span className="text-muted-foreground">{item.name}</span>
-                    </div>)}
-                </div>
-              </CardContent>
-            </Card>
+                        series: [{
+                          type: 'pie',
+                          radius: ['45%', '75%'],
+                          center: ['50%', '50%'],
+                          data: regionalData.products.map(p => ({
+                            name: p.name,
+                            value: p.value,
+                            itemStyle: { color: p.color }
+                          })),
+                          label: { show: false },
+                          emphasis: {
+                            itemStyle: {
+                              shadowBlur: 20,
+                              shadowColor: 'rgba(0, 0, 0, 0.3)',
+                            },
+                            scale: true,
+                            scaleSize: 8,
+                          },
+                          animationType: 'scale',
+                          animationEasing: 'elasticOut',
+                          animationDelay: (idx: number) => idx * 100,
+                        }],
+                      }}
+                    />
+                  </div>
+                  <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs mt-2">
+                    {regionalData.products.map(item => <div key={item.name} className="flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full" style={{
+                      backgroundColor: item.color
+                    }}></span>
+                        <span className="text-muted-foreground">{item.name}</span>
+                      </div>)}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
 
             {/* Birthdays */}
-            <Card className="col-span-3">
-              <CardHeader className="flex flex-row items-center justify-between py-3 px-4">
-                <CardTitle className="text-sm font-medium">Birthdays</CardTitle>
-                <Button variant="ghost" size="icon" className="h-6 w-6">
-                  <X className="w-4 h-4" />
-                </Button>
-              </CardHeader>
-              <CardContent className="px-4 pb-4">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-muted-foreground text-xs">
-                      <th className="text-left pb-2 font-normal">Name</th>
-                      <th className="text-right pb-2 font-normal">Date</th>
-                      <th className="text-right pb-2 font-normal">Age</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {regionalData.birthdays.map(person => <tr key={person.name} className="border-t border-border">
-                        <td className="py-1.5">{person.name}</td>
-                        <td className="py-1.5 text-right text-muted-foreground">{person.nextBirthday}</td>
-                        <td className="py-1.5 text-right">{person.age}</td>
-                      </tr>)}
-                  </tbody>
-                </table>
-              </CardContent>
-            </Card>
+            <div key="birthdays">
+              <Card className="h-full">
+                <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
+                  <div className="flex items-center gap-2">
+                    <GripVertical className="w-4 h-4 text-muted-foreground" />
+                    <CardTitle className="text-sm font-medium">Birthdays</CardTitle>
+                  </div>
+                  <Button variant="ghost" size="icon" className="h-6 w-6">
+                    <X className="w-4 h-4" />
+                  </Button>
+                </CardHeader>
+                <CardContent className="px-4 pb-4">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-muted-foreground text-xs">
+                        <th className="text-left pb-2 font-normal">Name</th>
+                        <th className="text-right pb-2 font-normal">Date</th>
+                        <th className="text-right pb-2 font-normal">Age</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {regionalData.birthdays.map(person => <tr key={person.name} className="border-t border-border">
+                          <td className="py-1.5">{person.name}</td>
+                          <td className="py-1.5 text-right text-muted-foreground">{person.nextBirthday}</td>
+                          <td className="py-1.5 text-right">{person.age}</td>
+                        </tr>)}
+                    </tbody>
+                  </table>
+                </CardContent>
+              </Card>
+            </div>
 
             {/* Clients by Value */}
-            <Card className="col-span-3">
-              <CardHeader className="flex flex-row items-center justify-between py-3 px-4">
-                <CardTitle className="text-sm font-medium">Clients by Value</CardTitle>
-                <Button variant="ghost" size="icon" className="h-6 w-6">
-                  <X className="w-4 h-4" />
-                </Button>
-              </CardHeader>
-              <CardContent className="px-4 pb-4">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-muted-foreground text-xs">
-                      <th className="text-left pb-2 font-normal"></th>
-                      <th className="text-right pb-2 font-normal">Value</th>
-                      <th className="text-right pb-2 font-normal">Investors</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {regionalData.clientsByValue.map(row => <tr key={row.range} className="border-t border-border">
-                        <td className="py-2">{row.range}</td>
-                        <td className="py-2 text-right">{row.value}</td>
-                        <td className="py-2 text-right text-muted-foreground">{row.investors}</td>
-                      </tr>)}
-                  </tbody>
-                </table>
-              </CardContent>
-            </Card>
-          </div>
+            <div key="clients-value">
+              <Card className="h-full">
+                <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
+                  <div className="flex items-center gap-2">
+                    <GripVertical className="w-4 h-4 text-muted-foreground" />
+                    <CardTitle className="text-sm font-medium">Clients by Value</CardTitle>
+                  </div>
+                  <Button variant="ghost" size="icon" className="h-6 w-6">
+                    <X className="w-4 h-4" />
+                  </Button>
+                </CardHeader>
+                <CardContent className="px-4 pb-4">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-muted-foreground text-xs">
+                        <th className="text-left pb-2 font-normal"></th>
+                        <th className="text-right pb-2 font-normal">Value</th>
+                        <th className="text-right pb-2 font-normal">Investors</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {regionalData.clientsByValue.map(row => <tr key={row.range} className="border-t border-border">
+                          <td className="py-2">{row.range}</td>
+                          <td className="py-2 text-right">{row.value}</td>
+                          <td className="py-2 text-right text-muted-foreground">{row.investors}</td>
+                        </tr>)}
+                    </tbody>
+                  </table>
+                </CardContent>
+              </Card>
+            </div>
+          </DraggableWidgetGrid>
         </main>
       </div>
     </div>;

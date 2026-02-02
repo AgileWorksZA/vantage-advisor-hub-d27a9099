@@ -286,3 +286,30 @@ All colors MUST be HSL.
     animation: none;
   }
 }
+
+/* Draggable Widget Grid Styles */
+.widget-drag-handle {
+  cursor: move;
+}
+
+.react-grid-item.react-draggable-dragging {
+  transition: none;
+  z-index: 100;
+  cursor: grabbing;
+  opacity: 0.9;
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+}
+
+.react-grid-placeholder {
+  background: hsl(180, 70%, 45%);
+  opacity: 0.2;
+  border-radius: 0.75rem;
+}
+
+.react-grid-item {
+  transition: transform 200ms ease;
+}
+
+.react-grid-item > .react-resizable-handle {
+  display: none;
+}
