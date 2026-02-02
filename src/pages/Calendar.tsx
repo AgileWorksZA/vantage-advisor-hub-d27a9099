@@ -47,6 +47,7 @@ import {
   Edit,
   X,
 } from "lucide-react";
+import commandCenterIcon from "@/assets/command-center-icon.png";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { WeekView } from "@/components/calendar/WeekView";
 import { DayView } from "@/components/calendar/DayView";
@@ -305,7 +306,7 @@ const CalendarPage = () => {
           onClick={() => navigate("/command-center")}
           title="Practice Overview"
         >
-          <Plus className="w-5 h-5" />
+          <img src={commandCenterIcon} alt="Command Center" className="w-5 h-5" />
         </Button>
         {sidebarItems.map((item) => (
           <button

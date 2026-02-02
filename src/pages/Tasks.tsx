@@ -25,8 +25,8 @@ import {
   ListTodo,
   LineChart,
   Building2,
-  Plus,
 } from "lucide-react";
+import commandCenterIcon from "@/assets/command-center-icon.png";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -318,7 +318,7 @@ const Tasks = () => {
           onClick={() => navigate("/command-center")}
           title="Practice Overview"
         >
-          <Plus className="w-5 h-5" />
+          <img src={commandCenterIcon} alt="Command Center" className="w-5 h-5" />
         </Button>
         {sidebarItems.map((item) => (
           <button
