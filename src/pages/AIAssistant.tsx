@@ -375,7 +375,7 @@ const AIAssistant = () => {
   const selectedProject = projects.find(p => p.id === selectedProjectId);
 
   return (
-    <div className={`min-h-screen gradient-mesh-${timeOfDay} text-white overflow-hidden`}>
+    <div className={`h-screen gradient-mesh-${timeOfDay} text-white overflow-hidden flex flex-col`}>
       {/* Night sky elements (evening only) */}
       {timeOfDay === "evening" && <NightSky />}
 
@@ -386,7 +386,7 @@ const AIAssistant = () => {
       </div>
 
       {/* Header */}
-      <header className="relative z-10 flex items-center justify-between p-4 border-b border-white/10">
+      <header className="relative z-10 flex items-center justify-between p-4 border-b border-white/10 flex-shrink-0">
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"
@@ -416,7 +416,7 @@ const AIAssistant = () => {
       </header>
 
       {/* Main content */}
-      <main className="relative z-10 p-6 max-w-7xl mx-auto space-y-6 pb-24 overflow-y-auto max-h-[calc(100vh-80px)]">
+      <main className="relative z-10 p-6 max-w-7xl mx-auto space-y-6 pb-24 overflow-y-auto flex-1">
         {/* Metrics Dashboard */}
         <OpportunityMetrics
           totalOpportunityValue={practiceMetrics.potentialRevenue}
