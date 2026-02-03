@@ -13,6 +13,7 @@ import ProjectsList from "@/components/ai-assistant/ProjectsList";
 import CreateProjectDialog from "@/components/ai-assistant/CreateProjectDialog";
 import AddOpportunityDialog from "@/components/ai-assistant/AddOpportunityDialog";
 import AddTaskDialog from "@/components/ai-assistant/AddTaskDialog";
+import ClientSelectionDialog from "@/components/ai-assistant/ClientSelectionDialog";
 import PracticeValueIndicator from "@/components/ai-assistant/PracticeValueIndicator";
 import NightSky from "@/components/ai-assistant/NightSky";
 import { useRegion } from "@/contexts/RegionContext";
@@ -21,6 +22,8 @@ import { useProjectOpportunities } from "@/hooks/useProjectOpportunities";
 import { useProjectTasks } from "@/hooks/useProjectTasks";
 import { supabase } from "@/integrations/supabase/client";
 import { getDemoProjects, getDemoTasks, DemoProject, DemoTask } from "@/data/demoProjects";
+import { ClientWithValue } from "@/hooks/useClientOpportunityValues";
+import { addDays } from "date-fns";
 
 type TimeOfDay = "morning" | "afternoon" | "evening";
 
@@ -72,8 +75,11 @@ const AIAssistant = () => {
   const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
   const [isAddOpportunityOpen, setIsAddOpportunityOpen] = useState(false);
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
+  const [isClientSelectionOpen, setIsClientSelectionOpen] = useState(false);
   const [defaultProjectType, setDefaultProjectType] = useState("growth");
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [selectedProjectType, setSelectedProjectType] = useState<string>("growth");
+  const [selectedProjectName, setSelectedProjectName] = useState<string>("");
   const [selectedOpportunity, setSelectedOpportunity] = useState<ClientOpportunity | null>(null);
 
   // Time-based greeting state
@@ -296,6 +302,59 @@ const AIAssistant = () => {
     setIsAddTaskOpen(true);
   };
 
+  const handleAddClients = (projectId: string, projectType: string, projectName: string) => {
+    setSelectedProjectId(projectId);
+    setSelectedProjectType(projectType);
+    setSelectedProjectName(projectName);
+    setIsClientSelectionOpen(true);
+  };
+
+  const handleAddClientsToProject = async (clients: ClientWithValue[]) => {
+    if (!selectedProjectId) return;
+    
+    const project = projects.find(p => p.id === selectedProjectId);
+    const slaDays = project?.sla_days || 30;
+    
+    // Create opportunities and tasks for each selected client
+    for (const client of clients) {
+      // Create opportunity
+      await createOpportunity.mutateAsync({
+        project_id: selectedProjectId,
+        client_id: client.id,
+        client_name: client.name,
+        opportunity_type: selectedProjectType,
+        current_value: client.currentValue,
+        potential_revenue: client.opportunityValue,
+        confidence: 50,
+        reasoning: `Added from client selection for ${selectedProjectType} project`,
+        suggested_action: `Contact ${client.name} regarding ${selectedProjectType} opportunity`,
+      });
+
+      // Create task for client
+      await createTask.mutateAsync({
+        project_id: selectedProjectId,
+        client_id: client.id,
+        title: `Contact ${client.name} - ${selectedProjectType}`,
+        description: `Follow up with ${client.name} regarding ${selectedProjectType} opportunity. Potential value: ${client.opportunityValue}`,
+        task_type: "Action",
+        priority: "Medium",
+        due_date: addDays(new Date(), 7).toISOString().split("T")[0],
+        sla_deadline: addDays(new Date(), slaDays).toISOString().split("T")[0],
+      });
+    }
+
+    // Update project target revenue
+    const totalNewRevenue = clients.reduce((acc, c) => acc + c.opportunityValue, 0);
+    const currentTarget = Number(project?.target_revenue) || 0;
+    await updateProject.mutateAsync({
+      id: selectedProjectId,
+      target_revenue: currentTarget + totalNewRevenue,
+    });
+
+    setIsClientSelectionOpen(false);
+    setSelectedProjectId(null);
+  };
+
   const handleCreateTask = (data: {
     project_id: string;
     title: string;
@@ -476,6 +535,7 @@ const AIAssistant = () => {
           onEditProject={() => {}}
           onDeleteProject={handleDeleteProject}
           onAddTask={handleAddTask}
+          onAddClients={handleAddClients}
           onUpdateTask={handleUpdateTaskStatus}
           formatCurrency={formatCurrency}
         />
@@ -532,6 +592,25 @@ const AIAssistant = () => {
           isLoading={createTask.isPending}
         />
       )}
+
+      {/* Client Selection Dialog */}
+      <ClientSelectionDialog
+        isOpen={isClientSelectionOpen}
+        onClose={() => {
+          setIsClientSelectionOpen(false);
+          setSelectedProjectId(null);
+        }}
+        onAddClients={handleAddClientsToProject}
+        projectType={selectedProjectType}
+        projectName={selectedProjectName}
+        existingClientIds={
+          projectOpportunities
+            .filter(o => o.project_id === selectedProjectId && o.client_id)
+            .map(o => o.client_id!)
+        }
+        formatCurrency={formatCurrency}
+        isLoading={createOpportunity.isPending || createTask.isPending}
+      />
     </div>
   );
 };

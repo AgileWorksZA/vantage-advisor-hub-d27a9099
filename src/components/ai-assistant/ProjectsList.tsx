@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Filter, FolderKanban } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +17,7 @@ interface ProjectsListProps {
   onEditProject: (project: OpportunityProject) => void;
   onDeleteProject: (projectId: string) => void;
   onAddTask: (projectId: string) => void;
+  onAddClients: (projectId: string, projectType: string, projectName: string) => void;
   onUpdateTask: (taskId: string, status: string) => void;
   formatCurrency: (value: number) => string;
 }
@@ -44,11 +45,17 @@ const ProjectsList = ({
   onEditProject,
   onDeleteProject,
   onAddTask,
+  onAddClients,
   onUpdateTask,
   formatCurrency,
 }: ProjectsListProps) => {
   const [typeFilter, setTypeFilter] = useState<string | null>(activeFilter);
   const [statusFilter, setStatusFilter] = useState<string>("Active");
+
+  // Sync typeFilter with activeFilter prop when it changes
+  useEffect(() => {
+    setTypeFilter(activeFilter);
+  }, [activeFilter]);
 
   // Filter projects
   const filteredProjects = projects.filter((project) => {
@@ -144,6 +151,7 @@ const ProjectsList = ({
               onEdit={() => onEditProject(project)}
               onDelete={() => onDeleteProject(project.id)}
               onAddTask={() => onAddTask(project.id)}
+              onAddClients={() => onAddClients(project.id, project.project_type, project.name)}
               onUpdateTask={onUpdateTask}
               formatCurrency={formatCurrency}
             />

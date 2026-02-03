@@ -51,6 +51,7 @@ interface ProjectCardProps {
   onEdit: () => void;
   onDelete: () => void;
   onAddTask: () => void;
+  onAddClients: () => void;
   onUpdateTask: (taskId: string, status: string) => void;
   formatCurrency: (value: number) => string;
 }
@@ -62,6 +63,7 @@ const ProjectCard = ({
   onEdit,
   onDelete,
   onAddTask,
+  onAddClients,
   onUpdateTask,
   formatCurrency,
 }: ProjectCardProps) => {
@@ -183,10 +185,23 @@ const ProjectCard = ({
       {/* Expanded Content */}
       {isExpanded && (
         <div className="border-t border-white/10 p-4 space-y-4">
-          {/* Opportunities */}
-          {opportunities.length > 0 && (
-            <div>
-              <h4 className="text-white/70 text-sm font-medium mb-2">Opportunities</h4>
+          {/* Clients/Opportunities Section */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="text-white/70 text-sm font-medium">Clients</h4>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-white/50 hover:text-white hover:bg-white/10 h-7 text-xs"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onAddClients();
+                }}
+              >
+                + Add Clients
+              </Button>
+            </div>
+            {opportunities.length > 0 ? (
               <div className="space-y-2">
                 {opportunities.map((opp) => (
                   <div
@@ -216,8 +231,13 @@ const ProjectCard = ({
                   </div>
                 ))}
               </div>
-            </div>
-          )}
+            ) : (
+              <p className="text-white/40 text-sm text-center py-4">
+                No clients added yet. Add clients to start tracking opportunities.
+              </p>
+            )}
+
+          </div>
 
           {/* Tasks */}
           <div>
