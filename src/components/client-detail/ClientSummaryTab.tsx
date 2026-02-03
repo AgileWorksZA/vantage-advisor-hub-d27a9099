@@ -223,9 +223,7 @@ const ClientSummaryTab = ({ client, clientId, onShowMoreActivity }: ClientSummar
         <Card>
           <CardHeader className="pb-4">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Recent Activity
-              </CardTitle>
+              <CardTitle className="text-lg">Recent Activity</CardTitle>
               <Button variant="ghost" size="icon" className="h-8 w-8">
                 <MoreVertical className="w-4 h-4" />
               </Button>
