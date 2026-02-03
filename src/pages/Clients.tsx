@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import {
   LineChart, 
   Building2,
   Plus,
+  X,
   RefreshCw,
   ChevronLeft,
   ChevronFirst,
@@ -73,6 +74,7 @@ const sidebarItems = [
 
 const Clients = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -82,8 +84,29 @@ const Clients = () => {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [clientToDelete, setClientToDelete] = useState<{ id: string; name: string } | null>(null);
+  
+  // Dashboard widget filter state
+  const [filterSource, setFilterSource] = useState<string | null>(null);
+  const [filteredNames, setFilteredNames] = useState<string[]>([]);
 
   const { clients, loading: clientsLoading, refetch, deleteClient } = useClients();
+
+  // Read URL parameters for Dashboard widget filters
+  useEffect(() => {
+    const filter = searchParams.get('filter');
+    const names = searchParams.get('names');
+    
+    if (filter && names) {
+      setFilterSource(filter === 'birthdays' ? 'Upcoming Birthdays' : 'Top Accounts');
+      const nameList = decodeURIComponent(names).split(',');
+      setFilteredNames(nameList);
+      // Clear profile type filter when coming from Dashboard
+      setActiveFilter("");
+    } else {
+      setFilterSource(null);
+      setFilteredNames([]);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -152,12 +175,35 @@ const Clients = () => {
     }
   };
 
-  // Filter clients based on active filter and search query
+  // Clear dashboard filter helper
+  const clearDashboardFilter = () => {
+    setSearchParams({});
+    setFilteredNames([]);
+    setFilterSource(null);
+    setActiveFilter("Client");
+  };
+
+  // Filter clients based on active filter, search query, and dashboard widget filter
   const filteredClients = clients.filter((client) => {
-    // Filter by profile type
-    if (activeFilter === "Lead" && client.profileType !== "Lead") return false;
-    if (activeFilter === "Prospect" && client.profileType !== "Prospect") return false;
-    if (activeFilter === "Client" && client.profileType !== "Client") return false;
+    // If coming from Dashboard widget, filter by name list
+    if (filteredNames.length > 0) {
+      const clientFullName = client.client.toLowerCase();
+      const matchesName = filteredNames.some(name => {
+        const nameParts = name.toLowerCase().split(' ');
+        const surname = nameParts[nameParts.length - 1];
+        const firstName = nameParts[0];
+        // Match surname or first name in client display name
+        return clientFullName.includes(surname) || clientFullName.includes(firstName);
+      });
+      if (!matchesName) return false;
+    }
+    
+    // Filter by profile type (only if not coming from dashboard filter)
+    if (!filterSource) {
+      if (activeFilter === "Lead" && client.profileType !== "Lead") return false;
+      if (activeFilter === "Prospect" && client.profileType !== "Prospect") return false;
+      if (activeFilter === "Client" && client.profileType !== "Client") return false;
+    }
     
     // Filter by inactive state
     if (!includeInactive && client.profileState === "Inactive") return false;
@@ -251,12 +297,30 @@ const Clients = () => {
             </Button>
           </div>
 
+          {/* Dashboard Filter Indicator */}
+          {filterSource && (
+            <div className="flex items-center gap-2 mb-4 p-3 bg-primary/10 rounded-lg border border-primary/30">
+              <span className="text-sm">
+                Showing clients from: <strong>{filterSource}</strong>
+              </span>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={clearDashboardFilter}
+                className="h-7 px-2"
+              >
+                <X className="w-4 h-4 mr-1" />
+                Clear Filter
+              </Button>
+            </div>
+          )}
+
           {/* Reset Filters & Include Inactive */}
           <div className="flex items-center gap-4 mb-6">
             <button 
               className="text-[hsl(180,70%,45%)] text-sm hover:underline"
               onClick={() => {
-                setActiveFilter("Client");
+                clearDashboardFilter();
                 setSearchQuery("");
                 setIncludeInactive(false);
               }}
