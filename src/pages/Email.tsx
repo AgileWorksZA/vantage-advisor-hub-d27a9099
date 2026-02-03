@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   LayoutDashboard,
   Users,
+  Briefcase,
   Mail,
   CalendarIcon,
   ListTodo,
@@ -52,6 +53,7 @@ const folderItems: { icon: React.ComponentType<any>; label: string; folder: Emai
 const sidebarItems = [
   { icon: LayoutDashboard, label: "Dash", path: "/dashboard" },
   { icon: Users, label: "Clients", path: "/clients" },
+  { icon: Briefcase, label: "Portfolio", path: "/portfolio" },
   { icon: Mail, label: "Email", path: "/email" },
   { icon: CalendarIcon, label: "Calendar", path: "/calendar" },
   { icon: ListTodo, label: "Tasks", path: "/tasks" },
