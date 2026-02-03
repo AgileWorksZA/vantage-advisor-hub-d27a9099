@@ -1,454 +1,129 @@
 
 
-## Add Pagination, Filter Row, and Expanded Task Data
+## Link Dashboard "Show More" to Clients Page with Filters
 
 ### Overview
 
-Add a filter row above the tasks table with search, task type multi-selector, status dropdown, and date picker. Implement pagination with 15 tasks per page and expand task data to support 3 pages (45+ tasks per jurisdiction). All filters work together and integrate with existing regional/advisor filtering.
+When users click "Show more" on the **Birthdays** or **Top 5 Accounts** widgets on the Dashboard, they should be navigated to the Clients page with the relevant client names pre-populated as search filters. Since the Dashboard uses regional mock data (not database records), we'll pass the client names as URL query parameters that the Clients page will use to filter the displayed list.
 
 ---
 
-## Part 1: Expand Task Data
+## Current Behavior
 
-### File: `src/data/regionalData.ts`
+- **Birthdays widget**: Shows 7 birthday entries, then "Show more (X more)" button that sets `showAllBirthdays(true)` (unused state)
+- **Top 5 Accounts widget**: Shows 7 accounts, then "Show more" button that sets `showAllAccounts(true)` (unused state)
+- Both buttons currently do nothing visible
 
-Update the `TaskData` interface status type to include new statuses:
+## Proposed Behavior
 
+- **Show more on Birthdays**: Navigate to `/clients?filter=birthdays` with names extracted from birthday data
+- **Show more on Top Accounts**: Navigate to `/clients?filter=accounts` with names extracted from top accounts data
+- Clients page reads URL params and filters the table accordingly
+
+---
+
+## Implementation
+
+### File 1: `src/pages/Dashboard.tsx`
+
+**Changes:**
+1. Remove unused `showAllBirthdays` and `showAllAccounts` state variables
+2. Update "Show more" buttons to navigate to Clients page with query parameters
+
+**Birthdays "Show more" button:**
 ```typescript
-export interface TaskData {
-  id: string;
-  clientName: string;
-  taskType: string;
-  title: string;
-  dueDate: string;
-  followupDate: string;
-  status: "In Progress" | "Not Started" | "Completed" | "Overdue" | "Cancelled";
-  lastComment?: string;
-  advisorInitials: string;
-  advisorName: string;
-  assigneeName: string;
-  isUrgent?: boolean;
-  isOverdue?: boolean;
-}
+onClick={() => {
+  // Extract client names from birthdays (format: "Andre Thomas Coetzer")
+  const names = filteredRegionalData.birthdays.map(b => b.name).join(',');
+  navigate(`/clients?filter=birthdays&names=${encodeURIComponent(names)}`);
+}}
 ```
 
-Expand each jurisdiction's `tasks` array from 15 to 45 entries using:
-- The full list of task types provided
-- All status options
-- Client names from existing regional data
-- Distributed across advisors
-
-### Task Types to Use:
-- Access Request
-- Annuity review
-- Claim
-- Client onboarding
-- Client review
-- Compliance
-- Compliance alert
-- Consent request
-- Contact request
-- Contract changes
-- Document request
-- Estate administration
-- Fee change
-- Intermediary appointment
-- Leads
-- MIS form
-- New business
-- Other
-- Personal detail change
-- Planning hub
-- Referral Task
-- Risk rating
-- Transaction Transfer
-
----
-
-## Part 2: Create MultiSelect Component
-
-### New File: `src/components/ui/multi-select.tsx`
-
-Create a reusable multi-select component with search functionality:
-
+**Top Accounts "Show more" button:**
 ```typescript
-import * as React from "react";
-import { Check, ChevronsUpDown, X } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Badge } from "@/components/ui/badge";
-
-interface MultiSelectProps {
-  options: { value: string; label: string }[];
-  selected: string[];
-  onChange: (selected: string[]) => void;
-  placeholder?: string;
-  className?: string;
-}
-
-export function MultiSelect({
-  options,
-  selected,
-  onChange,
-  placeholder = "Select...",
-  className,
-}: MultiSelectProps) {
-  const [open, setOpen] = React.useState(false);
-
-  const handleSelect = (value: string) => {
-    if (selected.includes(value)) {
-      onChange(selected.filter((item) => item !== value));
-    } else {
-      onChange([...selected, value]);
-    }
-  };
-
-  const handleClear = (e: React.MouseEvent, value: string) => {
-    e.stopPropagation();
-    onChange(selected.filter((item) => item !== value));
-  };
-
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className={cn("justify-between min-w-[180px]", className)}
-        >
-          {selected.length === 0 ? (
-            <span className="text-muted-foreground">{placeholder}</span>
-          ) : (
-            <div className="flex gap-1 flex-wrap">
-              {selected.length <= 2 ? (
-                selected.map((value) => (
-                  <Badge key={value} variant="secondary" className="text-xs">
-                    {options.find((o) => o.value === value)?.label}
-                    <X
-                      className="ml-1 h-3 w-3 cursor-pointer"
-                      onClick={(e) => handleClear(e, value)}
-                    />
-                  </Badge>
-                ))
-              ) : (
-                <span>{selected.length} selected</span>
-              )}
-            </div>
-          )}
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-[250px] p-0 bg-popover z-50">
-        <Command>
-          <CommandInput placeholder="Search..." />
-          <CommandList>
-            <CommandEmpty>No results found.</CommandEmpty>
-            <CommandGroup>
-              {options.map((option) => (
-                <CommandItem
-                  key={option.value}
-                  value={option.value}
-                  onSelect={() => handleSelect(option.value)}
-                >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      selected.includes(option.value) ? "opacity-100" : "opacity-0"
-                    )}
-                  />
-                  {option.label}
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
-  );
-}
+onClick={() => {
+  // Extract investor names from top accounts (format: "Van Niekerk, Marthinus")
+  const names = filteredRegionalData.topAccounts.map(a => a.investor).join(',');
+  navigate(`/clients?filter=accounts&names=${encodeURIComponent(names)}`);
+}}
 ```
 
 ---
 
-## Part 3: Update Tasks Page
+### File 2: `src/pages/Clients.tsx`
 
-### File: `src/pages/Tasks.tsx`
+**Changes:**
+1. Import `useSearchParams` from `react-router-dom`
+2. Read `filter` and `names` query parameters on mount
+3. Initialize search with the names when coming from Dashboard widgets
+4. Show visual indicator that a filter is active
+5. Add "Clear filter" option to return to normal view
 
-#### 1. Add New Imports
-
+**Read URL parameters:**
 ```typescript
-import { Search, X } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { MultiSelect } from "@/components/ui/multi-select";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
-import { format } from "date-fns";
-```
+import { useNavigate, useSearchParams } from "react-router-dom";
 
-#### 2. Add Filter State Variables
+const [searchParams, setSearchParams] = useSearchParams();
 
-```typescript
-const [tableSearchQuery, setTableSearchQuery] = useState("");
-const [selectedTaskTypes, setSelectedTaskTypes] = useState<string[]>([]);
-const [selectedStatus, setSelectedStatus] = useState<string>("all");
-const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
-const [currentPage, setCurrentPage] = useState(1);
-const ITEMS_PER_PAGE = 15;
-```
-
-#### 3. Define Filter Options
-
-```typescript
-const taskTypeOptions = [
-  { value: "Access Request", label: "Access Request" },
-  { value: "Annuity review", label: "Annuity review" },
-  { value: "Claim", label: "Claim" },
-  { value: "Client onboarding", label: "Client onboarding" },
-  { value: "Client review", label: "Client review" },
-  { value: "Compliance", label: "Compliance" },
-  { value: "Compliance alert", label: "Compliance alert" },
-  { value: "Consent request", label: "Consent request" },
-  { value: "Contact request", label: "Contact request" },
-  { value: "Contract changes", label: "Contract changes" },
-  { value: "Document request", label: "Document request" },
-  { value: "Estate administration", label: "Estate administration" },
-  { value: "Fee change", label: "Fee change" },
-  { value: "Intermediary appointment", label: "Intermediary appointment" },
-  { value: "Leads", label: "Leads" },
-  { value: "MIS form", label: "MIS form" },
-  { value: "New business", label: "New business" },
-  { value: "Other", label: "Other" },
-  { value: "Personal detail change", label: "Personal detail change" },
-  { value: "Planning hub", label: "Planning hub" },
-  { value: "Referral Task", label: "Referral Task" },
-  { value: "Risk rating", label: "Risk rating" },
-  { value: "Transaction Transfer", label: "Transaction Transfer" },
-];
-
-const statusOptions = [
-  { value: "all", label: "All Statuses" },
-  { value: "In Progress", label: "In Progress" },
-  { value: "Completed", label: "Completed" },
-  { value: "Overdue", label: "Overdue" },
-  { value: "Cancelled", label: "Cancelled" },
-  { value: "Not Started", label: "Not Started" },
-];
-```
-
-#### 4. Update Filter Logic
-
-```typescript
-const displayedTasks = useMemo(() => {
-  let tasks = filteredRegionalData.tasks || [];
-  
-  // Apply card filter (existing)
-  if (cardFilter === 'urgent') {
-    tasks = tasks.filter(t => t.isUrgent && t.status !== "Completed");
-  } else if (cardFilter === 'overdue') {
-    tasks = tasks.filter(t => t.isOverdue && t.status !== "Completed");
-  } else if (cardFilter === 'completed') {
-    tasks = tasks.filter(t => t.status === "Completed");
-  } else if (cardFilter === 'total' || cardFilter === null) {
-    tasks = tasks.filter(t => t.status !== "Completed");
-  }
-  
-  // Apply table search filter
-  if (tableSearchQuery) {
-    const query = tableSearchQuery.toLowerCase();
-    tasks = tasks.filter(t => 
-      t.clientName.toLowerCase().includes(query) ||
-      t.title.toLowerCase().includes(query) ||
-      t.taskType.toLowerCase().includes(query) ||
-      t.id.toLowerCase().includes(query)
-    );
-  }
-  
-  // Apply task type filter
-  if (selectedTaskTypes.length > 0) {
-    tasks = tasks.filter(t => selectedTaskTypes.includes(t.taskType));
-  }
-  
-  // Apply status filter
-  if (selectedStatus !== "all") {
-    tasks = tasks.filter(t => t.status === selectedStatus);
-  }
-  
-  // Apply date filter (filter by due date)
-  if (selectedDate) {
-    const dateStr = format(selectedDate, "dd/MM/yyyy");
-    tasks = tasks.filter(t => t.dueDate === dateStr);
-  }
-  
-  return tasks;
-}, [filteredRegionalData.tasks, cardFilter, tableSearchQuery, selectedTaskTypes, selectedStatus, selectedDate]);
-
-// Paginated tasks
-const paginatedTasks = useMemo(() => {
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  return displayedTasks.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-}, [displayedTasks, currentPage]);
-
-const totalPages = Math.ceil(displayedTasks.length / ITEMS_PER_PAGE);
-
-// Reset to page 1 when filters change
 useEffect(() => {
-  setCurrentPage(1);
-}, [filteredRegionalData.tasks, cardFilter, tableSearchQuery, selectedTaskTypes, selectedStatus, selectedDate]);
+  const filter = searchParams.get('filter');
+  const names = searchParams.get('names');
+  
+  if (filter && names) {
+    // Set active filter header based on source
+    setFilterSource(filter === 'birthdays' ? 'Upcoming Birthdays' : 'Top Accounts');
+    
+    // Parse names and set as filter
+    const nameList = decodeURIComponent(names).split(',');
+    setFilteredNames(nameList);
+  }
+}, [searchParams]);
 ```
 
-#### 5. Add Filter Row (Above Table)
+**Filter clients against name list:**
+```typescript
+const filteredClients = clients.filter((client) => {
+  // ... existing filters ...
+  
+  // If coming from Dashboard widget, filter by name list
+  if (filteredNames.length > 0) {
+    const clientFullName = client.client; // "Surname, I (FirstName)"
+    // Check if any widget name matches the client
+    return filteredNames.some(name => {
+      const normalizedName = name.toLowerCase();
+      const normalizedClient = clientFullName.toLowerCase();
+      // Match partial names (surname or first name)
+      return normalizedClient.includes(normalizedName.split(' ')[0]) ||
+             normalizedName.includes(normalizedClient.split(',')[0]);
+    });
+  }
+  
+  return true;
+});
+```
 
-```jsx
-{/* Filter Row */}
-<div className="flex flex-wrap gap-3 mb-4 items-center">
-  {/* Search */}
-  <div className="relative">
-    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-    <Input
-      placeholder="Search tasks..."
-      value={tableSearchQuery}
-      onChange={(e) => setTableSearchQuery(e.target.value)}
-      className="pl-9 w-[200px]"
-    />
-  </div>
-  
-  {/* Task Type Multi-Select */}
-  <MultiSelect
-    options={taskTypeOptions}
-    selected={selectedTaskTypes}
-    onChange={setSelectedTaskTypes}
-    placeholder="Task Type"
-    className="w-[180px]"
-  />
-  
-  {/* Status Dropdown */}
-  <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-    <SelectTrigger className="w-[150px]">
-      <SelectValue placeholder="Status" />
-    </SelectTrigger>
-    <SelectContent className="bg-popover z-50">
-      {statusOptions.map((option) => (
-        <SelectItem key={option.value} value={option.value}>
-          {option.label}
-        </SelectItem>
-      ))}
-    </SelectContent>
-  </Select>
-  
-  {/* Date Picker */}
-  <Popover>
-    <PopoverTrigger asChild>
-      <Button variant="outline" className="w-[150px] justify-start text-left font-normal">
-        <CalendarIcon className="mr-2 h-4 w-4" />
-        {selectedDate ? format(selectedDate, "dd/MM/yyyy") : "Due Date"}
-      </Button>
-    </PopoverTrigger>
-    <PopoverContent className="w-auto p-0 bg-popover z-50" align="start">
-      <Calendar
-        mode="single"
-        selected={selectedDate}
-        onSelect={setSelectedDate}
-        initialFocus
-        className="pointer-events-auto"
-      />
-    </PopoverContent>
-  </Popover>
-  
-  {/* Clear Filters */}
-  {(tableSearchQuery || selectedTaskTypes.length > 0 || selectedStatus !== "all" || selectedDate) && (
-    <Button
-      variant="ghost"
+**Add filter indicator:**
+```typescript
+{filterSource && (
+  <div className="flex items-center gap-2 mb-4 p-3 bg-[hsl(180,70%,45%)]/10 rounded-lg border border-[hsl(180,70%,45%)]/30">
+    <span className="text-sm">
+      Showing clients from: <strong>{filterSource}</strong>
+    </span>
+    <Button 
+      variant="ghost" 
       size="sm"
       onClick={() => {
-        setTableSearchQuery("");
-        setSelectedTaskTypes([]);
-        setSelectedStatus("all");
-        setSelectedDate(undefined);
+        setSearchParams({});
+        setFilteredNames([]);
+        setFilterSource(null);
       }}
     >
-      <X className="h-4 w-4 mr-1" />
-      Clear
+      <X className="w-4 h-4 mr-1" />
+      Clear Filter
     </Button>
-  )}
-</div>
-```
-
-#### 6. Add Pagination Below Table
-
-```jsx
-{/* Pagination */}
-{totalPages > 1 && (
-  <div className="flex items-center justify-between mt-4 px-2">
-    <p className="text-sm text-muted-foreground">
-      Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, displayedTasks.length)} of {displayedTasks.length} tasks
-    </p>
-    <Pagination>
-      <PaginationContent>
-        <PaginationItem>
-          <PaginationPrevious 
-            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-            className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-          />
-        </PaginationItem>
-        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-          <PaginationItem key={page}>
-            <PaginationLink
-              onClick={() => setCurrentPage(page)}
-              isActive={currentPage === page}
-              className="cursor-pointer"
-            >
-              {page}
-            </PaginationLink>
-          </PaginationItem>
-        ))}
-        <PaginationItem>
-          <PaginationNext
-            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-            className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
-          />
-        </PaginationItem>
-      </PaginationContent>
-    </Pagination>
   </div>
 )}
 ```
-
-#### 7. Update Table to Use Paginated Data
-
-Change `displayedTasks.map` to `paginatedTasks.map` in the table body.
 
 ---
 
@@ -456,35 +131,49 @@ Change `displayedTasks.map` to `paginatedTasks.map` in the table body.
 
 | File | Changes |
 |------|---------|
-| `src/data/regionalData.ts` | Update status type, expand tasks array to 45 entries per jurisdiction |
-| `src/components/ui/multi-select.tsx` | New file - reusable multi-select with search |
-| `src/pages/Tasks.tsx` | Add filter row, pagination, new state variables, updated filter logic |
+| `src/pages/Dashboard.tsx` | Remove unused state, update "Show more" buttons to navigate with query params |
+| `src/pages/Clients.tsx` | Add `useSearchParams`, read filter params, implement name-based filtering, add filter indicator |
 
 ---
 
-## Visual Layout
+## User Experience
 
 ```text
-+------------------------------------------------------------------+
-|  [Search input]  [Task Type ▼]  [Status ▼]  [Due Date 📅]  [Clear] |
-+------------------------------------------------------------------+
-| Client | Task Type | Title | Due date | ... | Assignee | Menu    |
-+------------------------------------------------------------------+
-| ... table rows (15 per page) ...                                  |
-+------------------------------------------------------------------+
-| Showing 1 to 15 of 45 tasks    [< Previous] [1] [2] [3] [Next >] |
-+------------------------------------------------------------------+
+Dashboard (Birthdays Widget)
+┌─────────────────────────────────┐
+│ Birthdays                       │
+│ ─────────────────────────────── │
+│ Andre Thomas Coetzer   28 Jan 42│
+│ Esther Amanda Nieman   28 Jan 74│
+│ ... (5 more rows)               │
+│ ─────────────────────────────── │
+│ [Show more (13 more)]  ← Click  │
+└─────────────────────────────────┘
+          │
+          ▼
+Clients Page (Filtered)
+┌─────────────────────────────────────────────────────┐
+│ ┌─────────────────────────────────────────────────┐ │
+│ │ Showing clients from: Upcoming Birthdays  [✕]  │ │
+│ └─────────────────────────────────────────────────┘ │
+│                                                     │
+│ [Lead] [Prospect] [Client] ...                      │
+│                                                     │
+│ │ Client           │ Age │ Contact Details │ ...   │
+│ ├──────────────────┼─────┼─────────────────┼───    │
+│ │ Coetzer, A (Andre)│ 42 │ ...             │       │
+│ │ Nieman, E (Esther)│ 74 │ ...             │       │
+│ │ ... matching clients from birthdays ...   │       │
+└─────────────────────────────────────────────────────┘
 ```
 
 ---
 
 ## Technical Notes
 
-- Task Type uses multi-select with search for filtering multiple types at once
-- Status uses single-select dropdown
-- Date picker filters by exact due date match
-- All filters work together (AND logic)
-- Pagination resets to page 1 when any filter changes
-- 15 items per page = 3 pages for 45 tasks
-- Clear button appears when any filter is active
+- URL parameters ensure the filter persists on page refresh
+- The "Clear Filter" button removes URL params and returns to normal view
+- Name matching uses fuzzy logic since Dashboard uses full names while Clients table uses "Surname, I (Name)" format
+- Filter combines with existing profile type filters (Lead/Prospect/Client)
+- If no database clients match the widget names (since they're mock data), the filtered list will be empty - this is expected behavior until real clients are added
 
