@@ -37,6 +37,22 @@ export interface AdvisorData {
   clientCount: number; // Number of clients they manage
 }
 
+export interface TaskData {
+  id: string;
+  clientName: string;
+  taskType: string;
+  title: string;
+  dueDate: string;
+  followupDate: string;
+  status: "In Progress" | "Not Started" | "Completed";
+  lastComment?: string;
+  advisorInitials: string;
+  advisorName: string;
+  assigneeName: string;
+  isUrgent?: boolean;
+  isOverdue?: boolean;
+}
+
 export interface RegionalData {
   currencySymbol: string;
   totalAUM: string;
@@ -47,6 +63,7 @@ export interface RegionalData {
   products: ProductData[];
   clientsByValue: ClientsByValueData[];
   advisors: AdvisorData[];
+  tasks: TaskData[];
 }
 
 // Helper to format currency
@@ -138,6 +155,23 @@ const southAfricaData: RegionalData = {
     { initials: "LV", name: "Linda van Wyk", aum: 650000000, clientCount: 310 },
     { initials: "DG", name: "David Greenberg", aum: 467726572.38, clientCount: 270 },
   ],
+  tasks: [
+    { id: "Onboard-81443", clientName: "Van Niekerk, Marthinus", taskType: "Client onboarding", title: "Client onboarding", dueDate: "21/05/2025", followupDate: "19/05/2025", status: "In Progress", lastComment: "", advisorInitials: "JB", advisorName: "Johan Botha", assigneeName: "Johan Botha", isUrgent: false, isOverdue: false },
+    { id: "CRM-95294", clientName: "Venter, Isabella", taskType: "Claim", title: "Claim vir huis", dueDate: "04/08/2025", followupDate: "21/08/2025", status: "Not Started", lastComment: "", advisorInitials: "JB", advisorName: "Johan Botha", assigneeName: "Johan Botha", isUrgent: false, isOverdue: false },
+    { id: "Task-95188", clientName: "Joubert, Francois", taskType: "Transfer", title: "Transfer to Ninety One", dueDate: "15/08/2025", followupDate: "13/08/2025", status: "In Progress", lastComment: "Documents received", advisorInitials: "SM", advisorName: "Sarah Mostert", assigneeName: "Sarah Mostert", isUrgent: false, isOverdue: false },
+    { id: "CRM-96774", clientName: "Le Roux, Werner", taskType: "Annuity review", title: "Annual review", dueDate: "01/09/2025", followupDate: "18/09/2025", status: "Not Started", lastComment: "", advisorInitials: "PN", advisorName: "Pieter Naudé", assigneeName: "Pieter Naudé", isUrgent: false, isOverdue: false },
+    { id: "Trans-42156", clientName: "Steyn, Chanelle", taskType: "Additional Contribution", title: "Additional contribution processing", dueDate: "12/01/2025", followupDate: "10/01/2025", status: "In Progress", lastComment: "Awaiting client signature", advisorInitials: "SM", advisorName: "Sarah Mostert", assigneeName: "Sarah Mostert", isUrgent: true, isOverdue: true },
+    { id: "CRM-88321", clientName: "Du Toit, Lizelle", taskType: "Quote", title: "Life cover quote", dueDate: "25/02/2025", followupDate: "23/02/2025", status: "Not Started", lastComment: "", advisorInitials: "LV", advisorName: "Linda van Wyk", assigneeName: "Linda van Wyk", isUrgent: false, isOverdue: true },
+    { id: "Onboard-79882", clientName: "Pretorius, Johannes", taskType: "Client onboarding", title: "New client onboarding", dueDate: "18/03/2025", followupDate: "16/03/2025", status: "In Progress", lastComment: "FICA pending", advisorInitials: "LV", advisorName: "Linda van Wyk", assigneeName: "Linda van Wyk", isUrgent: false, isOverdue: false },
+    { id: "Task-67291", clientName: "Coetzee, Hendrik", taskType: "Switch", title: "Fund switch request", dueDate: "05/04/2025", followupDate: "03/04/2025", status: "Not Started", lastComment: "", advisorInitials: "DG", advisorName: "David Greenberg", assigneeName: "David Greenberg", isUrgent: false, isOverdue: false },
+    { id: "CRM-91823", clientName: "Jacobs, Marlene", taskType: "New Business", title: "Investment application", dueDate: "22/04/2025", followupDate: "20/04/2025", status: "In Progress", lastComment: "Under review", advisorInitials: "DG", advisorName: "David Greenberg", assigneeName: "David Greenberg", isUrgent: false, isOverdue: false },
+    { id: "Trans-55672", clientName: "Marais, Annika", taskType: "Transfer", title: "Pension transfer", dueDate: "08/05/2025", followupDate: "06/05/2025", status: "Not Started", lastComment: "", advisorInitials: "PN", advisorName: "Pieter Naudé", assigneeName: "Pieter Naudé", isUrgent: false, isOverdue: false },
+    { id: "CRM-73419", clientName: "De Villiers, Jean", taskType: "Annuity review", title: "Portfolio review", dueDate: "30/01/2025", followupDate: "28/01/2025", status: "Completed", lastComment: "Completed successfully", advisorInitials: "SM", advisorName: "Sarah Mostert", assigneeName: "Sarah Mostert", isUrgent: false, isOverdue: false },
+    { id: "Task-84521", clientName: "Louw, Rudolph", taskType: "Claim", title: "Death benefit claim", dueDate: "15/02/2025", followupDate: "13/02/2025", status: "In Progress", lastComment: "Documentation submitted", advisorInitials: "PN", advisorName: "Pieter Naudé", assigneeName: "Pieter Naudé", isUrgent: true, isOverdue: true },
+    { id: "Onboard-92134", clientName: "Daan Van Der Sijde", taskType: "Client onboarding", title: "Corporate client setup", dueDate: "10/06/2025", followupDate: "08/06/2025", status: "Not Started", lastComment: "", advisorInitials: "LV", advisorName: "Linda van Wyk", assigneeName: "Linda van Wyk", isUrgent: false, isOverdue: false },
+    { id: "CRM-68745", clientName: "Philippus Koon", taskType: "Quote", title: "Retirement annuity quote", dueDate: "28/06/2025", followupDate: "26/06/2025", status: "In Progress", lastComment: "Awaiting provider response", advisorInitials: "DG", advisorName: "David Greenberg", assigneeName: "David Greenberg", isUrgent: false, isOverdue: false },
+    { id: "Trans-39821", clientName: "NG Kerk Sinode Oos-Kaapland", taskType: "Additional Contribution", title: "Annual contribution", dueDate: "15/07/2025", followupDate: "13/07/2025", status: "Not Started", lastComment: "", advisorInitials: "JB", advisorName: "Johan Botha", assigneeName: "Johan Botha", isUrgent: false, isOverdue: false },
+  ],
 };
 
 const australiaData: RegionalData = {
@@ -212,6 +246,23 @@ const australiaData: RegionalData = {
     { initials: "MO", name: "Michael O'Brien", aum: 820000000, clientCount: 445 },
     { initials: "EA", name: "Emily Anderson", aum: 780000000, clientCount: 420 },
     { initials: "TM", name: "Thomas Murphy", aum: 739625872, clientCount: 367 },
+  ],
+  tasks: [
+    { id: "Onboard-91234", clientName: "Papadopoulos, Konstantinos", taskType: "Client onboarding", title: "Super fund setup", dueDate: "18/05/2025", followupDate: "16/05/2025", status: "In Progress", lastComment: "TFN declaration received", advisorInitials: "JM", advisorName: "James Mitchell", assigneeName: "James Mitchell", isUrgent: false, isOverdue: false },
+    { id: "CRM-82341", clientName: "Nguyen, David", taskType: "SMSF setup", title: "SMSF establishment", dueDate: "02/06/2025", followupDate: "31/05/2025", status: "Not Started", lastComment: "", advisorInitials: "JM", advisorName: "James Mitchell", assigneeName: "James Mitchell", isUrgent: false, isOverdue: false },
+    { id: "Task-73456", clientName: "O'Connor, Michael", taskType: "Pension transition", title: "Account based pension", dueDate: "25/03/2025", followupDate: "23/03/2025", status: "In Progress", lastComment: "Condition of release confirmed", advisorInitials: "ST", advisorName: "Sarah Thompson", assigneeName: "Sarah Thompson", isUrgent: false, isOverdue: false },
+    { id: "CRM-64521", clientName: "Romano, Giuseppe", taskType: "Review", title: "Annual super review", dueDate: "10/07/2025", followupDate: "08/07/2025", status: "Not Started", lastComment: "", advisorInitials: "ST", advisorName: "Sarah Thompson", assigneeName: "Sarah Thompson", isUrgent: false, isOverdue: false },
+    { id: "Trans-58912", clientName: "Chen, William", taskType: "Rollover", title: "Super rollover request", dueDate: "15/01/2025", followupDate: "13/01/2025", status: "In Progress", lastComment: "Awaiting previous fund", advisorInitials: "MO", advisorName: "Michael O'Brien", assigneeName: "Michael O'Brien", isUrgent: true, isOverdue: true },
+    { id: "CRM-49823", clientName: "Thompson, Sarah", taskType: "Insurance", title: "Life cover review", dueDate: "28/02/2025", followupDate: "26/02/2025", status: "Not Started", lastComment: "", advisorInitials: "MO", advisorName: "Michael O'Brien", assigneeName: "Michael O'Brien", isUrgent: false, isOverdue: true },
+    { id: "Onboard-85621", clientName: "Kelly, Brendan", taskType: "Client onboarding", title: "New client setup", dueDate: "05/04/2025", followupDate: "03/04/2025", status: "In Progress", lastComment: "ID verified", advisorInitials: "EA", advisorName: "Emily Anderson", assigneeName: "Emily Anderson", isUrgent: false, isOverdue: false },
+    { id: "Task-76543", clientName: "Patel, Rajesh", taskType: "Contribution", title: "Salary sacrifice setup", dueDate: "20/04/2025", followupDate: "18/04/2025", status: "Not Started", lastComment: "", advisorInitials: "EA", advisorName: "Emily Anderson", assigneeName: "Emily Anderson", isUrgent: false, isOverdue: false },
+    { id: "CRM-67891", clientName: "Williams, David", taskType: "Estate planning", title: "Binding nomination update", dueDate: "12/05/2025", followupDate: "10/05/2025", status: "In Progress", lastComment: "Form sent to client", advisorInitials: "TM", advisorName: "Thomas Murphy", assigneeName: "Thomas Murphy", isUrgent: false, isOverdue: false },
+    { id: "Trans-43217", clientName: "Stavros, Helena", taskType: "Transfer", title: "Platform transfer", dueDate: "30/05/2025", followupDate: "28/05/2025", status: "Not Started", lastComment: "", advisorInitials: "TM", advisorName: "Thomas Murphy", assigneeName: "Thomas Murphy", isUrgent: false, isOverdue: false },
+    { id: "CRM-91456", clientName: "Morrison, Andrew", taskType: "Review", title: "Investment strategy review", dueDate: "18/06/2025", followupDate: "16/06/2025", status: "Completed", lastComment: "Review completed", advisorInitials: "EA", advisorName: "Emily Anderson", assigneeName: "Emily Anderson", isUrgent: false, isOverdue: false },
+    { id: "Task-82134", clientName: "Brown, Jennifer", taskType: "Claim", title: "TPD claim assistance", dueDate: "08/02/2025", followupDate: "06/02/2025", status: "In Progress", lastComment: "Medical evidence submitted", advisorInitials: "TM", advisorName: "Thomas Murphy", assigneeName: "Thomas Murphy", isUrgent: true, isOverdue: true },
+    { id: "Onboard-74892", clientName: "Lee, Benjamin", taskType: "Client onboarding", title: "Corporate super member", dueDate: "25/06/2025", followupDate: "23/06/2025", status: "Not Started", lastComment: "", advisorInitials: "JM", advisorName: "James Mitchell", assigneeName: "James Mitchell", isUrgent: false, isOverdue: false },
+    { id: "CRM-58234", clientName: "Walsh, Catherine", taskType: "Quote", title: "Income protection quote", dueDate: "10/07/2025", followupDate: "08/07/2025", status: "In Progress", lastComment: "Underwriting in progress", advisorInitials: "ST", advisorName: "Sarah Thompson", assigneeName: "Sarah Thompson", isUrgent: false, isOverdue: false },
+    { id: "Trans-36781", clientName: "Melbourne Grammar School Foundation", taskType: "Contribution", title: "Annual contribution processing", dueDate: "22/07/2025", followupDate: "20/07/2025", status: "Not Started", lastComment: "", advisorInitials: "JM", advisorName: "James Mitchell", assigneeName: "James Mitchell", isUrgent: false, isOverdue: false },
   ],
 };
 
@@ -288,6 +339,23 @@ const canadaData: RegionalData = {
     { initials: "SG", name: "Sophie Gagnon", aum: 950000000, clientCount: 467 },
     { initials: "RS", name: "Robert Singh", aum: 922649990, clientCount: 376 },
   ],
+  tasks: [
+    { id: "Onboard-71234", clientName: "Lavoie, Jean-François", taskType: "Client onboarding", title: "RRSP account setup", dueDate: "15/05/2025", followupDate: "13/05/2025", status: "In Progress", lastComment: "SIN verified", advisorInitials: "PT", advisorName: "Pierre Tremblay", assigneeName: "Pierre Tremblay", isUrgent: false, isOverdue: false },
+    { id: "CRM-62345", clientName: "Bergeron, Émilie", taskType: "TFSA", title: "TFSA contribution", dueDate: "28/05/2025", followupDate: "26/05/2025", status: "Not Started", lastComment: "", advisorInitials: "PT", advisorName: "Pierre Tremblay", assigneeName: "Pierre Tremblay", isUrgent: false, isOverdue: false },
+    { id: "Task-53456", clientName: "Wong, David", taskType: "Transfer", title: "LIRA transfer", dueDate: "10/04/2025", followupDate: "08/04/2025", status: "In Progress", lastComment: "Transfer form submitted", advisorInitials: "MB", advisorName: "Marie Bouchard", assigneeName: "Marie Bouchard", isUrgent: false, isOverdue: false },
+    { id: "CRM-44567", clientName: "Kim, Jennifer", taskType: "RESP", title: "RESP contribution", dueDate: "22/06/2025", followupDate: "20/06/2025", status: "Not Started", lastComment: "", advisorInitials: "MB", advisorName: "Marie Bouchard", assigneeName: "Marie Bouchard", isUrgent: false, isOverdue: false },
+    { id: "Trans-35678", clientName: "Campbell, Alexander", taskType: "RRIF", title: "RRIF conversion", dueDate: "05/02/2025", followupDate: "03/02/2025", status: "In Progress", lastComment: "Age requirement met", advisorInitials: "JM", advisorName: "James MacDonald", assigneeName: "James MacDonald", isUrgent: true, isOverdue: true },
+    { id: "CRM-26789", clientName: "O'Brien, Kathleen", taskType: "Review", title: "Annual portfolio review", dueDate: "18/02/2025", followupDate: "16/02/2025", status: "Not Started", lastComment: "", advisorInitials: "JM", advisorName: "James MacDonald", assigneeName: "James MacDonald", isUrgent: false, isOverdue: true },
+    { id: "Onboard-17891", clientName: "Patel, Arun", taskType: "Client onboarding", title: "New client intake", dueDate: "02/04/2025", followupDate: "31/03/2025", status: "In Progress", lastComment: "KYC completed", advisorInitials: "SG", advisorName: "Sophie Gagnon", assigneeName: "Sophie Gagnon", isUrgent: false, isOverdue: false },
+    { id: "Task-98123", clientName: "Leblanc, Nathalie", taskType: "Insurance", title: "Critical illness quote", dueDate: "15/04/2025", followupDate: "13/04/2025", status: "Not Started", lastComment: "", advisorInitials: "SG", advisorName: "Sophie Gagnon", assigneeName: "Sophie Gagnon", isUrgent: false, isOverdue: false },
+    { id: "CRM-89234", clientName: "Singh, Harpreet", taskType: "Tax planning", title: "Tax optimization review", dueDate: "28/04/2025", followupDate: "26/04/2025", status: "In Progress", lastComment: "Tax returns received", advisorInitials: "RS", advisorName: "Robert Singh", assigneeName: "Robert Singh", isUrgent: false, isOverdue: false },
+    { id: "Trans-71345", clientName: "Dumont, Jacques", taskType: "Transfer", title: "Account consolidation", dueDate: "10/05/2025", followupDate: "08/05/2025", status: "Not Started", lastComment: "", advisorInitials: "RS", advisorName: "Robert Singh", assigneeName: "Robert Singh", isUrgent: false, isOverdue: false },
+    { id: "CRM-62456", clientName: "Tremblay, Pierre", taskType: "Review", title: "Estate planning review", dueDate: "25/05/2025", followupDate: "23/05/2025", status: "Completed", lastComment: "Plan updated", advisorInitials: "PT", advisorName: "Pierre Tremblay", assigneeName: "Pierre Tremblay", isUrgent: false, isOverdue: false },
+    { id: "Task-53567", clientName: "Roy, Marie-Claire", taskType: "Claim", title: "Insurance claim", dueDate: "08/01/2025", followupDate: "06/01/2025", status: "In Progress", lastComment: "Claim under review", advisorInitials: "JM", advisorName: "James MacDonald", assigneeName: "James MacDonald", isUrgent: true, isOverdue: true },
+    { id: "Onboard-44678", clientName: "Gagnon, Jean-Luc", taskType: "Client onboarding", title: "Corporate account setup", dueDate: "18/06/2025", followupDate: "16/06/2025", status: "Not Started", lastComment: "", advisorInitials: "SG", advisorName: "Sophie Gagnon", assigneeName: "Sophie Gagnon", isUrgent: false, isOverdue: false },
+    { id: "CRM-35789", clientName: "MacDonald, Angus", taskType: "Quote", title: "Disability insurance quote", dueDate: "02/07/2025", followupDate: "30/06/2025", status: "In Progress", lastComment: "Medical questionnaire sent", advisorInitials: "RS", advisorName: "Robert Singh", assigneeName: "Robert Singh", isUrgent: false, isOverdue: false },
+    { id: "Trans-26891", clientName: "Toronto General Hospital Foundation", taskType: "Contribution", title: "Annual charitable contribution", dueDate: "15/07/2025", followupDate: "13/07/2025", status: "Not Started", lastComment: "", advisorInitials: "PT", advisorName: "Pierre Tremblay", assigneeName: "Pierre Tremblay", isUrgent: false, isOverdue: false },
+  ],
 };
 
 const unitedKingdomData: RegionalData = {
@@ -362,6 +430,23 @@ const unitedKingdomData: RegionalData = {
     { initials: "TW", name: "Thomas Williams", aum: 580000000, clientCount: 398 },
     { initials: "VB", name: "Victoria Brown", aum: 520000000, clientCount: 378 },
     { initials: "JT", name: "James Taylor", aum: 417392156, clientCount: 308 },
+  ],
+  tasks: [
+    { id: "Onboard-81234", clientName: "Smith, William", taskType: "Client onboarding", title: "ISA account setup", dueDate: "20/05/2025", followupDate: "18/05/2025", status: "In Progress", lastComment: "NI number verified", advisorInitials: "WS", advisorName: "William Smith", assigneeName: "William Smith", isUrgent: false, isOverdue: false },
+    { id: "CRM-72345", clientName: "Jones, Elizabeth", taskType: "SIPP", title: "SIPP contribution", dueDate: "05/06/2025", followupDate: "03/06/2025", status: "Not Started", lastComment: "", advisorInitials: "WS", advisorName: "William Smith", assigneeName: "William Smith", isUrgent: false, isOverdue: false },
+    { id: "Task-63456", clientName: "Williams, Thomas", taskType: "Transfer", title: "Pension transfer", dueDate: "18/04/2025", followupDate: "16/04/2025", status: "In Progress", lastComment: "CETV received", advisorInitials: "EJ", advisorName: "Elizabeth Jones", assigneeName: "Elizabeth Jones", isUrgent: false, isOverdue: false },
+    { id: "CRM-54567", clientName: "Brown, Victoria", taskType: "ISA", title: "ISA top-up", dueDate: "30/06/2025", followupDate: "28/06/2025", status: "Not Started", lastComment: "", advisorInitials: "EJ", advisorName: "Elizabeth Jones", assigneeName: "Elizabeth Jones", isUrgent: false, isOverdue: false },
+    { id: "Trans-45678", clientName: "Taylor, James", taskType: "Drawdown", title: "Pension drawdown setup", dueDate: "12/02/2025", followupDate: "10/02/2025", status: "In Progress", lastComment: "FAD options reviewed", advisorInitials: "TW", advisorName: "Thomas Williams", assigneeName: "Thomas Williams", isUrgent: true, isOverdue: true },
+    { id: "CRM-36789", clientName: "Wilson, Charles", taskType: "Review", title: "Annual portfolio review", dueDate: "25/02/2025", followupDate: "23/02/2025", status: "Not Started", lastComment: "", advisorInitials: "TW", advisorName: "Thomas Williams", assigneeName: "Thomas Williams", isUrgent: false, isOverdue: true },
+    { id: "Onboard-27891", clientName: "Davies, Margaret", taskType: "Client onboarding", title: "New client setup", dueDate: "08/04/2025", followupDate: "06/04/2025", status: "In Progress", lastComment: "AML checks complete", advisorInitials: "VB", advisorName: "Victoria Brown", assigneeName: "Victoria Brown", isUrgent: false, isOverdue: false },
+    { id: "Task-18912", clientName: "Evans, Robert", taskType: "Insurance", title: "Life cover review", dueDate: "22/04/2025", followupDate: "20/04/2025", status: "Not Started", lastComment: "", advisorInitials: "VB", advisorName: "Victoria Brown", assigneeName: "Victoria Brown", isUrgent: false, isOverdue: false },
+    { id: "CRM-99123", clientName: "Thomas, Patricia", taskType: "Tax planning", title: "CGT mitigation", dueDate: "05/05/2025", followupDate: "03/05/2025", status: "In Progress", lastComment: "Gains calculated", advisorInitials: "JT", advisorName: "James Taylor", assigneeName: "James Taylor", isUrgent: false, isOverdue: false },
+    { id: "Trans-81234", clientName: "Roberts, Henry", taskType: "Transfer", title: "Platform consolidation", dueDate: "18/05/2025", followupDate: "16/05/2025", status: "Not Started", lastComment: "", advisorInitials: "JT", advisorName: "James Taylor", assigneeName: "James Taylor", isUrgent: false, isOverdue: false },
+    { id: "CRM-72345", clientName: "Walker, Elizabeth", taskType: "Review", title: "Retirement planning review", dueDate: "02/06/2025", followupDate: "31/05/2025", status: "Completed", lastComment: "Plan finalised", advisorInitials: "WS", advisorName: "William Smith", assigneeName: "William Smith", isUrgent: false, isOverdue: false },
+    { id: "Task-63456", clientName: "Wright, Andrew", taskType: "Claim", title: "Critical illness claim", dueDate: "15/01/2025", followupDate: "13/01/2025", status: "In Progress", lastComment: "Medical evidence submitted", advisorInitials: "EJ", advisorName: "Elizabeth Jones", assigneeName: "Elizabeth Jones", isUrgent: true, isOverdue: true },
+    { id: "Onboard-54567", clientName: "Green, Sophie", taskType: "Client onboarding", title: "Junior ISA setup", dueDate: "25/06/2025", followupDate: "23/06/2025", status: "Not Started", lastComment: "", advisorInitials: "VB", advisorName: "Victoria Brown", assigneeName: "Victoria Brown", isUrgent: false, isOverdue: false },
+    { id: "CRM-45678", clientName: "Hall, Richard", taskType: "Quote", title: "Income protection quote", dueDate: "10/07/2025", followupDate: "08/07/2025", status: "In Progress", lastComment: "Underwriting in progress", advisorInitials: "TW", advisorName: "Thomas Williams", assigneeName: "Thomas Williams", isUrgent: false, isOverdue: false },
+    { id: "Trans-36789", clientName: "King, Catherine", taskType: "Contribution", title: "Pension contribution", dueDate: "22/07/2025", followupDate: "20/07/2025", status: "Not Started", lastComment: "", advisorInitials: "JT", advisorName: "James Taylor", assigneeName: "James Taylor", isUrgent: false, isOverdue: false },
   ],
 };
 
@@ -438,6 +523,23 @@ const unitedStatesData: RegionalData = {
     { initials: "MG", name: "Maria Garcia", aum: 950000000, clientCount: 412 },
     { initials: "WD", name: "William Davis", aum: 922649990, clientCount: 392 },
   ],
+  tasks: [
+    { id: "Onboard-91234", clientName: "Johnson, Michael", taskType: "Client onboarding", title: "401(k) rollover setup", dueDate: "22/05/2025", followupDate: "20/05/2025", status: "In Progress", lastComment: "SSN verified", advisorInitials: "MJ", advisorName: "Michael Johnson", assigneeName: "Michael Johnson", isUrgent: false, isOverdue: false },
+    { id: "CRM-82345", clientName: "Williams, Patricia", taskType: "IRA", title: "Roth conversion", dueDate: "08/06/2025", followupDate: "06/06/2025", status: "Not Started", lastComment: "", advisorInitials: "MJ", advisorName: "Michael Johnson", assigneeName: "Michael Johnson", isUrgent: false, isOverdue: false },
+    { id: "Task-73456", clientName: "Brown, Robert", taskType: "Transfer", title: "401(k) rollover", dueDate: "20/04/2025", followupDate: "18/04/2025", status: "In Progress", lastComment: "Prior plan contacted", advisorInitials: "JW", advisorName: "Jennifer Williams", assigneeName: "Jennifer Williams", isUrgent: false, isOverdue: false },
+    { id: "CRM-64567", clientName: "Garcia, Maria", taskType: "529 Plan", title: "529 contribution", dueDate: "02/07/2025", followupDate: "30/06/2025", status: "Not Started", lastComment: "", advisorInitials: "JW", advisorName: "Jennifer Williams", assigneeName: "Jennifer Williams", isUrgent: false, isOverdue: false },
+    { id: "Trans-55678", clientName: "Martinez, David", taskType: "RMD", title: "Required minimum distribution", dueDate: "15/02/2025", followupDate: "13/02/2025", status: "In Progress", lastComment: "Calculation complete", advisorInitials: "RB", advisorName: "Robert Brown", assigneeName: "Robert Brown", isUrgent: true, isOverdue: true },
+    { id: "CRM-46789", clientName: "Anderson, Susan", taskType: "Review", title: "Annual portfolio review", dueDate: "28/02/2025", followupDate: "26/02/2025", status: "Not Started", lastComment: "", advisorInitials: "RB", advisorName: "Robert Brown", assigneeName: "Robert Brown", isUrgent: false, isOverdue: true },
+    { id: "Onboard-37891", clientName: "Taylor, Christopher", taskType: "Client onboarding", title: "New client intake", dueDate: "10/04/2025", followupDate: "08/04/2025", status: "In Progress", lastComment: "W-9 received", advisorInitials: "MG", advisorName: "Maria Garcia", assigneeName: "Maria Garcia", isUrgent: false, isOverdue: false },
+    { id: "Task-28912", clientName: "Thomas, Jessica", taskType: "Insurance", title: "Life insurance review", dueDate: "25/04/2025", followupDate: "23/04/2025", status: "Not Started", lastComment: "", advisorInitials: "MG", advisorName: "Maria Garcia", assigneeName: "Maria Garcia", isUrgent: false, isOverdue: false },
+    { id: "CRM-19123", clientName: "Hernandez, Daniel", taskType: "Tax planning", title: "Tax-loss harvesting", dueDate: "08/05/2025", followupDate: "06/05/2025", status: "In Progress", lastComment: "Loss positions identified", advisorInitials: "WD", advisorName: "William Davis", assigneeName: "William Davis", isUrgent: false, isOverdue: false },
+    { id: "Trans-91234", clientName: "Moore, Emily", taskType: "Transfer", title: "Brokerage consolidation", dueDate: "20/05/2025", followupDate: "18/05/2025", status: "Not Started", lastComment: "", advisorInitials: "WD", advisorName: "William Davis", assigneeName: "William Davis", isUrgent: false, isOverdue: false },
+    { id: "CRM-82345", clientName: "Wilson, Brian", taskType: "Review", title: "Retirement income review", dueDate: "05/06/2025", followupDate: "03/06/2025", status: "Completed", lastComment: "Strategy confirmed", advisorInitials: "MJ", advisorName: "Michael Johnson", assigneeName: "Michael Johnson", isUrgent: false, isOverdue: false },
+    { id: "Task-73456", clientName: "Clark, Nancy", taskType: "Claim", title: "Beneficiary claim", dueDate: "18/01/2025", followupDate: "16/01/2025", status: "In Progress", lastComment: "Death certificate received", advisorInitials: "JW", advisorName: "Jennifer Williams", assigneeName: "Jennifer Williams", isUrgent: true, isOverdue: true },
+    { id: "Onboard-64567", clientName: "Lewis, Kevin", taskType: "Client onboarding", title: "HSA account setup", dueDate: "28/06/2025", followupDate: "26/06/2025", status: "Not Started", lastComment: "", advisorInitials: "MG", advisorName: "Maria Garcia", assigneeName: "Maria Garcia", isUrgent: false, isOverdue: false },
+    { id: "CRM-55678", clientName: "Lee, Sandra", taskType: "Quote", title: "Long-term care quote", dueDate: "12/07/2025", followupDate: "10/07/2025", status: "In Progress", lastComment: "Underwriting started", advisorInitials: "RB", advisorName: "Robert Brown", assigneeName: "Robert Brown", isUrgent: false, isOverdue: false },
+    { id: "Trans-46789", clientName: "Walker, Paul", taskType: "Contribution", title: "IRA contribution", dueDate: "25/07/2025", followupDate: "23/07/2025", status: "Not Started", lastComment: "", advisorInitials: "WD", advisorName: "William Davis", assigneeName: "William Davis", isUrgent: false, isOverdue: false },
+  ],
 };
 
 const regionalDataMap: Record<string, RegionalData> = {
@@ -470,13 +572,17 @@ export function getFilteredRegionalData(
   const totalSelectedClients = selectedAdvisorsData.reduce((sum, a) => sum + a.clientCount, 0);
   const aumRatio = totalSelectedAUM / baseData.totalAUMNumber;
   
-  // Filter top accounts and birthdays by selected advisors
+  // Filter top accounts, birthdays, and tasks by selected advisors
   const filteredTopAccounts = baseData.topAccounts.filter(
     account => selectedAdvisors.includes(account.advisorInitials)
   );
   
   const filteredBirthdays = baseData.birthdays.filter(
     bday => selectedAdvisors.includes(bday.advisorInitials)
+  );
+  
+  const filteredTasks = baseData.tasks.filter(
+    task => selectedAdvisors.includes(task.advisorInitials)
   );
   
   // Scale provider values proportionally
@@ -511,6 +617,7 @@ export function getFilteredRegionalData(
     birthdays: filteredBirthdays,
     clientsByValue: scaledClientsByValue,
     advisors: baseData.advisors, // Keep all advisors for the filter UI
+    tasks: filteredTasks,
   };
 }
 
