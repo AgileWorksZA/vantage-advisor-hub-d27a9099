@@ -1,108 +1,95 @@
 
 
-# Add Typewriter Effect to AI Assistant Greeting
+# Add Typewriter Effect to Subtitle (Chained Animation)
 
 ## Overview
 
-Update the greeting in the AI Assistant header to:
-1. Not show "Adviser" as a fallback while loading - display an empty string instead
-2. Add a typewriter animation that types out the full greeting text character by character
+Add a second typewriter animation to the subtitle "Discover and track opportunities in your client base" that begins only after the main greeting ("Good Evening, Emile") finishes typing.
 
 ## Technical Approach
 
-### 1. Update Initial State and Loading Logic
+### 1. Add New State Variables
 
-**File: `src/pages/AIAssistant.tsx`**
+Add state to track the subtitle animation:
+- `displayedSubtitle`: The subtitle text currently shown (starts empty)
+- `isSubtitleTypingComplete`: Whether the subtitle animation has finished
 
-- Change the initial `userName` state from `"Adviser"` to an empty string `""`
-- This ensures no placeholder text is shown while the profile is loading
+### 2. Chain the Animations
 
-### 2. Create Typewriter Effect State
+Create a new `useEffect` that watches `isTypingComplete`. When the greeting finishes typing (`isTypingComplete` becomes `true`), start typing the subtitle character by character.
 
-Add new state variables to manage the typewriter animation:
-- `displayedGreeting`: The text currently shown on screen (starts empty)
-- `fullGreeting`: The complete greeting text to type out
-- `isTypingGreeting`: Whether the typewriter is currently animating
+### 3. Update the JSX
 
-### 3. Implement Typewriter Animation
-
-Create a `useEffect` that:
-- Constructs the full greeting string when `userName` changes (e.g., "Good Evening, Emile")
-- Only shows "Good Evening" (without comma/name) if userName is still empty
-- Types out the greeting one character at a time with a short delay (e.g., 50ms per character)
-- Uses `setInterval` to progressively reveal each character
-
-### 4. Update the JSX
-
-Replace the current greeting display:
-```tsx
-// Before
-<h1 className="text-xl font-semibold text-gradient-ai">
-  {getGreeting(timeOfDay)}, {userName}
-</h1>
-
-// After  
-<h1 className="text-xl font-semibold text-gradient-ai">
-  {displayedGreeting}
-  <span className="animate-pulse">|</span> {/* Optional: blinking cursor */}
-</h1>
-```
+Replace the static subtitle with the animated version, including a cursor that appears during typing.
 
 ## Implementation Details
 
-### State Changes (around line 97)
+### State Changes (around line 96-98)
 ```typescript
-const [userName, setUserName] = useState("");  // Changed from "Adviser"
+const [userName, setUserName] = useState("");
 const [displayedGreeting, setDisplayedGreeting] = useState("");
 const [isTypingComplete, setIsTypingComplete] = useState(false);
+const [displayedSubtitle, setDisplayedSubtitle] = useState("");
+const [isSubtitleTypingComplete, setIsSubtitleTypingComplete] = useState(false);
 ```
 
-### Typewriter Effect Hook (new useEffect after line 149)
+### New Subtitle Typewriter Effect (after line 182)
 ```typescript
+// Typewriter effect for subtitle (starts after greeting completes)
 useEffect(() => {
-  // Build the full greeting
-  const greeting = getGreeting(timeOfDay);
-  const fullText = userName ? `${greeting}, ${userName}` : greeting;
+  if (!isTypingComplete) {
+    setDisplayedSubtitle("");
+    setIsSubtitleTypingComplete(false);
+    return;
+  }
   
-  // Reset and start typing
-  setDisplayedGreeting("");
-  setIsTypingComplete(false);
+  const fullSubtitle = "Discover and track opportunities in your client base";
   
   let currentIndex = 0;
   const interval = setInterval(() => {
-    if (currentIndex <= fullText.length) {
-      setDisplayedGreeting(fullText.slice(0, currentIndex));
+    if (currentIndex <= fullSubtitle.length) {
+      setDisplayedSubtitle(fullSubtitle.slice(0, currentIndex));
       currentIndex++;
     } else {
-      setIsTypingComplete(true);
+      setIsSubtitleTypingComplete(true);
       clearInterval(interval);
     }
-  }, 50); // 50ms per character
+  }, 30); // Slightly faster than greeting (30ms vs 50ms)
   
   return () => clearInterval(interval);
-}, [userName, timeOfDay]);
+}, [isTypingComplete]);
 ```
 
-### JSX Update (line 553-555)
+### JSX Update (line 581)
 ```tsx
-<h1 className="text-xl font-semibold text-gradient-ai">
-  {displayedGreeting}
-  {!isTypingComplete && <span className="animate-pulse ml-0.5">|</span>}
-</h1>
+<p className="text-white/50 text-sm">
+  {displayedSubtitle}
+  {isTypingComplete && !isSubtitleTypingComplete && (
+    <span className="animate-pulse ml-0.5">|</span>
+  )}
+</p>
+```
+
+## Animation Flow
+
+```text
+1. Page loads → Greeting starts typing ("G", "Go", "Goo"...)
+2. Greeting completes → Cursor disappears from greeting
+3. Subtitle starts typing → Cursor appears on subtitle
+4. Subtitle completes → Cursor disappears entirely
 ```
 
 ## Summary of Changes
 
-| File | Change |
-|------|--------|
-| `src/pages/AIAssistant.tsx` (line 97) | Change `userName` initial state from `"Adviser"` to `""` |
-| `src/pages/AIAssistant.tsx` (new state) | Add `displayedGreeting` and `isTypingComplete` state variables |
-| `src/pages/AIAssistant.tsx` (new effect) | Add typewriter animation `useEffect` |
-| `src/pages/AIAssistant.tsx` (line 553-555) | Update greeting JSX to use `displayedGreeting` with optional blinking cursor |
+| File | Location | Change |
+|------|----------|--------|
+| `src/pages/AIAssistant.tsx` | Line 98 | Add `displayedSubtitle` and `isSubtitleTypingComplete` state |
+| `src/pages/AIAssistant.tsx` | After line 182 | Add new `useEffect` for subtitle typewriter animation |
+| `src/pages/AIAssistant.tsx` | Line 581 | Update subtitle JSX to use `displayedSubtitle` with cursor |
 
-## Animation Details
+## Animation Timing
 
-- **Speed**: 50ms per character (adjustable)
-- **Cursor**: Optional blinking `|` character that disappears when typing completes
-- **Re-trigger**: Animation restarts if `userName` or `timeOfDay` changes
+- **Greeting speed**: 50ms per character (existing)
+- **Subtitle speed**: 30ms per character (slightly faster for variety)
+- **Cursor**: Blinking `|` moves from greeting to subtitle, then disappears
 
