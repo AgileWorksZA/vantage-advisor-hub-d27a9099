@@ -1,109 +1,115 @@
 
 
-## Add More Clients for Birthdays and Top Accounts
+## Limit Widget Rows and Add "Show More" Link
 
 ### Overview
 
-Currently, each jurisdiction has only 5 top accounts (1 per advisor) and 10 birthdays (2 per advisor). When filtering to fewer advisors, widgets appear sparse. This change will add more entries distributed across all advisors to ensure the widgets remain populated regardless of filter selection.
-
----
-
-## Data Expansion
-
-### Current vs. New Counts
-
-| Widget | Current Count | New Count | Per Advisor |
-|--------|---------------|-----------|-------------|
-| **Top Accounts** | 5 | 15 | 3 per advisor |
-| **Birthdays** | 10 | 20 | 4 per advisor |
-
-This ensures that even when a single advisor is selected:
-- Top 5 Accounts shows 3 entries
-- Birthdays shows 4 entries (widget displays up to 6)
+Update the Birthdays and Top 5 Accounts widgets to consistently display a maximum of 7 rows, with a "show more" link appearing when additional entries are available. This prevents content from overflowing the widget borders.
 
 ---
 
 ## Implementation
 
-### File: `src/data/regionalData.ts`
+### File: `src/pages/Dashboard.tsx`
 
-#### South Africa (ZA) - Additional Entries
+#### 1. Add State for Expanded Widgets
 
-**Top Accounts (add 10 more, distributed evenly):**
-| Investor | Value | Advisor |
-|----------|-------|---------|
-| Van Niekerk, Marthinus | R 26,500,000 | JB |
-| Venter, Isabella | R 24,800,000 | JB |
-| Joubert, Francois | R 23,100,000 | SM |
-| Steyn, Chanelle | R 21,400,000 | SM |
-| Le Roux, Werner | R 19,700,000 | PN |
-| Marais, Annika | R 18,000,000 | PN |
-| Pretorius, Johannes | R 16,300,000 | LV |
-| Du Toit, Lizelle | R 14,600,000 | LV |
-| Coetzee, Hendrik | R 12,900,000 | DG |
-| Jacobs, Marlene | R 11,200,000 | DG |
+Add state to track which widgets are expanded (for future modal/expanded view):
 
-**Birthdays (add 10 more, distributed evenly):**
-| Name | Date | Age | Advisor |
-|------|------|-----|---------|
-| Petrus Jacobus Botha | 29 January | 55 | JB |
-| Maria Susanna van Zyl | 29 January | 48 | JB |
-| Hendrik Willem Venter | 30 January | 62 | SM |
-| Anna Elizabeth Joubert | 30 January | 51 | SM |
-| Gideon Francois Steyn | 31 January | 44 | PN |
-| Catharina Maria le Roux | 31 January | 59 | PN |
-| Barend Johannes Marais | 1 February | 67 | LV |
-| Susanna Petronella du Toit | 1 February | 43 | LV |
-| Willem Adriaan Coetzee | 2 February | 56 | DG |
-| Johanna Cornelia Jacobs | 2 February | 38 | DG |
+```typescript
+const [showAllBirthdays, setShowAllBirthdays] = useState(false);
+const [showAllAccounts, setShowAllAccounts] = useState(false);
+```
 
-#### Australia (AU) - Additional Entries
+#### 2. Update Top 5 Accounts Widget (lines 224-230)
 
-**Top Accounts (add 10 more):**
-Culturally appropriate Australian names (mix of Anglo, Irish, Greek, Italian, Asian backgrounds)
+**Current code:**
+```typescript
+{filteredRegionalData.topAccounts.map(account => <tr key={account.investor} className="border-t border-border">
+    <td className="py-2">{account.investor}</td>
+    <td className="py-2 text-right text-muted-foreground">{account.bookPercent}</td>
+    <td className="py-2 text-right">{account.value}</td>
+  </tr>)}
+```
 
-**Birthdays (add 10 more):**
-Distributed evenly across JM, ST, MO, EA, TM
+**New code:**
+```typescript
+{filteredRegionalData.topAccounts.slice(0, 7).map(account => <tr key={account.investor} className="border-t border-border">
+    <td className="py-2">{account.investor}</td>
+    <td className="py-2 text-right text-muted-foreground">{account.bookPercent}</td>
+    <td className="py-2 text-right">{account.value}</td>
+  </tr>)}
+</tbody>
+</table>
+{filteredRegionalData.topAccounts.length > 7 && (
+  <button 
+    className="w-full text-center text-xs text-primary hover:underline mt-2"
+    onClick={() => setShowAllAccounts(true)}
+  >
+    Show more ({filteredRegionalData.topAccounts.length - 7} more)
+  </button>
+)}
+```
 
-#### Canada (CA) - Additional Entries
+#### 3. Update Birthdays Widget (lines 316-322)
 
-**Top Accounts (add 10 more):**
-Mix of French-Canadian, English-Canadian, and multicultural names
+**Current code:**
+```typescript
+{filteredRegionalData.birthdays.slice(0, 6).map(person => <tr key={person.name} className="border-t border-border">
+    <td className="py-1.5">{person.name}</td>
+    <td className="py-1.5 text-right text-muted-foreground">{person.nextBirthday}</td>
+    <td className="py-1.5 text-right">{person.age}</td>
+  </tr>)}
+```
 
-**Birthdays (add 10 more):**
-Distributed evenly across PT, MB, JM, SG, RS
-
-#### United Kingdom (GB) - Additional Entries
-
-**Top Accounts (add 10 more):**
-Traditional British names reflecting diverse UK population
-
-**Birthdays (add 10 more):**
-Distributed evenly across WS, EJ, TW, VB, JT
-
-#### United States (US) - Additional Entries
-
-**Top Accounts (add 10 more):**
-Diverse American names (Anglo, Hispanic, Asian, African-American)
-
-**Birthdays (add 10 more):**
-Distributed evenly across MJ, JW, RB, MG, WD
+**New code:**
+```typescript
+{filteredRegionalData.birthdays.slice(0, 7).map(person => <tr key={person.name} className="border-t border-border">
+    <td className="py-1.5">{person.name}</td>
+    <td className="py-1.5 text-right text-muted-foreground">{person.nextBirthday}</td>
+    <td className="py-1.5 text-right">{person.age}</td>
+  </tr>)}
+</tbody>
+</table>
+{filteredRegionalData.birthdays.length > 7 && (
+  <button 
+    className="w-full text-center text-xs text-primary hover:underline mt-2"
+    onClick={() => setShowAllBirthdays(true)}
+  >
+    Show more ({filteredRegionalData.birthdays.length - 7} more)
+  </button>
+)}
+```
 
 ---
 
-## Files to Modify
+## Summary of Changes
 
-| File | Changes |
-|------|---------|
-| `src/data/regionalData.ts` | Add 10 additional top accounts and 10 additional birthdays to each of the 5 jurisdictions (ZA, AU, CA, GB, US) |
+| Location | Change |
+|----------|--------|
+| Line 56-58 | Add `showAllBirthdays` and `showAllAccounts` state variables |
+| Lines 224-231 | Add `.slice(0, 7)` to topAccounts mapping and add "Show more" link |
+| Lines 316-323 | Change `.slice(0, 6)` to `.slice(0, 7)` and add "Show more" link |
 
 ---
 
-## Result
+## Visual Result
 
-- Each advisor now has 3 top accounts assigned to them
-- Each advisor now has 4 birthday entries assigned to them
-- Selecting a single advisor displays meaningful data in all widgets
-- All entries use culturally appropriate names for each jurisdiction
-- Values for additional top accounts are scaled appropriately below existing entries
+**Before:**
+- Top Accounts: Shows all entries (can overflow)
+- Birthdays: Shows 6 entries (inconsistent with request)
+
+**After:**
+- Both widgets consistently show max 7 rows
+- "Show more (X more)" link appears at bottom when there are additional entries
+- Link is styled as primary color text with hover underline
+- Clicking the link can trigger an expanded view (state prepared for future modal implementation)
+
+---
+
+## Technical Notes
+
+- The row limit of 7 ensures consistent widget height across all advisor filter selections
+- The "show more" text dynamically shows the count of hidden entries
+- State variables are prepared for potential modal/dialog implementation to show full lists
 
