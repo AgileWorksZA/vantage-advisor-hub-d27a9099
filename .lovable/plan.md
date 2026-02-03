@@ -1,126 +1,242 @@
 
-Goal
-- Make Insights widgets behave like Dashboard: keep the “original” widget width (12-col proportions), and when the viewport narrows, wrap widgets onto new rows instead of continuing to shrink.
-- Prevent the Insights layout from getting “corrupted” again by automatic responsive reflows being saved to the database.
+# Fix: Widgets Maintain Fixed Pixel Width and Wrap Based on Available Space
 
-What I found (why Dashboard “works” but Insights doesn’t)
-1) Insights currently has a saved layout in the backend that was produced during the earlier “dynamic columns” iterations.
-   - The saved Insights layout contains widths that should never exist in this app (e.g. `commission-summary` saved as `w: 4` even though resizing is disabled and its default is `w: 6`).
-   - Because that broken layout is loaded on Insights, it can render oddly and behave differently than Dashboard.
-2) The grid currently only reduces column count (wrap trigger) once each column becomes smaller than `MIN_COL_WIDTH` (currently 80px).
-   - If the user resizes only “somewhat” smaller, columns can shrink (widgets get narrower) without crossing that threshold, so wrapping won’t happen yet.
-   - This is especially noticeable on Insights due to chart readability.
+## Problem Summary
 
-Fix strategy (high level)
-A) Make wrapping trigger earlier on Insights (use a larger “minimum column width”) so widgets don’t get squeezed.
-B) Stop persisting layout changes that are caused by responsive reflow/compaction (resize-driven), so the database layout remains a stable “canonical” layout.
-C) Detect and automatically reset/migrate legacy/invalid saved layouts for Insights so it loads correctly immediately.
+The current implementation uses a **12-column proportional grid** where:
+- Widget width `w: 3` = 25% of container width
+- As the container shrinks, widgets shrink proportionally
+- Only when columns become too narrow (< 80px) does wrapping occur
 
-Planned code changes
+**What the user wants**: Widgets should have a **fixed pixel width** (e.g., ~280px). The number of widgets per row should be calculated based on how many can fit at that fixed width, and remaining widgets wrap to the next row.
 
-1) DraggableWidgetGrid: make wrap threshold configurable per page
-File: src/components/widgets/DraggableWidgetGrid.tsx
+---
 
-- Add an optional prop, e.g.:
-  - `minColWidth?: number` (or `wrapColMinWidthPx?: number`)
-  - Default remains whatever keeps Dashboard unchanged (likely keep 80 as default to avoid regressions).
-- Use this prop instead of the hard-coded `MIN_COL_WIDTH`.
+## Solution: Fixed-Width Widget Calculation
 
-Why
-- Dashboard can keep the current behavior.
-- Insights can request earlier wrapping (e.g. 100–110px per column) to preserve the “original” widget readability.
+Instead of using a 12-column proportional grid, we'll:
 
-Implementation detail
-- Replace the constant:
-  - from: `const MIN_COL_WIDTH = 80;`
-  - to: `const DEFAULT_MIN_COL_WIDTH = 80;` and inside component: `const minColWidth = props.minColWidth ?? DEFAULT_MIN_COL_WIDTH;`
-- Update:
-  - `effectiveColWidth < MIN_COL_WIDTH` → `effectiveColWidth < minColWidth`
+1. Define a base "unit width" per column (e.g., 280px for a `w: 1` widget, or ~70px per column unit for `w: 3` = 210px)
+2. Calculate how many column units fit: `visibleCols = floor(containerWidth / columnUnitWidth)`
+3. Widgets that don't fit on the current row automatically wrap to the next row
+4. Widget pixel width stays consistent regardless of container size
 
-2) DraggableWidgetGrid: prevent resize-driven layout saving (stop “layout corruption”)
-File: src/components/widgets/DraggableWidgetGrid.tsx
+### Key Insight
 
-Problem
-- `Responsive` fires `onLayoutChange` for many reasons, including:
-  - initial compaction
-  - breakpoint/cols changes
-  - width changes (responsive)
-- Today we forward that directly to `useWidgetLayout.onLayoutChange`, which then upserts to the backend. That means simply resizing can permanently rewrite the stored layout into a “mobile-wrapped” shape.
+Looking at the default layouts:
+- Dashboard widgets: `w: 3` (4 widgets per 12-col row)
+- Insights widgets: `w: 3` (4 widgets per row), `w: 6` (2 per row)
 
-Change
-- Do not call the parent’s persistence callback from `onLayoutChange`.
-- Instead:
-  - Use `onDragStop` (and optionally `onDragStart`) to persist only after a user action.
-  - Keep `onLayoutChange` either unused or only for internal bookkeeping (but not persistence).
+To keep widgets at ~280px, each column unit should be ~93px (since `w: 3` × 93px ≈ 280px).
 
-Concrete approach
-- Remove (or neutralize) the current:
-  - `onLayoutChange={(currentLayout) => onLayoutChange(currentLayout as WidgetLayout[])}`
-- Add:
-  - `onDragStop={(currentLayout) => onLayoutChange(currentLayout as WidgetLayout[])}`
-- Outcome:
-  - Responsive reflow still happens visually.
-  - Only explicit drag operations update and persist the canonical layout.
+We need a different approach: **calculate the visible columns based on how many widget-widths can fit**, not based on shrinking columns below a minimum.
 
-Optional stability improvement (if needed)
-- Add `key={visibleCols}` to the `Responsive` component to guarantee a clean recalculation when column count changes. This can help if the Insights page is “sticking” to a prior cols computation.
+---
 
-3) Insights: pass a higher minColWidth to trigger wrapping earlier
-File: src/pages/Insights.tsx
+## Implementation Approach
 
-- Change:
-  - `<DraggableWidgetGrid layout={layout} onLayoutChange={onLayoutChange}>`
-  - to:
-    `<DraggableWidgetGrid layout={layout} onLayoutChange={onLayoutChange} minColWidth={100}>` (exact value can be adjusted; 100 is aligned with “~100px per column” original intent)
+### Change in `DraggableWidgetGrid.tsx`
 
-Expected behavior
-- As you shrink the viewport, once the grid would otherwise squeeze below ~100px columns, it will reduce visible columns and wrap (instead of shrinking further).
+**New logic:**
+```typescript
+// Target widget width in pixels (w:3 widgets should be ~280px)
+const TARGET_WIDGET_WIDTH = 280;
+const GRID_MARGIN = 16;
 
-4) useWidgetLayout: auto-heal legacy/invalid Insights layouts on load
-File: src/hooks/useWidgetLayout.ts
+// Calculate based on the most common widget width (w:3)
+// Each column unit = TARGET_WIDGET_WIDTH / 3 ≈ 93px
+const COLUMN_UNIT_WIDTH = TARGET_WIDGET_WIDTH / 3;
 
-Why this is needed now
-- The Insights record currently stored in the backend appears to be legacy/corrupted (e.g. contains widths that don’t match defaults, even though resizing is disabled).
-- Even after we fix wrapping/persistence, that bad saved layout would still be loaded and keep causing problems until manually reset.
+// Calculate how many column units fit in the container
+const visibleCols = Math.max(3, Math.floor(
+  (containerWidth + GRID_MARGIN) / (COLUMN_UNIT_WIDTH + GRID_MARGIN / 3)
+));
+```
 
-How we’ll detect “invalid”
-- Build a lookup from `defaultLayout` by widget id (`i`).
-- If any saved layout item has a `w` that differs from its default `w` (for that widget id), treat the saved layout as legacy/invalid.
-  - This is safe because widgets are not resizable, so `w` should not drift from defaults in a healthy canonical layout.
+However, this still creates proportional sizing. For truly **fixed pixel widths**, we need to:
 
-What we’ll do when invalid
-- Fall back to `defaultLayout` for that page.
-- Immediately overwrite/upsert the corrected layout back to the backend so subsequent loads are stable.
+1. Set `cols` to match exactly how many widgets can fit
+2. Let react-grid-layout calculate `(containerWidth - margins) / cols` per column
+3. Ensure this calculation results in the target widget width
 
-This keeps user experience simple
-- Users don’t have to “reset layout” manually.
-- Insights will start loading correctly again right away.
+**Better approach - work backwards from desired widget width:**
 
-Testing plan (end-to-end)
-1) Insights page load
-- Hard refresh on /insights
-- Confirm widgets render with expected default widths (e.g. `w:3` cards look like the original 4-per-row layout on wide screens).
-2) Responsive wrapping on Insights
-- Gradually resize the window narrower
-- Confirm: widgets wrap into fewer columns/rows rather than continuing to shrink below the original readable width.
-3) Persistence safety
-- Resize the window and refresh
-- Confirm: the layout does not get “rewritten” into a narrow/mobile arrangement just because you resized.
-4) Drag persistence still works
-- Drag a widget to a new position on Insights
-- Refresh
-- Confirm: the new arrangement persists.
+```typescript
+// Desired width for a w:3 widget
+const TARGET_W3_WIDTH = 280;
 
-Files that will be modified
-- src/components/widgets/DraggableWidgetGrid.tsx
-  - Add configurable minColWidth
-  - Persist layout only on drag stop (not on resize-driven layout changes)
-  - (Optional) force recalculation on visibleCols change via key
-- src/pages/Insights.tsx
-  - Pass minColWidth (e.g. 100) to preserve original width and wrap earlier
-- src/hooks/useWidgetLayout.ts
-  - Validate loaded layout widths vs defaults
-  - Auto-reset/upsert default layout if legacy/invalid is detected
+// Calculate how many w:3 widgets fit side by side
+const widgetsPerRow = Math.max(1, Math.floor(
+  (containerWidth + GRID_MARGIN) / (TARGET_W3_WIDTH + GRID_MARGIN)
+));
 
-Notes / trade-offs
-- If a user drags widgets while on a narrow layout (reduced visible cols), the saved x/y may reflect that narrower grid. If this becomes undesirable, we can further refine persistence so it only saves “desktop” (12-col) drags, or we can map positions back to 12-col space. For now, the critical fix is: stop saving purely responsive reflow changes and heal the existing broken Insights layout.
+// The grid needs 3 columns per widget (since w:3)
+const visibleCols = widgetsPerRow * 3;
+```
+
+This ensures:
+- On a 1200px container: `floor(1216 / 296)` = 4 widgets → 12 columns → each w:3 widget = 280px
+- On a 900px container: `floor(916 / 296)` = 3 widgets → 9 columns → each w:3 widget = 280px
+- On a 600px container: `floor(616 / 296)` = 2 widgets → 6 columns → each w:3 widget = 280px
+- On a 400px container: `floor(416 / 296)` = 1 widget → 3 columns → each w:3 widget = 380px (full width)
+
+---
+
+## Updated Code
+
+### `DraggableWidgetGrid.tsx`
+
+```tsx
+import { ReactNode, useRef, useState, useEffect } from 'react';
+import { Responsive } from 'react-grid-layout/legacy';
+import 'react-grid-layout/css/styles.css';
+
+const GRID_MARGIN = 16;
+
+// Target width for a standard widget (w:3 in a 12-col grid)
+// This is the "original" width we want to preserve
+const DEFAULT_TARGET_WIDGET_WIDTH = 280;
+
+export interface WidgetLayout {
+  i: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  minW?: number;
+  maxW?: number;
+  minH?: number;
+  maxH?: number;
+  static?: boolean;
+}
+
+interface DraggableWidgetGridProps {
+  layout: WidgetLayout[];
+  onLayoutChange: (layout: WidgetLayout[]) => void;
+  children: ReactNode;
+  rowHeight?: number;
+  targetWidgetWidth?: number; // Target pixel width for a w:3 widget
+  baseWidgetUnits?: number; // How many column units = one "standard" widget (default: 3)
+}
+
+export const DraggableWidgetGrid = ({
+  layout,
+  onLayoutChange,
+  children,
+  rowHeight = 100,
+  targetWidgetWidth = DEFAULT_TARGET_WIDGET_WIDTH,
+  baseWidgetUnits = 3,
+}: DraggableWidgetGridProps) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState<number | null>(null);
+
+  useEffect(() => {
+    const element = containerRef.current;
+    if (!element) return;
+
+    const measureWidth = () => {
+      const width = element.getBoundingClientRect().width;
+      if (width > 0) {
+        setContainerWidth(width);
+      }
+    };
+
+    requestAnimationFrame(measureWidth);
+
+    const observer = new ResizeObserver(([entry]) => {
+      if (entry.contentRect.width > 0) {
+        setContainerWidth(entry.contentRect.width);
+      }
+    });
+
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
+  if (containerWidth === null) {
+    return <div ref={containerRef} className="w-full min-h-[200px]" />;
+  }
+
+  // Calculate how many "standard widgets" (w:3) can fit side by side
+  // Each widget needs targetWidgetWidth + margin
+  const widgetsPerRow = Math.max(1, Math.floor(
+    (containerWidth + GRID_MARGIN) / (targetWidgetWidth + GRID_MARGIN)
+  ));
+
+  // Convert to column units (each standard widget = baseWidgetUnits columns)
+  const visibleCols = widgetsPerRow * baseWidgetUnits;
+
+  // Adjust layout for current column count
+  const adjustedLayout = layout.map(item => ({
+    ...item,
+    w: Math.min(item.w, visibleCols),
+    x: item.x >= visibleCols ? 0 : Math.min(item.x, visibleCols - Math.min(item.w, visibleCols)),
+  }));
+
+  const layouts = { lg: adjustedLayout };
+
+  return (
+    <div ref={containerRef} className="w-full">
+      <Responsive
+        key={visibleCols}
+        className="layout"
+        layouts={layouts}
+        breakpoints={{ lg: 0 }}
+        cols={{ lg: visibleCols }}
+        width={containerWidth}
+        rowHeight={rowHeight}
+        onDragStop={(currentLayout: any) => 
+          onLayoutChange(currentLayout as WidgetLayout[])
+        }
+        draggableHandle=".widget-drag-handle"
+        margin={[GRID_MARGIN, GRID_MARGIN] as [number, number]}
+        containerPadding={[0, 0] as [number, number]}
+        isResizable={false}
+        compactType="vertical"
+        preventCollision={false}
+        useCSSTransforms={true}
+      >
+        {children}
+      </Responsive>
+    </div>
+  );
+};
+```
+
+---
+
+## How It Works
+
+| Container Width | Widgets Per Row | Visible Cols | Widget Width (w:3) |
+|-----------------|-----------------|--------------|-------------------|
+| 1200px | 4 | 12 | ~290px |
+| 900px | 3 | 9 | ~290px |
+| 600px | 2 | 6 | ~290px |
+| 400px | 1 | 3 | ~380px (fills row) |
+
+The key difference: instead of shrinking widgets until a minimum column width is hit, we calculate upfront how many fixed-width widgets fit and set the column count accordingly.
+
+---
+
+## Files to Modify
+
+| File | Changes |
+|------|---------|
+| `src/components/widgets/DraggableWidgetGrid.tsx` | Replace column-width-based wrapping with widget-count-based calculation. Add `targetWidgetWidth` and `baseWidgetUnits` props. |
+
+---
+
+## Additional Considerations
+
+- **Insights page**: Remove the `minColWidth={100}` prop since it's no longer needed
+- **Dashboard and Insights**: Both can use default props (`targetWidgetWidth=280`, `baseWidgetUnits=3`)
+- **Larger widgets (w:6)**: Will span 2 widget slots, maintaining correct proportions
+
+---
+
+## Result
+
+- Widgets maintain their original ~280px width regardless of screen size
+- On narrower screens, fewer widgets fit per row and the rest wrap
+- Users scroll vertically to see all widgets
+- No shrinking of widget content
