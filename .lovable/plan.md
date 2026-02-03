@@ -1,57 +1,120 @@
 
 
-## Simplify Top 5 Accounts Widget
+## Enable Client Navigation from Dashboard Widgets
 
 ### Overview
 
-The Top 5 Accounts widget will be simplified to show only the 5 largest client accounts for each combination of advisor selection, sorted from largest to smallest value. The "Show more" button will be removed and the name format will be changed from "Surname, FirstName" to "FirstName Surname" to match the birthday widget.
+Allow users to click on client names in the **Birthdays** and **Top 5 Accounts** widgets to navigate directly to that client's detail page. When clicking the "Back" button on the client detail page, the user should return to the **Dashboard** (not the Clients list).
 
 ---
 
-## Changes Required
+## Current State
 
-### 1. Dashboard Widget (src/pages/Dashboard.tsx)
+**Dashboard.tsx:**
+- Widget rows display client names but are not clickable
+- No navigation to client detail when clicking a name
 
-**Current behavior (lines 204-250):**
-- Shows 7 accounts with `.slice(0, 7)`
-- Has "Show more" button when more than 7 accounts exist
-- Displays names as-is from the data
+**ClientDetail.tsx:**
+- Back button always navigates to `/clients` (line 185)
+- Does not track where the user came from
 
-**New behavior:**
-- Show exactly 5 accounts with `.slice(0, 5)`
-- Remove the "Show more" button completely
-- Sort accounts by value (largest first) before slicing
-- Display names with helper function to convert format
+---
 
-**Code changes:**
+## Implementation
 
-1. Add a helper function to convert "Surname, FirstName" to "FirstName Surname":
+### Approach
+
+1. **Dashboard widgets**: Make each client row clickable
+   - Query the database for a matching client by name (first_name + surname)
+   - If found, navigate to `/clients/{id}?from=dashboard`
+   - If not found, show a toast notification
+
+2. **ClientDetail page**: Check for `from` URL parameter
+   - If `from=dashboard`, back button navigates to `/dashboard`
+   - Otherwise, back button navigates to `/clients` (default behavior)
+
+---
+
+### File 1: `src/pages/Dashboard.tsx`
+
+#### 1. Add a helper function to find client by name
+
 ```typescript
-const formatInvestorName = (investor: string): string => {
-  // Handle organization names (no comma)
-  if (!investor.includes(',')) return investor;
-  // Convert "Surname, FirstName" to "FirstName Surname"
-  const parts = investor.split(',').map(p => p.trim());
-  return `${parts[1]} ${parts[0]}`;
+const findClientByName = async (fullName: string): Promise<string | null> => {
+  // Parse name parts - format is "FirstName MiddleName... Surname"
+  const nameParts = fullName.trim().split(' ');
+  if (nameParts.length < 2) return null;
+  
+  const firstName = nameParts[0];
+  const surname = nameParts[nameParts.length - 1];
+  
+  try {
+    const { data, error } = await supabase
+      .from('clients')
+      .select('id')
+      .ilike('first_name', `%${firstName}%`)
+      .ilike('surname', `%${surname}%`)
+      .limit(1)
+      .single();
+    
+    if (error || !data) return null;
+    return data.id;
+  } catch {
+    return null;
+  }
 };
 ```
 
-2. Add a helper function to parse currency values for sorting:
+#### 2. Add a click handler function
+
 ```typescript
-const parseValueToNumber = (value: string): number => {
-  return parseFloat(value.replace(/[^0-9.-]/g, ''));
+const handleClientClick = async (clientName: string) => {
+  const clientId = await findClientByName(clientName);
+  if (clientId) {
+    navigate(`/clients/${clientId}?from=dashboard`);
+  } else {
+    toast.error(`Client "${clientName}" not found in database`);
+  }
 };
 ```
 
-3. Update the Top 5 Accounts table body:
+#### 3. Update Birthdays widget table rows (~line 326-330)
+
+Make rows clickable with cursor styling:
+
+```typescript
+{filteredRegionalData.birthdays.slice(0, 7).map(person => (
+  <tr 
+    key={person.name} 
+    className="border-t border-border hover:bg-muted/50 cursor-pointer"
+    onClick={() => handleClientClick(person.name)}
+  >
+    <td className="py-1.5">{person.name}</td>
+    <td className="py-1.5 text-right text-muted-foreground">{person.nextBirthday}</td>
+    <td className="py-1.5 text-right">{person.age}</td>
+  </tr>
+))}
+```
+
+#### 4. Update Top 5 Accounts widget table rows (~line 232-238)
+
+Make rows clickable with cursor styling:
+
 ```typescript
 {[...filteredRegionalData.topAccounts]
-  .sort((a, b) => parseValueToNumber(b.value) - parseValueToNumber(a.value))
+  .sort((a, b) => {
+    const parseValue = (v: string) => parseFloat(v.replace(/[^0-9.-]/g, ''));
+    return parseValue(b.value) - parseValue(a.value);
+  })
   .slice(0, 5)
   .map(account => (
-    <tr key={account.investor} className="border-t border-border">
+    <tr 
+      key={account.investor} 
+      className="border-t border-border hover:bg-muted/50 cursor-pointer"
+      onClick={() => handleClientClick(account.investor)}
+    >
       <td className="py-2 max-w-[120px] truncate" title={account.investor}>
-        {formatInvestorName(account.investor)}
+        {account.investor}
       </td>
       <td className="py-2 text-right text-muted-foreground whitespace-nowrap">
         {account.bookPercent}
@@ -62,42 +125,50 @@ const parseValueToNumber = (value: string): number => {
 }
 ```
 
-4. Remove the "Show more" button and its conditional wrapper (lines 233-247)
+#### 5. Add required imports
+
+```typescript
+import { toast } from "sonner";
+```
 
 ---
 
-### 2. Regional Data (src/data/regionalData.ts)
+### File 2: `src/pages/ClientDetail.tsx`
 
-**Current format:** 
+#### 1. Add useSearchParams import
+
 ```typescript
-{ investor: "Van Niekerk, Marthinus", ... }
-{ investor: "Thompson, Richard", ... }
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 ```
 
-**New format:**
+#### 2. Get search params in component
+
 ```typescript
-{ investor: "Marthinus Van Niekerk", ... }
-{ investor: "Richard Thompson", ... }
+const [searchParams] = useSearchParams();
 ```
 
-**Regions to update:**
-- South Africa (ZA) - lines 95-111
-- Australia (AU) - lines 221-237
-- Canada (CA) - lines 353-369
-- United Kingdom (GB) - lines 469-485
-- United States (US) - lines 589-609
+#### 3. Update back button click handler (~line 185)
 
-**Name conversion examples:**
+Check the `from` parameter to determine navigation destination:
 
-| Current | New |
-|---------|-----|
-| Van Niekerk, Marthinus | Marthinus Van Niekerk |
-| Venter, Isabella | Isabella Venter |
-| De Villiers, Jean | Jean De Villiers |
-| Thompson, Richard | Richard Thompson |
-| Papadopoulos, Konstantinos | Konstantinos Papadopoulos |
-| NG Kerk Sinode Oos-Kaapland | NG Kerk Sinode Oos-Kaapland (no change - org) |
-| Melbourne Grammar School Foundation | Melbourne Grammar School Foundation (no change - org) |
+```typescript
+<Button 
+  variant="outline" 
+  size="sm"
+  onClick={() => {
+    const from = searchParams.get('from');
+    if (from === 'dashboard') {
+      navigate("/dashboard");
+    } else {
+      navigate("/clients");
+    }
+  }}
+  className="gap-2"
+>
+  <ArrowLeft className="w-4 h-4" />
+  Back
+</Button>
+```
 
 ---
 
@@ -105,16 +176,61 @@ const parseValueToNumber = (value: string): number => {
 
 | File | Changes |
 |------|---------|
-| `src/pages/Dashboard.tsx` | Add format helper, sort by value, slice to 5, remove "Show more" |
-| `src/data/regionalData.ts` | Convert all topAccounts investor names to "FirstName Surname" format for ZA, AU, CA, GB, US |
+| `src/pages/Dashboard.tsx` | Add `findClientByName` helper, `handleClientClick` handler, make widget rows clickable |
+| `src/pages/ClientDetail.tsx` | Import `useSearchParams`, check `from` param, conditionally navigate to dashboard |
 
 ---
 
-## Result
+## Visual Result
 
-- Widget will always show exactly 5 accounts
-- Accounts sorted by value (largest at top)
-- Names displayed as "FirstName Surname" matching birthday widget format
-- No "Show more" button (cleaner UI)
-- Works correctly with all advisor filter combinations
+**Dashboard (before):**
+```text
+┌─────────────────────────────────────────┐
+│ Birthdays                               │
+├─────────────────────────────────────────┤
+│ Andre Thomas Coetzer      28 Jan    42  │  ← Static row
+│ Esther Amanda Nieman      28 Jan    74  │
+└─────────────────────────────────────────┘
+```
+
+**Dashboard (after):**
+```text
+┌─────────────────────────────────────────┐
+│ Birthdays                               │
+├─────────────────────────────────────────┤
+│ Andre Thomas Coetzer ↗    28 Jan    42  │  ← Clickable, hover highlight
+│ Esther Amanda Nieman ↗    28 Jan    74  │
+└─────────────────────────────────────────┘
+```
+
+**Client Detail (from Dashboard):**
+```text
+┌─────────────────────────────────────────────────────────────┐
+│ [← Back]  Manage individual (Owner) - Andre Thomas Coetzer  │
+├─────────────────────────────────────────────────────────────┤
+│ ...                                                         │
+└─────────────────────────────────────────────────────────────┘
+      ↓ Click "Back"
+      → Navigates to /dashboard (not /clients)
+```
+
+---
+
+## Edge Cases
+
+| Scenario | Behavior |
+|----------|----------|
+| Client name not found in DB | Toast error: "Client 'Name' not found in database" |
+| Organization name (e.g., "NG Kerk Sinode...") | May not match - shows toast error |
+| User navigates directly to `/clients/{id}` | Back goes to `/clients` (no `from` param) |
+| User refreshes client detail page | `from=dashboard` preserved in URL, back still works |
+
+---
+
+## Technical Notes
+
+- Uses `ilike` for case-insensitive partial matching on first_name and surname
+- Widget data uses "FirstName MiddleName Surname" format - we extract first and last words
+- URL parameter approach (`?from=dashboard`) ensures state persists on page refresh
+- No changes needed to routing configuration - just URL parameters
 
