@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
@@ -53,6 +53,7 @@ import {
 import { useClients } from "@/hooks/useClients";
 import AddClientDialog from "@/components/clients/AddClientDialog";
 import { AppHeader } from "@/components/layout/AppHeader";
+import { useRegion } from "@/contexts/RegionContext";
 
 const filterTabs = [
   { label: "Lead", color: "hsl(180, 70%, 45%)" },
@@ -93,6 +94,14 @@ const Clients = () => {
   const [widgetData, setWidgetData] = useState<Record<string, { birthday?: string; age?: number; value?: string; bookPercent?: string }>>({});
 
   const { clients, loading: clientsLoading, refetch, deleteClient } = useClients();
+  const { regionalData, selectedAdvisors } = useRegion();
+
+  // Map selected advisor initials to full names for filtering
+  const selectedAdvisorNames = useMemo(() => {
+    return regionalData.advisors
+      .filter(advisor => selectedAdvisors.includes(advisor.initials))
+      .map(advisor => advisor.name);
+  }, [regionalData.advisors, selectedAdvisors]);
 
   // Read URL parameters for Dashboard widget filters
   useEffect(() => {
@@ -239,8 +248,15 @@ const Clients = () => {
     return null;
   };
 
-  // Filter clients based on active filter, search query, and dashboard widget filter
+  // Filter clients based on active filter, search query, dashboard widget filter, AND selected advisors
   const filteredClients = clients.filter((client) => {
+    // Filter by selected advisors from region context
+    if (selectedAdvisorNames.length > 0) {
+      if (!client.advisor || !selectedAdvisorNames.includes(client.advisor)) {
+        return false;
+      }
+    }
+
     // If coming from Dashboard widget, filter by name list
     if (filteredNames.length > 0) {
       const clientFullName = client.client.toLowerCase();
