@@ -172,16 +172,7 @@ All colors MUST be HSL.
     background-color: hsl(222, 84%, 5%);
   }
 
-/* Time-based sky gradient backgrounds with fluid animation */
-  @keyframes gradient-shift {
-    0%, 100% {
-      background-position: 0% 50%;
-    }
-    50% {
-      background-position: 100% 50%;
-    }
-  }
-
+  /* Time-based sky gradient backgrounds */
   .gradient-mesh-morning {
     background: linear-gradient(
       135deg,
@@ -250,6 +241,15 @@ All colors MUST be HSL.
   /* ECharts Sparkline Container - minimal glass effect */
   .echarts-sparkline {
     background: transparent;
+  }
+}
+
+@keyframes gradient-shift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
   }
 }
 
