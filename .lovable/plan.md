@@ -1,115 +1,229 @@
 
 
-## Limit Widget Rows and Add "Show More" Link
+## Add Task Table to Tasks Dashboard
 
 ### Overview
 
-Update the Birthdays and Top 5 Accounts widgets to consistently display a maximum of 7 rows, with a "show more" link appearing when additional entries are available. This prevents content from overflowing the widget borders.
+Transform the Tasks Dashboard to display tasks in a data table format matching the reference screenshot, with regional filtering capabilities. The table will show columns: Client, Task Type, Title, Due date, Followup date, Status, Last comment, Advisor, Task number, Assignee, and Menu. The stat cards at the top will become clickable filters, and the page will respond to jurisdiction and advisor selection changes.
+
+---
+
+## Data Structure
+
+### New Task Data Interface
+
+Add task data to the regional data file that aligns with client information:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | string | Task number (e.g., "Onboard-81443") |
+| clientName | string | Client name from regional data |
+| taskType | string | Client Onboarding, Claim, Transfer, Annuity review, Quote, etc. |
+| title | string | Descriptive task title |
+| dueDate | string | Due date (DD/MM/YYYY format) |
+| followupDate | string | Follow-up date |
+| status | string | In Progress, Not Started, Completed |
+| lastComment | string | Optional last comment |
+| advisorInitials | string | Links to regional advisor |
+| advisorName | string | Full advisor name |
+| assigneeName | string | Person assigned to task |
+
+### Sample Task Types (per region)
+- Client Onboarding
+- Claim
+- Transfer
+- Annuity review
+- Quote
+- Additional Contribution
+- Switch
+- New Business
 
 ---
 
 ## Implementation
 
-### File: `src/pages/Dashboard.tsx`
+### File 1: `src/data/regionalData.ts`
 
-#### 1. Add State for Expanded Widgets
-
-Add state to track which widgets are expanded (for future modal/expanded view):
+Add new interfaces and task data:
 
 ```typescript
-const [showAllBirthdays, setShowAllBirthdays] = useState(false);
-const [showAllAccounts, setShowAllAccounts] = useState(false);
+export interface TaskData {
+  id: string;
+  clientName: string;
+  taskType: string;
+  title: string;
+  dueDate: string;
+  followupDate: string;
+  status: "In Progress" | "Not Started" | "Completed";
+  lastComment?: string;
+  advisorInitials: string;
+  advisorName: string;
+  assigneeName: string;
+  isUrgent?: boolean;
+  isOverdue?: boolean;
+}
 ```
 
-#### 2. Update Top 5 Accounts Widget (lines 224-230)
+Add `tasks: TaskData[]` to the `RegionalData` interface and populate with 15-20 tasks per jurisdiction using:
+- Client names that match existing regional clients
+- Advisors from the regional advisor list
+- Due dates in 2025 format matching the screenshot
+- Task numbers with prefixes like "Onboard-", "CRM-", "Task-", "Transaction-"
 
-**Current code:**
+### File 2: Update `getFilteredRegionalData()` in `src/data/regionalData.ts`
+
+Filter tasks by selected advisors:
+
 ```typescript
-{filteredRegionalData.topAccounts.map(account => <tr key={account.investor} className="border-t border-border">
-    <td className="py-2">{account.investor}</td>
-    <td className="py-2 text-right text-muted-foreground">{account.bookPercent}</td>
-    <td className="py-2 text-right">{account.value}</td>
-  </tr>)}
+const filteredTasks = baseData.tasks.filter(
+  task => selectedAdvisors.includes(task.advisorInitials)
+);
+
+return {
+  ...baseData,
+  // ... existing fields
+  tasks: filteredTasks,
+};
 ```
 
-**New code:**
+### File 3: `src/pages/Tasks.tsx`
+
+#### 1. Import RegionContext
+
 ```typescript
-{filteredRegionalData.topAccounts.slice(0, 7).map(account => <tr key={account.investor} className="border-t border-border">
-    <td className="py-2">{account.investor}</td>
-    <td className="py-2 text-right text-muted-foreground">{account.bookPercent}</td>
-    <td className="py-2 text-right">{account.value}</td>
-  </tr>)}
-</tbody>
-</table>
-{filteredRegionalData.topAccounts.length > 7 && (
-  <button 
-    className="w-full text-center text-xs text-primary hover:underline mt-2"
-    onClick={() => setShowAllAccounts(true)}
-  >
-    Show more ({filteredRegionalData.topAccounts.length - 7} more)
-  </button>
-)}
+import { useRegion } from "@/contexts/RegionContext";
 ```
 
-#### 3. Update Birthdays Widget (lines 316-322)
+#### 2. Add State for Card Filters
 
-**Current code:**
 ```typescript
-{filteredRegionalData.birthdays.slice(0, 6).map(person => <tr key={person.name} className="border-t border-border">
-    <td className="py-1.5">{person.name}</td>
-    <td className="py-1.5 text-right text-muted-foreground">{person.nextBirthday}</td>
-    <td className="py-1.5 text-right">{person.age}</td>
-  </tr>)}
+const [cardFilter, setCardFilter] = useState<string | null>(null);
 ```
 
-**New code:**
+#### 3. Make Stat Cards Clickable
+
+Transform each stat card to toggle filters:
+- Total Tasks: Show all open tasks
+- Urgent Tasks: Filter by `isUrgent === true`
+- Overdue: Filter by `isOverdue === true`
+- Completed Today: Filter by status "Completed"
+
+#### 4. Replace Card Grid with Data Table
+
+Remove the current card-based task display and add a table structure:
+
 ```typescript
-{filteredRegionalData.birthdays.slice(0, 7).map(person => <tr key={person.name} className="border-t border-border">
-    <td className="py-1.5">{person.name}</td>
-    <td className="py-1.5 text-right text-muted-foreground">{person.nextBirthday}</td>
-    <td className="py-1.5 text-right">{person.age}</td>
-  </tr>)}
-</tbody>
-</table>
-{filteredRegionalData.birthdays.length > 7 && (
-  <button 
-    className="w-full text-center text-xs text-primary hover:underline mt-2"
-    onClick={() => setShowAllBirthdays(true)}
-  >
-    Show more ({filteredRegionalData.birthdays.length - 7} more)
-  </button>
-)}
+<Table>
+  <TableHeader>
+    <TableRow>
+      <TableHead>Client</TableHead>
+      <TableHead>Task Type</TableHead>
+      <TableHead>Title</TableHead>
+      <TableHead>Due date</TableHead>
+      <TableHead>Followup date</TableHead>
+      <TableHead>Status</TableHead>
+      <TableHead>Last comment</TableHead>
+      <TableHead>Advisor</TableHead>
+      <TableHead>Task number</TableHead>
+      <TableHead>Assignee</TableHead>
+      <TableHead></TableHead>
+    </TableRow>
+  </TableHeader>
+  <TableBody>
+    {filteredTasks.map(task => (
+      <TableRow key={task.id}>
+        <TableCell className="text-primary">{task.clientName}</TableCell>
+        <TableCell>{task.taskType}</TableCell>
+        <TableCell className="max-w-[180px] truncate">{task.title}</TableCell>
+        <TableCell>
+          <Badge variant="outline" className={getDueDateStyle(task.dueDate)}>
+            {task.dueDate}
+          </Badge>
+        </TableCell>
+        <TableCell>{task.followupDate}</TableCell>
+        <TableCell>
+          <span className={getStatusStyle(task.status)}>{task.status}</span>
+        </TableCell>
+        <TableCell className="text-muted-foreground">{task.lastComment}</TableCell>
+        <TableCell>{task.advisorName}</TableCell>
+        <TableCell>{task.id}</TableCell>
+        <TableCell>{task.assigneeName}</TableCell>
+        <TableCell>
+          <DropdownMenu>...</DropdownMenu>
+        </TableCell>
+      </TableRow>
+    ))}
+  </TableBody>
+</Table>
+```
+
+#### 5. Add Date Styling
+
+Match the screenshot's date styling with pink/red background for past dates:
+
+```typescript
+const getDueDateStyle = (dateStr: string) => {
+  const date = parseDate(dateStr);
+  if (date < new Date()) {
+    return "bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-400";
+  }
+  return "";
+};
+```
+
+#### 6. Filter Logic with RegionContext
+
+```typescript
+const { filteredRegionalData } = useRegion();
+
+const displayedTasks = useMemo(() => {
+  let tasks = filteredRegionalData.tasks;
+  
+  // Apply card filter
+  if (cardFilter === 'urgent') {
+    tasks = tasks.filter(t => t.isUrgent);
+  } else if (cardFilter === 'overdue') {
+    tasks = tasks.filter(t => t.isOverdue);
+  } else if (cardFilter === 'completed') {
+    tasks = tasks.filter(t => t.status === 'Completed');
+  }
+  
+  return tasks;
+}, [filteredRegionalData.tasks, cardFilter]);
 ```
 
 ---
 
-## Summary of Changes
+## Sample Data (South Africa)
 
-| Location | Change |
-|----------|--------|
-| Line 56-58 | Add `showAllBirthdays` and `showAllAccounts` state variables |
-| Lines 224-231 | Add `.slice(0, 7)` to topAccounts mapping and add "Show more" link |
-| Lines 316-323 | Change `.slice(0, 6)` to `.slice(0, 7)` and add "Show more" link |
+| Client | Task Type | Title | Due date | Followup date | Status | Advisor | Task number | Assignee |
+|--------|-----------|-------|----------|---------------|--------|---------|-------------|----------|
+| Van Niekerk, Marthinus | Client onboarding | Client onboarding | 21/05/2025 | 19/05/2025 | In Progress | Johan Botha | Onboard-81443 | Johan Botha |
+| Venter, Isabella | Claim | Claim vir huis | 04/08/2025 | 21/08/2025 | Not Started | Johan Botha | CRM-95294 | Johan Botha |
+| Joubert, Francois | Transfer | Transfer to Ninety One | 15/08/2025 | 13/08/2025 | In Progress | Sarah Mostert | Task-95188 | Sarah Mostert |
+| Le Roux, Werner | Annuity review | Annual review | 01/09/2025 | 18/09/2025 | Not Started | Pieter Naudé | CRM-96774 | Pieter Naudé |
 
----
-
-## Visual Result
-
-**Before:**
-- Top Accounts: Shows all entries (can overflow)
-- Birthdays: Shows 6 entries (inconsistent with request)
-
-**After:**
-- Both widgets consistently show max 7 rows
-- "Show more (X more)" link appears at bottom when there are additional entries
-- Link is styled as primary color text with hover underline
-- Clicking the link can trigger an expanded view (state prepared for future modal implementation)
+Each jurisdiction will have 15-20 similar task entries using their culturally appropriate client names and advisors.
 
 ---
 
-## Technical Notes
+## Files to Modify
 
-- The row limit of 7 ensures consistent widget height across all advisor filter selections
-- The "show more" text dynamically shows the count of hidden entries
-- State variables are prepared for potential modal/dialog implementation to show full lists
+| File | Changes |
+|------|---------|
+| `src/data/regionalData.ts` | Add `TaskData` interface, add `tasks` array to each jurisdiction, update `getFilteredRegionalData()` |
+| `src/pages/Tasks.tsx` | Import RegionContext, add clickable stat cards, replace card grid with data table, filter by region/advisor |
+
+---
+
+## Result
+
+- Tasks page displays a professional data table matching the reference screenshot
+- Stat cards at the top are clickable to filter the table
+- Table updates automatically when jurisdiction is changed via the region selector
+- Table updates automatically when advisor filter is changed
+- Client names use culturally appropriate names for each region
+- Due dates styled with pink/red for overdue items
+- Status column styled with color-coded text
+- Menu column with three-dot dropdown for actions
 
