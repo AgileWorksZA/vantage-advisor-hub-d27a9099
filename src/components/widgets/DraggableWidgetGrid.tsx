@@ -5,8 +5,8 @@ import 'react-grid-layout/css/styles.css';
 // Fixed 12-column grid (original design)
 const FIXED_COLS = 12;
 const GRID_MARGIN = 16;
-// Minimum width before wrapping occurs - based on original ~100px per column
-const MIN_COL_WIDTH = 80;
+// Default minimum width before wrapping occurs - based on original ~100px per column
+const DEFAULT_MIN_COL_WIDTH = 80;
 
 export interface WidgetLayout {
   i: string;
@@ -26,6 +26,7 @@ interface DraggableWidgetGridProps {
   onLayoutChange: (layout: WidgetLayout[]) => void;
   children: ReactNode;
   rowHeight?: number;
+  minColWidth?: number; // Configurable wrap threshold per page
 }
 
 export const DraggableWidgetGrid = ({
@@ -33,6 +34,7 @@ export const DraggableWidgetGrid = ({
   onLayoutChange,
   children,
   rowHeight = 100,
+  minColWidth = DEFAULT_MIN_COL_WIDTH,
 }: DraggableWidgetGridProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState<number | null>(null);
@@ -71,8 +73,8 @@ export const DraggableWidgetGrid = ({
   // Calculate how many columns can visibly fit
   // This determines wrapping behavior while keeping widget proportions
   const effectiveColWidth = (containerWidth - (FIXED_COLS - 1) * GRID_MARGIN) / FIXED_COLS;
-  const visibleCols = effectiveColWidth < MIN_COL_WIDTH 
-    ? Math.max(3, Math.floor(containerWidth / (MIN_COL_WIDTH + GRID_MARGIN)))
+  const visibleCols = effectiveColWidth < minColWidth 
+    ? Math.max(3, Math.floor(containerWidth / (minColWidth + GRID_MARGIN)))
     : FIXED_COLS;
 
   // Adjust layout - widgets that exceed visible columns wrap to next row
@@ -88,13 +90,14 @@ export const DraggableWidgetGrid = ({
   return (
     <div ref={containerRef} className="w-full">
       <Responsive
+        key={visibleCols}
         className="layout"
         layouts={layouts}
         breakpoints={{ lg: 0 }}
         cols={{ lg: visibleCols }}
         width={containerWidth}
         rowHeight={rowHeight}
-        onLayoutChange={(currentLayout: any) => 
+        onDragStop={(currentLayout: any) => 
           onLayoutChange(currentLayout as WidgetLayout[])
         }
         draggableHandle=".widget-drag-handle"
