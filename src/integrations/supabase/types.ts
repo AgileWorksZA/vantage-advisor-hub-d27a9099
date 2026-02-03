@@ -67,6 +67,53 @@ export type Database = {
           },
         ]
       }
+      bucket_allocations: {
+        Row: {
+          bucket_type: string
+          created_at: string
+          current_allocation: number
+          id: string
+          notes: string | null
+          proposed_allocation: number
+          recommended_amount: number
+          updated_at: string
+          user_id: string
+          workflow_id: string
+        }
+        Insert: {
+          bucket_type: string
+          created_at?: string
+          current_allocation?: number
+          id?: string
+          notes?: string | null
+          proposed_allocation?: number
+          recommended_amount?: number
+          updated_at?: string
+          user_id: string
+          workflow_id: string
+        }
+        Update: {
+          bucket_type?: string
+          created_at?: string
+          current_allocation?: number
+          id?: string
+          notes?: string | null
+          proposed_allocation?: number
+          recommended_amount?: number
+          updated_at?: string
+          user_id?: string
+          workflow_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bucket_allocations_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "financial_planning_workflows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       calendar_events: {
         Row: {
           all_day: boolean
@@ -147,6 +194,88 @@ export type Database = {
           },
         ]
       }
+      client_assets: {
+        Row: {
+          asset_type: string
+          client_id: string
+          created_at: string
+          current_value: number
+          deleted_at: string | null
+          growth_rate: number | null
+          id: string
+          is_deleted: boolean
+          is_portal_visible: boolean
+          linked_income_id: string | null
+          linked_liability_id: string | null
+          name: string
+          notes: string | null
+          purchase_date: string | null
+          purchase_value: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          asset_type: string
+          client_id: string
+          created_at?: string
+          current_value?: number
+          deleted_at?: string | null
+          growth_rate?: number | null
+          id?: string
+          is_deleted?: boolean
+          is_portal_visible?: boolean
+          linked_income_id?: string | null
+          linked_liability_id?: string | null
+          name: string
+          notes?: string | null
+          purchase_date?: string | null
+          purchase_value?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          asset_type?: string
+          client_id?: string
+          created_at?: string
+          current_value?: number
+          deleted_at?: string | null
+          growth_rate?: number | null
+          id?: string
+          is_deleted?: boolean
+          is_portal_visible?: boolean
+          linked_income_id?: string | null
+          linked_liability_id?: string | null
+          name?: string
+          notes?: string | null
+          purchase_date?: string | null
+          purchase_value?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_assets_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_assets_linked_income_id_fkey"
+            columns: ["linked_income_id"]
+            isOneToOne: false
+            referencedRelation: "client_income"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_assets_linked_liability_id_fkey"
+            columns: ["linked_liability_id"]
+            isOneToOne: false
+            referencedRelation: "client_liabilities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_contacts: {
         Row: {
           client_id: string
@@ -199,6 +328,306 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_expenses: {
+        Row: {
+          amount: number
+          client_id: string
+          created_at: string
+          deleted_at: string | null
+          expense_category: string
+          expense_type: string
+          frequency: string
+          id: string
+          is_deleted: boolean
+          is_essential: boolean
+          is_portal_visible: boolean
+          linked_liability_id: string | null
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          client_id: string
+          created_at?: string
+          deleted_at?: string | null
+          expense_category: string
+          expense_type?: string
+          frequency?: string
+          id?: string
+          is_deleted?: boolean
+          is_essential?: boolean
+          is_portal_visible?: boolean
+          linked_liability_id?: string | null
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          client_id?: string
+          created_at?: string
+          deleted_at?: string | null
+          expense_category?: string
+          expense_type?: string
+          frequency?: string
+          id?: string
+          is_deleted?: boolean
+          is_essential?: boolean
+          is_portal_visible?: boolean
+          linked_liability_id?: string | null
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_expenses_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_expenses_linked_liability_id_fkey"
+            columns: ["linked_liability_id"]
+            isOneToOne: false
+            referencedRelation: "client_liabilities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_goals: {
+        Row: {
+          client_id: string
+          created_at: string
+          current_funding: number
+          deleted_at: string | null
+          description: string | null
+          funding_status: string
+          goal_category: string
+          goal_name: string
+          id: string
+          is_active: boolean
+          is_deleted: boolean
+          priority: string
+          target_amount: number
+          target_date: string | null
+          updated_at: string
+          user_id: string
+          workflow_id: string | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          current_funding?: number
+          deleted_at?: string | null
+          description?: string | null
+          funding_status?: string
+          goal_category: string
+          goal_name: string
+          id?: string
+          is_active?: boolean
+          is_deleted?: boolean
+          priority?: string
+          target_amount?: number
+          target_date?: string | null
+          updated_at?: string
+          user_id: string
+          workflow_id?: string | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          current_funding?: number
+          deleted_at?: string | null
+          description?: string | null
+          funding_status?: string
+          goal_category?: string
+          goal_name?: string
+          id?: string
+          is_active?: boolean
+          is_deleted?: boolean
+          priority?: string
+          target_amount?: number
+          target_date?: string | null
+          updated_at?: string
+          user_id?: string
+          workflow_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_goals_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_goals_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "financial_planning_workflows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_income: {
+        Row: {
+          client_id: string
+          created_at: string
+          deleted_at: string | null
+          end_date: string | null
+          frequency: string
+          gross_amount: number
+          id: string
+          income_type: string
+          is_deleted: boolean
+          is_portal_visible: boolean
+          is_taxable: boolean
+          linked_asset_id: string | null
+          net_amount: number | null
+          source_name: string
+          start_date: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          deleted_at?: string | null
+          end_date?: string | null
+          frequency?: string
+          gross_amount?: number
+          id?: string
+          income_type: string
+          is_deleted?: boolean
+          is_portal_visible?: boolean
+          is_taxable?: boolean
+          linked_asset_id?: string | null
+          net_amount?: number | null
+          source_name: string
+          start_date?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          deleted_at?: string | null
+          end_date?: string | null
+          frequency?: string
+          gross_amount?: number
+          id?: string
+          income_type?: string
+          is_deleted?: boolean
+          is_portal_visible?: boolean
+          is_taxable?: boolean
+          linked_asset_id?: string | null
+          net_amount?: number | null
+          source_name?: string
+          start_date?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_income_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_income_linked_asset_id_fkey"
+            columns: ["linked_asset_id"]
+            isOneToOne: false
+            referencedRelation: "client_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_liabilities: {
+        Row: {
+          client_id: string
+          created_at: string
+          creditor_name: string | null
+          current_balance: number
+          deleted_at: string | null
+          end_date: string | null
+          id: string
+          interest_rate: number | null
+          is_deleted: boolean
+          is_portal_visible: boolean
+          liability_type: string
+          linked_asset_id: string | null
+          monthly_payment: number | null
+          name: string
+          original_amount: number
+          start_date: string | null
+          term_months: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          creditor_name?: string | null
+          current_balance?: number
+          deleted_at?: string | null
+          end_date?: string | null
+          id?: string
+          interest_rate?: number | null
+          is_deleted?: boolean
+          is_portal_visible?: boolean
+          liability_type: string
+          linked_asset_id?: string | null
+          monthly_payment?: number | null
+          name: string
+          original_amount?: number
+          start_date?: string | null
+          term_months?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          creditor_name?: string | null
+          current_balance?: number
+          deleted_at?: string | null
+          end_date?: string | null
+          id?: string
+          interest_rate?: number | null
+          is_deleted?: boolean
+          is_portal_visible?: boolean
+          liability_type?: string
+          linked_asset_id?: string | null
+          monthly_payment?: number | null
+          name?: string
+          original_amount?: number
+          start_date?: string | null
+          term_months?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_liabilities_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_liabilities_linked_asset_id_fkey"
+            columns: ["linked_asset_id"]
+            isOneToOne: false
+            referencedRelation: "client_assets"
             referencedColumns: ["id"]
           },
         ]
@@ -1108,6 +1537,178 @@ export type Database = {
           },
         ]
       }
+      financial_planning_workflows: {
+        Row: {
+          adviser_id: string | null
+          client_id: string
+          completed_at: string | null
+          created_at: string
+          current_step: number
+          deleted_at: string | null
+          id: string
+          is_deleted: boolean
+          last_auto_save: string | null
+          started_at: string
+          status: string
+          step_data: Json
+          updated_at: string
+          user_id: string
+          workflow_name: string
+        }
+        Insert: {
+          adviser_id?: string | null
+          client_id: string
+          completed_at?: string | null
+          created_at?: string
+          current_step?: number
+          deleted_at?: string | null
+          id?: string
+          is_deleted?: boolean
+          last_auto_save?: string | null
+          started_at?: string
+          status?: string
+          step_data?: Json
+          updated_at?: string
+          user_id: string
+          workflow_name: string
+        }
+        Update: {
+          adviser_id?: string | null
+          client_id?: string
+          completed_at?: string | null
+          created_at?: string
+          current_step?: number
+          deleted_at?: string | null
+          id?: string
+          is_deleted?: boolean
+          last_auto_save?: string | null
+          started_at?: string
+          status?: string
+          step_data?: Json
+          updated_at?: string
+          user_id?: string
+          workflow_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_planning_workflows_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fp_workflow_documents: {
+        Row: {
+          created_at: string
+          deleted_at: string | null
+          delivered_at: string | null
+          delivery_status: string
+          display_order: number
+          document_name: string
+          document_type: string
+          id: string
+          is_deleted: boolean
+          is_selected: boolean
+          sent_at: string | null
+          signed_at: string | null
+          updated_at: string
+          user_id: string
+          workflow_id: string
+        }
+        Insert: {
+          created_at?: string
+          deleted_at?: string | null
+          delivered_at?: string | null
+          delivery_status?: string
+          display_order?: number
+          document_name: string
+          document_type: string
+          id?: string
+          is_deleted?: boolean
+          is_selected?: boolean
+          sent_at?: string | null
+          signed_at?: string | null
+          updated_at?: string
+          user_id: string
+          workflow_id: string
+        }
+        Update: {
+          created_at?: string
+          deleted_at?: string | null
+          delivered_at?: string | null
+          delivery_status?: string
+          display_order?: number
+          document_name?: string
+          document_type?: string
+          id?: string
+          is_deleted?: boolean
+          is_selected?: boolean
+          sent_at?: string | null
+          signed_at?: string | null
+          updated_at?: string
+          user_id?: string
+          workflow_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fp_workflow_documents_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "financial_planning_workflows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      goal_product_links: {
+        Row: {
+          allocation_percentage: number
+          client_product_id: string
+          created_at: string
+          goal_id: string
+          id: string
+          link_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          allocation_percentage?: number
+          client_product_id: string
+          created_at?: string
+          goal_id: string
+          id?: string
+          link_type?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          allocation_percentage?: number
+          client_product_id?: string
+          created_at?: string
+          goal_id?: string
+          id?: string
+          link_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goal_product_links_client_product_id_fkey"
+            columns: ["client_product_id"]
+            isOneToOne: false
+            referencedRelation: "client_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "goal_product_links_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "client_goals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meeting_recordings: {
         Row: {
           ai_action_items: Json | null
@@ -1344,6 +1945,72 @@ export type Database = {
         }
         Relationships: []
       }
+      product_implementations: {
+        Row: {
+          approved_at: string | null
+          client_product_id: string
+          created_at: string
+          deleted_at: string | null
+          id: string
+          implementation_status: string
+          implementation_type: string
+          is_deleted: boolean
+          is_selected: boolean
+          outstanding_requirements: Json
+          submitted_at: string | null
+          updated_at: string
+          user_id: string
+          workflow_id: string
+        }
+        Insert: {
+          approved_at?: string | null
+          client_product_id: string
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          implementation_status?: string
+          implementation_type?: string
+          is_deleted?: boolean
+          is_selected?: boolean
+          outstanding_requirements?: Json
+          submitted_at?: string | null
+          updated_at?: string
+          user_id: string
+          workflow_id: string
+        }
+        Update: {
+          approved_at?: string | null
+          client_product_id?: string
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          implementation_status?: string
+          implementation_type?: string
+          is_deleted?: boolean
+          is_selected?: boolean
+          outstanding_requirements?: Json
+          submitted_at?: string | null
+          updated_at?: string
+          user_id?: string
+          workflow_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_implementations_client_product_id_fkey"
+            columns: ["client_product_id"]
+            isOneToOne: false
+            referencedRelation: "client_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_implementations_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "financial_planning_workflows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_providers: {
         Row: {
           code: string
@@ -1487,6 +2154,59 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      sla_commitments: {
+        Row: {
+          annual_meetings_completed: number
+          annual_meetings_target: number
+          communication_preference: string
+          created_at: string
+          id: string
+          last_contact_date: string | null
+          next_review_date: string | null
+          portfolio_review_frequency: string
+          reports_to_provide: Json
+          updated_at: string
+          user_id: string
+          workflow_id: string
+        }
+        Insert: {
+          annual_meetings_completed?: number
+          annual_meetings_target?: number
+          communication_preference?: string
+          created_at?: string
+          id?: string
+          last_contact_date?: string | null
+          next_review_date?: string | null
+          portfolio_review_frequency?: string
+          reports_to_provide?: Json
+          updated_at?: string
+          user_id: string
+          workflow_id: string
+        }
+        Update: {
+          annual_meetings_completed?: number
+          annual_meetings_target?: number
+          communication_preference?: string
+          created_at?: string
+          id?: string
+          last_contact_date?: string | null
+          next_review_date?: string | null
+          portfolio_review_frequency?: string
+          reports_to_provide?: Json
+          updated_at?: string
+          user_id?: string
+          workflow_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sla_commitments_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "financial_planning_workflows"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tasks: {
         Row: {

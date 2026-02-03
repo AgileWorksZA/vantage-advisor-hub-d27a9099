@@ -20,14 +20,18 @@ import {
 } from "@/components/ui/table";
 import { ChevronLeft, ChevronRight, ChevronFirst, ChevronLast, Plus, Loader2 } from "lucide-react";
 import { useClientProducts } from "@/hooks/useClientProducts";
+import { useClientDetail } from "@/hooks/useClientDetail";
+import { FinancialPlanningWizard } from "@/components/financial-planning-workflow/FinancialPlanningWizard";
 
 const ClientProductsTab = () => {
   const { clientId } = useParams<{ clientId: string }>();
   const [showInactive, setShowInactive] = useState(false);
   const [productPage, setProductPage] = useState(1);
   const [subTab, setSubTab] = useState("products");
+  const [showWizard, setShowWizard] = useState(false);
   
   const { products, loading, refetch } = useClientProducts(clientId || "");
+  const { client } = useClientDetail(clientId);
 
   const handleShowInactiveChange = (checked: boolean) => {
     setShowInactive(checked);
@@ -67,7 +71,10 @@ const ClientProductsTab = () => {
           {/* Action Buttons */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <Button className="bg-[hsl(180,70%,45%)] hover:bg-[hsl(180,70%,40%)] text-white gap-2">
+              <Button 
+                className="bg-[hsl(180,70%,45%)] hover:bg-[hsl(180,70%,40%)] text-white gap-2"
+                onClick={() => setShowWizard(true)}
+              >
                 <Plus className="w-4 h-4" />
                 Add new product
               </Button>
@@ -169,8 +176,17 @@ const ClientProductsTab = () => {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Financial Planning Wizard */}
+      {clientId && (
+        <FinancialPlanningWizard
+          open={showWizard}
+          onOpenChange={setShowWizard}
+          clientId={clientId}
+          clientName={client ? `${client.first_name} ${client.surname}` : "Client"}
+        />
+      )}
     </div>
   );
 };
 
-export default ClientProductsTab;
