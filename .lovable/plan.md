@@ -1,95 +1,81 @@
 
 
-# Add Typewriter Effect to Subtitle (Chained Animation)
+# Wait for User Name Before Starting Typewriter Animation
 
-## Overview
+## Problem
 
-Add a second typewriter animation to the subtitle "Discover and track opportunities in your client base" that begins only after the main greeting ("Good Evening, Emile") finishes typing.
+Currently, the typewriter animation triggers twice:
+1. First when the page loads with `userName = ""` → types "Good Evening"
+2. Again when `userName` loads from the database → erases and types "Good Evening, Emile"
+
+The user wants the animation to only run once, after the user's name has been fetched.
+
+## Solution
+
+Add a loading state to track when the profile fetch is complete, and only start the typewriter animation after the name is available.
 
 ## Technical Approach
 
-### 1. Add New State Variables
+### 1. Add a Loading State
 
-Add state to track the subtitle animation:
-- `displayedSubtitle`: The subtitle text currently shown (starts empty)
-- `isSubtitleTypingComplete`: Whether the subtitle animation has finished
-
-### 2. Chain the Animations
-
-Create a new `useEffect` that watches `isTypingComplete`. When the greeting finishes typing (`isTypingComplete` becomes `true`), start typing the subtitle character by character.
-
-### 3. Update the JSX
-
-Replace the static subtitle with the animated version, including a cursor that appears during typing.
-
-## Implementation Details
-
-### State Changes (around line 96-98)
+Track whether the profile has been fetched:
 ```typescript
-const [userName, setUserName] = useState("");
-const [displayedGreeting, setDisplayedGreeting] = useState("");
-const [isTypingComplete, setIsTypingComplete] = useState(false);
-const [displayedSubtitle, setDisplayedSubtitle] = useState("");
-const [isSubtitleTypingComplete, setIsSubtitleTypingComplete] = useState(false);
+const [isProfileLoaded, setIsProfileLoaded] = useState(false);
 ```
 
-### New Subtitle Typewriter Effect (after line 182)
+### 2. Update Profile Fetch Effect
+
+Set the loading state to `true` after the fetch completes (whether or not a name was found):
 ```typescript
-// Typewriter effect for subtitle (starts after greeting completes)
 useEffect(() => {
-  if (!isTypingComplete) {
-    setDisplayedSubtitle("");
-    setIsSubtitleTypingComplete(false);
-    return;
-  }
-  
-  const fullSubtitle = "Discover and track opportunities in your client base";
-  
-  let currentIndex = 0;
-  const interval = setInterval(() => {
-    if (currentIndex <= fullSubtitle.length) {
-      setDisplayedSubtitle(fullSubtitle.slice(0, currentIndex));
-      currentIndex++;
-    } else {
-      setIsSubtitleTypingComplete(true);
-      clearInterval(interval);
+  const fetchProfile = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data } = await supabase
+        .from("profiles")
+        .select("first_name")
+        .eq("user_id", user.id)
+        .single();
+      if (data?.first_name) {
+        setUserName(data.first_name);
+      }
     }
-  }, 30); // Slightly faster than greeting (30ms vs 50ms)
+    setIsProfileLoaded(true); // Always set after fetch attempt
+  };
+  fetchProfile();
+}, []);
+```
+
+### 3. Update Typewriter Effect to Wait for Profile
+
+Only start typing when profile is loaded:
+```typescript
+useEffect(() => {
+  // Don't start until profile is loaded
+  if (!isProfileLoaded) return;
   
-  return () => clearInterval(interval);
-}, [isTypingComplete]);
+  const greeting = getGreeting(timeOfDay);
+  const fullText = userName ? `${greeting}, ${userName}` : greeting;
+  
+  // ... rest of typewriter logic
+}, [userName, timeOfDay, isProfileLoaded]);
 ```
 
-### JSX Update (line 581)
-```tsx
-<p className="text-white/50 text-sm">
-  {displayedSubtitle}
-  {isTypingComplete && !isSubtitleTypingComplete && (
-    <span className="animate-pulse ml-0.5">|</span>
-  )}
-</p>
-```
-
-## Animation Flow
+## Animation Flow (After Fix)
 
 ```text
-1. Page loads → Greeting starts typing ("G", "Go", "Goo"...)
-2. Greeting completes → Cursor disappears from greeting
-3. Subtitle starts typing → Cursor appears on subtitle
-4. Subtitle completes → Cursor disappears entirely
+1. Page loads → Nothing displayed (waiting for profile)
+2. Profile fetch completes → userName = "Emile"
+3. Greeting starts typing → "G", "Go", "Goo"... "Good Evening, Emile"
+4. Greeting completes → Subtitle starts typing
+5. Subtitle completes → All animations done
 ```
 
 ## Summary of Changes
 
 | File | Location | Change |
 |------|----------|--------|
-| `src/pages/AIAssistant.tsx` | Line 98 | Add `displayedSubtitle` and `isSubtitleTypingComplete` state |
-| `src/pages/AIAssistant.tsx` | After line 182 | Add new `useEffect` for subtitle typewriter animation |
-| `src/pages/AIAssistant.tsx` | Line 581 | Update subtitle JSX to use `displayedSubtitle` with cursor |
-
-## Animation Timing
-
-- **Greeting speed**: 50ms per character (existing)
-- **Subtitle speed**: 30ms per character (slightly faster for variety)
-- **Cursor**: Blinking `|` moves from greeting to subtitle, then disappears
+| `src/pages/AIAssistant.tsx` | Line 97 | Add `isProfileLoaded` state initialized to `false` |
+| `src/pages/AIAssistant.tsx` | Lines 138-153 | Add `setIsProfileLoaded(true)` after fetch completes |
+| `src/pages/AIAssistant.tsx` | Lines 164-184 | Add early return if `!isProfileLoaded`, add to dependency array |
 
