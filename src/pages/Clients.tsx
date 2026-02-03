@@ -212,11 +212,25 @@ const Clients = () => {
     const clientLower = clientName.toLowerCase();
     
     for (const [widgetName, data] of Object.entries(widgetData)) {
-      const nameParts = widgetName.split(' ');
-      const surname = nameParts[nameParts.length - 1];
-      const firstName = nameParts[0];
+      let surname: string;
+      let firstName: string;
       
-      if (clientLower.includes(surname) || clientLower.includes(firstName)) {
+      // Handle "Surname, FirstName" format (Top Accounts) vs "FirstName ... Surname" format (Birthdays)
+      if (widgetName.includes(',')) {
+        // Top Accounts format: "Chen, Wei" or "Johnson, Robert"
+        const commaParts = widgetName.split(',').map(p => p.trim());
+        surname = commaParts[0]; // "Chen"
+        firstName = commaParts[1] || ''; // "Wei"
+      } else {
+        // Birthday format: "Andre Thomas Coetzer"
+        const spaceParts = widgetName.split(' ');
+        surname = spaceParts[spaceParts.length - 1]; // Last word
+        firstName = spaceParts[0]; // First word
+      }
+      
+      // Check if client name contains surname or firstName
+      if (clientLower.includes(surname.toLowerCase()) || 
+          (firstName && clientLower.includes(firstName.toLowerCase()))) {
         return data;
       }
     }
