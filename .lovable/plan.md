@@ -1,24 +1,28 @@
 
 
-## Link Dashboard "Show More" to Clients Page with Filters
+## Add Conditional Column for Birthday/Value on Clients Page
 
 ### Overview
 
-When users click "Show more" on the **Birthdays** or **Top 5 Accounts** widgets on the Dashboard, they should be navigated to the Clients page with the relevant client names pre-populated as search filters. Since the Dashboard uses regional mock data (not database records), we'll pass the client names as URL query parameters that the Clients page will use to filter the displayed list.
+When users click "Show more" on the **Birthdays** or **Top 5 Accounts** widgets from the Dashboard, the Clients page will display an additional context-specific column:
+- **From Birthdays widget**: Show a "Birthday" column with the next birthday date
+- **From Top Accounts widget**: Show a "Value" column with the account value
+
+This requires passing the additional data (birthday dates or values) from the Dashboard to the Clients page via URL parameters, and conditionally rendering the extra column.
 
 ---
 
-## Current Behavior
+## Current State
 
-- **Birthdays widget**: Shows 7 birthday entries, then "Show more (X more)" button that sets `showAllBirthdays(true)` (unused state)
-- **Top 5 Accounts widget**: Shows 7 accounts, then "Show more" button that sets `showAllAccounts(true)` (unused state)
-- Both buttons currently do nothing visible
+**Dashboard.tsx** (lines 236-242, 339-345):
+- Birthdays "Show more": Passes `filter=birthdays&names=...` 
+- Top Accounts "Show more": Passes `filter=accounts&names=...`
+- Only names are passed, not the birthday dates or values
 
-## Proposed Behavior
-
-- **Show more on Birthdays**: Navigate to `/clients?filter=birthdays` with names extracted from birthday data
-- **Show more on Top Accounts**: Navigate to `/clients?filter=accounts` with names extracted from top accounts data
-- Clients page reads URL params and filters the table accordingly
+**Clients.tsx**:
+- Reads `filter` and `names` from URL params
+- Displays a filter indicator showing the source
+- No conditional columns based on filter source
 
 ---
 
@@ -26,25 +30,35 @@ When users click "Show more" on the **Birthdays** or **Top 5 Accounts** widgets 
 
 ### File 1: `src/pages/Dashboard.tsx`
 
-**Changes:**
-1. Remove unused `showAllBirthdays` and `showAllAccounts` state variables
-2. Update "Show more" buttons to navigate to Clients page with query parameters
+#### Update Birthdays "Show more" button (around line 339)
 
-**Birthdays "Show more" button:**
+Pass birthday data as additional URL parameters:
+
 ```typescript
 onClick={() => {
-  // Extract client names from birthdays (format: "Andre Thomas Coetzer")
-  const names = filteredRegionalData.birthdays.map(b => b.name).join(',');
-  navigate(`/clients?filter=birthdays&names=${encodeURIComponent(names)}`);
+  // Pass both names and their birthday data
+  const birthdayData = filteredRegionalData.birthdays.map(b => ({
+    name: b.name,
+    birthday: b.nextBirthday,
+    age: b.age
+  }));
+  navigate(`/clients?filter=birthdays&data=${encodeURIComponent(JSON.stringify(birthdayData))}`);
 }}
 ```
 
-**Top Accounts "Show more" button:**
+#### Update Top Accounts "Show more" button (around line 236)
+
+Pass account value data as additional URL parameters:
+
 ```typescript
 onClick={() => {
-  // Extract investor names from top accounts (format: "Van Niekerk, Marthinus")
-  const names = filteredRegionalData.topAccounts.map(a => a.investor).join(',');
-  navigate(`/clients?filter=accounts&names=${encodeURIComponent(names)}`);
+  // Pass both names and their value data
+  const accountData = filteredRegionalData.topAccounts.map(a => ({
+    name: a.investor,
+    value: a.value,
+    bookPercent: a.bookPercent
+  }));
+  navigate(`/clients?filter=accounts&data=${encodeURIComponent(JSON.stringify(accountData))}`);
 }}
 ```
 
@@ -52,77 +66,166 @@ onClick={() => {
 
 ### File 2: `src/pages/Clients.tsx`
 
-**Changes:**
-1. Import `useSearchParams` from `react-router-dom`
-2. Read `filter` and `names` query parameters on mount
-3. Initialize search with the names when coming from Dashboard widgets
-4. Show visual indicator that a filter is active
-5. Add "Clear filter" option to return to normal view
+#### 1. Update State Variables (around line 88-90)
 
-**Read URL parameters:**
+Add state for the widget data:
+
 ```typescript
-import { useNavigate, useSearchParams } from "react-router-dom";
+// Dashboard widget filter state
+const [filterSource, setFilterSource] = useState<string | null>(null);
+const [filteredNames, setFilteredNames] = useState<string[]>([]);
+const [widgetData, setWidgetData] = useState<Record<string, { birthday?: string; age?: number; value?: string; bookPercent?: string }>>({});
+```
 
-const [searchParams, setSearchParams] = useSearchParams();
+#### 2. Update URL Parameter Reading (useEffect around line 95)
 
+Parse the JSON data from URL params:
+
+```typescript
 useEffect(() => {
   const filter = searchParams.get('filter');
-  const names = searchParams.get('names');
+  const dataParam = searchParams.get('data');
   
-  if (filter && names) {
-    // Set active filter header based on source
-    setFilterSource(filter === 'birthdays' ? 'Upcoming Birthdays' : 'Top Accounts');
-    
-    // Parse names and set as filter
-    const nameList = decodeURIComponent(names).split(',');
-    setFilteredNames(nameList);
+  if (filter && dataParam) {
+    try {
+      const parsedData = JSON.parse(decodeURIComponent(dataParam));
+      setFilterSource(filter === 'birthdays' ? 'Upcoming Birthdays' : 'Top Accounts');
+      
+      // Build lookup map by name
+      const dataMap: Record<string, any> = {};
+      parsedData.forEach((item: any) => {
+        const name = item.name.toLowerCase();
+        if (filter === 'birthdays') {
+          dataMap[name] = { birthday: item.birthday, age: item.age };
+        } else {
+          dataMap[name] = { value: item.value, bookPercent: item.bookPercent };
+        }
+      });
+      setWidgetData(dataMap);
+      
+      // Extract names for filtering
+      const nameList = parsedData.map((item: any) => item.name);
+      setFilteredNames(nameList);
+      setActiveFilter("");
+    } catch (e) {
+      console.error('Failed to parse widget data:', e);
+    }
+  } else {
+    setFilterSource(null);
+    setFilteredNames([]);
+    setWidgetData({});
   }
 }, [searchParams]);
 ```
 
-**Filter clients against name list:**
+#### 3. Add Helper Function to Get Widget Data for Client
+
 ```typescript
-const filteredClients = clients.filter((client) => {
-  // ... existing filters ...
+const getWidgetDataForClient = (clientName: string) => {
+  // Try to match client name with widget data
+  const clientLower = clientName.toLowerCase();
   
-  // If coming from Dashboard widget, filter by name list
-  if (filteredNames.length > 0) {
-    const clientFullName = client.client; // "Surname, I (FirstName)"
-    // Check if any widget name matches the client
-    return filteredNames.some(name => {
-      const normalizedName = name.toLowerCase();
-      const normalizedClient = clientFullName.toLowerCase();
-      // Match partial names (surname or first name)
-      return normalizedClient.includes(normalizedName.split(' ')[0]) ||
-             normalizedName.includes(normalizedClient.split(',')[0]);
-    });
+  for (const [widgetName, data] of Object.entries(widgetData)) {
+    const nameParts = widgetName.split(' ');
+    const surname = nameParts[nameParts.length - 1];
+    const firstName = nameParts[0];
+    
+    if (clientLower.includes(surname) || clientLower.includes(firstName)) {
+      return data;
+    }
   }
-  
-  return true;
-});
+  return null;
+};
 ```
 
-**Add filter indicator:**
+#### 4. Update Table Header (around line 404-418)
+
+Add conditional column header:
+
 ```typescript
-{filterSource && (
-  <div className="flex items-center gap-2 mb-4 p-3 bg-[hsl(180,70%,45%)]/10 rounded-lg border border-[hsl(180,70%,45%)]/30">
-    <span className="text-sm">
-      Showing clients from: <strong>{filterSource}</strong>
-    </span>
-    <Button 
-      variant="ghost" 
-      size="sm"
-      onClick={() => {
-        setSearchParams({});
-        setFilteredNames([]);
-        setFilterSource(null);
-      }}
-    >
-      <X className="w-4 h-4 mr-1" />
-      Clear Filter
-    </Button>
-  </div>
-)}
+<TableHeader>
+  <TableRow className="hover:bg-transparent">
+    <TableHead className="text-xs font-normal text-muted-foreground">Profile state</TableHead>
+    <TableHead className="text-xs font-normal text-muted-foreground">Profile Type</TableHead>
+    <TableHead className="text-xs font-normal text-muted-foreground">Client</TableHead>
+    <TableHead className="text-xs font-normal text-muted-foreground">Title</TableHead>
+    <TableHead className="text-xs font-normal text-muted-foreground">Identification</TableHead>
+    <TableHead className="text-xs font-normal text-muted-foreground">Age</TableHead>
+    
+    {/* Conditional column based on filter source */}
+    {filterSource === 'Upcoming Birthdays' && (
+      <TableHead className="text-xs font-normal text-muted-foreground">Birthday</TableHead>
+    )}
+    {filterSource === 'Top Accounts' && (
+      <TableHead className="text-xs font-normal text-muted-foreground">Account Value</TableHead>
+    )}
+    
+    <TableHead className="text-xs font-normal text-muted-foreground">Contact Details</TableHead>
+    <TableHead className="text-xs font-normal text-muted-foreground">Advisor</TableHead>
+    <TableHead className="text-xs font-normal text-muted-foreground">Wealth Manager</TableHead>
+    <TableHead className="text-xs font-normal text-muted-foreground">Language</TableHead>
+    <TableHead className="text-xs font-normal text-muted-foreground">Date Created</TableHead>
+    <TableHead className="w-20"></TableHead>
+  </TableRow>
+</TableHeader>
+```
+
+#### 5. Update Table Body (around line 421-463)
+
+Add conditional column data in each row:
+
+```typescript
+<TableRow 
+  key={client.id} 
+  className="hover:bg-muted/50 cursor-pointer"
+  onClick={() => navigate(`/clients/${client.id}`)}
+>
+  <TableCell className="text-sm">{client.profileState}</TableCell>
+  <TableCell className="text-sm">{client.profileType}</TableCell>
+  <TableCell className="text-sm">
+    <div className="flex items-center gap-2">
+      {getClientIcon(client.clientType)}
+      <span>{client.client}</span>
+    </div>
+  </TableCell>
+  <TableCell className="text-sm">{client.title}</TableCell>
+  <TableCell className="text-sm">{client.identification}</TableCell>
+  <TableCell className="text-sm">{client.age || ""}</TableCell>
+  
+  {/* Conditional column data */}
+  {filterSource === 'Upcoming Birthdays' && (
+    <TableCell className="text-sm font-medium text-primary">
+      {getWidgetDataForClient(client.client)?.birthday || "—"}
+    </TableCell>
+  )}
+  {filterSource === 'Top Accounts' && (
+    <TableCell className="text-sm font-medium text-emerald-600">
+      {getWidgetDataForClient(client.client)?.value || "—"}
+    </TableCell>
+  )}
+  
+  <TableCell className="text-sm">
+    <div className="flex flex-col">
+      <span>{client.phone}</span>
+      <span className="text-muted-foreground text-xs">{client.email}</span>
+    </div>
+  </TableCell>
+  {/* ... rest of columns ... */}
+</TableRow>
+```
+
+#### 6. Update Clear Filter Function (around line 179)
+
+Reset widget data when clearing:
+
+```typescript
+const clearDashboardFilter = () => {
+  setSearchParams({});
+  setFilteredNames([]);
+  setFilterSource(null);
+  setWidgetData({});
+  setActiveFilter("Client");
+};
 ```
 
 ---
@@ -131,49 +234,45 @@ const filteredClients = clients.filter((client) => {
 
 | File | Changes |
 |------|---------|
-| `src/pages/Dashboard.tsx` | Remove unused state, update "Show more" buttons to navigate with query params |
-| `src/pages/Clients.tsx` | Add `useSearchParams`, read filter params, implement name-based filtering, add filter indicator |
+| `src/pages/Dashboard.tsx` | Update "Show more" buttons to pass JSON data with birthday/value info |
+| `src/pages/Clients.tsx` | Add widgetData state, parse JSON from URL, add conditional column header and cell |
 
 ---
 
-## User Experience
+## Visual Result
 
+**Coming from Birthdays widget:**
 ```text
-Dashboard (Birthdays Widget)
-┌─────────────────────────────────┐
-│ Birthdays                       │
-│ ─────────────────────────────── │
-│ Andre Thomas Coetzer   28 Jan 42│
-│ Esther Amanda Nieman   28 Jan 74│
-│ ... (5 more rows)               │
-│ ─────────────────────────────── │
-│ [Show more (13 more)]  ← Click  │
-└─────────────────────────────────┘
-          │
-          ▼
-Clients Page (Filtered)
-┌─────────────────────────────────────────────────────┐
-│ ┌─────────────────────────────────────────────────┐ │
-│ │ Showing clients from: Upcoming Birthdays  [✕]  │ │
-│ └─────────────────────────────────────────────────┘ │
-│                                                     │
-│ [Lead] [Prospect] [Client] ...                      │
-│                                                     │
-│ │ Client           │ Age │ Contact Details │ ...   │
-│ ├──────────────────┼─────┼─────────────────┼───    │
-│ │ Coetzer, A (Andre)│ 42 │ ...             │       │
-│ │ Nieman, E (Esther)│ 74 │ ...             │       │
-│ │ ... matching clients from birthdays ...   │       │
-└─────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│ Showing clients from: Upcoming Birthdays  [✕ Clear Filter]                      │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│ State │ Type   │ Client              │ Title │ ID    │ Age │ Birthday │ Contact │
+├───────┼────────┼─────────────────────┼───────┼───────┼─────┼──────────┼─────────┤
+│Active │ Client │ Coetzer, A (Andre)  │ Mr    │ 80... │ 42  │ 28 Jan   │ ...     │
+│Active │ Client │ Nieman, E (Esther)  │ Mrs   │ 72... │ 74  │ 28 Jan   │ ...     │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Coming from Top Accounts widget:**
+```text
+┌───────────────────────────────────────────────────────────────────────────────────────┐
+│ Showing clients from: Top Accounts  [✕ Clear Filter]                                  │
+├───────────────────────────────────────────────────────────────────────────────────────┤
+│ State │ Type   │ Client                │ Title │ ID    │ Age │ Account Value │ Contact │
+├───────┼────────┼───────────────────────┼───────┼───────┼─────┼───────────────┼─────────┤
+│Active │ Client │ Van Niekerk, M (...)  │ Mr    │ 85... │ 55  │ R 26,500,000  │ ...     │
+│Active │ Client │ Venter, I (Isabella)  │ Mrs   │ 79... │ 48  │ R 24,800,000  │ ...     │
+└───────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
 ## Technical Notes
 
-- URL parameters ensure the filter persists on page refresh
-- The "Clear Filter" button removes URL params and returns to normal view
-- Name matching uses fuzzy logic since Dashboard uses full names while Clients table uses "Surname, I (Name)" format
-- Filter combines with existing profile type filters (Lead/Prospect/Client)
-- If no database clients match the widget names (since they're mock data), the filtered list will be empty - this is expected behavior until real clients are added
+- Data is passed via URL as JSON (encoded) for persistence on page refresh
+- Name matching uses fuzzy logic (surname/first name) since Dashboard and Clients use different name formats
+- Birthday column styled with primary color for visibility
+- Value column styled with emerald/green for financial context
+- Column only appears when coming from the respective Dashboard widget
+- Data lookup returns "—" if no match found (edge case handling)
 
