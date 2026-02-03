@@ -10,7 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Pencil, Trash2, MoreVertical, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
+import { Pencil, Trash2, MoreVertical, ChevronDown, ChevronUp } from "lucide-react";
 import { useClientProducts } from "@/hooks/useClientProducts";
 
 // Demo data for the various product tables - filtered to non-zero amounts only
@@ -77,13 +77,14 @@ const formatTotal = (value: number) =>
 
 const Client360ViewTab = () => {
   const { clientId } = useParams<{ clientId: string }>();
-  const [loadingMore, setLoadingMore] = useState(false);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
-
-  const handleLoadMore = () => {
-    setLoadingMore(true);
-    setTimeout(() => setLoadingMore(false), 1000);
-  };
+  const [showAllOnPlatform, setShowAllOnPlatform] = useState(false);
+  
+  const VISIBLE_ROWS_LIMIT = 5;
+  const hasMoreOnPlatformRows = onPlatformProducts.length > VISIBLE_ROWS_LIMIT;
+  const visibleOnPlatformProducts = showAllOnPlatform 
+    ? onPlatformProducts 
+    : onPlatformProducts.slice(0, VISIBLE_ROWS_LIMIT);
 
   const toggleRowExpand = (number: string) => {
     setExpandedRows(prev => {
@@ -128,7 +129,7 @@ const Client360ViewTab = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {onPlatformProducts.map((product, index) => {
+              {visibleOnPlatformProducts.map((product, index) => {
                 const isExpanded = expandedRows.has(product.number);
                 return (
                   <>
@@ -185,12 +186,17 @@ const Client360ViewTab = () => {
               })}
             </TableBody>
           </Table>
-          <div className="p-3 border-t">
-            <Button variant="link" className="text-[hsl(180,70%,45%)] p-0 h-auto font-normal text-sm" onClick={handleLoadMore}>
-              {loadingMore ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
-              Load more...
-            </Button>
-          </div>
+          {hasMoreOnPlatformRows && !showAllOnPlatform && (
+            <div className="p-3 border-t">
+              <Button 
+                variant="link" 
+                className="text-[hsl(180,70%,45%)] p-0 h-auto font-normal text-sm" 
+                onClick={() => setShowAllOnPlatform(true)}
+              >
+                Load more...
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
