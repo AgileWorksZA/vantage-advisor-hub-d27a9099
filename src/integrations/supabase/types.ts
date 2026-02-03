@@ -1923,6 +1923,60 @@ export type Database = {
           },
         ]
       }
+      opportunity_projects: {
+        Row: {
+          created_at: string
+          deleted_at: string | null
+          description: string | null
+          id: string
+          is_deleted: boolean
+          name: string
+          project_type: string
+          realized_revenue: number | null
+          region_code: string
+          sla_days: number | null
+          status: string
+          target_date: string | null
+          target_revenue: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          is_deleted?: boolean
+          name: string
+          project_type?: string
+          realized_revenue?: number | null
+          region_code?: string
+          sla_days?: number | null
+          status?: string
+          target_date?: string | null
+          target_revenue?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          is_deleted?: boolean
+          name?: string
+          project_type?: string
+          realized_revenue?: number | null
+          region_code?: string
+          sla_days?: number | null
+          status?: string
+          target_date?: string | null
+          target_revenue?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       portfolio_holdings: {
         Row: {
           created_at: string
@@ -2293,6 +2347,154 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      project_opportunities: {
+        Row: {
+          client_id: string | null
+          client_name: string
+          confidence: number | null
+          created_at: string
+          current_value: number | null
+          id: string
+          opportunity_type: string
+          potential_revenue: number | null
+          project_id: string
+          reasoning: string | null
+          status: string
+          suggested_action: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          client_id?: string | null
+          client_name: string
+          confidence?: number | null
+          created_at?: string
+          current_value?: number | null
+          id?: string
+          opportunity_type: string
+          potential_revenue?: number | null
+          project_id: string
+          reasoning?: string | null
+          status?: string
+          suggested_action?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          client_id?: string | null
+          client_name?: string
+          confidence?: number | null
+          created_at?: string
+          current_value?: number | null
+          id?: string
+          opportunity_type?: string
+          potential_revenue?: number | null
+          project_id?: string
+          reasoning?: string | null
+          status?: string
+          suggested_action?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_opportunities_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_opportunities_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "opportunity_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_tasks: {
+        Row: {
+          assigned_to: string | null
+          client_id: string | null
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          due_date: string | null
+          id: string
+          is_deleted: boolean
+          opportunity_id: string | null
+          priority: string
+          project_id: string
+          sla_deadline: string | null
+          status: string
+          task_type: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          client_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          is_deleted?: boolean
+          opportunity_id?: string | null
+          priority?: string
+          project_id: string
+          sla_deadline?: string | null
+          status?: string
+          task_type?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assigned_to?: string | null
+          client_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          is_deleted?: boolean
+          opportunity_id?: string | null
+          priority?: string
+          project_id?: string
+          sla_deadline?: string | null
+          status?: string
+          task_type?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_tasks_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_tasks_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "project_opportunities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_tasks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "opportunity_projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sla_commitments: {
         Row: {
