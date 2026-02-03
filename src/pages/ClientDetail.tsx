@@ -251,7 +251,6 @@ const ClientDetail = () => {
                 { value: "notes", label: "Notes" },
                 { value: "communication", label: "Communication" },
                 { value: "documents", label: "Documents" },
-                { value: "recent-activity", label: "Recent Activity" },
               ].map((tab) => (
                 <TabsTrigger
                   key={tab.value}
