@@ -190,3 +190,4 @@ const ClientProductsTab = () => {
   );
 };
 
+export default ClientProductsTab;
