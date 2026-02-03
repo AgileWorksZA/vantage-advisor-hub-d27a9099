@@ -32,8 +32,12 @@ export const AdvisorFilter = () => {
     );
   };
 
-  const selectAll = () => {
-    setSelectedAdvisors(advisors.map((a) => a.initials));
+  const toggleAll = () => {
+    if (isAllSelected) {
+      setSelectedAdvisors([]);
+    } else {
+      setSelectedAdvisors(advisors.map((a) => a.initials));
+    }
   };
 
   const isAllSelected = selectedAdvisors.length === advisors.length;
@@ -75,7 +79,7 @@ export const AdvisorFilter = () => {
       <PopoverContent className="w-56 p-0" align="end">
         <div className="p-2 border-b border-border flex items-center justify-between">
           <button
-            onClick={selectAll}
+            onClick={toggleAll}
             className={cn(
               "flex items-center gap-2 text-sm hover:text-foreground",
               isAllSelected ? "text-primary" : "text-muted-foreground"
