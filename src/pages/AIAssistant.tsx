@@ -94,7 +94,9 @@ const AIAssistant = () => {
 
   // Time-based greeting state
   const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>(getTimeOfDay());
-  const [userName, setUserName] = useState("Adviser");
+  const [userName, setUserName] = useState("");
+  const [displayedGreeting, setDisplayedGreeting] = useState("");
+  const [isTypingComplete, setIsTypingComplete] = useState(false);
 
   // Hooks for data
   const {
@@ -156,6 +158,28 @@ const AIAssistant = () => {
     }, 60000);
     return () => clearInterval(interval);
   }, []);
+
+  // Typewriter effect for greeting
+  useEffect(() => {
+    const greeting = getGreeting(timeOfDay);
+    const fullText = userName ? `${greeting}, ${userName}` : greeting;
+    
+    setDisplayedGreeting("");
+    setIsTypingComplete(false);
+    
+    let currentIndex = 0;
+    const interval = setInterval(() => {
+      if (currentIndex <= fullText.length) {
+        setDisplayedGreeting(fullText.slice(0, currentIndex));
+        currentIndex++;
+      } else {
+        setIsTypingComplete(true);
+        clearInterval(interval);
+      }
+    }, 50);
+    
+    return () => clearInterval(interval);
+  }, [userName, timeOfDay]);
 
   // Load demo projects
   useEffect(() => {
@@ -551,7 +575,8 @@ const AIAssistant = () => {
           </Button>
           <div>
             <h1 className="text-xl font-semibold text-gradient-ai">
-              {getGreeting(timeOfDay)}, {userName}
+              {displayedGreeting}
+              {!isTypingComplete && <span className="animate-pulse ml-0.5">|</span>}
             </h1>
             <p className="text-white/50 text-sm">Discover and track opportunities in your client base</p>
           </div>
