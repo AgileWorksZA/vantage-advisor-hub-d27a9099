@@ -246,7 +246,7 @@ const Dashboard = () => {
                   </Button>
                 </CardHeader>
                 <CardContent className="px-4 pb-4">
-                  <p className="text-xl font-semibold mb-2">{regionalData.totalAUM}</p>
+                  <p className="text-xl font-semibold mb-2">{regionalData.currencySymbol} {regionalData.totalAUM}</p>
                   <div className="h-32">
                     <EChartsWrapper
                       height={128}
