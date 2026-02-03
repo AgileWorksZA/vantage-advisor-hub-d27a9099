@@ -168,18 +168,17 @@ const Client360ViewTab = () => {
                       </TableCell>
                     </TableRow>
                     {isExpanded && product.details && (
-                      <TableRow key={`${product.number}-details`} className="bg-muted/20 border-b border-border/50">
-                        <TableCell colSpan={9}>
-                          <div className="py-2 pl-4 space-y-1">
-                            {product.details.map((detail, i) => (
-                              <div key={i} className="flex gap-8 text-sm">
-                                <span className="w-24 text-muted-foreground">{detail.label}</span>
-                                <span>{detail.amount}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </TableCell>
-                      </TableRow>
+                      <>
+                        {product.details.map((detail, i) => (
+                          <TableRow key={`${product.number}-detail-${i}`} className="bg-muted/20 border-b border-border/50">
+                            <TableCell></TableCell>
+                            <TableCell className="text-sm text-muted-foreground">{detail.label}</TableCell>
+                            <TableCell></TableCell>
+                            <TableCell className="text-sm">{detail.amount}</TableCell>
+                            <TableCell colSpan={5}></TableCell>
+                          </TableRow>
+                        ))}
+                      </>
                     )}
                   </>
                 );
