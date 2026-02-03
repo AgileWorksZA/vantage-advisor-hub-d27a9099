@@ -172,42 +172,6 @@ All colors MUST be HSL.
     background-color: hsl(222, 84%, 5%);
   }
 
-  /* Time-based sky gradient backgrounds */
-  .gradient-mesh-morning {
-    background: linear-gradient(
-      135deg,
-      hsl(25, 95%, 55%) 0%,
-      hsl(35, 100%, 60%) 25%,
-      hsl(200, 80%, 55%) 75%,
-      hsl(210, 85%, 50%) 100%
-    );
-    background-size: 200% 200%;
-    animation: gradient-shift 15s ease infinite;
-  }
-
-  .gradient-mesh-afternoon {
-    background: linear-gradient(
-      135deg,
-      hsl(30, 90%, 50%) 0%,
-      hsl(25, 85%, 55%) 30%,
-      hsl(200, 75%, 50%) 70%,
-      hsl(220, 80%, 45%) 100%
-    );
-    background-size: 200% 200%;
-    animation: gradient-shift 15s ease infinite;
-  }
-
-  .gradient-mesh-evening {
-    background: linear-gradient(
-      135deg,
-      hsl(25, 80%, 40%) 0%,
-      hsl(280, 50%, 25%) 35%,
-      hsl(240, 60%, 20%) 70%,
-      hsl(220, 70%, 15%) 100%
-    );
-    background-size: 200% 200%;
-    animation: gradient-shift 20s ease infinite;
-  }
 
   /* AI Orb glow effect */
   .orb-glow {
@@ -251,6 +215,43 @@ All colors MUST be HSL.
   50% {
     background-position: 100% 50%;
   }
+}
+
+/* Time-based sky gradient backgrounds - must be outside @layer for proper specificity */
+.gradient-mesh-morning {
+  background: linear-gradient(
+    135deg,
+    hsl(25, 95%, 55%) 0%,
+    hsl(35, 100%, 60%) 25%,
+    hsl(200, 80%, 55%) 75%,
+    hsl(210, 85%, 50%) 100%
+  );
+  background-size: 200% 200%;
+  animation: gradient-shift 15s ease infinite;
+}
+
+.gradient-mesh-afternoon {
+  background: linear-gradient(
+    135deg,
+    hsl(30, 90%, 50%) 0%,
+    hsl(25, 85%, 55%) 30%,
+    hsl(200, 75%, 50%) 70%,
+    hsl(220, 80%, 45%) 100%
+  );
+  background-size: 200% 200%;
+  animation: gradient-shift 15s ease infinite;
+}
+
+.gradient-mesh-evening {
+  background: linear-gradient(
+    135deg,
+    hsl(25, 80%, 40%) 0%,
+    hsl(280, 50%, 25%) 35%,
+    hsl(240, 60%, 20%) 70%,
+    hsl(220, 70%, 15%) 100%
+  );
+  background-size: 200% 200%;
+  animation: gradient-shift 20s ease infinite;
 }
 
 @keyframes slideUp {
