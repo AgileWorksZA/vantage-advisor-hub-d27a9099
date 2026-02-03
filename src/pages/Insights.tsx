@@ -163,12 +163,12 @@ const filterDataByPeriod = <T,>(data: T[], period: string): T[] => {
 };
 
 const defaultInsightsLayout: WidgetLayout[] = [
-  { i: 'commission-type', x: 0, y: 0, w: 3, h: 3 },
-  { i: 'commission-earned', x: 3, y: 0, w: 3, h: 3 },
-  { i: 'monthly-commission', x: 6, y: 0, w: 3, h: 3 },
-  { i: 'commission-snapshot', x: 9, y: 0, w: 3, h: 3 },
+  { i: 'commission-earned', x: 0, y: 0, w: 3, h: 3 },
+  { i: 'monthly-commission', x: 3, y: 0, w: 3, h: 3 },
+  { i: 'leaderboard', x: 6, y: 0, w: 3, h: 3 },
+  { i: 'commission-type', x: 9, y: 0, w: 3, h: 3 },
   { i: 'commission-summary', x: 0, y: 3, w: 6, h: 3 },
-  { i: 'leaderboard', x: 6, y: 3, w: 3, h: 3 },
+  { i: 'commission-snapshot', x: 6, y: 3, w: 3, h: 3 },
 ];
 
 const Insights = () => {

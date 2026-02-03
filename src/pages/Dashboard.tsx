@@ -45,10 +45,10 @@ const sidebarItems = [{
 
 const defaultDashboardLayout: WidgetLayout[] = [
   { i: 'provider-view', x: 0, y: 0, w: 3, h: 3 },
-  { i: 'top-accounts', x: 3, y: 0, w: 3, h: 3 },
-  { i: 'aum-product', x: 6, y: 0, w: 3, h: 3 },
-  { i: 'birthdays', x: 9, y: 0, w: 3, h: 3 },
-  { i: 'clients-value', x: 0, y: 3, w: 3, h: 3 },
+  { i: 'aum-product', x: 3, y: 0, w: 3, h: 3 },
+  { i: 'top-accounts', x: 6, y: 0, w: 3, h: 3 },
+  { i: 'birthdays', x: 0, y: 3, w: 3, h: 3 },
+  { i: 'clients-value', x: 3, y: 3, w: 3, h: 3 },
 ];
 
 const Dashboard = () => {
