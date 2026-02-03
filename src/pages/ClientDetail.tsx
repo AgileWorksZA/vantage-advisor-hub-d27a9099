@@ -42,7 +42,7 @@ import ClientBusinessesTab from "@/components/client-detail/ClientBusinessesTab"
 import ClientContactsTab from "@/components/client-detail/ClientContactsTab";
 import ClientWorkflowsTab from "@/components/client-detail/ClientWorkflowsTab";
 import ClientComplianceTab from "@/components/client-detail/ClientComplianceTab";
-import ClientProductsTab from "@/components/client-detail/ClientProductsTab";
+import Client360ViewTab from "@/components/client-detail/Client360ViewTab";
 import ClientNotesTab from "@/components/client-detail/ClientNotesTab";
 import ClientCommunicationTab from "@/components/client-detail/ClientCommunicationTab";
 import ClientDocumentsTab from "@/components/client-detail/ClientDocumentsTab";
@@ -239,6 +239,7 @@ const ClientDetail = () => {
             <TabsList className="w-full justify-start h-auto p-0 bg-transparent border-b border-border rounded-none gap-0 flex-wrap">
               {[
                 { value: "summary", label: "Summary" },
+                { value: "360-view", label: "360 View" },
                 { value: "details", label: "Details" },
                 { value: "crm", label: "CRM" },
                 { value: "meetings", label: "Meetings" },
@@ -247,7 +248,6 @@ const ClientDetail = () => {
                 { value: "contacts", label: "Contacts" },
                 { value: "workflows", label: "Workflows" },
                 { value: "compliance", label: "Compliance" },
-                { value: "products", label: "Products" },
                 { value: "notes", label: "Notes" },
                 { value: "communication", label: "Communication" },
                 { value: "documents", label: "Documents" },
@@ -269,6 +269,9 @@ const ClientDetail = () => {
                   clientId={clientId!} 
                   onShowMoreActivity={() => setActiveTab("recent-activity")}
                 />
+              </TabsContent>
+              <TabsContent value="360-view" className="mt-0">
+                <Client360ViewTab />
               </TabsContent>
               <TabsContent value="details" className="mt-0">
                 <ClientDetailsTab client={client} onUpdate={updateClient} />
@@ -293,9 +296,6 @@ const ClientDetail = () => {
               </TabsContent>
               <TabsContent value="compliance" className="mt-0">
                 <ClientComplianceTab />
-              </TabsContent>
-              <TabsContent value="products" className="mt-0">
-                <ClientProductsTab />
               </TabsContent>
               <TabsContent value="notes" className="mt-0">
                 <ClientNotesTab />
