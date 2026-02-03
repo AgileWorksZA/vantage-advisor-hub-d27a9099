@@ -56,8 +56,7 @@ const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showAllBirthdays, setShowAllBirthdays] = useState(false);
-  const [showAllAccounts, setShowAllAccounts] = useState(false);
+  // Removed unused state: showAllBirthdays, showAllAccounts - now navigates to Clients page
   
   // Use global region context with filtered data
   const { selectedRegion, setSelectedRegion, filteredRegionalData } = useRegion();
@@ -234,7 +233,10 @@ const Dashboard = () => {
                   {filteredRegionalData.topAccounts.length > 7 && (
                     <button 
                       className="w-full text-center text-xs text-primary hover:underline mt-2"
-                      onClick={() => setShowAllAccounts(true)}
+                      onClick={() => {
+                        const names = filteredRegionalData.topAccounts.map(a => a.investor).join(',');
+                        navigate(`/clients?filter=accounts&names=${encodeURIComponent(names)}`);
+                      }}
                     >
                       Show more ({filteredRegionalData.topAccounts.length - 7} more)
                     </button>
@@ -334,7 +336,10 @@ const Dashboard = () => {
                   {filteredRegionalData.birthdays.length > 7 && (
                     <button 
                       className="w-full text-center text-xs text-primary hover:underline mt-2"
-                      onClick={() => setShowAllBirthdays(true)}
+                      onClick={() => {
+                        const names = filteredRegionalData.birthdays.map(b => b.name).join(',');
+                        navigate(`/clients?filter=birthdays&names=${encodeURIComponent(names)}`);
+                      }}
                     >
                       Show more ({filteredRegionalData.birthdays.length - 7} more)
                     </button>
