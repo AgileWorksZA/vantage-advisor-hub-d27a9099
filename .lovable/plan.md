@@ -1,101 +1,120 @@
 
-## Fix Top 5 Accounts Widget Name Matching
 
-### Problem
+## Simplify Top 5 Accounts Widget
 
-The "Show more" navigation from the **Top 5 Accounts** widget correctly navigates to the Clients page with the data, but the name matching logic fails to properly match client names because:
+### Overview
 
-1. **Top Accounts names use "Surname, FirstName" format** (e.g., "Chen, Wei", "Johnson, Robert")
-2. **The `getWidgetDataForClient` function splits names by space**, which doesn't handle the comma format properly
-3. When splitting "Chen, Wei" by space → `["Chen,", "Wei"]` → surname = "Wei", firstName = "Chen," (with trailing comma)
-
-The Birthday widget works because birthday names use "FirstName MiddleName Surname" format (e.g., "Andre Thomas Coetzer").
+The Top 5 Accounts widget will be simplified to show only the 5 largest client accounts for each combination of advisor selection, sorted from largest to smallest value. The "Show more" button will be removed and the name format will be changed from "Surname, FirstName" to "FirstName Surname" to match the birthday widget.
 
 ---
 
-### Solution
+## Changes Required
 
-Update the `getWidgetDataForClient` function in `src/pages/Clients.tsx` to handle both name formats:
+### 1. Dashboard Widget (src/pages/Dashboard.tsx)
 
-1. **Check if name contains a comma** (Top Accounts format: "Surname, FirstName")
-2. **If comma present**: Split by comma, treat first part as surname, second as firstName
-3. **If no comma**: Use current space-split logic (Birthday format)
+**Current behavior (lines 204-250):**
+- Shows 7 accounts with `.slice(0, 7)`
+- Has "Show more" button when more than 7 accounts exist
+- Displays names as-is from the data
 
----
+**New behavior:**
+- Show exactly 5 accounts with `.slice(0, 5)`
+- Remove the "Show more" button completely
+- Sort accounts by value (largest first) before slicing
+- Display names with helper function to convert format
 
-### File to Modify
+**Code changes:**
 
-**`src/pages/Clients.tsx`** - Update the `getWidgetDataForClient` function (around lines 211-224)
-
-**Current Code:**
+1. Add a helper function to convert "Surname, FirstName" to "FirstName Surname":
 ```typescript
-const getWidgetDataForClient = (clientName: string) => {
-  const clientLower = clientName.toLowerCase();
-  
-  for (const [widgetName, data] of Object.entries(widgetData)) {
-    const nameParts = widgetName.split(' ');
-    const surname = nameParts[nameParts.length - 1];
-    const firstName = nameParts[0];
-    
-    if (clientLower.includes(surname) || clientLower.includes(firstName)) {
-      return data;
-    }
-  }
-  return null;
+const formatInvestorName = (investor: string): string => {
+  // Handle organization names (no comma)
+  if (!investor.includes(',')) return investor;
+  // Convert "Surname, FirstName" to "FirstName Surname"
+  const parts = investor.split(',').map(p => p.trim());
+  return `${parts[1]} ${parts[0]}`;
 };
 ```
 
-**Fixed Code:**
+2. Add a helper function to parse currency values for sorting:
 ```typescript
-const getWidgetDataForClient = (clientName: string) => {
-  const clientLower = clientName.toLowerCase();
-  
-  for (const [widgetName, data] of Object.entries(widgetData)) {
-    let surname: string;
-    let firstName: string;
-    
-    // Handle "Surname, FirstName" format (Top Accounts) vs "FirstName ... Surname" format (Birthdays)
-    if (widgetName.includes(',')) {
-      // Top Accounts format: "Chen, Wei" or "Johnson, Robert"
-      const commaParts = widgetName.split(',').map(p => p.trim());
-      surname = commaParts[0]; // "Chen"
-      firstName = commaParts[1] || ''; // "Wei"
-    } else {
-      // Birthday format: "Andre Thomas Coetzer"
-      const spaceParts = widgetName.split(' ');
-      surname = spaceParts[spaceParts.length - 1]; // Last word
-      firstName = spaceParts[0]; // First word
-    }
-    
-    // Check if client name contains surname or firstName
-    if (clientLower.includes(surname.toLowerCase()) || 
-        (firstName && clientLower.includes(firstName.toLowerCase()))) {
-      return data;
-    }
-  }
-  return null;
+const parseValueToNumber = (value: string): number => {
+  return parseFloat(value.replace(/[^0-9.-]/g, ''));
 };
 ```
 
+3. Update the Top 5 Accounts table body:
+```typescript
+{[...filteredRegionalData.topAccounts]
+  .sort((a, b) => parseValueToNumber(b.value) - parseValueToNumber(a.value))
+  .slice(0, 5)
+  .map(account => (
+    <tr key={account.investor} className="border-t border-border">
+      <td className="py-2 max-w-[120px] truncate" title={account.investor}>
+        {formatInvestorName(account.investor)}
+      </td>
+      <td className="py-2 text-right text-muted-foreground whitespace-nowrap">
+        {account.bookPercent}
+      </td>
+      <td className="py-2 text-right whitespace-nowrap">{account.value}</td>
+    </tr>
+  ))
+}
+```
+
+4. Remove the "Show more" button and its conditional wrapper (lines 233-247)
+
 ---
 
-### How It Works
+### 2. Regional Data (src/data/regionalData.ts)
 
-| Widget Source | Name Format | Split Logic | Surname | FirstName |
-|---------------|-------------|-------------|---------|-----------|
-| Top Accounts | "Chen, Wei" | Split by comma | "Chen" | "Wei" |
-| Top Accounts | "Johnson, Robert" | Split by comma | "Johnson" | "Robert" |
-| Top Accounts | "St. Mary's Hospital Foundation" | Split by space (no comma) | "Foundation" | "St." |
-| Birthdays | "Andre Thomas Coetzer" | Split by space | "Coetzer" | "Andre" |
+**Current format:** 
+```typescript
+{ investor: "Van Niekerk, Marthinus", ... }
+{ investor: "Thompson, Richard", ... }
+```
 
-The fix handles both formats and should correctly match database clients like:
-- "Chen, W (Wei)" matches "Chen, Wei"
-- "Johnson, R (Robert)" matches "Johnson, Robert"
+**New format:**
+```typescript
+{ investor: "Marthinus Van Niekerk", ... }
+{ investor: "Richard Thompson", ... }
+```
+
+**Regions to update:**
+- South Africa (ZA) - lines 95-111
+- Australia (AU) - lines 221-237
+- Canada (CA) - lines 353-369
+- United Kingdom (GB) - lines 469-485
+- United States (US) - lines 589-609
+
+**Name conversion examples:**
+
+| Current | New |
+|---------|-----|
+| Van Niekerk, Marthinus | Marthinus Van Niekerk |
+| Venter, Isabella | Isabella Venter |
+| De Villiers, Jean | Jean De Villiers |
+| Thompson, Richard | Richard Thompson |
+| Papadopoulos, Konstantinos | Konstantinos Papadopoulos |
+| NG Kerk Sinode Oos-Kaapland | NG Kerk Sinode Oos-Kaapland (no change - org) |
+| Melbourne Grammar School Foundation | Melbourne Grammar School Foundation (no change - org) |
 
 ---
 
-### Summary
+## Files to Modify
 
-| File | Change |
-|------|--------|
-| `src/pages/Clients.tsx` | Update `getWidgetDataForClient` to handle comma-separated "Surname, FirstName" format |
+| File | Changes |
+|------|---------|
+| `src/pages/Dashboard.tsx` | Add format helper, sort by value, slice to 5, remove "Show more" |
+| `src/data/regionalData.ts` | Convert all topAccounts investor names to "FirstName Surname" format for ZA, AU, CA, GB, US |
+
+---
+
+## Result
+
+- Widget will always show exactly 5 accounts
+- Accounts sorted by value (largest at top)
+- Names displayed as "FirstName Surname" matching birthday widget format
+- No "Show more" button (cleaner UI)
+- Works correctly with all advisor filter combinations
+
