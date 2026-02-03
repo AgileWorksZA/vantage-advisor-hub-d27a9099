@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useTheme } from "next-themes";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AIOrb from "@/components/ai-assistant/AIOrb";
 import InsightOrbit from "@/components/ai-assistant/InsightOrbit";
 import ChatPanel from "@/components/ai-assistant/ChatPanel";
@@ -19,6 +20,7 @@ import { useOpportunityProjects } from "@/hooks/useOpportunityProjects";
 import { useProjectOpportunities } from "@/hooks/useProjectOpportunities";
 import { useProjectTasks } from "@/hooks/useProjectTasks";
 import { supabase } from "@/integrations/supabase/client";
+import { getDemoProjects, getDemoTasks, DemoProject, DemoTask } from "@/data/demoProjects";
 
 type TimeOfDay = "morning" | "afternoon" | "evening";
 
@@ -57,9 +59,14 @@ const AIAssistant = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<string>("opportunities");
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [displayedOpportunities, setDisplayedOpportunities] = useState<ClientOpportunity[]>([]);
+  
+  // Demo data
+  const [demoProjects, setDemoProjects] = useState<DemoProject[]>([]);
+  const [demoTasks, setDemoTasks] = useState<DemoTask[]>([]);
   
   // Dialog states
   const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
@@ -124,13 +131,24 @@ const AIAssistant = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Calculate practice value metrics
+  // Load demo projects
+  useEffect(() => {
+    const demos = getDemoProjects(selectedRegion);
+    const tasks = getDemoTasks(demos);
+    setDemoProjects(demos);
+    setDemoTasks(tasks);
+  }, [selectedRegion]);
+
+  // Calculate practice value metrics (combining real + demo data)
   const practiceMetrics = useMemo(() => {
-    const totalPotential = projectMetrics.totalOpportunityValue;
-    const realized = projectMetrics.realizedRevenue;
-    const activeCount = projectMetrics.activeProjects;
-    const completedCount = projectMetrics.completedProjects;
-    const totalProjects = projects.length;
+    // Combine real projects with demo projects
+    const allProjects = [...projects, ...demoProjects];
+    
+    const totalPotential = allProjects.reduce((acc, p) => acc + Number(p.target_revenue || 0), 0);
+    const realized = allProjects.reduce((acc, p) => acc + Number(p.realized_revenue || 0), 0);
+    const activeCount = allProjects.filter(p => p.status === "Active").length;
+    const completedCount = allProjects.filter(p => p.status === "Completed").length;
+    const totalProjects = allProjects.length;
     
     // Calculate percentages
     const actualPercent = totalPotential > 0 ? Math.round((realized / totalPotential) * 100) : 0;
@@ -144,7 +162,7 @@ const AIAssistant = () => {
       inProgressPercent: Math.max(0, inProgressPercent),
       notStartedPercent: Math.max(0, notStartedPercent),
     };
-  }, [projects, projectMetrics]);
+  }, [projects, demoProjects]);
 
   // Store the initial theme before forcing dark mode
   useEffect(() => {
@@ -172,6 +190,33 @@ const AIAssistant = () => {
     platform: opportunities.filter((o) => o.opportunityType === "platform").length,
     atRisk: 2, // Mock count for at-risk clients
   };
+
+  // Combined projects for display
+  const allProjects = useMemo(() => {
+    const combined = [...projects, ...demoProjects.map(d => ({
+      ...d,
+      user_id: "",
+      region_code: selectedRegion,
+      updated_at: d.created_at,
+      is_deleted: false,
+    }))];
+    return combined;
+  }, [projects, demoProjects, selectedRegion]);
+
+  // Combined tasks for display
+  const allTasks = useMemo(() => {
+    return [...projectTasks, ...demoTasks.map(t => ({
+      ...t,
+      user_id: "",
+      opportunity_id: null,
+      client_id: null,
+      completed_at: null,
+      assigned_to: null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      is_deleted: false,
+    }))];
+  }, [projectTasks, demoTasks]);
 
   // Calculate pipeline progress
   const totalOpps = projectOpportunities.length;
@@ -334,10 +379,10 @@ const AIAssistant = () => {
       {/* Night sky elements (evening only) */}
       {timeOfDay === "evening" && <NightSky />}
 
-      {/* Background animated elements */}
+      {/* Background animated elements - subtle for contrast */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-violet-500/10 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-white/5 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-white/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
       </div>
 
       {/* Header */}
@@ -371,72 +416,99 @@ const AIAssistant = () => {
       </header>
 
       {/* Main content */}
-      <main className="relative z-10 p-6 max-w-7xl mx-auto space-y-8 pb-24">
+      <main className="relative z-10 p-6 max-w-7xl mx-auto space-y-6 pb-24">
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="bg-white/10 border border-white/20">
+            <TabsTrigger value="opportunities" className="data-[state=active]:bg-white/20 text-white/70 data-[state=active]:text-white">
+              Opportunities
+            </TabsTrigger>
+            <TabsTrigger value="projects" className="data-[state=active]:bg-white/20 text-white/70 data-[state=active]:text-white">
+              Projects
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="data-[state=active]:bg-white/20 text-white/70 data-[state=active]:text-white">
+              Analytics
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+
         {/* Metrics Dashboard */}
         <OpportunityMetrics
-          totalOpportunityValue={projectMetrics.totalOpportunityValue}
-          realizedRevenue={projectMetrics.realizedRevenue}
-          activeProjects={projectMetrics.activeProjects}
-          completedProjects={projectMetrics.completedProjects}
+          totalOpportunityValue={practiceMetrics.potentialRevenue}
+          realizedRevenue={practiceMetrics.existingRevenue}
+          activeProjects={allProjects.filter(p => p.status === "Active").length}
+          completedProjects={allProjects.filter(p => p.status === "Completed").length}
           pipelineProgress={pipelineProgress}
           slaHealth={slaMetrics}
           formatCurrency={formatCurrency}
         />
 
-        {/* Insight Categories */}
-        <div>
-          <InsightOrbit
-            activeCategory={activeCategory}
-            onCategoryClick={handleCategoryClick}
-            onCreateProject={handleCreateProjectFromCategory}
-            counts={counts}
-          />
-        </div>
+        {activeTab === "opportunities" && (
+          <>
+            {/* Insight Categories */}
+            <div>
+              <InsightOrbit
+                activeCategory={activeCategory}
+                onCategoryClick={handleCategoryClick}
+                onCreateProject={handleCreateProjectFromCategory}
+                counts={counts}
+              />
+            </div>
 
-        {/* Opportunity Cards (when category selected) */}
-        {displayedOpportunities.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {displayedOpportunities.map((opportunity, index) => (
-              <div key={opportunity.clientId} className="relative group">
-                <OpportunityCard 
-                  opportunity={opportunity} 
-                  index={index} 
-                  formatCurrency={formatCurrency}
-                />
-                {projects.length > 0 && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-white/10 hover:bg-white/20 text-white/70 hover:text-white text-xs"
-                    onClick={() => handleAddOpportunityToProject(opportunity)}
-                  >
-                    + Add to Project
-                  </Button>
-                )}
+            {/* Opportunity Cards (when category selected) */}
+            {displayedOpportunities.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {displayedOpportunities.map((opportunity, index) => (
+                  <div key={opportunity.clientId} className="relative group">
+                    <OpportunityCard 
+                      opportunity={opportunity} 
+                      index={index} 
+                      formatCurrency={formatCurrency}
+                    />
+                    {allProjects.length > 0 && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-white/10 hover:bg-white/20 text-white/70 hover:text-white text-xs"
+                        onClick={() => handleAddOpportunityToProject(opportunity)}
+                      >
+                        + Add to Project
+                      </Button>
+                    )}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            )}
+          </>
         )}
 
-        {/* Projects List */}
-        <ProjectsList
-          projects={projects}
-          opportunities={projectOpportunities}
-          tasks={projectTasks}
-          activeFilter={activeCategory ? 
-            (activeCategory === "upsell" || activeCategory === "cross-sell" ? "growth" :
-             activeCategory === "at-risk" ? "derisking" :
-             activeCategory === "platform" ? "consolidation" : activeCategory) 
-            : null
-          }
-          onCreateProject={() => setIsCreateProjectOpen(true)}
-          onEditProject={() => {}}
-          onDeleteProject={handleDeleteProject}
-          onAddTask={handleAddTask}
-          onUpdateTask={handleUpdateTaskStatus}
-          formatCurrency={formatCurrency}
-        />
+        {activeTab === "projects" && (
+          <ProjectsList
+            projects={allProjects}
+            opportunities={projectOpportunities}
+            tasks={allTasks}
+            activeFilter={activeCategory ? 
+              (activeCategory === "upsell" || activeCategory === "cross-sell" ? "growth" :
+               activeCategory === "at-risk" ? "derisking" :
+               activeCategory === "platform" ? "consolidation" : activeCategory) 
+              : null
+            }
+            onCreateProject={() => setIsCreateProjectOpen(true)}
+            onEditProject={() => {}}
+            onDeleteProject={handleDeleteProject}
+            onAddTask={handleAddTask}
+            onUpdateTask={handleUpdateTaskStatus}
+            formatCurrency={formatCurrency}
+          />
+        )}
+
+        {activeTab === "analytics" && (
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-8 text-center">
+            <p className="text-white/50">Analytics dashboard coming soon...</p>
+          </div>
+        )}
       </main>
+
 
       {/* AI Orb - Fixed bottom right */}
       <div className="fixed bottom-8 right-8 z-40">
