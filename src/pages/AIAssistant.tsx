@@ -375,7 +375,7 @@ const AIAssistant = () => {
   const selectedProject = projects.find(p => p.id === selectedProjectId);
 
   return (
-    <div className={`h-screen gradient-mesh-${timeOfDay} text-white overflow-hidden flex flex-col`}>
+    <div className={`min-h-screen gradient-mesh-${timeOfDay} text-white overflow-y-auto`}>
       {/* Night sky elements (evening only) */}
       {timeOfDay === "evening" && <NightSky />}
 
@@ -386,7 +386,7 @@ const AIAssistant = () => {
       </div>
 
       {/* Header */}
-      <header className="relative z-10 flex items-center justify-between p-4 border-b border-white/10 flex-shrink-0">
+      <header className="sticky top-0 z-20 flex items-center justify-between p-4 border-b border-white/10 backdrop-blur-sm bg-black/20">
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"
@@ -416,7 +416,7 @@ const AIAssistant = () => {
       </header>
 
       {/* Main content */}
-      <main className="relative z-10 p-6 max-w-7xl mx-auto space-y-6 pb-24 overflow-y-auto flex-1">
+      <main className="relative z-10 p-6 max-w-7xl mx-auto space-y-6 pb-24">
         {/* Metrics Dashboard */}
         <OpportunityMetrics
           totalOpportunityValue={practiceMetrics.potentialRevenue}
@@ -483,7 +483,7 @@ const AIAssistant = () => {
 
 
       {/* AI Orb - Fixed bottom right */}
-      <div className="fixed bottom-8 right-8 z-40">
+      <div className="fixed bottom-8 right-8 z-50">
         <AIOrb isProcessing={isProcessing} isChatOpen={isChatOpen} onClick={handleOrbClick} />
       </div>
 
