@@ -9,15 +9,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ScrollArea } from "@/components/ui/scroll-area";
+
 import { Client, getDisplayName, getInitials, calculateAge, formatBirthday } from "@/types/client";
 import { 
   DollarSign, 
   Image, 
   MessageSquare, 
   User, 
-  FileCheck, 
-  MoreVertical 
+  FileCheck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
@@ -222,39 +221,32 @@ const ClientSummaryTab = ({ client, clientId, onShowMoreActivity }: ClientSummar
         {/* Recent Activity */}
         <Card>
           <CardHeader className="pb-4">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">Recent Activity</CardTitle>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <MoreVertical className="w-4 h-4" />
-              </Button>
-            </div>
+            <CardTitle className="text-lg">Recent Activity</CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
-            <ScrollArea className="h-[300px] pr-4">
-              <div className="space-y-0">
-                {recentActivities.map((activity) => (
-                  <div 
-                    key={activity.id} 
-                    className="flex gap-3 py-3 border-b border-border/50 last:border-0"
-                  >
-                    <div className="shrink-0 mt-0.5">
-                      {getActivityIcon(activity.type)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className={`font-medium text-sm ${getTitleColor(activity.type)}`}>
-                        {activity.title}
-                      </p>
-                      <p className="text-sm text-muted-foreground mt-0.5">
-                        {activity.description}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {formatDistanceToNow(activity.timestamp, { addSuffix: true })}
-                      </p>
-                    </div>
+            <div className="space-y-0">
+              {recentActivities.map((activity) => (
+                <div 
+                  key={activity.id} 
+                  className="flex gap-3 py-3 border-b border-border/50 last:border-0"
+                >
+                  <div className="shrink-0 mt-0.5">
+                    {getActivityIcon(activity.type)}
                   </div>
-                ))}
-              </div>
-            </ScrollArea>
+                  <div className="flex-1 min-w-0">
+                    <p className={`font-medium text-sm ${getTitleColor(activity.type)}`}>
+                      {activity.title}
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-0.5">
+                      {activity.description}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {formatDistanceToNow(activity.timestamp, { addSuffix: true })}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
             
             {/* Show more link */}
             <div className="pt-4 border-t mt-4">
