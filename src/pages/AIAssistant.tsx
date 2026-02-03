@@ -9,17 +9,20 @@ import InsightOrbit from "@/components/ai-assistant/InsightOrbit";
 import ChatPanel from "@/components/ai-assistant/ChatPanel";
 import OpportunityCard, { ClientOpportunity } from "@/components/ai-assistant/OpportunityCard";
 import OpportunityMetrics from "@/components/ai-assistant/OpportunityMetrics";
+import OpportunitySelectionBar from "@/components/ai-assistant/OpportunitySelectionBar";
 import ProjectsList from "@/components/ai-assistant/ProjectsList";
 import CreateProjectDialog from "@/components/ai-assistant/CreateProjectDialog";
 import AddOpportunityDialog from "@/components/ai-assistant/AddOpportunityDialog";
 import AddTaskDialog from "@/components/ai-assistant/AddTaskDialog";
 import ClientSelectionDialog from "@/components/ai-assistant/ClientSelectionDialog";
+import AddSelectedToProjectDialog from "@/components/ai-assistant/AddSelectedToProjectDialog";
 import PracticeValueIndicator from "@/components/ai-assistant/PracticeValueIndicator";
 import NightSky from "@/components/ai-assistant/NightSky";
 import { useRegion } from "@/contexts/RegionContext";
 import { useOpportunityProjects } from "@/hooks/useOpportunityProjects";
 import { useProjectOpportunities } from "@/hooks/useProjectOpportunities";
 import { useProjectTasks } from "@/hooks/useProjectTasks";
+import { useAIOpportunities, AIOpportunity } from "@/hooks/useAIOpportunities";
 import { supabase } from "@/integrations/supabase/client";
 import { getDemoProjects, getDemoTasks, DemoProject, DemoTask } from "@/data/demoProjects";
 import { ClientWithValue } from "@/hooks/useClientOpportunityValues";
@@ -54,7 +57,9 @@ interface Message {
 const AIAssistant = () => {
   const navigate = useNavigate();
   const { theme, setTheme, resolvedTheme } = useTheme();
-  const { opportunities, formatCurrency, currencySymbol, selectedRegion } = useRegion();
+  const { formatCurrency, currencySymbol, selectedRegion
+
+ } = useRegion();
   const previousThemeRef = useRef<string | undefined>(undefined);
   const hasStoredThemeRef = useRef(false);
   
@@ -65,7 +70,12 @@ const AIAssistant = () => {
   
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
-  const [displayedOpportunities, setDisplayedOpportunities] = useState<ClientOpportunity[]>([]);
+  const [displayedOpportunities, setDisplayedOpportunities] = useState<AIOpportunity[]>([]);
+  
+  // Selection state for bulk operations
+  const [selectedOpportunityIds, setSelectedOpportunityIds] = useState<Set<string>>(new Set());
+  const [isAddToProjectOpen, setIsAddToProjectOpen] = useState(false);
+  const [isAddingBulk, setIsAddingBulk] = useState(false);
   
   // Demo data
   const [demoProjects, setDemoProjects] = useState<DemoProject[]>([]);
@@ -109,6 +119,16 @@ const AIAssistant = () => {
     updateTask,
     isLoading: tasksLoading,
   } = useProjectTasks();
+
+  // AI-driven opportunity discovery from client database
+  const {
+    opportunities: aiOpportunities,
+    counts: aiCounts,
+    getOpportunitiesByType,
+    calculateTotalValue,
+    isLoading: aiOpportunitiesLoading,
+    hasOpportunities,
+  } = useAIOpportunities();
 
   // Fetch user's first name from profiles
   useEffect(() => {
@@ -188,13 +208,13 @@ const AIAssistant = () => {
     };
   }, [setTheme]);
 
-  // Calculate counts for insight cards
+  // Use AI-discovered counts from hook
   const counts = {
-    upsell: opportunities.filter((o) => o.opportunityType === "upsell").length,
-    crossSell: opportunities.filter((o) => o.opportunityType === "cross-sell").length,
-    migration: opportunities.filter((o) => o.opportunityType === "migration").length,
-    platform: opportunities.filter((o) => o.opportunityType === "platform").length,
-    atRisk: 2, // Mock count for at-risk clients
+    upsell: aiCounts.upsell,
+    crossSell: aiCounts.crossSell,
+    migration: aiCounts.migration,
+    platform: aiCounts.platform,
+    atRisk: aiCounts.atRisk,
   };
 
   // Combined projects for display
@@ -233,20 +253,11 @@ const AIAssistant = () => {
 
   const handleCategoryClick = (category: string) => {
     setActiveCategory(category === activeCategory ? null : category);
+    // Clear selection when changing categories
+    setSelectedOpportunityIds(new Set());
     
     if (category !== activeCategory) {
-      let filtered: ClientOpportunity[];
-      if (category === "at-risk") {
-        filtered = [];
-      } else {
-        const typeMap: Record<string, ClientOpportunity["opportunityType"]> = {
-          "upsell": "upsell",
-          "cross-sell": "cross-sell",
-          "migration": "migration",
-          "platform": "platform",
-        };
-        filtered = opportunities.filter((o) => o.opportunityType === typeMap[category]);
-      }
+      const filtered = getOpportunitiesByType(category);
       setDisplayedOpportunities(filtered);
     } else {
       setDisplayedOpportunities([]);
@@ -256,6 +267,89 @@ const AIAssistant = () => {
   const handleCreateProjectFromCategory = (projectType: string) => {
     setDefaultProjectType(projectType);
     setIsCreateProjectOpen(true);
+  };
+
+  // Selection handlers
+  const handleToggleOpportunitySelect = (clientId: string) => {
+    setSelectedOpportunityIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(clientId)) {
+        next.delete(clientId);
+      } else {
+        next.add(clientId);
+      }
+      return next;
+    });
+  };
+
+  const handleSelectAllOpportunities = () => {
+    const allIds = displayedOpportunities.map((o) => o.clientId);
+    setSelectedOpportunityIds(new Set(allIds));
+  };
+
+  const handleClearSelection = () => {
+    setSelectedOpportunityIds(new Set());
+  };
+
+  const selectedTotalValue = calculateTotalValue(selectedOpportunityIds);
+  const allOpportunitiesSelected =
+    displayedOpportunities.length > 0 &&
+    displayedOpportunities.every((o) => selectedOpportunityIds.has(o.clientId));
+
+  // Handle adding selected opportunities to project
+  const handleAddSelectedToProject = async (
+    projectId: string,
+    opportunities: AIOpportunity[]
+  ) => {
+    setIsAddingBulk(true);
+    try {
+      const project = projects.find((p) => p.id === projectId);
+      const slaDays = project?.sla_days || 30;
+
+      for (const opp of opportunities) {
+        // Create opportunity record
+        await createOpportunity.mutateAsync({
+          project_id: projectId,
+          client_id: opp.clientId,
+          client_name: opp.clientName,
+          opportunity_type: opp.opportunityType,
+          current_value: opp.currentValue,
+          potential_revenue: opp.potentialRevenue,
+          confidence: opp.confidence,
+          reasoning: opp.reasoning,
+          suggested_action: opp.suggestedAction,
+        });
+
+        // Create task for client
+        await createTask.mutateAsync({
+          project_id: projectId,
+          client_id: opp.clientId,
+          title: `Contact ${opp.clientName} - ${opp.opportunityType}`,
+          description: `Follow up on ${opp.opportunityType} opportunity. ${opp.reasoning}`,
+          task_type: "Action",
+          priority: "Medium",
+          due_date: addDays(new Date(), 7).toISOString().split("T")[0],
+          sla_deadline: addDays(new Date(), slaDays).toISOString().split("T")[0],
+        });
+      }
+
+      // Update project target revenue
+      const totalNewRevenue = opportunities.reduce((acc, o) => acc + o.potentialRevenue, 0);
+      const currentTarget = Number(project?.target_revenue) || 0;
+      await updateProject.mutateAsync({
+        id: projectId,
+        target_revenue: currentTarget + totalNewRevenue,
+      });
+
+      setIsAddToProjectOpen(false);
+      setSelectedOpportunityIds(new Set());
+      // Remove added opportunities from displayed list
+      setDisplayedOpportunities((prev) =>
+        prev.filter((o) => !opportunities.some((added) => added.clientId === o.clientId))
+      );
+    } finally {
+      setIsAddingBulk(false);
+    }
   };
 
   const handleCreateProject = (data: {
@@ -399,10 +493,10 @@ const AIAssistant = () => {
     setIsTyping(true);
 
     setTimeout(() => {
-      const topUpsell = opportunities.find(o => o.opportunityType === "upsell");
-      const topCrossSell = opportunities.find(o => o.opportunityType === "cross-sell");
-      const topMigration = opportunities.find(o => o.opportunityType === "migration");
-      const topPlatform = opportunities.find(o => o.opportunityType === "platform");
+      const topUpsell = aiOpportunities.find(o => o.opportunityType === "upsell");
+      const topCrossSell = aiOpportunities.find(o => o.opportunityType === "cross-sell");
+      const topMigration = aiOpportunities.find(o => o.opportunityType === "migration");
+      const topPlatform = aiOpportunities.find(o => o.opportunityType === "platform");
 
       const responses: Record<string, string> = {
         "upsell": `I've identified ${counts.upsell} clients with upselling potential. ${topUpsell?.clientName || "A client"} shows the highest opportunity with ${formatCurrency(topUpsell?.potentialRevenue || 0)} potential revenue from portfolio expansion.`,
@@ -497,26 +591,45 @@ const AIAssistant = () => {
 
         {/* Opportunity Cards (when category selected) */}
         {displayedOpportunities.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {displayedOpportunities.map((opportunity, index) => (
-              <div key={opportunity.clientId} className="relative group">
-                <OpportunityCard 
-                  opportunity={opportunity} 
-                  index={index} 
+          <div className="space-y-4">
+            {/* Selection Bar */}
+            <OpportunitySelectionBar
+              selectedCount={selectedOpportunityIds.size}
+              totalCount={displayedOpportunities.length}
+              totalValue={selectedTotalValue}
+              onSelectAll={handleSelectAllOpportunities}
+              onClearSelection={handleClearSelection}
+              onAddToProject={() => setIsAddToProjectOpen(true)}
+              allSelected={allOpportunitiesSelected}
+              formatCurrency={formatCurrency}
+            />
+            
+            {/* Opportunity Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {displayedOpportunities.map((opportunity, index) => (
+                <OpportunityCard
+                  key={opportunity.clientId}
+                  opportunity={opportunity}
+                  index={index}
                   formatCurrency={formatCurrency}
+                  selectable={true}
+                  isSelected={selectedOpportunityIds.has(opportunity.clientId)}
+                  onToggleSelect={handleToggleOpportunitySelect}
                 />
-                {allProjects.length > 0 && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-white/10 hover:bg-white/20 text-white/70 hover:text-white text-xs"
-                    onClick={() => handleAddOpportunityToProject(opportunity)}
-                  >
-                    + Add to Project
-                  </Button>
-                )}
-              </div>
-            ))}
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Empty state when category selected but no opportunities */}
+        {activeCategory && displayedOpportunities.length === 0 && !aiOpportunitiesLoading && (
+          <div className="text-center py-12">
+            <p className="text-white/50 mb-4">
+              No opportunities identified for this category yet.
+            </p>
+            <p className="text-white/40 text-sm">
+              Import client data or check if clients have products linked.
+            </p>
           </div>
         )}
 
@@ -610,6 +723,23 @@ const AIAssistant = () => {
         }
         formatCurrency={formatCurrency}
         isLoading={createOpportunity.isPending || createTask.isPending}
+      />
+
+      {/* Add Selected Opportunities to Project Dialog */}
+      <AddSelectedToProjectDialog
+        isOpen={isAddToProjectOpen}
+        onClose={() => setIsAddToProjectOpen(false)}
+        onAddToExisting={handleAddSelectedToProject}
+        onCreateNew={() => {
+          setIsAddToProjectOpen(false);
+          setIsCreateProjectOpen(true);
+        }}
+        selectedOpportunities={displayedOpportunities.filter((o) =>
+          selectedOpportunityIds.has(o.clientId)
+        )}
+        projects={projects}
+        formatCurrency={formatCurrency}
+        isLoading={isAddingBulk}
       />
     </div>
   );
