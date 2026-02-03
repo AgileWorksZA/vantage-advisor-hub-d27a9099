@@ -225,9 +225,9 @@ const Dashboard = () => {
                     </thead>
                     <tbody>
                       {filteredRegionalData.topAccounts.slice(0, 7).map(account => <tr key={account.investor} className="border-t border-border">
-                          <td className="py-2">{account.investor}</td>
-                          <td className="py-2 text-right text-muted-foreground">{account.bookPercent}</td>
-                          <td className="py-2 text-right">{account.value}</td>
+                          <td className="py-2 max-w-[120px] truncate" title={account.investor}>{account.investor}</td>
+                          <td className="py-2 text-right text-muted-foreground whitespace-nowrap">{account.bookPercent}</td>
+                          <td className="py-2 text-right whitespace-nowrap">{account.value}</td>
                         </tr>)}
                     </tbody>
                   </table>
