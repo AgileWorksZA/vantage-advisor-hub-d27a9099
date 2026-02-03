@@ -88,23 +88,46 @@ const Clients = () => {
   // Dashboard widget filter state
   const [filterSource, setFilterSource] = useState<string | null>(null);
   const [filteredNames, setFilteredNames] = useState<string[]>([]);
+  const [widgetData, setWidgetData] = useState<Record<string, { birthday?: string; age?: number; value?: string; bookPercent?: string }>>({});
 
   const { clients, loading: clientsLoading, refetch, deleteClient } = useClients();
 
   // Read URL parameters for Dashboard widget filters
   useEffect(() => {
     const filter = searchParams.get('filter');
-    const names = searchParams.get('names');
+    const dataParam = searchParams.get('data');
     
-    if (filter && names) {
-      setFilterSource(filter === 'birthdays' ? 'Upcoming Birthdays' : 'Top Accounts');
-      const nameList = decodeURIComponent(names).split(',');
-      setFilteredNames(nameList);
-      // Clear profile type filter when coming from Dashboard
-      setActiveFilter("");
+    if (filter && dataParam) {
+      try {
+        const parsedData = JSON.parse(decodeURIComponent(dataParam));
+        setFilterSource(filter === 'birthdays' ? 'Upcoming Birthdays' : 'Top Accounts');
+        
+        // Build lookup map by name
+        const dataMap: Record<string, any> = {};
+        parsedData.forEach((item: any) => {
+          const name = item.name.toLowerCase();
+          if (filter === 'birthdays') {
+            dataMap[name] = { birthday: item.birthday, age: item.age };
+          } else {
+            dataMap[name] = { value: item.value, bookPercent: item.bookPercent };
+          }
+        });
+        setWidgetData(dataMap);
+        
+        // Extract names for filtering
+        const nameList = parsedData.map((item: any) => item.name);
+        setFilteredNames(nameList);
+        setActiveFilter("");
+      } catch (e) {
+        console.error('Failed to parse widget data:', e);
+        setFilterSource(null);
+        setFilteredNames([]);
+        setWidgetData({});
+      }
     } else {
       setFilterSource(null);
       setFilteredNames([]);
+      setWidgetData({});
     }
   }, [searchParams]);
 
@@ -180,7 +203,24 @@ const Clients = () => {
     setSearchParams({});
     setFilteredNames([]);
     setFilterSource(null);
+    setWidgetData({});
     setActiveFilter("Client");
+  };
+
+  // Get widget data for a client by fuzzy name matching
+  const getWidgetDataForClient = (clientName: string) => {
+    const clientLower = clientName.toLowerCase();
+    
+    for (const [widgetName, data] of Object.entries(widgetData)) {
+      const nameParts = widgetName.split(' ');
+      const surname = nameParts[nameParts.length - 1];
+      const firstName = nameParts[0];
+      
+      if (clientLower.includes(surname) || clientLower.includes(firstName)) {
+        return data;
+      }
+    }
+    return null;
   };
 
   // Filter clients based on active filter, search query, and dashboard widget filter
@@ -409,6 +449,12 @@ const Clients = () => {
                     <TableHead className="text-xs font-normal text-muted-foreground">Title</TableHead>
                     <TableHead className="text-xs font-normal text-muted-foreground">Identification</TableHead>
                     <TableHead className="text-xs font-normal text-muted-foreground">Age</TableHead>
+                    {filterSource === 'Upcoming Birthdays' && (
+                      <TableHead className="text-xs font-normal text-muted-foreground">Birthday</TableHead>
+                    )}
+                    {filterSource === 'Top Accounts' && (
+                      <TableHead className="text-xs font-normal text-muted-foreground">Account Value</TableHead>
+                    )}
                     <TableHead className="text-xs font-normal text-muted-foreground">Contact Details</TableHead>
                     <TableHead className="text-xs font-normal text-muted-foreground">Advisor</TableHead>
                     <TableHead className="text-xs font-normal text-muted-foreground">Wealth Manager</TableHead>
@@ -435,6 +481,16 @@ const Clients = () => {
                       <TableCell className="text-sm">{client.title}</TableCell>
                       <TableCell className="text-sm">{client.identification}</TableCell>
                       <TableCell className="text-sm">{client.age || ""}</TableCell>
+                      {filterSource === 'Upcoming Birthdays' && (
+                        <TableCell className="text-sm font-medium text-primary">
+                          {getWidgetDataForClient(client.client)?.birthday || "—"}
+                        </TableCell>
+                      )}
+                      {filterSource === 'Top Accounts' && (
+                        <TableCell className="text-sm font-medium text-emerald-600">
+                          {getWidgetDataForClient(client.client)?.value || "—"}
+                        </TableCell>
+                      )}
                       <TableCell className="text-sm">
                         <div className="flex flex-col">
                           <span>{client.phone}</span>

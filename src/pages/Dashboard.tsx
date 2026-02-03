@@ -234,8 +234,12 @@ const Dashboard = () => {
                     <button 
                       className="w-full text-center text-xs text-primary hover:underline mt-2"
                       onClick={() => {
-                        const names = filteredRegionalData.topAccounts.map(a => a.investor).join(',');
-                        navigate(`/clients?filter=accounts&names=${encodeURIComponent(names)}`);
+                        const accountData = filteredRegionalData.topAccounts.map(a => ({
+                          name: a.investor,
+                          value: a.value,
+                          bookPercent: a.bookPercent
+                        }));
+                        navigate(`/clients?filter=accounts&data=${encodeURIComponent(JSON.stringify(accountData))}`);
                       }}
                     >
                       Show more ({filteredRegionalData.topAccounts.length - 7} more)
@@ -337,8 +341,12 @@ const Dashboard = () => {
                     <button 
                       className="w-full text-center text-xs text-primary hover:underline mt-2"
                       onClick={() => {
-                        const names = filteredRegionalData.birthdays.map(b => b.name).join(',');
-                        navigate(`/clients?filter=birthdays&names=${encodeURIComponent(names)}`);
+                        const birthdayData = filteredRegionalData.birthdays.map(b => ({
+                          name: b.name,
+                          birthday: b.nextBirthday,
+                          age: b.age
+                        }));
+                        navigate(`/clients?filter=birthdays&data=${encodeURIComponent(JSON.stringify(birthdayData))}`);
                       }}
                     >
                       Show more ({filteredRegionalData.birthdays.length - 7} more)
