@@ -1,0 +1,436 @@
+import { useState } from "react";
+import { useParams } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Pencil, Trash2, MoreVertical, ChevronDown, Loader2 } from "lucide-react";
+import { useClientProducts } from "@/hooks/useClientProducts";
+
+// Demo data for the various product tables
+const onPlatformProducts = [
+  { investmentHouse: "Efficient Wealth", product: "Investment Plan", number: "202411220002", amount: "R 1,163.39", income: "R 0.00", contribution: "R 0.00", date: "03/02/2026", advisor: "Emile Wegner" },
+  { investmentHouse: "Efficient Wealth", product: "Tax Free Plan", number: "202601125174", amount: "R 0.00", income: "R 0.00", contribution: "R 0.00", date: "03/02/2026", advisor: "Emile Wegner" },
+  { investmentHouse: "Efficient Wealth", product: "Investment Plan", number: "202601145000", amount: "R 0.00", income: "R 0.00", contribution: "R 0.00", date: "03/02/2026", advisor: "Emile Wegner" },
+  { investmentHouse: "Efficient Wealth", product: "Investment Plan", number: "202601155000", amount: "R 0.00", income: "R 0.00", contribution: "R 10.00 Monthly", date: "03/02/2026", advisor: "Emile Wegner" },
+  { investmentHouse: "Efficient Wealth", product: "Investment Plan", number: "202601155087", amount: "R 0.00", income: "R 0.00", contribution: "R 0.00", date: "03/02/2026", advisor: "Emile Wegner" },
+  { investmentHouse: "Efficient Wealth", product: "Investment Plan", number: "202601135087", amount: "R 0.00", income: "R 0.00", contribution: "R 0.00", date: "03/02/2026", advisor: "Emile Wegner" },
+  { investmentHouse: "Efficient Wealth", product: "Investment Plan", number: "202601145087", amount: "R 0.00", income: "R 0.00", contribution: "R 0.00", date: "03/02/2026", advisor: "Emile Wegner" },
+  { investmentHouse: "Efficient Wealth", product: "Investment Plan", number: "202601205000", amount: "R 0.00", income: "R 0.00", contribution: "R 0.00", date: "03/02/2026", advisor: "Emile Wegner" },
+  { investmentHouse: "Efficient Wealth", product: "Retirement Annuity Fund", number: "202601010020P", amount: "R 1,393,995.66", income: "R 0.00", contribution: "R 0.00", date: "03/02/2026", advisor: "Emile Wegner" },
+  { investmentHouse: "Efficient Wealth", product: "Investment Plan", number: "202601215261", amount: "R 0.00", income: "R 0.00", contribution: "R 0.00", date: "03/02/2026", advisor: "Emile Wegner" },
+];
+
+const externalProducts = [
+  { provider: "Ninety One", product: "Investment Plan", contract: "1100232384", amount: "R 843,956.45", income: "R 0.00", contribution: "R 0.00", updated: "", source: "" },
+];
+
+const ccmAccounts = [
+  { name: "Local CCM Account", dateOpened: "10/06/2024", beneficiary: "", accountNumber: "293000011", amount: "R 55,083.00", source: "", dateClosed: "" },
+];
+
+const willData = [
+  { hasWill: "Yes", dateOfWill: "31/12/2023", placeKept: "EFBOE", receiptNumber: "4033", executors: "EFBOE", lastReview: "31/12/2024", notes: "" },
+];
+
+const riskProducts = [
+  { holdingName: "Hollard Life", policyNumber: "HL429050603", effectiveDate: "01/05/2025", terminationDate: "", paymentAmount: "5,494.75", paidToDate: "", paymentDueDate: "", notes: "" },
+];
+
+const medicalAid = [
+  { schemeName: "PPS", planName: "Provider Plus", membershipNumber: "10453406", policyActive: "Yes", premium: "5555.2", dateReceived: "", notes: "" },
+];
+
+const Client360ViewTab = () => {
+  const { clientId } = useParams<{ clientId: string }>();
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  const handleLoadMore = () => {
+    setLoadingMore(true);
+    setTimeout(() => setLoadingMore(false), 1000);
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* On-Platform Investment Products */}
+      <Card className="border-0 shadow-sm">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base font-medium">On-Platform Investment Products</CardTitle>
+            <Button variant="link" className="text-[hsl(180,70%,45%)] p-0 h-auto font-normal">
+              + Quote + New business
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/30">
+                <TableHead className="text-xs font-medium text-muted-foreground">Investment house</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Investment product</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Investment number</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Investment amount</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Income</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Recurring contribution</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Date applicable</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Advisor name</TableHead>
+                <TableHead className="w-[80px]"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {onPlatformProducts.map((product, index) => (
+                <TableRow key={index} className="border-b border-border/50">
+                  <TableCell className="text-sm text-[hsl(180,70%,45%)]">{product.investmentHouse}</TableCell>
+                  <TableCell className="text-sm">{product.product}</TableCell>
+                  <TableCell className="text-sm">{product.number}</TableCell>
+                  <TableCell className="text-sm">{product.amount}</TableCell>
+                  <TableCell className="text-sm">{product.income}</TableCell>
+                  <TableCell className="text-sm">{product.contribution}</TableCell>
+                  <TableCell className="text-sm">{product.date}</TableCell>
+                  <TableCell className="text-sm">{product.advisor}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Pencil className="h-4 w-4 text-[hsl(180,70%,45%)]" />
+                      </Button>
+                      {product.amount !== "R 0.00" && (
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                        </Button>
+                      )}
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <MoreVertical className="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          <div className="p-3 border-t">
+            <Button variant="link" className="text-[hsl(180,70%,45%)] p-0 h-auto font-normal text-sm" onClick={handleLoadMore}>
+              {loadingMore ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+              Load more...
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* External Investment Products */}
+      <Card className="border-0 shadow-sm">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base font-medium">
+              External Investment Products <span className="text-muted-foreground font-normal">| R 843,956.45</span>
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              <Button variant="link" className="text-[hsl(180,70%,45%)] p-0 h-auto font-normal">+ Existing</Button>
+              <span className="text-muted-foreground">|</span>
+              <Button variant="link" className="text-[hsl(180,70%,45%)] p-0 h-auto font-normal">View Inactive</Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/30">
+                <TableHead className="text-xs font-medium text-muted-foreground">Provider</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Product</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Contract</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Amount</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Income</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Contribution</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Updated</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Source</TableHead>
+                <TableHead className="w-[80px]"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {externalProducts.map((product, index) => (
+                <TableRow key={index} className="border-b border-border/50">
+                  <TableCell className="text-sm text-[hsl(180,70%,45%)]">{product.provider}</TableCell>
+                  <TableCell className="text-sm">{product.product}</TableCell>
+                  <TableCell className="text-sm">{product.contract}</TableCell>
+                  <TableCell className="text-sm">{product.amount}</TableCell>
+                  <TableCell className="text-sm">{product.income}</TableCell>
+                  <TableCell className="text-sm">{product.contribution}</TableCell>
+                  <TableCell className="text-sm">{product.updated}</TableCell>
+                  <TableCell className="text-sm">{product.source}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Pencil className="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Trash2 className="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <MoreVertical className="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {/* Corporate Cash Manager */}
+      <Card className="border-0 shadow-sm">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base font-medium">
+              Corporate Cash Manager <span className="text-muted-foreground font-normal">| R 55,083.00</span>
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              <Button variant="link" className="text-[hsl(180,70%,45%)] p-0 h-auto font-normal">+ CCM Product</Button>
+              <span className="text-muted-foreground">|</span>
+              <Button variant="link" className="text-[hsl(180,70%,45%)] p-0 h-auto font-normal">View Inactive</Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/30">
+                <TableHead className="text-xs font-medium text-muted-foreground">Corporate Cash Manager</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Date Opened</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Nominated Beneficiary</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Account Number</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Investment Amount</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Source</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Date Closed</TableHead>
+                <TableHead className="w-[60px]"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {ccmAccounts.map((account, index) => (
+                <TableRow key={index} className="border-b border-border/50">
+                  <TableCell className="text-sm text-[hsl(180,70%,45%)]">{account.name}</TableCell>
+                  <TableCell className="text-sm">{account.dateOpened}</TableCell>
+                  <TableCell className="text-sm">{account.beneficiary}</TableCell>
+                  <TableCell className="text-sm">{account.accountNumber}</TableCell>
+                  <TableCell className="text-sm">{account.amount}</TableCell>
+                  <TableCell className="text-sm">{account.source}</TableCell>
+                  <TableCell className="text-sm">{account.dateClosed}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Pencil className="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Trash2 className="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {/* Will */}
+      <Card className="border-0 shadow-sm">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base font-medium">Will</CardTitle>
+            <Button variant="link" className="text-[hsl(180,70%,45%)] p-0 h-auto font-normal">+ Will</Button>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/30">
+                <TableHead className="text-xs font-medium text-muted-foreground">Will</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Date Of Will</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Place Kept</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">EFW Receipt Number</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Executors</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Last Review Date</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Notes</TableHead>
+                <TableHead className="w-[60px]"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {willData.map((will, index) => (
+                <TableRow key={index} className="border-b border-border/50">
+                  <TableCell className="text-sm">{will.hasWill}</TableCell>
+                  <TableCell className="text-sm">{will.dateOfWill}</TableCell>
+                  <TableCell className="text-sm text-[hsl(180,70%,45%)]">{will.placeKept}</TableCell>
+                  <TableCell className="text-sm">{will.receiptNumber}</TableCell>
+                  <TableCell className="text-sm">{will.executors}</TableCell>
+                  <TableCell className="text-sm">{will.lastReview}</TableCell>
+                  <TableCell className="text-sm">{will.notes}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Pencil className="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Trash2 className="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {/* Short Term */}
+      <Card className="border-0 shadow-sm">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base font-medium">Short Term</CardTitle>
+            <div className="flex items-center gap-2">
+              <Button variant="link" className="text-[hsl(180,70%,45%)] p-0 h-auto font-normal">+ Short Term</Button>
+              <span className="text-muted-foreground">|</span>
+              <Button variant="link" className="text-[hsl(180,70%,45%)] p-0 h-auto font-normal">View Inactive</Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/30">
+                <TableHead className="text-xs font-medium text-muted-foreground">Insurer</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Policy Type</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Total Premium</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Review Date</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Broker</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Data Date</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Source</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                  No short term products found
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {/* Risk Products */}
+      <Card className="border-0 shadow-sm">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base font-medium">Risk Products</CardTitle>
+            <div className="flex items-center gap-2">
+              <Button variant="link" className="text-[hsl(180,70%,45%)] p-0 h-auto font-normal">+ Risk Products</Button>
+              <span className="text-muted-foreground">|</span>
+              <Button variant="link" className="text-[hsl(180,70%,45%)] p-0 h-auto font-normal">Request Astute</Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/30">
+                <TableHead className="text-xs font-medium text-muted-foreground">Holding Name</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Policy Number</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Effective Date</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Termination Date</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Payment Amount</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Paid To Date</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Payment Due Date</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Notes</TableHead>
+                <TableHead className="w-[60px]"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {riskProducts.map((product, index) => (
+                <TableRow key={index} className="border-b border-border/50">
+                  <TableCell className="text-sm text-[hsl(180,70%,45%)]">{product.holdingName}</TableCell>
+                  <TableCell className="text-sm">{product.policyNumber}</TableCell>
+                  <TableCell className="text-sm">{product.effectiveDate}</TableCell>
+                  <TableCell className="text-sm">{product.terminationDate}</TableCell>
+                  <TableCell className="text-sm">{product.paymentAmount}</TableCell>
+                  <TableCell className="text-sm">{product.paidToDate}</TableCell>
+                  <TableCell className="text-sm">{product.paymentDueDate}</TableCell>
+                  <TableCell className="text-sm">{product.notes}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Pencil className="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Trash2 className="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {/* Medical Aid */}
+      <Card className="border-0 shadow-sm">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base font-medium">Medical Aid</CardTitle>
+            <div className="flex items-center gap-2">
+              <Button variant="link" className="text-[hsl(180,70%,45%)] p-0 h-auto font-normal">+ Medical Aid</Button>
+              <span className="text-muted-foreground">|</span>
+              <Button variant="link" className="text-[hsl(180,70%,45%)] p-0 h-auto font-normal">Request Astute</Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/30">
+                <TableHead className="text-xs font-medium text-muted-foreground">Medical Scheme Name</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Medical Scheme Plan Name</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Membership Number</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Policy Active</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Indicative Premium</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Date Data Received</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Notes</TableHead>
+                <TableHead className="w-[60px]"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {medicalAid.map((item, index) => (
+                <TableRow key={index} className="border-b border-border/50">
+                  <TableCell className="text-sm text-[hsl(180,70%,45%)]">{item.schemeName}</TableCell>
+                  <TableCell className="text-sm">{item.planName}</TableCell>
+                  <TableCell className="text-sm">{item.membershipNumber}</TableCell>
+                  <TableCell className="text-sm">{item.policyActive}</TableCell>
+                  <TableCell className="text-sm">{item.premium}</TableCell>
+                  <TableCell className="text-sm">{item.dateReceived}</TableCell>
+                  <TableCell className="text-sm">{item.notes}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Pencil className="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Trash2 className="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+export default Client360ViewTab;
