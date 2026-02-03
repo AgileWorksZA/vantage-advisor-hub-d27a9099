@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LayoutDashboard, Users, Mail, CalendarIcon, ListTodo, LineChart, Building2, X, GripVertical } from "lucide-react";
+import { LayoutDashboard, Users, Briefcase, Mail, CalendarIcon, ListTodo, LineChart, Building2, X, GripVertical } from "lucide-react";
 import commandCenterIcon from "@/assets/command-center-icon.png";
 import vantageLogo from "@/assets/vantage-logo.png";
 import { EChartsWrapper } from "@/components/ui/echarts-wrapper";
@@ -22,6 +22,10 @@ const sidebarItems = [{
   icon: Users,
   label: "Clients",
   path: "/clients"
+}, {
+  icon: Briefcase,
+  label: "Portfolio",
+  path: "/portfolio"
 }, {
   icon: Mail,
   label: "Email",

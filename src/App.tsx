@@ -24,6 +24,7 @@ import Insights from "./pages/Insights";
 import Tasks from "./pages/Tasks";
 import Practice from "./pages/Practice";
 import AIAssistant from "./pages/AIAssistant";
+import Portfolio from "./pages/Portfolio";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +43,7 @@ const App = () => (
             <Route path="/command-center" element={<CommandCenter />} />
             <Route path="/clients" element={<Clients />} />
             <Route path="/clients/:clientId" element={<ClientDetail />} />
+            <Route path="/portfolio" element={<Portfolio />} />
             <Route path="/email" element={<Email />} />
             <Route path="/calendar" element={<Calendar />} />
             <Route path="/insights" element={<Insights />} />

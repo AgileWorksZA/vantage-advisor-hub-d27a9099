@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { 
-  LayoutDashboard, Users, Mail, CalendarIcon, ListTodo, LineChart, Building2, Plus,
+  LayoutDashboard, Users, Briefcase, Mail, CalendarIcon, ListTodo, LineChart, Building2, Plus,
   Search, ArrowLeft, User as UserIcon, Settings, 
   Phone, FileText, MessageSquare, Shield, Activity, CreditCard, ShieldCheck, Users2, Building
 } from "lucide-react";
@@ -37,6 +37,7 @@ const personnelData = [
 const sidebarItems = [
   { icon: LayoutDashboard, label: "Dash", path: "/dashboard" },
   { icon: Users, label: "Clients", path: "/clients" },
+  { icon: Briefcase, label: "Portfolio", path: "/portfolio" },
   { icon: Mail, label: "Email", path: "/email" },
   { icon: CalendarIcon, label: "Calendar", path: "/calendar" },
   { icon: ListTodo, label: "Tasks", path: "/tasks" },
