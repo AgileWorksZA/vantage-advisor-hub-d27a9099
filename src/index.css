@@ -172,6 +172,35 @@ All colors MUST be HSL.
     background-color: hsl(222, 84%, 5%);
   }
 
+  /* Time-based sky gradient backgrounds */
+  .gradient-mesh-morning {
+    background: 
+      radial-gradient(at 20% 80%, hsla(35, 100%, 70%, 0.4) 0px, transparent 50%),
+      radial-gradient(at 60% 60%, hsla(330, 80%, 70%, 0.3) 0px, transparent 50%),
+      radial-gradient(at 80% 40%, hsla(200, 80%, 60%, 0.3) 0px, transparent 50%),
+      radial-gradient(at 40% 30%, hsla(45, 100%, 80%, 0.25) 0px, transparent 40%);
+    background-color: hsl(210, 60%, 30%);
+  }
+
+  .gradient-mesh-afternoon {
+    background: 
+      radial-gradient(at 40% 20%, hsla(200, 90%, 60%, 0.3) 0px, transparent 50%),
+      radial-gradient(at 80% 0%, hsla(189, 100%, 50%, 0.3) 0px, transparent 50%),
+      radial-gradient(at 0% 50%, hsla(210, 80%, 50%, 0.2) 0px, transparent 50%),
+      radial-gradient(at 60% 80%, hsla(195, 100%, 45%, 0.2) 0px, transparent 50%);
+    background-color: hsl(210, 80%, 45%);
+  }
+
+  .gradient-mesh-evening {
+    background: 
+      radial-gradient(at 40% 20%, hsla(280, 70%, 20%, 0.4) 0px, transparent 50%),
+      radial-gradient(at 80% 0%, hsla(260, 80%, 15%, 0.4) 0px, transparent 50%),
+      radial-gradient(at 0% 50%, hsla(320, 60%, 15%, 0.3) 0px, transparent 50%),
+      radial-gradient(at 80% 80%, hsla(240, 100%, 10%, 0.3) 0px, transparent 50%),
+      radial-gradient(at 20% 90%, hsla(270, 80%, 12%, 0.3) 0px, transparent 50%);
+    background-color: hsl(235, 60%, 5%);
+  }
+
   /* AI Orb glow effect */
   .orb-glow {
     box-shadow: 
