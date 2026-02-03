@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useTheme } from "next-themes";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import AIOrb from "@/components/ai-assistant/AIOrb";
 import InsightOrbit from "@/components/ai-assistant/InsightOrbit";
 import ChatPanel from "@/components/ai-assistant/ChatPanel";
@@ -59,7 +59,7 @@ const AIAssistant = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<string>("opportunities");
+  
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [displayedOpportunities, setDisplayedOpportunities] = useState<ClientOpportunity[]>([]);
@@ -416,22 +416,7 @@ const AIAssistant = () => {
       </header>
 
       {/* Main content */}
-      <main className="relative z-10 p-6 max-w-7xl mx-auto space-y-6 pb-24">
-        {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="bg-white/10 border border-white/20">
-            <TabsTrigger value="opportunities" className="data-[state=active]:bg-white/20 text-white/70 data-[state=active]:text-white">
-              Opportunities
-            </TabsTrigger>
-            <TabsTrigger value="projects" className="data-[state=active]:bg-white/20 text-white/70 data-[state=active]:text-white">
-              Projects
-            </TabsTrigger>
-            <TabsTrigger value="analytics" className="data-[state=active]:bg-white/20 text-white/70 data-[state=active]:text-white">
-              Analytics
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-
+      <main className="relative z-10 p-6 max-w-7xl mx-auto space-y-6 pb-24 overflow-y-auto max-h-[calc(100vh-80px)]">
         {/* Metrics Dashboard */}
         <OpportunityMetrics
           totalOpportunityValue={practiceMetrics.potentialRevenue}
@@ -443,70 +428,57 @@ const AIAssistant = () => {
           formatCurrency={formatCurrency}
         />
 
-        {activeTab === "opportunities" && (
-          <>
-            {/* Insight Categories */}
-            <div>
-              <InsightOrbit
-                activeCategory={activeCategory}
-                onCategoryClick={handleCategoryClick}
-                onCreateProject={handleCreateProjectFromCategory}
-                counts={counts}
-              />
-            </div>
+        {/* Insight Categories */}
+        <InsightOrbit
+          activeCategory={activeCategory}
+          onCategoryClick={handleCategoryClick}
+          onCreateProject={handleCreateProjectFromCategory}
+          counts={counts}
+        />
 
-            {/* Opportunity Cards (when category selected) */}
-            {displayedOpportunities.length > 0 && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {displayedOpportunities.map((opportunity, index) => (
-                  <div key={opportunity.clientId} className="relative group">
-                    <OpportunityCard 
-                      opportunity={opportunity} 
-                      index={index} 
-                      formatCurrency={formatCurrency}
-                    />
-                    {allProjects.length > 0 && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-white/10 hover:bg-white/20 text-white/70 hover:text-white text-xs"
-                        onClick={() => handleAddOpportunityToProject(opportunity)}
-                      >
-                        + Add to Project
-                      </Button>
-                    )}
-                  </div>
-                ))}
+        {/* Opportunity Cards (when category selected) */}
+        {displayedOpportunities.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {displayedOpportunities.map((opportunity, index) => (
+              <div key={opportunity.clientId} className="relative group">
+                <OpportunityCard 
+                  opportunity={opportunity} 
+                  index={index} 
+                  formatCurrency={formatCurrency}
+                />
+                {allProjects.length > 0 && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-white/10 hover:bg-white/20 text-white/70 hover:text-white text-xs"
+                    onClick={() => handleAddOpportunityToProject(opportunity)}
+                  >
+                    + Add to Project
+                  </Button>
+                )}
               </div>
-            )}
-          </>
-        )}
-
-        {activeTab === "projects" && (
-          <ProjectsList
-            projects={allProjects}
-            opportunities={projectOpportunities}
-            tasks={allTasks}
-            activeFilter={activeCategory ? 
-              (activeCategory === "upsell" || activeCategory === "cross-sell" ? "growth" :
-               activeCategory === "at-risk" ? "derisking" :
-               activeCategory === "platform" ? "consolidation" : activeCategory) 
-              : null
-            }
-            onCreateProject={() => setIsCreateProjectOpen(true)}
-            onEditProject={() => {}}
-            onDeleteProject={handleDeleteProject}
-            onAddTask={handleAddTask}
-            onUpdateTask={handleUpdateTaskStatus}
-            formatCurrency={formatCurrency}
-          />
-        )}
-
-        {activeTab === "analytics" && (
-          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-8 text-center">
-            <p className="text-white/50">Analytics dashboard coming soon...</p>
+            ))}
           </div>
         )}
+
+        {/* Projects List - Always visible */}
+        <ProjectsList
+          projects={allProjects}
+          opportunities={projectOpportunities}
+          tasks={allTasks}
+          activeFilter={activeCategory ? 
+            (activeCategory === "upsell" || activeCategory === "cross-sell" ? "growth" :
+             activeCategory === "at-risk" ? "derisking" :
+             activeCategory === "platform" ? "consolidation" : activeCategory) 
+            : null
+          }
+          onCreateProject={() => setIsCreateProjectOpen(true)}
+          onEditProject={() => {}}
+          onDeleteProject={handleDeleteProject}
+          onAddTask={handleAddTask}
+          onUpdateTask={handleUpdateTaskStatus}
+          formatCurrency={formatCurrency}
+        />
       </main>
 
 
