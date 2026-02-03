@@ -146,6 +146,9 @@ const Client360ViewTab = () => {
                           <Button variant="ghost" size="icon" className="h-8 w-8">
                             <Pencil className="h-4 w-4 text-[hsl(180,70%,45%)]" />
                           </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreVertical className="h-4 w-4 text-muted-foreground" />
+                          </Button>
                           {product.expandable && (
                             <Button 
                               variant="ghost" 
