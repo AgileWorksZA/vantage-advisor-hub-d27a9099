@@ -25,6 +25,7 @@ import Tasks from "./pages/Tasks";
 import Practice from "./pages/Practice";
 import AIAssistant from "./pages/AIAssistant";
 import Portfolio from "./pages/Portfolio";
+import ComposeEmail from "./pages/ComposeEmail";
 
 const queryClient = new QueryClient();
 
@@ -45,6 +46,7 @@ const App = () => (
             <Route path="/clients/:clientId" element={<ClientDetail />} />
             <Route path="/portfolio" element={<Portfolio />} />
             <Route path="/email" element={<Email />} />
+            <Route path="/email/compose" element={<ComposeEmail />} />
             <Route path="/calendar" element={<Calendar />} />
             <Route path="/insights" element={<Insights />} />
             <Route path="/tasks" element={<Tasks />} />

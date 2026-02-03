@@ -194,6 +194,47 @@ export type Database = {
           },
         ]
       }
+      campaign_attachments: {
+        Row: {
+          attachment_type: string
+          campaign_id: string
+          created_at: string
+          file_name: string | null
+          file_path: string | null
+          file_size: number | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          attachment_type: string
+          campaign_id: string
+          created_at?: string
+          file_name?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          attachment_type?: string
+          campaign_id?: string
+          created_at?: string
+          file_name?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_attachments_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "communication_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_assets: {
         Row: {
           asset_type: string
@@ -1116,6 +1157,104 @@ export type Database = {
             columns: ["provider_id"]
             isOneToOne: false
             referencedRelation: "product_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      communication_campaigns: {
+        Row: {
+          allow_duplicates: boolean
+          attachment_types: string[]
+          auto_note_completion: boolean
+          body_html: string | null
+          body_text: string | null
+          campaign_type: string
+          channel: string
+          created_at: string
+          deleted_at: string | null
+          description: string | null
+          failed_count: number
+          from_primary_adviser: boolean
+          from_team_member_id: string | null
+          id: string
+          importance: string
+          is_deleted: boolean
+          is_newsletter: boolean
+          recipient_client_ids: string[]
+          recipient_filter: Json
+          request_read_receipt: boolean
+          scheduled_at: string | null
+          sent_at: string | null
+          sent_count: number
+          status: string
+          subject: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          allow_duplicates?: boolean
+          attachment_types?: string[]
+          auto_note_completion?: boolean
+          body_html?: string | null
+          body_text?: string | null
+          campaign_type?: string
+          channel?: string
+          created_at?: string
+          deleted_at?: string | null
+          description?: string | null
+          failed_count?: number
+          from_primary_adviser?: boolean
+          from_team_member_id?: string | null
+          id?: string
+          importance?: string
+          is_deleted?: boolean
+          is_newsletter?: boolean
+          recipient_client_ids?: string[]
+          recipient_filter?: Json
+          request_read_receipt?: boolean
+          scheduled_at?: string | null
+          sent_at?: string | null
+          sent_count?: number
+          status?: string
+          subject?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          allow_duplicates?: boolean
+          attachment_types?: string[]
+          auto_note_completion?: boolean
+          body_html?: string | null
+          body_text?: string | null
+          campaign_type?: string
+          channel?: string
+          created_at?: string
+          deleted_at?: string | null
+          description?: string | null
+          failed_count?: number
+          from_primary_adviser?: boolean
+          from_team_member_id?: string | null
+          id?: string
+          importance?: string
+          is_deleted?: boolean
+          is_newsletter?: boolean
+          recipient_client_ids?: string[]
+          recipient_filter?: Json
+          request_read_receipt?: boolean
+          scheduled_at?: string | null
+          sent_at?: string | null
+          sent_count?: number
+          status?: string
+          subject?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communication_campaigns_from_team_member_id_fkey"
+            columns: ["from_team_member_id"]
+            isOneToOne: false
+            referencedRelation: "team_members"
             referencedColumns: ["id"]
           },
         ]
@@ -2278,6 +2417,69 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      team_members: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          is_active: boolean
+          is_primary_adviser: boolean
+          name: string
+          role: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          is_active?: boolean
+          is_primary_adviser?: boolean
+          name: string
+          role?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          is_active?: boolean
+          is_primary_adviser?: boolean
+          name?: string
+          role?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_settings: {
+        Row: {
+          created_at: string
+          default_from_primary_adviser: boolean
+          email_signature: string | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          default_from_primary_adviser?: boolean
+          email_signature?: string | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          default_from_primary_adviser?: boolean
+          email_signature?: string | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       user_widget_layouts: {
         Row: {
