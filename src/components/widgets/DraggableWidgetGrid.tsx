@@ -2,9 +2,11 @@ import { ReactNode, useRef, useState, useEffect } from 'react';
 import { Responsive } from 'react-grid-layout/legacy';
 import 'react-grid-layout/css/styles.css';
 
-// Minimum widget width in pixels - widgets will wrap rather than shrink below this
-const MIN_WIDGET_WIDTH = 280;
+// Fixed 12-column grid (original design)
+const FIXED_COLS = 12;
 const GRID_MARGIN = 16;
+// Minimum width before wrapping occurs - based on original ~100px per column
+const MIN_COL_WIDTH = 80;
 
 export interface WidgetLayout {
   i: string;
@@ -24,7 +26,6 @@ interface DraggableWidgetGridProps {
   onLayoutChange: (layout: WidgetLayout[]) => void;
   children: ReactNode;
   rowHeight?: number;
-  minWidgetWidth?: number;
 }
 
 export const DraggableWidgetGrid = ({
@@ -32,7 +33,6 @@ export const DraggableWidgetGrid = ({
   onLayoutChange,
   children,
   rowHeight = 100,
-  minWidgetWidth = MIN_WIDGET_WIDTH,
 }: DraggableWidgetGridProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(1200);
@@ -53,19 +53,21 @@ export const DraggableWidgetGrid = ({
     return () => observer.disconnect();
   }, []);
 
-  // Calculate dynamic column count based on container width
-  const dynamicCols = Math.max(1, Math.floor(
-    (containerWidth + GRID_MARGIN) / (minWidgetWidth + GRID_MARGIN)
-  ));
+  // Calculate how many columns can visibly fit
+  // This determines wrapping behavior while keeping widget proportions
+  const effectiveColWidth = (containerWidth - (FIXED_COLS - 1) * GRID_MARGIN) / FIXED_COLS;
+  const visibleCols = effectiveColWidth < MIN_COL_WIDTH 
+    ? Math.max(3, Math.floor(containerWidth / (MIN_COL_WIDTH + GRID_MARGIN)))
+    : FIXED_COLS;
 
-  // Adjust layout for current column count
+  // Adjust layout - widgets that exceed visible columns wrap to next row
   const adjustedLayout = layout.map(item => ({
     ...item,
-    x: Math.min(item.x, Math.max(0, dynamicCols - item.w)),
-    w: Math.min(item.w, dynamicCols),
+    w: Math.min(item.w, visibleCols), // Cap width to visible columns
+    x: item.x >= visibleCols ? 0 : Math.min(item.x, visibleCols - Math.min(item.w, visibleCols)),
   }));
 
-  // Generate layouts object for Responsive component
+  // Always use visibleCols so widget widths stay proportional
   const layouts = { lg: adjustedLayout };
 
   return (
@@ -75,7 +77,7 @@ export const DraggableWidgetGrid = ({
           className="layout"
           layouts={layouts}
           breakpoints={{ lg: 0 }}
-          cols={{ lg: dynamicCols }}
+          cols={{ lg: visibleCols }}
           width={containerWidth}
           rowHeight={rowHeight}
           onLayoutChange={(currentLayout: any) => 
