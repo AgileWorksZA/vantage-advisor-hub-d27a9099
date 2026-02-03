@@ -259,27 +259,26 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Check if user already has clients (threshold: 10)
-    const { count, error: countError } = await supabase
+    // Get existing client names for this user to avoid duplicates
+    const { data: existingClients, error: existingError } = await supabase
       .from('clients')
-      .select('*', { count: 'exact', head: true })
+      .select('first_name, surname')
       .eq('user_id', user.id)
 
-    if (countError) {
-      console.error('Error counting clients:', countError)
+    if (existingError) {
+      console.error('Error fetching existing clients:', existingError)
       return new Response(
         JSON.stringify({ error: 'Failed to check existing clients' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // If user already has 10+ clients, skip seeding
-    if (count && count >= 10) {
-      return new Response(
-        JSON.stringify({ message: 'User already has clients', seeded: false, existingCount: count }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
+    // Create a Set of existing names for fast lookup (case-insensitive)
+    const existingNames = new Set(
+      (existingClients || []).map(c => `${c.first_name}|${c.surname}`.toLowerCase())
+    )
+
+    console.log(`User has ${existingClients?.length || 0} existing clients`)
 
     // Calculate date of birth from age
     const calculateDOB = (age: number | null): string | null => {
@@ -290,21 +289,40 @@ Deno.serve(async (req) => {
       return `${birthYear}-06-15`
     }
 
-    // Prepare clients for insertion
-    const clientsToInsert = demoClients.map(client => ({
-      user_id: user.id,
-      first_name: client.first_name,
-      surname: client.surname,
-      profile_state: 'Active',
-      profile_type: 'Client',
-      client_type: client.client_type,
-      nationality: client.nationality,
-      language: client.language,
-      advisor: client.advisor,
-      date_of_birth: calculateDOB(client.age),
-    }))
+    // Filter demo clients to only include those not already in database
+    const clientsToInsert = demoClients
+      .filter(client => {
+        const nameKey = `${client.first_name}|${client.surname}`.toLowerCase()
+        return !existingNames.has(nameKey)
+      })
+      .map(client => ({
+        user_id: user.id,
+        first_name: client.first_name,
+        surname: client.surname,
+        profile_state: 'Active',
+        profile_type: 'Client',
+        client_type: client.client_type,
+        nationality: client.nationality,
+        language: client.language,
+        advisor: client.advisor,
+        date_of_birth: calculateDOB(client.age),
+      }))
 
-    // Insert all clients
+    // If all demo clients already exist, return early
+    if (clientsToInsert.length === 0) {
+      return new Response(
+        JSON.stringify({ 
+          message: 'All demo clients already exist', 
+          seeded: false, 
+          existingCount: existingClients?.length || 0 
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    console.log(`Inserting ${clientsToInsert.length} new demo clients`)
+
+    // Insert only the missing clients
     const { data: insertedClients, error: insertError } = await supabase
       .from('clients')
       .insert(clientsToInsert)
@@ -322,7 +340,8 @@ Deno.serve(async (req) => {
       JSON.stringify({ 
         message: 'Demo clients seeded successfully', 
         seeded: true, 
-        count: insertedClients?.length || 0 
+        count: insertedClients?.length || 0,
+        existingCount: existingClients?.length || 0
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
