@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
@@ -62,6 +62,7 @@ const sidebarItems = [
 const ClientDetail = () => {
   const navigate = useNavigate();
   const { clientId } = useParams<{ clientId: string }>();
+  const [searchParams] = useSearchParams();
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -182,7 +183,14 @@ const ClientDetail = () => {
               <Button 
                 variant="outline" 
                 size="sm"
-                onClick={() => navigate("/clients")}
+                onClick={() => {
+                  const from = searchParams.get('from');
+                  if (from === 'dashboard') {
+                    navigate("/dashboard");
+                  } else {
+                    navigate("/clients");
+                  }
+                }}
                 className="gap-2"
               >
                 <ArrowLeft className="w-4 h-4" />
