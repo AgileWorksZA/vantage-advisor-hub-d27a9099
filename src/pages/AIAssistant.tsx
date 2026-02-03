@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "next-themes";
 import { ArrowLeft } from "lucide-react";
@@ -12,10 +12,33 @@ import ProjectsList from "@/components/ai-assistant/ProjectsList";
 import CreateProjectDialog from "@/components/ai-assistant/CreateProjectDialog";
 import AddOpportunityDialog from "@/components/ai-assistant/AddOpportunityDialog";
 import AddTaskDialog from "@/components/ai-assistant/AddTaskDialog";
+import PracticeValueIndicator from "@/components/ai-assistant/PracticeValueIndicator";
+import NightSky from "@/components/ai-assistant/NightSky";
 import { useRegion } from "@/contexts/RegionContext";
 import { useOpportunityProjects } from "@/hooks/useOpportunityProjects";
 import { useProjectOpportunities } from "@/hooks/useProjectOpportunities";
 import { useProjectTasks } from "@/hooks/useProjectTasks";
+import { supabase } from "@/integrations/supabase/client";
+
+type TimeOfDay = "morning" | "afternoon" | "evening";
+
+const getTimeOfDay = (): TimeOfDay => {
+  const hour = new Date().getHours();
+  if (hour >= 5 && hour < 12) return "morning";
+  if (hour >= 12 && hour < 18) return "afternoon";
+  return "evening";
+};
+
+const getGreeting = (timeOfDay: TimeOfDay): string => {
+  switch (timeOfDay) {
+    case "morning":
+      return "Good Morning";
+    case "afternoon":
+      return "Good Afternoon";
+    default:
+      return "Good Evening";
+  }
+};
 
 interface Message {
   id: string;
@@ -46,6 +69,10 @@ const AIAssistant = () => {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [selectedOpportunity, setSelectedOpportunity] = useState<ClientOpportunity | null>(null);
 
+  // Time-based greeting state
+  const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>(getTimeOfDay());
+  const [userName, setUserName] = useState("Adviser");
+
   // Hooks for data
   const {
     projects,
@@ -69,6 +96,55 @@ const AIAssistant = () => {
     updateTask,
     isLoading: tasksLoading,
   } = useProjectTasks();
+
+  // Fetch user's first name from profiles
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase
+          .from("profiles")
+          .select("first_name")
+          .eq("user_id", user.id)
+          .single();
+        if (data?.first_name) {
+          setUserName(data.first_name);
+        }
+      }
+    };
+    fetchProfile();
+  }, []);
+
+  // Update time of day every minute
+  useEffect(() => {
+    setTimeOfDay(getTimeOfDay());
+    const interval = setInterval(() => {
+      setTimeOfDay(getTimeOfDay());
+    }, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Calculate practice value metrics
+  const practiceMetrics = useMemo(() => {
+    const totalPotential = projectMetrics.totalOpportunityValue;
+    const realized = projectMetrics.realizedRevenue;
+    const activeCount = projectMetrics.activeProjects;
+    const completedCount = projectMetrics.completedProjects;
+    const totalProjects = projects.length;
+    
+    // Calculate percentages
+    const actualPercent = totalPotential > 0 ? Math.round((realized / totalPotential) * 100) : 0;
+    const inProgressPercent = totalProjects > 0 ? Math.round((activeCount / totalProjects) * 100) : 0;
+    const notStartedPercent = totalProjects > 0 ? Math.round(((totalProjects - activeCount - completedCount) / totalProjects) * 100) : 100;
+
+    return {
+      existingRevenue: realized,
+      potentialRevenue: totalPotential,
+      actualPercent,
+      inProgressPercent: Math.max(0, inProgressPercent),
+      notStartedPercent: Math.max(0, notStartedPercent),
+    };
+  }, [projects, projectMetrics]);
 
   // Store the initial theme before forcing dark mode
   useEffect(() => {
@@ -254,9 +330,12 @@ const AIAssistant = () => {
   const selectedProject = projects.find(p => p.id === selectedProjectId);
 
   return (
-    <div className="min-h-screen gradient-mesh text-white overflow-hidden">
+    <div className={`min-h-screen gradient-mesh-${timeOfDay} text-white overflow-hidden`}>
+      {/* Night sky elements (evening only) */}
+      {timeOfDay === "evening" && <NightSky />}
+
       {/* Background animated elements */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-violet-500/10 rounded-full blur-3xl animate-pulse" />
         <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
       </div>
@@ -273,10 +352,22 @@ const AIAssistant = () => {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-xl font-semibold text-gradient-ai">Growth & De-risking Hub</h1>
+            <h1 className="text-xl font-semibold text-gradient-ai">
+              {getGreeting(timeOfDay)}, {userName}
+            </h1>
             <p className="text-white/50 text-sm">Discover and track opportunities in your client base</p>
           </div>
         </div>
+        
+        {/* Practice Value Indicator */}
+        <PracticeValueIndicator
+          existingRevenue={practiceMetrics.existingRevenue}
+          potentialRevenue={practiceMetrics.potentialRevenue}
+          actualPercent={practiceMetrics.actualPercent}
+          inProgressPercent={practiceMetrics.inProgressPercent}
+          notStartedPercent={practiceMetrics.notStartedPercent}
+          formatCurrency={formatCurrency}
+        />
       </header>
 
       {/* Main content */}

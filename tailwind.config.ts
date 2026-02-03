@@ -108,6 +108,18 @@ export default {
 				'spin-slow': {
 					'0%': { transform: 'rotate(0deg)' },
 					'100%': { transform: 'rotate(360deg)' }
+				},
+				'twinkle': {
+					'0%, 100%': { opacity: '0.3', transform: 'scale(1)' },
+					'50%': { opacity: '1', transform: 'scale(1.2)' }
+				},
+				'shooting-star': {
+					'0%': { transform: 'translateX(0) translateY(0)', opacity: '1' },
+					'100%': { transform: 'translateX(200px) translateY(100px)', opacity: '0' }
+				},
+				'planet-glow': {
+					'0%, 100%': { boxShadow: '0 0 20px 5px rgba(200, 180, 255, 0.2)' },
+					'50%': { boxShadow: '0 0 30px 10px rgba(200, 180, 255, 0.4)' }
 				}
 			},
 			animation: {
@@ -118,7 +130,10 @@ export default {
 				'orbit': 'orbit 20s linear infinite',
 				'particle-rise': 'particle-rise 2s ease-out forwards',
 				'glow-pulse': 'glow-pulse 2s ease-in-out infinite',
-				'spin-slow': 'spin-slow 10s linear infinite'
+				'spin-slow': 'spin-slow 10s linear infinite',
+				'twinkle': 'twinkle 3s ease-in-out infinite',
+				'shooting-star': 'shooting-star 1s ease-out forwards',
+				'planet-glow': 'planet-glow 4s ease-in-out infinite'
 			}
 		}
 	},
