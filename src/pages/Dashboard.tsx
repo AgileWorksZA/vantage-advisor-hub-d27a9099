@@ -12,6 +12,7 @@ import { AppHeader } from "@/components/layout/AppHeader";
 import { useRegion } from "@/contexts/RegionContext";
 import { DraggableWidgetGrid, WidgetLayout } from "@/components/widgets/DraggableWidgetGrid";
 import { useWidgetLayout } from "@/hooks/useWidgetLayout";
+import { toast } from "sonner";
 
 const sidebarItems = [{
   icon: LayoutDashboard,
@@ -56,7 +57,6 @@ const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  // Removed unused state: showAllBirthdays, showAllAccounts - now navigates to Clients page
   
   // Use global region context with filtered data
   const { selectedRegion, setSelectedRegion, filteredRegionalData } = useRegion();
@@ -67,6 +67,40 @@ const Dashboard = () => {
     defaultLayout: defaultDashboardLayout,
     userId: user?.id,
   });
+
+  // Helper function to find client by name in database
+  const findClientByName = async (fullName: string): Promise<string | null> => {
+    const nameParts = fullName.trim().split(' ');
+    if (nameParts.length < 2) return null;
+    
+    const firstName = nameParts[0];
+    const surname = nameParts[nameParts.length - 1];
+    
+    try {
+      const { data, error } = await supabase
+        .from('clients')
+        .select('id')
+        .ilike('first_name', `%${firstName}%`)
+        .ilike('surname', `%${surname}%`)
+        .limit(1)
+        .single();
+      
+      if (error || !data) return null;
+      return data.id;
+    } catch {
+      return null;
+    }
+  };
+
+  // Handle click on client name in widgets
+  const handleClientClick = async (clientName: string) => {
+    const clientId = await findClientByName(clientName);
+    if (clientId) {
+      navigate(`/clients/${clientId}?from=dashboard`);
+    } else {
+      toast.error(`Client "${clientName}" not found in database`);
+    }
+  };
 
   useEffect(() => {
     const {
@@ -230,7 +264,11 @@ const Dashboard = () => {
                         })
                         .slice(0, 5)
                         .map(account => (
-                          <tr key={account.investor} className="border-t border-border">
+                          <tr 
+                            key={account.investor} 
+                            className="border-t border-border hover:bg-muted/50 cursor-pointer"
+                            onClick={() => handleClientClick(account.investor)}
+                          >
                             <td className="py-2 max-w-[120px] truncate" title={account.investor}>{account.investor}</td>
                             <td className="py-2 text-right text-muted-foreground whitespace-nowrap">{account.bookPercent}</td>
                             <td className="py-2 text-right whitespace-nowrap">{account.value}</td>
@@ -323,11 +361,17 @@ const Dashboard = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredRegionalData.birthdays.slice(0, 7).map(person => <tr key={person.name} className="border-t border-border">
+                      {filteredRegionalData.birthdays.slice(0, 7).map(person => (
+                        <tr 
+                          key={person.name} 
+                          className="border-t border-border hover:bg-muted/50 cursor-pointer"
+                          onClick={() => handleClientClick(person.name)}
+                        >
                           <td className="py-1.5">{person.name}</td>
                           <td className="py-1.5 text-right text-muted-foreground">{person.nextBirthday}</td>
                           <td className="py-1.5 text-right">{person.age}</td>
-                        </tr>)}
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
                   {filteredRegionalData.birthdays.length > 7 && (
