@@ -5,9 +5,8 @@ import 'react-grid-layout/css/styles.css';
 const GRID_MARGIN = 16;
 
 // Target width for a standard widget (w:3 in original 12-col grid)
-// This is the "original" width we want to preserve
-const DEFAULT_TARGET_WIDGET_WIDTH = 280;
-
+// Fixed pixel width that never changes regardless of viewport
+const DEFAULT_TARGET_WIDGET_WIDTH = 350;
 export interface WidgetLayout {
   i: string;
   x: number;
@@ -34,7 +33,7 @@ export const DraggableWidgetGrid = ({
   layout,
   onLayoutChange,
   children,
-  rowHeight = 100,
+  rowHeight = 120,
   targetWidgetWidth = DEFAULT_TARGET_WIDGET_WIDTH,
   baseWidgetUnits = 3,
 }: DraggableWidgetGridProps) => {
@@ -81,6 +80,12 @@ export const DraggableWidgetGrid = ({
   // Convert to column units (each standard widget = baseWidgetUnits columns)
   const visibleCols = widgetsPerRow * baseWidgetUnits;
 
+  // Calculate exact grid width so each w:3 widget = targetWidgetWidth exactly
+  // react-grid-layout formula: colWidth = (width - margin*(cols-1)) / cols
+  // We want: colWidth * baseWidgetUnits = targetWidgetWidth → colWidth = targetWidgetWidth / baseWidgetUnits
+  const colWidth = targetWidgetWidth / baseWidgetUnits;
+  const exactGridWidth = (colWidth * visibleCols) + (GRID_MARGIN * (visibleCols - 1));
+
   // Adjust layout for current column count
   const adjustedLayout = layout.map(item => ({
     ...item,
@@ -91,14 +96,14 @@ export const DraggableWidgetGrid = ({
   const layouts = { lg: adjustedLayout };
 
   return (
-    <div ref={containerRef} className="w-full">
+    <div ref={containerRef} className="w-full flex justify-start">
       <Responsive
         key={visibleCols}
         className="layout"
         layouts={layouts}
         breakpoints={{ lg: 0 }}
         cols={{ lg: visibleCols }}
-        width={containerWidth}
+        width={exactGridWidth}
         rowHeight={rowHeight}
         onDragStop={(currentLayout: any) => 
           onLayoutChange(currentLayout as WidgetLayout[])
