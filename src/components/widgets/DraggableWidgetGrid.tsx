@@ -112,7 +112,7 @@ export const DraggableWidgetGrid = ({
         margin={[GRID_MARGIN, GRID_MARGIN] as [number, number]}
         containerPadding={[0, 0] as [number, number]}
         isResizable={false}
-        compactType="vertical"
+        compactType="horizontal"
         preventCollision={false}
         useCSSTransforms={true}
       >
