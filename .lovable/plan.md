@@ -1,67 +1,53 @@
 
-# Remove 3-Dot Button and Scroll Bar from Recent Activity
+# Add Back Button to Businesses Tab
 
 ## Overview
 
-Remove the 3-dot menu button (MoreVertical icon) and the ScrollArea wrapper from the Recent Activity card on the client summary tab.
+Add a back button to the left of the "Reset" button in the ClientBusinessesTab component.
 
 ---
 
 ## File to Modify
 
-| File | Changes |
-|------|---------|
-| `src/components/client-detail/ClientSummaryTab.tsx` | Remove MoreVertical button and ScrollArea component |
+| File | Change |
+|------|--------|
+| `src/components/client-detail/ClientBusinessesTab.tsx` | Add ArrowLeft icon import and Back button |
 
 ---
 
 ## Change Details
 
-### 1. Remove the 3-dot button (lines 227-229)
+### 1. Add ArrowLeft import (line 12)
 
-Current code:
-```tsx
-<div className="flex items-center justify-between">
-  <CardTitle className="text-lg">Recent Activity</CardTitle>
-  <Button variant="ghost" size="icon" className="h-8 w-8">
-    <MoreVertical className="w-4 h-4" />
-  </Button>
-</div>
+```typescript
+import { Pencil, Trash2, Plus, RotateCcw, Loader2, ArrowLeft } from "lucide-react";
 ```
 
-Change to:
-```tsx
-<CardTitle className="text-lg">Recent Activity</CardTitle>
+### 2. Add useNavigate hook import (line 1)
+
+```typescript
+import { useParams, useNavigate } from "react-router-dom";
 ```
 
-### 2. Remove ScrollArea wrapper (lines 233-257)
+### 3. Add navigate hook in component (after line 16)
 
-Current code:
-```tsx
-<ScrollArea className="h-[300px] pr-4">
-  <div className="space-y-0">
-    {/* activity items */}
-  </div>
-</ScrollArea>
+```typescript
+const navigate = useNavigate();
 ```
 
-Change to:
+### 4. Add Back button before Reset button (between lines 34-35)
+
 ```tsx
-<div className="space-y-0">
-  {/* activity items */}
-</div>
+<Button variant="outline" className="gap-2" onClick={() => navigate(-1)}>
+  <ArrowLeft className="w-4 h-4" />
+  Back
+</Button>
 ```
-
-### 3. Clean up unused imports
-
-Remove from imports:
-- `MoreVertical` from lucide-react (line 20)
-- `ScrollArea` from @/components/ui/scroll-area (line 12)
 
 ---
 
 ## Result
 
-- The Recent Activity card header will show only the title without the 3-dot menu button
-- The activity list will display without a scroll container, showing all 5 items naturally
-- Cleaner appearance with no scrollbar visible
+The action buttons row will show: **Add new** | **Back** | **Reset** | (spacer) | Search input
+
+The Back button will navigate to the previous page in the browser history.
