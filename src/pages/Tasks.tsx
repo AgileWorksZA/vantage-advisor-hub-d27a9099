@@ -6,7 +6,6 @@ import {
   Clock,
   AlertTriangle,
   CheckCircle2,
-  User as UserIcon,
   MoreHorizontal,
   Users,
   FileText,
@@ -16,13 +15,17 @@ import {
   ListTodo,
   LineChart,
   Building2,
+  Search,
+  X,
 } from "lucide-react";
+import { format } from "date-fns";
 import commandCenterIcon from "@/assets/command-center-icon.png";
 import vantageLogo from "@/assets/vantage-logo.png";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -37,6 +40,28 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import { MultiSelect } from "@/components/ui/multi-select";
 import { useRegion } from "@/contexts/RegionContext";
 import { TaskData } from "@/data/regionalData";
 
@@ -50,6 +75,43 @@ const sidebarItems = [
   { icon: Building2, label: "Practice", path: "/practice" },
 ];
 
+const taskTypeOptions = [
+  { value: "Access Request", label: "Access Request" },
+  { value: "Annuity review", label: "Annuity review" },
+  { value: "Claim", label: "Claim" },
+  { value: "Client onboarding", label: "Client onboarding" },
+  { value: "Client review", label: "Client review" },
+  { value: "Compliance", label: "Compliance" },
+  { value: "Compliance alert", label: "Compliance alert" },
+  { value: "Consent request", label: "Consent request" },
+  { value: "Contact request", label: "Contact request" },
+  { value: "Contract changes", label: "Contract changes" },
+  { value: "Document request", label: "Document request" },
+  { value: "Estate administration", label: "Estate administration" },
+  { value: "Fee change", label: "Fee change" },
+  { value: "Intermediary appointment", label: "Intermediary appointment" },
+  { value: "Leads", label: "Leads" },
+  { value: "MIS form", label: "MIS form" },
+  { value: "New business", label: "New business" },
+  { value: "Other", label: "Other" },
+  { value: "Personal detail change", label: "Personal detail change" },
+  { value: "Planning hub", label: "Planning hub" },
+  { value: "Referral Task", label: "Referral Task" },
+  { value: "Risk rating", label: "Risk rating" },
+  { value: "Transaction Transfer", label: "Transaction Transfer" },
+];
+
+const statusOptions = [
+  { value: "all", label: "All Statuses" },
+  { value: "In Progress", label: "In Progress" },
+  { value: "Completed", label: "Completed" },
+  { value: "Overdue", label: "Overdue" },
+  { value: "Cancelled", label: "Cancelled" },
+  { value: "Not Started", label: "Not Started" },
+];
+
+const ITEMS_PER_PAGE = 15;
+
 const getStatusStyle = (status: TaskData["status"]) => {
   switch (status) {
     case "In Progress":
@@ -58,6 +120,10 @@ const getStatusStyle = (status: TaskData["status"]) => {
       return "text-muted-foreground";
     case "Completed":
       return "text-emerald-600 dark:text-emerald-400";
+    case "Overdue":
+      return "text-amber-600 dark:text-amber-400";
+    case "Cancelled":
+      return "text-muted-foreground line-through";
     default:
       return "text-muted-foreground";
   }
@@ -77,6 +143,13 @@ const Tasks = () => {
   const [authLoading, setAuthLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [cardFilter, setCardFilter] = useState<string | null>(null);
+  
+  // Filter state
+  const [tableSearchQuery, setTableSearchQuery] = useState("");
+  const [selectedTaskTypes, setSelectedTaskTypes] = useState<string[]>([]);
+  const [selectedStatus, setSelectedStatus] = useState<string>("all");
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [currentPage, setCurrentPage] = useState(1);
   
   const { filteredRegionalData } = useRegion();
 
@@ -110,9 +183,9 @@ const Tasks = () => {
   // Calculate stats from regional data
   const stats = useMemo(() => {
     const tasks = filteredRegionalData.tasks || [];
-    const openTasks = tasks.filter(t => t.status !== "Completed");
-    const urgentTasks = tasks.filter(t => t.isUrgent && t.status !== "Completed");
-    const overdueTasks = tasks.filter(t => t.isOverdue && t.status !== "Completed");
+    const openTasks = tasks.filter(t => t.status !== "Completed" && t.status !== "Cancelled");
+    const urgentTasks = tasks.filter(t => t.isUrgent && t.status !== "Completed" && t.status !== "Cancelled");
+    const overdueTasks = tasks.filter(t => t.isOverdue && t.status !== "Completed" && t.status !== "Cancelled");
     const completedTasks = tasks.filter(t => t.status === "Completed");
     
     return {
@@ -123,25 +196,24 @@ const Tasks = () => {
     };
   }, [filteredRegionalData.tasks]);
 
-  // Filter tasks based on card filter and search
+  // Filter tasks based on all filters
   const displayedTasks = useMemo(() => {
     let tasks = filteredRegionalData.tasks || [];
     
     // Apply card filter
     if (cardFilter === 'urgent') {
-      tasks = tasks.filter(t => t.isUrgent && t.status !== "Completed");
+      tasks = tasks.filter(t => t.isUrgent && t.status !== "Completed" && t.status !== "Cancelled");
     } else if (cardFilter === 'overdue') {
-      tasks = tasks.filter(t => t.isOverdue && t.status !== "Completed");
+      tasks = tasks.filter(t => t.isOverdue && t.status !== "Completed" && t.status !== "Cancelled");
     } else if (cardFilter === 'completed') {
       tasks = tasks.filter(t => t.status === "Completed");
     } else if (cardFilter === 'total' || cardFilter === null) {
-      // Show all open tasks by default or when "total" is clicked
-      tasks = tasks.filter(t => t.status !== "Completed");
+      tasks = tasks.filter(t => t.status !== "Completed" && t.status !== "Cancelled");
     }
     
-    // Apply search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
+    // Apply table search filter
+    if (tableSearchQuery) {
+      const query = tableSearchQuery.toLowerCase();
       tasks = tasks.filter(t => 
         t.clientName.toLowerCase().includes(query) ||
         t.title.toLowerCase().includes(query) ||
@@ -150,16 +222,54 @@ const Tasks = () => {
       );
     }
     
+    // Apply task type filter
+    if (selectedTaskTypes.length > 0) {
+      tasks = tasks.filter(t => selectedTaskTypes.includes(t.taskType));
+    }
+    
+    // Apply status filter
+    if (selectedStatus !== "all") {
+      tasks = tasks.filter(t => t.status === selectedStatus);
+    }
+    
+    // Apply date filter
+    if (selectedDate) {
+      const dateStr = format(selectedDate, "dd/MM/yyyy");
+      tasks = tasks.filter(t => t.dueDate === dateStr);
+    }
+    
     return tasks;
-  }, [filteredRegionalData.tasks, cardFilter, searchQuery]);
+  }, [filteredRegionalData.tasks, cardFilter, tableSearchQuery, selectedTaskTypes, selectedStatus, selectedDate]);
+
+  // Paginated tasks
+  const paginatedTasks = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return displayedTasks.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [displayedTasks, currentPage]);
+
+  const totalPages = Math.ceil(displayedTasks.length / ITEMS_PER_PAGE);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filteredRegionalData.tasks, cardFilter, tableSearchQuery, selectedTaskTypes, selectedStatus, selectedDate]);
 
   const handleCardClick = (filter: string) => {
     if (cardFilter === filter) {
-      setCardFilter(null); // Toggle off if already selected
+      setCardFilter(null);
     } else {
       setCardFilter(filter);
     }
   };
+
+  const clearFilters = () => {
+    setTableSearchQuery("");
+    setSelectedTaskTypes([]);
+    setSelectedStatus("all");
+    setSelectedDate(undefined);
+  };
+
+  const hasActiveFilters = tableSearchQuery || selectedTaskTypes.length > 0 || selectedStatus !== "all" || selectedDate;
 
   if (authLoading) {
     return (
@@ -200,10 +310,8 @@ const Tasks = () => {
           </button>
         ))}
         
-        {/* Spacer to push logo to bottom */}
         <div className="flex-1" />
         
-        {/* VANTAGE Logo - rotated to read bottom to top */}
         <div className="mb-2">
           <img 
             src={vantageLogo} 
@@ -215,7 +323,6 @@ const Tasks = () => {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Header - Sticky */}
         <AppHeader
           searchPlaceholder="Search tasks or clients..."
           userName={userName}
@@ -226,15 +333,13 @@ const Tasks = () => {
           onSearchChange={setSearchQuery}
         />
 
-        {/* Main Content Area */}
         <main className="flex-1 p-6 overflow-auto">
-          {/* Page Title */}
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-foreground">Tasks Dashboard</h1>
             <p className="text-sm text-muted-foreground">Manage and track your practice tasks</p>
           </div>
 
-          {/* Stats Cards - Clickable */}
+          {/* Stats Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <Card 
               className={`bg-card cursor-pointer transition-all hover:shadow-md ${cardFilter === 'total' || cardFilter === null ? 'ring-2 ring-primary' : ''}`}
@@ -304,7 +409,75 @@ const Tasks = () => {
 
           {/* Tasks Table */}
           <Card>
-            <CardContent className="p-0">
+            <CardContent className="p-4">
+              {/* Filter Row */}
+              <div className="flex flex-wrap gap-3 mb-4 items-center">
+                {/* Search */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search tasks..."
+                    value={tableSearchQuery}
+                    onChange={(e) => setTableSearchQuery(e.target.value)}
+                    className="pl-9 w-[200px]"
+                  />
+                </div>
+                
+                {/* Task Type Multi-Select */}
+                <MultiSelect
+                  options={taskTypeOptions}
+                  selected={selectedTaskTypes}
+                  onChange={setSelectedTaskTypes}
+                  placeholder="Task Type"
+                  className="w-[180px]"
+                />
+                
+                {/* Status Dropdown */}
+                <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                  <SelectTrigger className="w-[150px]">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover z-50">
+                    {statusOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                {/* Date Picker */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-[150px] justify-start text-left font-normal">
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {selectedDate ? format(selectedDate, "dd/MM/yyyy") : "Due Date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 bg-popover z-50" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={selectedDate}
+                      onSelect={setSelectedDate}
+                      initialFocus
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+                
+                {/* Clear Filters */}
+                {hasActiveFilters && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearFilters}
+                  >
+                    <X className="h-4 w-4 mr-1" />
+                    Clear
+                  </Button>
+                )}
+              </div>
+
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/50">
@@ -322,14 +495,14 @@ const Tasks = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {displayedTasks.length === 0 ? (
+                  {paginatedTasks.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">
                         No tasks found
                       </TableCell>
                     </TableRow>
                   ) : (
-                    displayedTasks.map((task) => (
+                    paginatedTasks.map((task) => (
                       <TableRow key={task.id} className="hover:bg-muted/30">
                         <TableCell className="text-primary font-medium">{task.clientName}</TableCell>
                         <TableCell>{task.taskType}</TableCell>
@@ -359,7 +532,7 @@ const Tasks = () => {
                                 <MoreHorizontal className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
+                            <DropdownMenuContent align="end" className="bg-popover">
                               <DropdownMenuItem>View Details</DropdownMenuItem>
                               <DropdownMenuItem>Edit Task</DropdownMenuItem>
                               <DropdownMenuItem>Mark Complete</DropdownMenuItem>
@@ -372,6 +545,42 @@ const Tasks = () => {
                   )}
                 </TableBody>
               </Table>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between mt-4 px-2">
+                  <p className="text-sm text-muted-foreground">
+                    Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, displayedTasks.length)} of {displayedTasks.length} tasks
+                  </p>
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious 
+                          onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                          className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        />
+                      </PaginationItem>
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                        <PaginationItem key={page}>
+                          <PaginationLink
+                            onClick={() => setCurrentPage(page)}
+                            isActive={currentPage === page}
+                            className="cursor-pointer"
+                          >
+                            {page}
+                          </PaginationLink>
+                        </PaginationItem>
+                      ))}
+                      <PaginationItem>
+                        <PaginationNext
+                          onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                          className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                </div>
+              )}
             </CardContent>
           </Card>
         </main>
