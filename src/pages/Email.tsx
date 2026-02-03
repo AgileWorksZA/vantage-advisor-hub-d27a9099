@@ -184,7 +184,11 @@ const EmailPage = () => {
 
             {/* Action Buttons */}
             <div className="p-3 flex flex-wrap gap-2 border-b border-border">
-              <Button size="sm" className="bg-[hsl(180,70%,45%)] hover:bg-[hsl(180,70%,40%)] text-white">
+              <Button 
+                size="sm" 
+                className="bg-[hsl(180,70%,45%)] hover:bg-[hsl(180,70%,40%)] text-white"
+                onClick={() => navigate("/email/compose")}
+              >
                 <PenSquare className="w-4 h-4 mr-1" />
                 Compose
               </Button>
