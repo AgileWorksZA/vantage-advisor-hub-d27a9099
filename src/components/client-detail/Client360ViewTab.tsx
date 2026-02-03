@@ -10,29 +10,49 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Pencil, Trash2, MoreVertical, ChevronDown, Loader2 } from "lucide-react";
+import { Pencil, Trash2, MoreVertical, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
 import { useClientProducts } from "@/hooks/useClientProducts";
 
-// Demo data for the various product tables
+// Demo data for the various product tables - filtered to non-zero amounts only
 const onPlatformProducts = [
-  { investmentHouse: "Efficient Wealth", product: "Investment Plan", number: "202411220002", amount: "R 1,163.39", income: "R 0.00", contribution: "R 0.00", date: "03/02/2026", advisor: "Emile Wegner" },
-  { investmentHouse: "Efficient Wealth", product: "Tax Free Plan", number: "202601125174", amount: "R 0.00", income: "R 0.00", contribution: "R 0.00", date: "03/02/2026", advisor: "Emile Wegner" },
-  { investmentHouse: "Efficient Wealth", product: "Investment Plan", number: "202601145000", amount: "R 0.00", income: "R 0.00", contribution: "R 0.00", date: "03/02/2026", advisor: "Emile Wegner" },
-  { investmentHouse: "Efficient Wealth", product: "Investment Plan", number: "202601155000", amount: "R 0.00", income: "R 0.00", contribution: "R 10.00 Monthly", date: "03/02/2026", advisor: "Emile Wegner" },
-  { investmentHouse: "Efficient Wealth", product: "Investment Plan", number: "202601155087", amount: "R 0.00", income: "R 0.00", contribution: "R 0.00", date: "03/02/2026", advisor: "Emile Wegner" },
-  { investmentHouse: "Efficient Wealth", product: "Investment Plan", number: "202601135087", amount: "R 0.00", income: "R 0.00", contribution: "R 0.00", date: "03/02/2026", advisor: "Emile Wegner" },
-  { investmentHouse: "Efficient Wealth", product: "Investment Plan", number: "202601145087", amount: "R 0.00", income: "R 0.00", contribution: "R 0.00", date: "03/02/2026", advisor: "Emile Wegner" },
-  { investmentHouse: "Efficient Wealth", product: "Investment Plan", number: "202601205000", amount: "R 0.00", income: "R 0.00", contribution: "R 0.00", date: "03/02/2026", advisor: "Emile Wegner" },
-  { investmentHouse: "Efficient Wealth", product: "Retirement Annuity Fund", number: "202601010020P", amount: "R 1,393,995.66", income: "R 0.00", contribution: "R 0.00", date: "03/02/2026", advisor: "Emile Wegner" },
-  { investmentHouse: "Efficient Wealth", product: "Investment Plan", number: "202601215261", amount: "R 0.00", income: "R 0.00", contribution: "R 0.00", date: "03/02/2026", advisor: "Emile Wegner" },
+  { 
+    investmentHouse: "Efficient Wealth", 
+    product: "Investment Plan", 
+    number: "202411220002", 
+    amount: "R 1,163.39", 
+    amountValue: 1163.39,
+    income: "R 0.00", 
+    contribution: "R 0.00", 
+    date: "03/02/2026", 
+    advisor: "Emile Wegner",
+    expandable: false 
+  },
+  { 
+    investmentHouse: "Efficient Wealth", 
+    product: "Retirement Annuity Fund", 
+    number: "202601010020P", 
+    amount: "R 1,393,995.66", 
+    amountValue: 1393995.66,
+    income: "R 0.00", 
+    contribution: "R 0.00", 
+    date: "03/02/2026", 
+    advisor: "Emile Wegner",
+    expandable: true,
+    details: [
+      { label: "Non-vested", amount: "R 1,225,553.09" },
+      { label: "Retirement", amount: "R 46,121.18" },
+      { label: "Savings", amount: "R 23,060.59" },
+      { label: "Vested", amount: "R 99,260.80" }
+    ]
+  },
 ];
 
 const externalProducts = [
-  { provider: "Ninety One", product: "Investment Plan", contract: "1100232384", amount: "R 843,956.45", income: "R 0.00", contribution: "R 0.00", updated: "", source: "" },
+  { provider: "Ninety One", product: "Investment Plan", contract: "1100232384", amount: "R 843,956.45", amountValue: 843956.45, income: "R 0.00", contribution: "R 0.00", updated: "", source: "" },
 ];
 
 const ccmAccounts = [
-  { name: "Local CCM Account", dateOpened: "10/06/2024", beneficiary: "", accountNumber: "293000011", amount: "R 55,083.00", source: "", dateClosed: "" },
+  { name: "Local CCM Account", dateOpened: "10/06/2024", beneficiary: "", accountNumber: "293000011", amount: "R 55,083.00", amountValue: 55083.00, source: "", dateClosed: "" },
 ];
 
 const willData = [
@@ -47,13 +67,34 @@ const medicalAid = [
   { schemeName: "PPS", planName: "Provider Plus", membershipNumber: "10453406", policyActive: "Yes", premium: "5555.2", dateReceived: "", notes: "" },
 ];
 
+// Calculate totals
+const onPlatformTotal = onPlatformProducts.reduce((sum, p) => sum + p.amountValue, 0);
+const externalTotal = externalProducts.reduce((sum, p) => sum + p.amountValue, 0);
+const ccmTotal = ccmAccounts.reduce((sum, a) => sum + a.amountValue, 0);
+
+const formatTotal = (value: number) => 
+  `R ${value.toLocaleString("en-ZA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
 const Client360ViewTab = () => {
   const { clientId } = useParams<{ clientId: string }>();
   const [loadingMore, setLoadingMore] = useState(false);
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
   const handleLoadMore = () => {
     setLoadingMore(true);
     setTimeout(() => setLoadingMore(false), 1000);
+  };
+
+  const toggleRowExpand = (number: string) => {
+    setExpandedRows(prev => {
+      const next = new Set(prev);
+      if (next.has(number)) {
+        next.delete(number);
+      } else {
+        next.add(number);
+      }
+      return next;
+    });
   };
 
   return (
@@ -62,7 +103,10 @@ const Client360ViewTab = () => {
       <Card className="border-0 shadow-sm">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-base font-medium">On-Platform Investment Products</CardTitle>
+            <CardTitle className="text-base font-medium">
+              On-Platform Investment Products{" "}
+              <span className="text-muted-foreground font-normal">| {formatTotal(onPlatformTotal)}</span>
+            </CardTitle>
             <Button variant="link" className="text-[hsl(180,70%,45%)] p-0 h-auto font-normal">
               + Quote + New business
             </Button>
@@ -80,37 +124,67 @@ const Client360ViewTab = () => {
                 <TableHead className="text-xs font-medium text-muted-foreground">Recurring contribution</TableHead>
                 <TableHead className="text-xs font-medium text-muted-foreground">Date applicable</TableHead>
                 <TableHead className="text-xs font-medium text-muted-foreground">Advisor name</TableHead>
-                <TableHead className="w-[80px]"></TableHead>
+                <TableHead className="w-[100px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {onPlatformProducts.map((product, index) => (
-                <TableRow key={index} className="border-b border-border/50">
-                  <TableCell className="text-sm text-[hsl(180,70%,45%)]">{product.investmentHouse}</TableCell>
-                  <TableCell className="text-sm">{product.product}</TableCell>
-                  <TableCell className="text-sm">{product.number}</TableCell>
-                  <TableCell className="text-sm">{product.amount}</TableCell>
-                  <TableCell className="text-sm">{product.income}</TableCell>
-                  <TableCell className="text-sm">{product.contribution}</TableCell>
-                  <TableCell className="text-sm">{product.date}</TableCell>
-                  <TableCell className="text-sm">{product.advisor}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1">
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <Pencil className="h-4 w-4 text-[hsl(180,70%,45%)]" />
-                      </Button>
-                      {product.amount !== "R 0.00" && (
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                        </Button>
-                      )}
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <MoreVertical className="h-4 w-4 text-muted-foreground" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {onPlatformProducts.map((product, index) => {
+                const isExpanded = expandedRows.has(product.number);
+                return (
+                  <>
+                    <TableRow key={product.number} className="border-b border-border/50">
+                      <TableCell className="text-sm text-[hsl(180,70%,45%)]">{product.investmentHouse}</TableCell>
+                      <TableCell className="text-sm">{product.product}</TableCell>
+                      <TableCell className="text-sm">{product.number}</TableCell>
+                      <TableCell className="text-sm">{product.amount}</TableCell>
+                      <TableCell className="text-sm">{product.income}</TableCell>
+                      <TableCell className="text-sm">{product.contribution}</TableCell>
+                      <TableCell className="text-sm">{product.date}</TableCell>
+                      <TableCell className="text-sm">{product.advisor}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Pencil className="h-4 w-4 text-[hsl(180,70%,45%)]" />
+                          </Button>
+                          {product.expandable && (
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8"
+                              onClick={() => toggleRowExpand(product.number)}
+                            >
+                              {isExpanded ? (
+                                <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                              ) : (
+                                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                              )}
+                            </Button>
+                          )}
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreVertical className="h-4 w-4 text-muted-foreground" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                    {isExpanded && product.details && (
+                      <TableRow key={`${product.number}-details`} className="bg-muted/20 border-b border-border/50">
+                        <TableCell></TableCell>
+                        <TableCell></TableCell>
+                        <TableCell colSpan={7}>
+                          <div className="py-2 pl-4 space-y-1">
+                            {product.details.map((detail, i) => (
+                              <div key={i} className="flex gap-8 text-sm">
+                                <span className="w-24 text-muted-foreground">{detail.label}</span>
+                                <span>{detail.amount}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </>
+                );
+              })}
             </TableBody>
           </Table>
           <div className="p-3 border-t">
@@ -127,7 +201,7 @@ const Client360ViewTab = () => {
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <CardTitle className="text-base font-medium">
-              External Investment Products <span className="text-muted-foreground font-normal">| R 843,956.45</span>
+              External Investment Products <span className="text-muted-foreground font-normal">| {formatTotal(externalTotal)}</span>
             </CardTitle>
             <div className="flex items-center gap-2">
               <Button variant="link" className="text-[hsl(180,70%,45%)] p-0 h-auto font-normal">+ Existing</Button>
@@ -187,7 +261,7 @@ const Client360ViewTab = () => {
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <CardTitle className="text-base font-medium">
-              Corporate Cash Manager <span className="text-muted-foreground font-normal">| R 55,083.00</span>
+              Corporate Cash Manager <span className="text-muted-foreground font-normal">| {formatTotal(ccmTotal)}</span>
             </CardTitle>
             <div className="flex items-center gap-2">
               <Button variant="link" className="text-[hsl(180,70%,45%)] p-0 h-auto font-normal">+ CCM Product</Button>
