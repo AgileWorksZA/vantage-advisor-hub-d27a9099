@@ -10,13 +10,22 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Client, getDisplayName, getInitials, calculateAge, formatBirthday } from "@/types/client";
-import { useClientProducts, ProductListItem } from "@/hooks/useClientProducts";
+import { 
+  DollarSign, 
+  Image, 
+  MessageSquare, 
+  User, 
+  FileCheck, 
+  MoreVertical 
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { formatDistanceToNow } from "date-fns";
 
 interface ClientSummaryTabProps {
   client: Client;
   clientId: string;
+  onShowMoreActivity?: () => void;
 }
 
 const advisorData = [
@@ -30,36 +39,84 @@ const outstandingDocs = [
   { document: "Risk profile questionnaire", workflow: "Advice Cycle" },
 ];
 
-// Group products by category
-const groupProductsByCategory = (products: ProductListItem[]) => {
-  const grouped: Record<string, ProductListItem[]> = {};
-  
-  products.forEach(product => {
-    const category = product.category || "Uncategorized";
-    if (!grouped[category]) {
-      grouped[category] = [];
-    }
-    grouped[category].push(product);
-  });
-  
-  return grouped;
+// Demo recent activity data
+const recentActivities = [
+  {
+    id: 1,
+    type: "product_sold",
+    title: "Product purchased",
+    description: 'Client added "Discovery Life Plan"',
+    timestamp: new Date(Date.now() - 5 * 60 * 1000), // 5 minutes ago
+  },
+  {
+    id: 2,
+    type: "document_uploaded",
+    title: "Document uploaded",
+    description: 'Uploaded "ID Document.pdf"',
+    timestamp: new Date(Date.now() - 30 * 60 * 1000), // 30 minutes ago
+  },
+  {
+    id: 3,
+    type: "note_added",
+    title: "Note added",
+    description: 'Meeting notes: Discussed retirement planning options',
+    timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
+  },
+  {
+    id: 4,
+    type: "profile_updated",
+    title: "Profile updated",
+    description: 'Updated contact details and address',
+    timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
+  },
+  {
+    id: 5,
+    type: "compliance_created",
+    title: "Compliance created",
+    description: 'FAIS Control document generated',
+    timestamp: new Date(Date.now() - 48 * 60 * 60 * 1000), // 2 days ago
+  },
+];
+
+const getActivityIcon = (type: string) => {
+  switch (type) {
+    case "product_sold":
+      return <DollarSign className="w-5 h-5 text-amber-500" />;
+    case "document_uploaded":
+      return <Image className="w-5 h-5 text-purple-500" />;
+    case "note_added":
+      return <MessageSquare className="w-5 h-5 text-blue-500" />;
+    case "profile_updated":
+      return <User className="w-5 h-5 text-green-500" />;
+    case "compliance_created":
+      return <FileCheck className="w-5 h-5 text-[hsl(180,70%,45%)]" />;
+    default:
+      return <MessageSquare className="w-5 h-5 text-muted-foreground" />;
+  }
 };
 
-// Parse currency string to number
-const parseCurrency = (value: string): number => {
-  return parseFloat(value.replace(/[R\s,]/g, '')) || 0;
+const getTitleColor = (type: string) => {
+  switch (type) {
+    case "product_sold":
+      return "text-amber-600";
+    case "document_uploaded":
+      return "text-purple-600";
+    case "note_added":
+      return "text-blue-600";
+    case "profile_updated":
+      return "text-green-600";
+    case "compliance_created":
+      return "text-[hsl(180,70%,45%)]";
+    default:
+      return "text-foreground";
+  }
 };
 
-const ClientSummaryTab = ({ client, clientId }: ClientSummaryTabProps) => {
-  const { products, loading: productsLoading } = useClientProducts(clientId);
-  
+const ClientSummaryTab = ({ client, clientId, onShowMoreActivity }: ClientSummaryTabProps) => {
   const displayName = getDisplayName(client);
   const initials = getInitials(client);
   const age = calculateAge(client.date_of_birth);
   const birthday = formatBirthday(client.date_of_birth);
-
-  const groupedProducts = groupProductsByCategory(products);
-  const totalValue = products.reduce((acc, p) => acc + parseCurrency(p.value), 0);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -162,65 +219,55 @@ const ClientSummaryTab = ({ client, clientId }: ClientSummaryTabProps) => {
           </CardContent>
         </Card>
 
-        {/* Products */}
+        {/* Recent Activity */}
         <Card>
           <CardHeader className="pb-4">
-            <CardTitle className="text-lg">Products</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Recent Activity
+              </CardTitle>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <MoreVertical className="w-4 h-4" />
+              </Button>
+            </div>
           </CardHeader>
-          <CardContent className="p-0">
-            <ScrollArea className="h-[300px]">
-              {productsLoading ? (
-                <div className="p-4 space-y-3">
-                  <Skeleton className="h-8 w-full" />
-                  <Skeleton className="h-6 w-full" />
-                  <Skeleton className="h-6 w-full" />
-                  <Skeleton className="h-6 w-full" />
-                </div>
-              ) : products.length === 0 ? (
-                <div className="p-8 text-center text-muted-foreground">
-                  <p>No products found for this client.</p>
-                  <p className="text-sm mt-1">Add products in the Products tab.</p>
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="text-xs">Name</TableHead>
-                      <TableHead className="text-xs">Premium</TableHead>
-                      <TableHead className="text-xs">Frequency</TableHead>
-                      <TableHead className="text-xs">Role</TableHead>
-                      <TableHead className="text-xs text-right">Value</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {Object.entries(groupedProducts).map(([category, categoryProducts]) => (
-                      <React.Fragment key={category}>
-                        <TableRow className="bg-muted/50">
-                          <TableCell colSpan={5} className="text-sm font-medium py-2">
-                            {category}
-                          </TableCell>
-                        </TableRow>
-                        {categoryProducts.map((product) => (
-                          <TableRow key={product.id}>
-                            <TableCell className="text-sm pl-6">{product.product}</TableCell>
-                            <TableCell className="text-sm">{product.premium}</TableCell>
-                            <TableCell className="text-sm">{product.frequency}</TableCell>
-                            <TableCell className="text-sm">{product.role}</TableCell>
-                            <TableCell className="text-sm text-right">{product.value}</TableCell>
-                          </TableRow>
-                        ))}
-                      </React.Fragment>
-                    ))}
-                    <TableRow className="bg-muted font-medium">
-                      <TableCell colSpan={4} className="text-sm">Total</TableCell>
-                      <TableCell className="text-sm text-right">
-                        R {totalValue.toLocaleString('en-ZA', { minimumFractionDigits: 2 })}
-                      </TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              )}
+          <CardContent className="pt-0">
+            <ScrollArea className="h-[300px] pr-4">
+              <div className="space-y-0">
+                {recentActivities.map((activity) => (
+                  <div 
+                    key={activity.id} 
+                    className="flex gap-3 py-3 border-b border-border/50 last:border-0"
+                  >
+                    <div className="shrink-0 mt-0.5">
+                      {getActivityIcon(activity.type)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className={`font-medium text-sm ${getTitleColor(activity.type)}`}>
+                        {activity.title}
+                      </p>
+                      <p className="text-sm text-muted-foreground mt-0.5">
+                        {activity.description}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {formatDistanceToNow(activity.timestamp, { addSuffix: true })}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </ScrollArea>
+            
+            {/* Show more link */}
+            <div className="pt-4 border-t mt-4">
+              <Button 
+                variant="link" 
+                className="p-0 h-auto text-[hsl(180,70%,45%)] hover:text-[hsl(180,70%,35%)]"
+                onClick={onShowMoreActivity}
+              >
+                Show more
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
