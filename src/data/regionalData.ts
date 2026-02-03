@@ -1070,3 +1070,77 @@ const regionalOpportunitiesMap: Record<string, RegionalOpportunity[]> = {
 export function getRegionalOpportunities(regionCode: string): RegionalOpportunity[] {
   return regionalOpportunitiesMap[regionCode] || southAfricaOpportunities;
 }
+
+// Regional project templates and SLA defaults
+export interface RegionalProjectConfig {
+  defaultSLADays: number;
+  revenueTerm: string;
+  templates: {
+    id: string;
+    name: string;
+    description: string;
+    project_type: string;
+  }[];
+}
+
+const regionalProjectConfigs: Record<string, RegionalProjectConfig> = {
+  ZA: {
+    defaultSLADays: 30,
+    revenueTerm: "Revenue",
+    templates: [
+      { id: "za-1", name: "Tax Season Prep", description: "Q1 tax season optimization", project_type: "growth" },
+      { id: "za-2", name: "Living Annuity Reviews", description: "Annual drawdown and fund reviews", project_type: "derisking" },
+      { id: "za-3", name: "Offshore Diversification", description: "Rand hedge and international exposure", project_type: "migration" },
+      { id: "za-4", name: "Platform Migration", description: "Consolidate to house platform", project_type: "consolidation" },
+      { id: "za-5", name: "RA Top-up Campaign", description: "Retirement annuity contribution drive", project_type: "growth" },
+    ],
+  },
+  AU: {
+    defaultSLADays: 21,
+    revenueTerm: "Revenue",
+    templates: [
+      { id: "au-1", name: "EOFY Super Top-up", description: "End of financial year superannuation maximization", project_type: "growth" },
+      { id: "au-2", name: "Pension Drawdown Review", description: "Annual pension strategy review", project_type: "derisking" },
+      { id: "au-3", name: "SMSF Setup", description: "Self-managed super fund establishment", project_type: "migration" },
+      { id: "au-4", name: "Platform Consolidation", description: "Multi-platform to single platform", project_type: "consolidation" },
+      { id: "au-5", name: "Insurance Gap Analysis", description: "Life and TPD cover assessment", project_type: "growth" },
+    ],
+  },
+  CA: {
+    defaultSLADays: 30,
+    revenueTerm: "Revenue",
+    templates: [
+      { id: "ca-1", name: "RRSP Season", description: "Registered retirement savings plan contributions", project_type: "growth" },
+      { id: "ca-2", name: "TFSA Optimization", description: "Tax-free savings account strategy", project_type: "growth" },
+      { id: "ca-3", name: "Estate Planning Review", description: "Will and beneficiary updates", project_type: "derisking" },
+      { id: "ca-4", name: "Advisor Transfer", description: "Client portfolio transition", project_type: "migration" },
+      { id: "ca-5", name: "RESP Catch-up", description: "Education savings plan maximization", project_type: "growth" },
+    ],
+  },
+  GB: {
+    defaultSLADays: 28,
+    revenueTerm: "Income",
+    templates: [
+      { id: "gb-1", name: "ISA Maximization", description: "Individual savings account allowance usage", project_type: "growth" },
+      { id: "gb-2", name: "Pension Review", description: "Annual pension scheme assessment", project_type: "derisking" },
+      { id: "gb-3", name: "SIPP Transfer", description: "Self-invested personal pension consolidation", project_type: "migration" },
+      { id: "gb-4", name: "DB to DC Transfer", description: "Defined benefit pension transfer analysis", project_type: "migration" },
+      { id: "gb-5", name: "IHT Planning", description: "Inheritance tax mitigation", project_type: "derisking" },
+    ],
+  },
+  US: {
+    defaultSLADays: 30,
+    revenueTerm: "Revenue",
+    templates: [
+      { id: "us-1", name: "401(k) Maximization", description: "Employer retirement plan optimization", project_type: "growth" },
+      { id: "us-2", name: "IRA Rollover", description: "Retirement account consolidation", project_type: "migration" },
+      { id: "us-3", name: "Roth Conversion", description: "Tax-advantaged retirement planning", project_type: "growth" },
+      { id: "us-4", name: "Tax-Loss Harvesting", description: "Year-end tax optimization", project_type: "derisking" },
+      { id: "us-5", name: "Estate Planning", description: "Trust and succession planning", project_type: "derisking" },
+    ],
+  },
+};
+
+export function getRegionalProjectConfig(regionCode: string): RegionalProjectConfig {
+  return regionalProjectConfigs[regionCode] || regionalProjectConfigs.ZA;
+}
