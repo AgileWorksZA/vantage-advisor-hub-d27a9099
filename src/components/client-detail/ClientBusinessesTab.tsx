@@ -1,4 +1,4 @@
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -9,11 +9,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Pencil, Trash2, Plus, RotateCcw, Loader2 } from "lucide-react";
+import { Pencil, Trash2, Plus, RotateCcw, Loader2, ArrowLeft } from "lucide-react";
 import { useClientRelationships } from "@/hooks/useClientRelationships";
 
 const ClientBusinessesTab = () => {
   const { clientId } = useParams<{ clientId: string }>();
+  const navigate = useNavigate();
   const { businesses, loading, refetch, deleteRelationship } = useClientRelationships(clientId || "");
 
   if (loading) {
@@ -31,6 +32,10 @@ const ClientBusinessesTab = () => {
         <Button className="bg-[hsl(180,70%,45%)] hover:bg-[hsl(180,70%,40%)] text-white gap-2">
           <Plus className="w-4 h-4" />
           Add new
+        </Button>
+        <Button variant="outline" className="gap-2" onClick={() => navigate(-1)}>
+          <ArrowLeft className="w-4 h-4" />
+          Back
         </Button>
         <Button variant="outline" className="gap-2" onClick={() => refetch()}>
           <RotateCcw className="w-4 h-4" />
