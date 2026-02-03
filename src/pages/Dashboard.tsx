@@ -106,6 +106,28 @@ const Dashboard = () => {
     }
   };
 
+  // Seed demo clients for new users
+  const seedDemoClients = async (accessToken: string) => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/seed-demo-clients`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      const result = await response.json();
+      if (result.seeded) {
+        console.log(`Seeded ${result.count} demo clients`);
+      }
+    } catch (error) {
+      console.error('Failed to seed demo clients:', error);
+    }
+  };
+
   useEffect(() => {
     const {
       data: {
@@ -117,6 +139,9 @@ const Dashboard = () => {
       setLoading(false);
       if (!session?.user) {
         navigate("/auth");
+      } else if (session.access_token) {
+        // Seed demo clients on login
+        seedDemoClients(session.access_token);
       }
     });
     supabase.auth.getSession().then(({
@@ -129,6 +154,9 @@ const Dashboard = () => {
       setLoading(false);
       if (!session?.user) {
         navigate("/auth");
+      } else if (session.access_token) {
+        // Seed demo clients on initial load
+        seedDemoClients(session.access_token);
       }
     });
     return () => subscription.unsubscribe();
