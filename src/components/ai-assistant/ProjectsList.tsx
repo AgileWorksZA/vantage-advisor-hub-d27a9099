@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Filter, FolderKanban } from "lucide-react";
+import { Plus, Filter, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -7,8 +7,9 @@ import { OpportunityProject } from "@/hooks/useOpportunityProjects";
 import { ProjectOpportunity } from "@/hooks/useProjectOpportunities";
 import { ProjectTask } from "@/hooks/useProjectTasks";
 import ProjectCard from "./ProjectCard";
+import NewOpportunitiesTable from "./NewOpportunitiesTable";
 
-interface ProjectsListProps {
+interface OpportunitiesListProps {
   projects: OpportunityProject[];
   opportunities: ProjectOpportunity[];
   tasks: ProjectTask[];
@@ -31,12 +32,13 @@ const filterOptions = [
 ];
 
 const statusFilters = [
+  { id: "New", label: "New", highlight: true },
   { id: "Active", label: "Active" },
   { id: "Completed", label: "Completed" },
   { id: "On Hold", label: "On Hold" },
 ];
 
-const ProjectsList = ({
+const OpportunitiesList = ({
   projects,
   opportunities,
   tasks,
@@ -48,16 +50,16 @@ const ProjectsList = ({
   onAddClients,
   onUpdateTask,
   formatCurrency,
-}: ProjectsListProps) => {
+}: OpportunitiesListProps) => {
   const [typeFilter, setTypeFilter] = useState<string | null>(activeFilter);
-  const [statusFilter, setStatusFilter] = useState<string>("Active");
+  const [statusFilter, setStatusFilter] = useState<string>("New");
 
   // Sync typeFilter with activeFilter prop when it changes
   useEffect(() => {
     setTypeFilter(activeFilter);
   }, [activeFilter]);
 
-  // Filter projects
+  // Filter projects (only for non-New status)
   const filteredProjects = projects.filter((project) => {
     const matchesType = !typeFilter || project.project_type === typeFilter;
     const matchesStatus = project.status === statusFilter;
@@ -71,15 +73,18 @@ const ProjectsList = ({
   const getProjectTasks = (projectId: string) =>
     tasks.filter((t) => t.project_id === projectId);
 
+  // Check if we're showing new opportunities
+  const isNewStatus = statusFilter === "New";
+
   return (
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <FolderKanban className="w-5 h-5 text-white/70" />
-          <h2 className="text-lg font-semibold text-white">Projects</h2>
+          <Sparkles className="w-5 h-5 text-amber-400" />
+          <h2 className="text-lg font-semibold text-white">Opportunities</h2>
           <Badge variant="outline" className="text-white/60 border-white/20">
-            {filteredProjects.length}
+            {isNewStatus ? "4 types" : filteredProjects.length}
           </Badge>
         </div>
         <Button
@@ -88,7 +93,7 @@ const ProjectsList = ({
           className="bg-white/10 hover:bg-white/20 text-white border-0"
         >
           <Plus className="w-4 h-4 mr-1" />
-          New Project
+          New Opportunity
         </Button>
       </div>
 
@@ -127,7 +132,11 @@ const ProjectsList = ({
                 className={cn(
                   "h-7 text-xs",
                   statusFilter === option.id
-                    ? "bg-white/20 text-white"
+                    ? option.highlight
+                      ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                      : "bg-white/20 text-white"
+                    : option.highlight
+                    ? "text-amber-400/70 hover:text-amber-400 hover:bg-amber-500/10"
                     : "text-white/60 hover:text-white hover:bg-white/10"
                 )}
                 onClick={() => setStatusFilter(option.id)}
@@ -139,8 +148,16 @@ const ProjectsList = ({
         </div>
       </div>
 
-      {/* Projects List */}
-      {filteredProjects.length > 0 ? (
+      {/* New Opportunities Table (when New status is selected) */}
+      {isNewStatus && (
+        <NewOpportunitiesTable
+          formatCurrency={formatCurrency}
+          typeFilter={typeFilter}
+        />
+      )}
+
+      {/* Active/Completed/On Hold Projects List */}
+      {!isNewStatus && filteredProjects.length > 0 && (
         <div className="space-y-3">
           {filteredProjects.map((project) => (
             <ProjectCard
@@ -157,14 +174,17 @@ const ProjectsList = ({
             />
           ))}
         </div>
-      ) : (
+      )}
+
+      {/* Empty state for Active/Completed/On Hold */}
+      {!isNewStatus && filteredProjects.length === 0 && (
         <div className="glass-panel rounded-xl p-8 text-center border border-white/10">
-          <FolderKanban className="w-12 h-12 text-white/20 mx-auto mb-3" />
-          <h3 className="text-white/70 font-medium mb-1">No projects found</h3>
+          <Sparkles className="w-12 h-12 text-white/20 mx-auto mb-3" />
+          <h3 className="text-white/70 font-medium mb-1">No opportunities found</h3>
           <p className="text-white/40 text-sm mb-4">
             {typeFilter
-              ? `No ${typeFilter} projects yet. Create one to get started.`
-              : "Create a project to start tracking opportunities."}
+              ? `No ${typeFilter} opportunities in ${statusFilter.toLowerCase()} status.`
+              : `No ${statusFilter.toLowerCase()} opportunities yet. Create one to get started.`}
           </p>
           <Button
             onClick={onCreateProject}
@@ -172,7 +192,7 @@ const ProjectsList = ({
             className="bg-white/10 hover:bg-white/20 text-white border-0"
           >
             <Plus className="w-4 h-4 mr-1" />
-            Create Project
+            Create Opportunity
           </Button>
         </div>
       )}
@@ -180,4 +200,4 @@ const ProjectsList = ({
   );
 };
 
-export default ProjectsList;
+export default OpportunitiesList;
