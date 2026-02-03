@@ -8,12 +8,14 @@ export interface TopAccountData {
   investor: string;
   bookPercent: string;
   value: string;
+  advisorInitials: string; // Which advisor manages this account
 }
 
 export interface BirthdayData {
   name: string;
   nextBirthday: string;
   age: number;
+  advisorInitials: string; // Which advisor manages this client
 }
 
 export interface ProductData {
@@ -31,11 +33,14 @@ export interface ClientsByValueData {
 export interface AdvisorData {
   initials: string;
   name: string;
+  aum: number; // Their portion of totalAUM
+  clientCount: number; // Number of clients they manage
 }
 
 export interface RegionalData {
   currencySymbol: string;
   totalAUM: string;
+  totalAUMNumber: number; // For calculations
   providers: ProviderData[];
   topAccounts: TopAccountData[];
   birthdays: BirthdayData[];
@@ -44,9 +49,25 @@ export interface RegionalData {
   advisors: AdvisorData[];
 }
 
+// Helper to format currency
+function formatCurrency(value: number, symbol: string): string {
+  return `${symbol} ${value.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+}
+
+// Helper to format AUM with decimals
+function formatAUM(value: number): string {
+  return value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+// Helper to calculate book percentage
+function calcBookPercent(value: number, total: number): string {
+  return `${((value / total) * 100).toFixed(1)} %`;
+}
+
 const southAfricaData: RegionalData = {
   currencySymbol: "R",
   totalAUM: "3,667,726,572.38",
+  totalAUMNumber: 3667726572.38,
   providers: [
     { name: "Ninety One", bookPercent: "55.3 %", value: "R 2,026,539,331" },
     { name: "Old Mutual International", bookPercent: "10.6 %", value: "R 387,751,193" },
@@ -55,23 +76,23 @@ const southAfricaData: RegionalData = {
     { name: "Investec Corporate Cash", bookPercent: "3.8 %", value: "R 139,656,065" },
   ],
   topAccounts: [
-    { investor: "NG Kerk Sinode Oos-Kaapland", bookPercent: "1.1 %", value: "R 41,926,359.70" },
-    { investor: "De Villiers, Jean", bookPercent: "1.0 %", value: "R 36,258,037.37" },
-    { investor: "Louw, Rudolph", bookPercent: "0.9 %", value: "R 34,277,493.78" },
-    { investor: "Daan Van Der Sijde", bookPercent: "0.9 %", value: "R 31,913,925.69" },
-    { investor: "Philippus Koon", bookPercent: "0.8 %", value: "R 28,160,599.60" },
+    { investor: "NG Kerk Sinode Oos-Kaapland", bookPercent: "1.1 %", value: "R 41,926,359.70", advisorInitials: "JB" },
+    { investor: "De Villiers, Jean", bookPercent: "1.0 %", value: "R 36,258,037.37", advisorInitials: "SM" },
+    { investor: "Louw, Rudolph", bookPercent: "0.9 %", value: "R 34,277,493.78", advisorInitials: "PN" },
+    { investor: "Daan Van Der Sijde", bookPercent: "0.9 %", value: "R 31,913,925.69", advisorInitials: "LV" },
+    { investor: "Philippus Koon", bookPercent: "0.8 %", value: "R 28,160,599.60", advisorInitials: "DG" },
   ],
   birthdays: [
-    { name: "Andre Thomas Coetzer", nextBirthday: "28 January", age: 42 },
-    { name: "Elsie Sophia Lourens", nextBirthday: "28 January", age: 65 },
-    { name: "Samuel de Jager", nextBirthday: "28 January", age: 69 },
-    { name: "Elana Wasmuth", nextBirthday: "28 January", age: 34 },
-    { name: "Angeline Loraine Mostert", nextBirthday: "28 January", age: 63 },
-    { name: "Esther Amanda Nieman", nextBirthday: "28 January", age: 74 },
-    { name: "Melia Nocwaka Malgas", nextBirthday: "28 January", age: 73 },
-    { name: "Denise Thiart", nextBirthday: "28 January", age: 69 },
-    { name: "Elizabeth Saunders", nextBirthday: "28 January", age: 77 },
-    { name: "Zonwabele Harry Molefe", nextBirthday: "28 January", age: 64 },
+    { name: "Andre Thomas Coetzer", nextBirthday: "28 January", age: 42, advisorInitials: "JB" },
+    { name: "Elsie Sophia Lourens", nextBirthday: "28 January", age: 65, advisorInitials: "SM" },
+    { name: "Samuel de Jager", nextBirthday: "28 January", age: 69, advisorInitials: "PN" },
+    { name: "Elana Wasmuth", nextBirthday: "28 January", age: 34, advisorInitials: "LV" },
+    { name: "Angeline Loraine Mostert", nextBirthday: "28 January", age: 63, advisorInitials: "DG" },
+    { name: "Esther Amanda Nieman", nextBirthday: "28 January", age: 74, advisorInitials: "JB" },
+    { name: "Melia Nocwaka Malgas", nextBirthday: "28 January", age: 73, advisorInitials: "SM" },
+    { name: "Denise Thiart", nextBirthday: "28 January", age: 69, advisorInitials: "PN" },
+    { name: "Elizabeth Saunders", nextBirthday: "28 January", age: 77, advisorInitials: "LV" },
+    { name: "Zonwabele Harry Molefe", nextBirthday: "28 January", age: 64, advisorInitials: "DG" },
   ],
   products: [
     { name: "Cash Management", value: 12.2, color: "hsl(210, 70%, 40%)" },
@@ -91,17 +112,18 @@ const southAfricaData: RegionalData = {
     { range: "> R10M", value: "R 947,490,312", investors: 52 },
   ],
   advisors: [
-    { initials: "JB", name: "Johan Botha" },
-    { initials: "SM", name: "Sarah Mostert" },
-    { initials: "PN", name: "Pieter Naudé" },
-    { initials: "LV", name: "Linda van Wyk" },
-    { initials: "DG", name: "David Greenberg" },
+    { initials: "JB", name: "Johan Botha", aum: 980000000, clientCount: 425 },
+    { initials: "SM", name: "Sarah Mostert", aum: 850000000, clientCount: 380 },
+    { initials: "PN", name: "Pieter Naudé", aum: 720000000, clientCount: 340 },
+    { initials: "LV", name: "Linda van Wyk", aum: 650000000, clientCount: 310 },
+    { initials: "DG", name: "David Greenberg", aum: 467726572.38, clientCount: 270 },
   ],
 };
 
 const australiaData: RegionalData = {
   currencySymbol: "A$",
   totalAUM: "4,389,625,872.00",
+  totalAUMNumber: 4389625872,
   providers: [
     { name: "Macquarie Wrap", bookPercent: "42.1 %", value: "A$ 1,847,293,441" },
     { name: "AMP North", bookPercent: "18.3 %", value: "A$ 803,156,229" },
@@ -110,23 +132,23 @@ const australiaData: RegionalData = {
     { name: "Hub24", bookPercent: "11.5 %", value: "A$ 504,983,152" },
   ],
   topAccounts: [
-    { investor: "Melbourne Grammar School Foundation", bookPercent: "1.3 %", value: "A$ 57,182,341.50" },
-    { investor: "O'Connor, Michael", bookPercent: "1.1 %", value: "A$ 48,347,892.30" },
-    { investor: "Thompson, Sarah", bookPercent: "0.9 %", value: "A$ 39,506,632.85" },
-    { investor: "Williams, David", bookPercent: "0.8 %", value: "A$ 35,117,007.00" },
-    { investor: "Brown, Jennifer", bookPercent: "0.7 %", value: "A$ 30,727,381.10" },
+    { investor: "Melbourne Grammar School Foundation", bookPercent: "1.3 %", value: "A$ 57,182,341.50", advisorInitials: "JM" },
+    { investor: "O'Connor, Michael", bookPercent: "1.1 %", value: "A$ 48,347,892.30", advisorInitials: "ST" },
+    { investor: "Thompson, Sarah", bookPercent: "0.9 %", value: "A$ 39,506,632.85", advisorInitials: "MO" },
+    { investor: "Williams, David", bookPercent: "0.8 %", value: "A$ 35,117,007.00", advisorInitials: "EA" },
+    { investor: "Brown, Jennifer", bookPercent: "0.7 %", value: "A$ 30,727,381.10", advisorInitials: "TM" },
   ],
   birthdays: [
-    { name: "William James Mitchell", nextBirthday: "3 February", age: 58 },
-    { name: "Sarah Elizabeth Thompson", nextBirthday: "3 February", age: 44 },
-    { name: "James Robert O'Brien", nextBirthday: "4 February", age: 52 },
-    { name: "Emily Rose Anderson", nextBirthday: "4 February", age: 37 },
-    { name: "Michael Patrick Kelly", nextBirthday: "5 February", age: 61 },
-    { name: "Charlotte Grace Wilson", nextBirthday: "5 February", age: 55 },
-    { name: "Thomas Edward Murphy", nextBirthday: "6 February", age: 48 },
-    { name: "Olivia Jane Campbell", nextBirthday: "6 February", age: 42 },
-    { name: "Henry William Scott", nextBirthday: "7 February", age: 67 },
-    { name: "Sophie Anne Martin", nextBirthday: "7 February", age: 39 },
+    { name: "William James Mitchell", nextBirthday: "3 February", age: 58, advisorInitials: "JM" },
+    { name: "Sarah Elizabeth Thompson", nextBirthday: "3 February", age: 44, advisorInitials: "ST" },
+    { name: "James Robert O'Brien", nextBirthday: "4 February", age: 52, advisorInitials: "MO" },
+    { name: "Emily Rose Anderson", nextBirthday: "4 February", age: 37, advisorInitials: "EA" },
+    { name: "Michael Patrick Kelly", nextBirthday: "5 February", age: 61, advisorInitials: "TM" },
+    { name: "Charlotte Grace Wilson", nextBirthday: "5 February", age: 55, advisorInitials: "JM" },
+    { name: "Thomas Edward Murphy", nextBirthday: "6 February", age: 48, advisorInitials: "ST" },
+    { name: "Olivia Jane Campbell", nextBirthday: "6 February", age: 42, advisorInitials: "MO" },
+    { name: "Henry William Scott", nextBirthday: "7 February", age: 67, advisorInitials: "EA" },
+    { name: "Sophie Anne Martin", nextBirthday: "7 February", age: 39, advisorInitials: "TM" },
   ],
   products: [
     { name: "Superannuation", value: 35.2, color: "hsl(210, 70%, 40%)" },
@@ -145,17 +167,18 @@ const australiaData: RegionalData = {
     { range: "> A$5M", value: "A$ 1,626,245,730", investors: 89 },
   ],
   advisors: [
-    { initials: "JM", name: "James Mitchell" },
-    { initials: "ST", name: "Sarah Thompson" },
-    { initials: "MO", name: "Michael O'Brien" },
-    { initials: "EA", name: "Emily Anderson" },
-    { initials: "TM", name: "Thomas Murphy" },
+    { initials: "JM", name: "James Mitchell", aum: 1100000000, clientCount: 512 },
+    { initials: "ST", name: "Sarah Thompson", aum: 950000000, clientCount: 480 },
+    { initials: "MO", name: "Michael O'Brien", aum: 820000000, clientCount: 445 },
+    { initials: "EA", name: "Emily Anderson", aum: 780000000, clientCount: 420 },
+    { initials: "TM", name: "Thomas Murphy", aum: 739625872, clientCount: 367 },
   ],
 };
 
 const canadaData: RegionalData = {
   currencySymbol: "C$",
   totalAUM: "5,572,649,990.00",
+  totalAUMNumber: 5572649990,
   providers: [
     { name: "RBC Dominion Securities", bookPercent: "32.4 %", value: "C$ 1,805,538,597" },
     { name: "TD Wealth Private", bookPercent: "24.8 %", value: "C$ 1,382,016,998" },
@@ -164,23 +187,23 @@ const canadaData: RegionalData = {
     { name: "National Bank Financial", bookPercent: "10.5 %", value: "C$ 585,128,449" },
   ],
   topAccounts: [
-    { investor: "Toronto General Hospital Foundation", bookPercent: "1.4 %", value: "C$ 78,017,100.00" },
-    { investor: "Tremblay, Pierre", bookPercent: "1.2 %", value: "C$ 66,871,800.00" },
-    { investor: "Roy, Marie-Claire", bookPercent: "1.0 %", value: "C$ 55,726,500.00" },
-    { investor: "Gagnon, Jean-Luc", bookPercent: "0.9 %", value: "C$ 50,153,850.00" },
-    { investor: "MacDonald, Angus", bookPercent: "0.8 %", value: "C$ 44,581,200.00" },
+    { investor: "Toronto General Hospital Foundation", bookPercent: "1.4 %", value: "C$ 78,017,100.00", advisorInitials: "PT" },
+    { investor: "Tremblay, Pierre", bookPercent: "1.2 %", value: "C$ 66,871,800.00", advisorInitials: "MB" },
+    { investor: "Roy, Marie-Claire", bookPercent: "1.0 %", value: "C$ 55,726,500.00", advisorInitials: "JM" },
+    { investor: "Gagnon, Jean-Luc", bookPercent: "0.9 %", value: "C$ 50,153,850.00", advisorInitials: "SG" },
+    { investor: "MacDonald, Angus", bookPercent: "0.8 %", value: "C$ 44,581,200.00", advisorInitials: "RS" },
   ],
   birthdays: [
-    { name: "Pierre Antoine Tremblay", nextBirthday: "4 February", age: 56 },
-    { name: "Marie-Claire Bouchard", nextBirthday: "4 February", age: 48 },
-    { name: "James William MacDonald", nextBirthday: "5 February", age: 63 },
-    { name: "Sophie Anne Gagnon", nextBirthday: "5 February", age: 41 },
-    { name: "Robert Michael Singh", nextBirthday: "6 February", age: 54 },
-    { name: "Catherine Marie Roy", nextBirthday: "6 February", age: 67 },
-    { name: "David Chen Wong", nextBirthday: "7 February", age: 45 },
-    { name: "Elizabeth Anne Thompson", nextBirthday: "7 February", age: 59 },
-    { name: "François Xavier Leblanc", nextBirthday: "8 February", age: 72 },
-    { name: "Jennifer Mary O'Brien", nextBirthday: "8 February", age: 38 },
+    { name: "Pierre Antoine Tremblay", nextBirthday: "4 February", age: 56, advisorInitials: "PT" },
+    { name: "Marie-Claire Bouchard", nextBirthday: "4 February", age: 48, advisorInitials: "MB" },
+    { name: "James William MacDonald", nextBirthday: "5 February", age: 63, advisorInitials: "JM" },
+    { name: "Sophie Anne Gagnon", nextBirthday: "5 February", age: 41, advisorInitials: "SG" },
+    { name: "Robert Michael Singh", nextBirthday: "6 February", age: 54, advisorInitials: "RS" },
+    { name: "Catherine Marie Roy", nextBirthday: "6 February", age: 67, advisorInitials: "PT" },
+    { name: "David Chen Wong", nextBirthday: "7 February", age: 45, advisorInitials: "MB" },
+    { name: "Elizabeth Anne Thompson", nextBirthday: "7 February", age: 59, advisorInitials: "JM" },
+    { name: "François Xavier Leblanc", nextBirthday: "8 February", age: 72, advisorInitials: "SG" },
+    { name: "Jennifer Mary O'Brien", nextBirthday: "8 February", age: 38, advisorInitials: "RS" },
   ],
   products: [
     { name: "RRSP", value: 28.4, color: "hsl(210, 70%, 40%)" },
@@ -199,17 +222,18 @@ const canadaData: RegionalData = {
     { range: "> C$5M", value: "C$ 2,318,222,396", investors: 142 },
   ],
   advisors: [
-    { initials: "PT", name: "Pierre Tremblay" },
-    { initials: "MB", name: "Marie Bouchard" },
-    { initials: "JM", name: "James MacDonald" },
-    { initials: "SG", name: "Sophie Gagnon" },
-    { initials: "RS", name: "Robert Singh" },
+    { initials: "PT", name: "Pierre Tremblay", aum: 1400000000, clientCount: 578 },
+    { initials: "MB", name: "Marie Bouchard", aum: 1200000000, clientCount: 534 },
+    { initials: "JM", name: "James MacDonald", aum: 1100000000, clientCount: 512 },
+    { initials: "SG", name: "Sophie Gagnon", aum: 950000000, clientCount: 467 },
+    { initials: "RS", name: "Robert Singh", aum: 922649990, clientCount: 376 },
   ],
 };
 
 const unitedKingdomData: RegionalData = {
   currencySymbol: "£",
   totalAUM: "2,847,392,156.00",
+  totalAUMNumber: 2847392156,
   providers: [
     { name: "Hargreaves Lansdown", bookPercent: "36.2 %", value: "£ 1,030,755,960" },
     { name: "AJ Bell Youinvest", bookPercent: "22.4 %", value: "£ 637,815,843" },
@@ -218,23 +242,23 @@ const unitedKingdomData: RegionalData = {
     { name: "Vanguard UK", bookPercent: "10.5 %", value: "£ 298,976,176" },
   ],
   topAccounts: [
-    { investor: "The Royal Foundation", bookPercent: "1.5 %", value: "£ 42,710,882.34" },
-    { investor: "Smith, William", bookPercent: "1.2 %", value: "£ 34,168,706.00" },
-    { investor: "Jones, Elizabeth", bookPercent: "1.0 %", value: "£ 28,473,922.00" },
-    { investor: "Williams, Thomas", bookPercent: "0.9 %", value: "£ 25,626,529.00" },
-    { investor: "Taylor, James", bookPercent: "0.8 %", value: "£ 22,779,137.00" },
+    { investor: "The Royal Foundation", bookPercent: "1.5 %", value: "£ 42,710,882.34", advisorInitials: "WS" },
+    { investor: "Smith, William", bookPercent: "1.2 %", value: "£ 34,168,706.00", advisorInitials: "EJ" },
+    { investor: "Jones, Elizabeth", bookPercent: "1.0 %", value: "£ 28,473,922.00", advisorInitials: "TW" },
+    { investor: "Williams, Thomas", bookPercent: "0.9 %", value: "£ 25,626,529.00", advisorInitials: "VB" },
+    { investor: "Taylor, James", bookPercent: "0.8 %", value: "£ 22,779,137.00", advisorInitials: "JT" },
   ],
   birthdays: [
-    { name: "William Arthur Smith", nextBirthday: "5 February", age: 64 },
-    { name: "Elizabeth Mary Jones", nextBirthday: "5 February", age: 52 },
-    { name: "Thomas Edward Williams", nextBirthday: "6 February", age: 47 },
-    { name: "Victoria Anne Brown", nextBirthday: "6 February", age: 58 },
-    { name: "James Robert Taylor", nextBirthday: "7 February", age: 71 },
-    { name: "Charlotte Emma Davies", nextBirthday: "7 February", age: 43 },
-    { name: "George Henry Wilson", nextBirthday: "8 February", age: 66 },
-    { name: "Amelia Rose Evans", nextBirthday: "8 February", age: 39 },
-    { name: "Oliver Charles Thomas", nextBirthday: "9 February", age: 55 },
-    { name: "Isabella Grace Roberts", nextBirthday: "9 February", age: 48 },
+    { name: "William Arthur Smith", nextBirthday: "5 February", age: 64, advisorInitials: "WS" },
+    { name: "Elizabeth Mary Jones", nextBirthday: "5 February", age: 52, advisorInitials: "EJ" },
+    { name: "Thomas Edward Williams", nextBirthday: "6 February", age: 47, advisorInitials: "TW" },
+    { name: "Victoria Anne Brown", nextBirthday: "6 February", age: 58, advisorInitials: "VB" },
+    { name: "James Robert Taylor", nextBirthday: "7 February", age: 71, advisorInitials: "JT" },
+    { name: "Charlotte Emma Davies", nextBirthday: "7 February", age: 43, advisorInitials: "WS" },
+    { name: "George Henry Wilson", nextBirthday: "8 February", age: 66, advisorInitials: "EJ" },
+    { name: "Amelia Rose Evans", nextBirthday: "8 February", age: 39, advisorInitials: "TW" },
+    { name: "Oliver Charles Thomas", nextBirthday: "9 February", age: 55, advisorInitials: "VB" },
+    { name: "Isabella Grace Roberts", nextBirthday: "9 February", age: 48, advisorInitials: "JT" },
   ],
   products: [
     { name: "Stocks & Shares ISA", value: 31.5, color: "hsl(210, 70%, 40%)" },
@@ -253,17 +277,18 @@ const unitedKingdomData: RegionalData = {
     { range: "> £2M", value: "£ 1,096,245,980", investors: 76 },
   ],
   advisors: [
-    { initials: "WS", name: "William Smith" },
-    { initials: "EJ", name: "Elizabeth Jones" },
-    { initials: "TW", name: "Thomas Williams" },
-    { initials: "VB", name: "Victoria Brown" },
-    { initials: "JT", name: "James Taylor" },
+    { initials: "WS", name: "William Smith", aum: 710000000, clientCount: 430 },
+    { initials: "EJ", name: "Elizabeth Jones", aum: 620000000, clientCount: 412 },
+    { initials: "TW", name: "Thomas Williams", aum: 580000000, clientCount: 398 },
+    { initials: "VB", name: "Victoria Brown", aum: 520000000, clientCount: 378 },
+    { initials: "JT", name: "James Taylor", aum: 417392156, clientCount: 308 },
   ],
 };
 
 const unitedStatesData: RegionalData = {
   currencySymbol: "$",
   totalAUM: "5,572,649,990.00",
+  totalAUMNumber: 5572649990,
   providers: [
     { name: "Fidelity Investments", bookPercent: "38.7 %", value: "$ 2,156,595,346" },
     { name: "Charles Schwab", bookPercent: "24.2 %", value: "$ 1,348,581,298" },
@@ -272,23 +297,23 @@ const unitedStatesData: RegionalData = {
     { name: "E*TRADE", bookPercent: "7.2 %", value: "$ 401,250,719" },
   ],
   topAccounts: [
-    { investor: "St. Mary's Hospital Foundation", bookPercent: "1.4 %", value: "$ 78,017,100.00" },
-    { investor: "Johnson, Robert", bookPercent: "1.2 %", value: "$ 66,871,800.00" },
-    { investor: "Williams, Patricia", bookPercent: "1.0 %", value: "$ 55,726,500.00" },
-    { investor: "Garcia, Miguel", bookPercent: "0.9 %", value: "$ 50,153,850.00" },
-    { investor: "Martinez, Isabella", bookPercent: "0.8 %", value: "$ 44,581,200.00" },
+    { investor: "St. Mary's Hospital Foundation", bookPercent: "1.4 %", value: "$ 78,017,100.00", advisorInitials: "MJ" },
+    { investor: "Johnson, Robert", bookPercent: "1.2 %", value: "$ 66,871,800.00", advisorInitials: "JW" },
+    { investor: "Williams, Patricia", bookPercent: "1.0 %", value: "$ 55,726,500.00", advisorInitials: "RB" },
+    { investor: "Garcia, Miguel", bookPercent: "0.9 %", value: "$ 50,153,850.00", advisorInitials: "MG" },
+    { investor: "Martinez, Isabella", bookPercent: "0.8 %", value: "$ 44,581,200.00", advisorInitials: "WD" },
   ],
   birthdays: [
-    { name: "Michael David Johnson", nextBirthday: "5 February", age: 52 },
-    { name: "Jennifer Marie Williams", nextBirthday: "5 February", age: 47 },
-    { name: "Robert James Brown", nextBirthday: "6 February", age: 61 },
-    { name: "Maria Elena Garcia", nextBirthday: "6 February", age: 44 },
-    { name: "William Thomas Davis", nextBirthday: "7 February", age: 58 },
-    { name: "Patricia Ann Martinez", nextBirthday: "7 February", age: 53 },
-    { name: "James Michael Wilson", nextBirthday: "8 February", age: 67 },
-    { name: "Linda Sue Anderson", nextBirthday: "8 February", age: 49 },
-    { name: "David Lee Thompson", nextBirthday: "9 February", age: 72 },
-    { name: "Susan Marie Jackson", nextBirthday: "9 February", age: 56 },
+    { name: "Michael David Johnson", nextBirthday: "5 February", age: 52, advisorInitials: "MJ" },
+    { name: "Jennifer Marie Williams", nextBirthday: "5 February", age: 47, advisorInitials: "JW" },
+    { name: "Robert James Brown", nextBirthday: "6 February", age: 61, advisorInitials: "RB" },
+    { name: "Maria Elena Garcia", nextBirthday: "6 February", age: 44, advisorInitials: "MG" },
+    { name: "William Thomas Davis", nextBirthday: "7 February", age: 58, advisorInitials: "WD" },
+    { name: "Patricia Ann Martinez", nextBirthday: "7 February", age: 53, advisorInitials: "MJ" },
+    { name: "James Michael Wilson", nextBirthday: "8 February", age: 67, advisorInitials: "JW" },
+    { name: "Linda Sue Anderson", nextBirthday: "8 February", age: 49, advisorInitials: "RB" },
+    { name: "David Lee Thompson", nextBirthday: "9 February", age: 72, advisorInitials: "MG" },
+    { name: "Susan Marie Jackson", nextBirthday: "9 February", age: 56, advisorInitials: "WD" },
   ],
   products: [
     { name: "401(k)", value: 32.1, color: "hsl(210, 70%, 40%)" },
@@ -307,11 +332,11 @@ const unitedStatesData: RegionalData = {
     { range: "> $5M", value: "$ 2,318,222,396", investors: 118 },
   ],
   advisors: [
-    { initials: "MJ", name: "Michael Johnson" },
-    { initials: "JW", name: "Jennifer Williams" },
-    { initials: "RB", name: "Robert Brown" },
-    { initials: "MG", name: "Maria Garcia" },
-    { initials: "WD", name: "William Davis" },
+    { initials: "MJ", name: "Michael Johnson", aum: 1400000000, clientCount: 534 },
+    { initials: "JW", name: "Jennifer Williams", aum: 1200000000, clientCount: 498 },
+    { initials: "RB", name: "Robert Brown", aum: 1100000000, clientCount: 467 },
+    { initials: "MG", name: "Maria Garcia", aum: 950000000, clientCount: 412 },
+    { initials: "WD", name: "William Davis", aum: 922649990, clientCount: 392 },
   ],
 };
 
@@ -325,6 +350,68 @@ const regionalDataMap: Record<string, RegionalData> = {
 
 export function getRegionalData(regionCode: string): RegionalData {
   return regionalDataMap[regionCode] || southAfricaData;
+}
+
+// Get filtered regional data based on selected advisors
+export function getFilteredRegionalData(
+  regionCode: string,
+  selectedAdvisors: string[]
+): RegionalData {
+  const baseData = getRegionalData(regionCode);
+  
+  // If all advisors are selected or none selected, return base data
+  if (selectedAdvisors.length === 0 || selectedAdvisors.length === baseData.advisors.length) {
+    return baseData;
+  }
+  
+  // Calculate the selected advisors' total AUM and percentage
+  const selectedAdvisorsData = baseData.advisors.filter(a => selectedAdvisors.includes(a.initials));
+  const totalSelectedAUM = selectedAdvisorsData.reduce((sum, a) => sum + a.aum, 0);
+  const totalSelectedClients = selectedAdvisorsData.reduce((sum, a) => sum + a.clientCount, 0);
+  const aumRatio = totalSelectedAUM / baseData.totalAUMNumber;
+  
+  // Filter top accounts and birthdays by selected advisors
+  const filteredTopAccounts = baseData.topAccounts.filter(
+    account => selectedAdvisors.includes(account.advisorInitials)
+  );
+  
+  const filteredBirthdays = baseData.birthdays.filter(
+    bday => selectedAdvisors.includes(bday.advisorInitials)
+  );
+  
+  // Scale provider values proportionally
+  const scaledProviders = baseData.providers.map(provider => {
+    const originalValue = parseFloat(provider.value.replace(/[^0-9.-]/g, ''));
+    const scaledValue = originalValue * aumRatio;
+    return {
+      ...provider,
+      bookPercent: provider.bookPercent, // Keep same book percentage
+      value: formatCurrency(scaledValue, baseData.currencySymbol),
+    };
+  });
+  
+  // Scale clients by value proportionally
+  const scaledClientsByValue = baseData.clientsByValue.map(row => {
+    const originalValue = parseFloat(row.value.replace(/[^0-9.-]/g, ''));
+    const scaledValue = originalValue * aumRatio;
+    const scaledInvestors = Math.round(row.investors * aumRatio);
+    return {
+      ...row,
+      value: formatCurrency(scaledValue, baseData.currencySymbol),
+      investors: scaledInvestors,
+    };
+  });
+  
+  return {
+    ...baseData,
+    totalAUM: formatAUM(totalSelectedAUM),
+    totalAUMNumber: totalSelectedAUM,
+    providers: scaledProviders,
+    topAccounts: filteredTopAccounts,
+    birthdays: filteredBirthdays,
+    clientsByValue: scaledClientsByValue,
+    advisors: baseData.advisors, // Keep all advisors for the filter UI
+  };
 }
 
 // Regional Opportunity Data for AI Assistant
