@@ -95,6 +95,7 @@ const AIAssistant = () => {
   // Time-based greeting state
   const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>(getTimeOfDay());
   const [userName, setUserName] = useState("");
+  const [isProfileLoaded, setIsProfileLoaded] = useState(false);
   const [displayedGreeting, setDisplayedGreeting] = useState("");
   const [isTypingComplete, setIsTypingComplete] = useState(false);
   const [displayedSubtitle, setDisplayedSubtitle] = useState("");
@@ -148,6 +149,7 @@ const AIAssistant = () => {
           setUserName(data.first_name);
         }
       }
+      setIsProfileLoaded(true);
     };
     fetchProfile();
   }, []);
@@ -161,8 +163,11 @@ const AIAssistant = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Typewriter effect for greeting
+  // Typewriter effect for greeting (waits for profile to load)
   useEffect(() => {
+    // Don't start until profile is loaded
+    if (!isProfileLoaded) return;
+    
     const greeting = getGreeting(timeOfDay);
     const fullText = userName ? `${greeting}, ${userName}` : greeting;
     
@@ -181,7 +186,7 @@ const AIAssistant = () => {
     }, 50);
     
     return () => clearInterval(interval);
-  }, [userName, timeOfDay]);
+  }, [userName, timeOfDay, isProfileLoaded]);
 
   // Typewriter effect for subtitle (starts after greeting completes)
   useEffect(() => {
