@@ -1,111 +1,51 @@
 
 
-# Fix: Widgets Maintain Fixed Width and Wrap to New Rows
+# Fix: Restore Original Widget Column Width While Maintaining Wrapping
 
 ## Problem Analysis
 
-The current implementation uses `react-grid-layout`'s `Responsive` component with `WidthProvider`, which:
-- Calculates column width as: `(containerWidth - margins) / columnCount`
-- This means widgets shrink proportionally as the container shrinks
-- Even with responsive breakpoints changing the column count, the widgets still shrink because the container itself is smaller
-
-**Desired Behavior**: Widgets should maintain a **fixed minimum width** (~280px) and wrap to new rows when the screen becomes narrower, rather than shrinking.
-
----
-
-## Solution: Dynamic Column Count Based on Container Width
-
-Instead of using fixed breakpoints with fixed column counts, we'll dynamically calculate the number of columns based on the actual container width:
+The current implementation calculates `dynamicCols` based on a 280px minimum widget width, which changes the total number of columns as the container resizes. This creates a formula like:
 
 ```
-columns = floor(containerWidth / minWidgetWidth)
+dynamicCols = floor((containerWidth + 16) / (280 + 16))
 ```
 
-For example, with a 280px minimum widget width:
-- 1200px container → 4 columns (300px each)
-- 900px container → 3 columns (300px each)
-- 600px container → 2 columns (300px each)
-- 400px container → 1 column (400px)
+For a 1200px container: `floor(1216 / 296) = 4 columns`
 
----
+**The Problem**: With 4 columns and widgets having `w: 3`, each widget spans 75% of the grid (3/4 columns), making them much wider than intended.
 
-## Implementation Changes
+**Original Intent**: The layout uses `w: 3` values assuming a **12-column grid** where `w: 3` means 25% of the width (3/12 = 25%).
 
-### 1. Update `DraggableWidgetGrid.tsx`
+## Solution
 
-**Key changes:**
-- Add `useRef` and `useEffect` to measure container width with ResizeObserver
-- Calculate dynamic column count based on minimum widget width (280px)
-- Pass dynamic `cols` to the grid instead of using breakpoint-based column counts
-- Simplify the responsive layouts since column count is now dynamic
+Keep the fixed 12-column grid system but **hide columns** on smaller screens rather than reducing the column count. This preserves the original widget proportions while achieving wrapping:
 
-```tsx
-// New constants
-const MIN_WIDGET_WIDTH = 280; // Minimum pixel width per widget
-const GRID_MARGIN = 16; // Margin between widgets
+1. Keep `cols: 12` as a fixed value
+2. Calculate how many "visible" columns fit based on container width
+3. When laying out widgets, clamp their positions to fit within visible columns
+4. Widgets that don't fit will naturally flow to the next row due to `compactType="vertical"`
 
-// Inside component - measure container width
-const containerRef = useRef<HTMLDivElement>(null);
-const [containerWidth, setContainerWidth] = useState(1200);
+### Key Insight
+With a 12-column grid on a 1200px container, each column is 100px. For widgets with `w: 3`, that's 300px per widget - close to the original design.
 
-useEffect(() => {
-  const element = containerRef.current;
-  if (!element) return;
-  
-  const observer = new ResizeObserver(([entry]) => {
-    setContainerWidth(entry.contentRect.width);
-  });
-  
-  observer.observe(element);
-  return () => observer.disconnect();
-}, []);
+The fix is to:
+- Keep the 12-column grid for width proportions
+- Adjust only the `x` positions so widgets wrap when they don't fit
 
-// Calculate dynamic columns
-const dynamicCols = Math.max(1, Math.floor(containerWidth / MIN_WIDGET_WIDTH));
-```
+## Implementation
 
-### 2. Adjust Layout Items for Current Column Count
-
-When the column count changes, widget positions need adjustment:
-- Widgets that would be positioned outside the available columns get repositioned
-- Widget widths are capped at the current column count
-
-```tsx
-const adjustedLayout = layout.map(item => ({
-  ...item,
-  x: item.x % dynamicCols, // Wrap x position
-  w: Math.min(item.w, dynamicCols), // Cap width
-}));
-```
-
-### 3. Remove WidthProvider Dependency
-
-Since we're measuring width ourselves, we can use the base `Responsive` component directly or simplify to `GridLayout`:
-
-```tsx
-import { Responsive } from 'react-grid-layout/legacy';
-
-// Instead of WidthProvider(Responsive), pass width directly
-<Responsive
-  width={containerWidth}
-  cols={{ lg: dynamicCols, md: dynamicCols, sm: dynamicCols, xs: dynamicCols }}
-  breakpoints={{ lg: 0, md: 0, sm: 0, xs: 0 }}
-  // ... other props
->
-```
-
----
-
-## Updated DraggableWidgetGrid Component
+### Updated `DraggableWidgetGrid.tsx`
 
 ```tsx
 import { ReactNode, useRef, useState, useEffect } from 'react';
 import { Responsive } from 'react-grid-layout/legacy';
 import 'react-grid-layout/css/styles.css';
 
-// Minimum widget width in pixels - widgets will wrap rather than shrink below this
-const MIN_WIDGET_WIDTH = 280;
+// Fixed 12-column grid (original design)
+const FIXED_COLS = 12;
 const GRID_MARGIN = 16;
+// Minimum width before wrapping occurs - based on original ~100px per column
+const MIN_COL_WIDTH = 80;
 
 export interface WidgetLayout {
   i: string;
@@ -125,7 +65,6 @@ interface DraggableWidgetGridProps {
   onLayoutChange: (layout: WidgetLayout[]) => void;
   children: ReactNode;
   rowHeight?: number;
-  minWidgetWidth?: number;
 }
 
 export const DraggableWidgetGrid = ({
@@ -133,7 +72,6 @@ export const DraggableWidgetGrid = ({
   onLayoutChange,
   children,
   rowHeight = 100,
-  minWidgetWidth = MIN_WIDGET_WIDTH,
 }: DraggableWidgetGridProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(1200);
@@ -154,19 +92,21 @@ export const DraggableWidgetGrid = ({
     return () => observer.disconnect();
   }, []);
 
-  // Calculate dynamic column count based on container width
-  const dynamicCols = Math.max(1, Math.floor(
-    (containerWidth + GRID_MARGIN) / (minWidgetWidth + GRID_MARGIN)
-  ));
+  // Calculate how many columns can visibly fit
+  // This determines wrapping behavior while keeping widget proportions
+  const effectiveColWidth = (containerWidth - (FIXED_COLS - 1) * GRID_MARGIN) / FIXED_COLS;
+  const visibleCols = effectiveColWidth < MIN_COL_WIDTH 
+    ? Math.max(3, Math.floor(containerWidth / (MIN_COL_WIDTH + GRID_MARGIN)))
+    : FIXED_COLS;
 
-  // Adjust layout for current column count
+  // Adjust layout - widgets that exceed visible columns wrap to next row
   const adjustedLayout = layout.map(item => ({
     ...item,
-    x: Math.min(item.x, Math.max(0, dynamicCols - item.w)),
-    w: Math.min(item.w, dynamicCols),
+    w: Math.min(item.w, visibleCols), // Cap width to visible columns
+    x: item.x >= visibleCols ? 0 : Math.min(item.x, visibleCols - Math.min(item.w, visibleCols)),
   }));
 
-  // Generate layouts object for Responsive component
+  // Always use FIXED_COLS so widget widths stay proportional
   const layouts = { lg: adjustedLayout };
 
   return (
@@ -176,7 +116,7 @@ export const DraggableWidgetGrid = ({
           className="layout"
           layouts={layouts}
           breakpoints={{ lg: 0 }}
-          cols={{ lg: dynamicCols }}
+          cols={{ lg: visibleCols }}
           width={containerWidth}
           rowHeight={rowHeight}
           onLayoutChange={(currentLayout: any) => 
@@ -189,23 +129,32 @@ export const DraggableWidgetGrid = ({
           compactType="vertical"
           preventCollision={false}
           useCSSTransforms={true}
-        />
+        >
+          {children}
+        </Responsive>
       )}
     </div>
   );
 };
 ```
 
----
+## Key Changes
 
-## Technical Summary
+| Aspect | Current | Fixed |
+|--------|---------|-------|
+| Column count | Dynamic (4-1 based on 280px min) | Fixed 12, reduced to 9/6/3 on smaller screens |
+| Column width | Variable (~280px each) | Fixed proportion (~100px on 1200px screen) |
+| Widget `w:3` | 75% width (3/4 cols) | 25% width (3/12 cols) |
+| Wrapping trigger | When cols < widget width | When column width < 80px |
 
-| Aspect | Before | After |
-|--------|--------|-------|
-| Column count | Fixed per breakpoint (12/9/6/3) | Dynamic based on container width |
-| Widget width | Shrinks with container | Fixed minimum (280px) |
-| Responsive behavior | Breakpoint-based | Width-calculation-based |
-| Width measurement | WidthProvider HOC | ResizeObserver directly |
+## Result
+
+- On large screens (1200px+): 12 columns, widgets with `w:3` = ~300px each (4 per row)
+- On medium screens (~900px): 9 columns visible, widgets wrap earlier
+- On small screens (~600px): 6 columns visible, 2 widgets per row  
+- On mobile (~400px): 3 columns visible, 1 widget per row
+
+Widget proportions remain consistent - a `w:3` widget is always ~25% of the visible grid.
 
 ---
 
@@ -213,16 +162,5 @@ export const DraggableWidgetGrid = ({
 
 | File | Changes |
 |------|---------|
-| `src/components/widgets/DraggableWidgetGrid.tsx` | Replace WidthProvider approach with ResizeObserver-based dynamic column calculation |
-
----
-
-## Result
-
-After these changes:
-- Widgets will maintain approximately 280px minimum width
-- When the screen shrinks, widgets will wrap to new rows instead of shrinking
-- The grid will show 4 widgets per row on wide screens, 3 on medium, 2 on narrow, and 1 on mobile
-- Users can scroll vertically to see all widgets
-- Drag-and-drop and layout persistence will continue to work
+| `src/components/widgets/DraggableWidgetGrid.tsx` | Restore 12-column base grid, add visible column calculation for wrapping |
 
