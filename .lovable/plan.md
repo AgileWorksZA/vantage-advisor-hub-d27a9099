@@ -1,220 +1,178 @@
 
+# Update 360 View Tab: Expandable Rows, Totals, and Button Order
 
-# Enhance AI-Driven Opportunity Discovery from Client Database
+## Summary
 
-## Current vs Desired Workflow
-
-```text
-CURRENT STATE:
-┌─────────────────────────────────────────────────────────┐
-│ Static Mock Data → Display Cards → User Clicks "Add"   │
-│ (regionalData.ts)   (one at a time)  → Manual Dialog   │
-└─────────────────────────────────────────────────────────┘
-
-DESIRED STATE:
-┌─────────────────────────────────────────────────────────┐
-│ Scan Client DB → AI Identifies → Present with Checkboxes│
-│ (client_products)   Opportunities   → Multi-Select     │
-│                                      → Add to Project   │
-└─────────────────────────────────────────────────────────┘
-```
-
----
-
-## Solution Overview
-
-Transform the opportunity discovery from static mock data to dynamic client database analysis:
-
-1. **Create a new hook** that scans the client database and identifies opportunities based on configurable criteria
-2. **Enhance OpportunityCard** to include a selection checkbox
-3. **Add multi-select functionality** to the opportunity cards section with a bulk "Add to Project" action
-4. **Auto-create tasks** when opportunities are added to projects
+Modify the On-Platform Investment Products table to:
+1. Remove expander from top row, swap button order (expander ↔ 3-dot menu) for Retirement Annuity Fund
+2. Add expandable detail content showing fund breakdown
+3. Filter out rows with zero investment amounts
+4. Add calculated total to section header
+5. Ensure External/CCM totals match their data
 
 ---
 
 ## Detailed Changes
 
-### 1. Create New Hook: `useAIOpportunities.ts`
+### 1. Data Changes
 
-A new hook that scans the client database and identifies opportunities automatically:
+**Update `onPlatformProducts` array:**
+- Only keep products with non-zero amounts (Investment Plan R 1,163.39 and Retirement Annuity R 1,393,995.66)
+- Add `expandable` flag and `details` array to the Retirement Annuity entry
 
 ```typescript
-// src/hooks/useAIOpportunities.ts
-
-interface AIOpportunity {
-  clientId: string;
-  clientName: string;
-  currentValue: number;
-  opportunityType: "upsell" | "cross-sell" | "migration" | "platform";
-  potentialRevenue: number;
-  confidence: number;
-  reasoning: string;
-  suggestedAction: string;
-}
+const onPlatformProducts = [
+  { 
+    investmentHouse: "Efficient Wealth", 
+    product: "Investment Plan", 
+    number: "202411220002", 
+    amount: "R 1,163.39", 
+    amountValue: 1163.39,
+    income: "R 0.00", 
+    contribution: "R 0.00", 
+    date: "03/02/2026", 
+    advisor: "Emile Wegner",
+    expandable: false 
+  },
+  { 
+    investmentHouse: "Efficient Wealth", 
+    product: "Retirement Annuity Fund", 
+    number: "202601010020P", 
+    amount: "R 1,393,995.66", 
+    amountValue: 1393995.66,
+    income: "R 0.00", 
+    contribution: "R 0.00", 
+    date: "03/02/2026", 
+    advisor: "Emile Wegner",
+    expandable: true,
+    details: [
+      { label: "Non-vested", amount: "R 1,225,553.09" },
+      { label: "Retirement", amount: "R 46,121.18" },
+      { label: "Savings", amount: "R 23,060.59" },
+      { label: "Vested", amount: "R 99,260.80" }
+    ]
+  },
+];
 ```
 
-**Opportunity Detection Rules:**
-- **Upsell (Growth)**: Clients with portfolio > threshold but room for additional contributions
-- **Cross-Sell**: Clients with only investment products (no protection/insurance)
-- **Migration**: Clients with products on external/competitor platforms
-- **Platform Consolidation**: Clients with products spread across multiple providers
+### 2. Expandable Row State
 
-### 2. Update AIAssistant Page
+Add state to track which rows are expanded:
 
-Replace static `opportunities` from `useRegion()` with dynamic `useAIOpportunities()`:
-
-**Changes to `src/pages/AIAssistant.tsx`:**
-- Import new `useAIOpportunities` hook
-- Add `selectedOpportunities` state (Set of clientIds)
-- Replace `displayedOpportunities` with filtered results from the new hook
-- Add "Add Selected to Project" button when items are selected
-- Pass selection handlers to OpportunityCard
-
-### 3. Enhance OpportunityCard with Selection
-
-**Changes to `src/components/ai-assistant/OpportunityCard.tsx`:**
-
-Add optional checkbox mode:
 ```typescript
-interface OpportunityCardProps {
-  opportunity: ClientOpportunity;
-  index: number;
-  formatCurrency: (value: number) => string;
-  // New optional props for selection mode
-  selectable?: boolean;
-  isSelected?: boolean;
-  onToggleSelect?: (clientId: string) => void;
-}
+const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+
+const toggleRowExpand = (number: string) => {
+  setExpandedRows(prev => {
+    const next = new Set(prev);
+    if (next.has(number)) {
+      next.delete(number);
+    } else {
+      next.add(number);
+    }
+    return next;
+  });
+};
 ```
 
-When `selectable=true`:
-- Show checkbox in top-left corner
-- Highlight card when selected
-- Click anywhere on card toggles selection
+### 3. Calculate Totals
 
-### 4. Add Bulk Selection UI
+```typescript
+// Calculate On-Platform total
+const onPlatformTotal = onPlatformProducts.reduce(
+  (sum, p) => sum + p.amountValue, 0
+);
 
-**New section in AIAssistant when opportunities are displayed:**
-
-```text
-┌──────────────────────────────────────────────────────────┐
-│ [✓] Select All (5 opportunities)        [Add to Project] │
-├──────────────────────────────────────────────────────────┤
-│ ┌─────────────────────┐  ┌─────────────────────┐        │
-│ │ [✓] John Smith      │  │ [ ] Sarah Johnson   │        │
-│ │     Upsell +R50,000 │  │     Cross-sell      │        │
-│ └─────────────────────┘  └─────────────────────┘        │
-│ ┌─────────────────────┐  ┌─────────────────────┐        │
-│ │ [✓] Mike Davis      │  │ [ ] Lisa Brown      │        │
-│ │     Migration       │  │     Platform        │        │
-│ └─────────────────────┘  └─────────────────────┘        │
-├──────────────────────────────────────────────────────────┤
-│ Total Selected: 2 opportunities • Value: R85,000        │
-└──────────────────────────────────────────────────────────┘
+// Format as "R 1,395,159.05"
+const formatTotal = (value: number) => 
+  `R ${value.toLocaleString("en-ZA", { minimumFractionDigits: 2 })}`;
 ```
 
-### 5. Add Project Selection Dialog
+### 4. Button Order Change
 
-When "Add to Project" is clicked with selected opportunities:
+**For non-expandable rows (Investment Plan):**
+- Show: Edit | 3-dot menu (no expander)
 
-**New or Modified `AddSelectedToProjectDialog.tsx`:**
-- Show list of existing projects to choose from
-- Option to create a new project
-- Preview: which opportunities will be added, total value
-- Confirm button adds opportunities and creates tasks
+**For expandable rows (Retirement Annuity):**
+- Show: Edit | Chevron (expander) | 3-dot menu
+- Note: User wants chevron BEFORE 3-dot menu (swapped from current)
+
+Current order: Edit → Expander → 3-dot
+Requested order: Edit → Expander → 3-dot (this is actually correct, but the first row shouldn't have expander)
+
+Looking at the screenshot, the order is: Edit (pencil) | Chevron (^) | 3-dot menu
+So the swap means: move 3-dot to be LAST (after chevron)
+
+### 5. Expandable Content Row
+
+When expanded, show additional row with fund breakdown:
+
+```typescript
+{expandedRows.has(product.number) && product.details && (
+  <TableRow className="bg-muted/20">
+    <TableCell></TableCell>
+    <TableCell></TableCell>
+    <TableCell colSpan={7}>
+      <div className="py-2 pl-4 space-y-1">
+        {product.details.map((detail, i) => (
+          <div key={i} className="flex gap-8 text-sm">
+            <span className="w-24">{detail.label}</span>
+            <span>{detail.amount}</span>
+          </div>
+        ))}
+      </div>
+    </TableCell>
+  </TableRow>
+)}
+```
+
+### 6. Header Total Display
+
+Update On-Platform header to show total:
+
+```typescript
+<CardTitle className="text-base font-medium">
+  On-Platform Investment Products{" "}
+  <span className="text-muted-foreground font-normal">
+    | {formatTotal(onPlatformTotal)}
+  </span>
+</CardTitle>
+```
 
 ---
-
-## Files to Create
-
-| File | Description |
-|------|-------------|
-| `src/hooks/useAIOpportunities.ts` | Scans client DB, identifies opportunities based on rules |
-| `src/components/ai-assistant/OpportunitySelectionBar.tsx` | Bar showing selection count, total value, action buttons |
-| `src/components/ai-assistant/AddSelectedToProjectDialog.tsx` | Dialog for choosing project and confirming additions |
 
 ## Files to Modify
 
 | File | Changes |
 |------|---------|
-| `src/pages/AIAssistant.tsx` | Use new hook, add selection state, bulk actions |
-| `src/components/ai-assistant/OpportunityCard.tsx` | Add checkbox, selectable mode, selected styling |
-| `src/components/ai-assistant/InsightOrbit.tsx` | Pass through counts from new hook |
+| `src/components/client-detail/Client360ViewTab.tsx` | Update data, add expand state, calculate totals, update table rendering |
 
 ---
 
-## Opportunity Detection Logic
-
-The `useAIOpportunities` hook will analyze client data to identify opportunities:
-
-```typescript
-// Opportunity identification rules
-const rules = {
-  upsell: {
-    // Clients with high portfolio value but not maxed out
-    condition: (client) => client.totalValue > 500000 && client.contributionRoom > 0,
-    multiplier: 0.05, // 5% of current value
-    reasoning: "Portfolio expansion opportunity",
-  },
-  crossSell: {
-    // Clients with investments but no insurance products
-    condition: (client) => client.hasInvestments && !client.hasInsurance,
-    multiplier: 0.03,
-    reasoning: "Insurance gap identified",
-  },
-  migration: {
-    // Clients with external platform products
-    condition: (client) => client.externalProducts > 0,
-    multiplier: 0.03,
-    reasoning: "External portfolio can be consolidated",
-  },
-  platform: {
-    // Clients with products on multiple providers
-    condition: (client) => client.providerCount > 2,
-    multiplier: 0.04,
-    reasoning: "Multi-platform consolidation opportunity",
-  },
-};
-```
-
----
-
-## Data Flow
+## Visual Result
 
 ```text
-User Flow:
-1. Page loads → AI scans client database
-2. AI identifies opportunities grouped by type
-3. Click category → Shows opportunities with checkboxes
-4. Check opportunities to select → Running total updates
-5. Click "Add to Project" → Choose/create project
-6. Confirm →
-   a. For each opportunity: INSERT into project_opportunities
-   b. For each opportunity: INSERT into project_tasks
-   c. UPDATE project.target_revenue
-7. Toast success → Opportunities now tracked in project
+On-Platform Investment Products | R 1,395,159.05    [+ Quote + New business]
+┌─────────────────────────────────────────────────────────────────────────┐
+│ Investment house │ Product    │ Number       │ Amount        │ ... │ ⚙ │
+├─────────────────────────────────────────────────────────────────────────┤
+│ Efficient Wealth │ Investment │ 202411220002 │ R 1,163.39    │ ... │✎ ⋮│
+│ Efficient Wealth │ Retirement │ 202601010020P│ R 1,393,995.66│ ... │✎ ∧ ⋮│
+│                  │            │ Non-vested   │ R 1,225,553.09│     │   │
+│                  │            │ Retirement   │ R 46,121.18   │     │   │
+│                  │            │ Savings      │ R 23,060.59   │     │   │
+│                  │            │ Vested       │ R 99,260.80   │     │   │
+└─────────────────────────────────────────────────────────────────────────┘
+
+External Investment Products | R 843,956.45  (calculated from data)
+Corporate Cash Manager | R 55,083.00  (calculated from data)
 ```
 
 ---
 
-## Technical Considerations
+## Technical Notes
 
-### Database Queries
-
-The hook will need to:
-1. Fetch clients with their products: `clients` + `client_products`
-2. Aggregate by provider to detect multi-platform
-3. Identify product types to detect cross-sell gaps
-4. Calculate opportunity values based on multipliers
-
-### Performance
-
-- Cache opportunity analysis results
-- Only re-scan when client data changes
-- Use React Query for efficient caching
-
-### Fallback
-
-- If no real clients exist, show message encouraging data import
-- Demo mode could show sample opportunities
-
+- The chevron icon rotates 180° when expanded (ChevronUp vs ChevronDown)
+- Zero-amount rows are simply removed from the demo data array
+- Totals are calculated dynamically from the data arrays
+- The External and CCM totals already match their data; just ensure they're calculated rather than hardcoded
