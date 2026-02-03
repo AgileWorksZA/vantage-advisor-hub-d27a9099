@@ -97,6 +97,8 @@ const AIAssistant = () => {
   const [userName, setUserName] = useState("");
   const [displayedGreeting, setDisplayedGreeting] = useState("");
   const [isTypingComplete, setIsTypingComplete] = useState(false);
+  const [displayedSubtitle, setDisplayedSubtitle] = useState("");
+  const [isSubtitleTypingComplete, setIsSubtitleTypingComplete] = useState(false);
 
   // Hooks for data
   const {
@@ -180,6 +182,30 @@ const AIAssistant = () => {
     
     return () => clearInterval(interval);
   }, [userName, timeOfDay]);
+
+  // Typewriter effect for subtitle (starts after greeting completes)
+  useEffect(() => {
+    if (!isTypingComplete) {
+      setDisplayedSubtitle("");
+      setIsSubtitleTypingComplete(false);
+      return;
+    }
+    
+    const fullSubtitle = "Discover and track opportunities in your client base";
+    
+    let currentIndex = 0;
+    const interval = setInterval(() => {
+      if (currentIndex <= fullSubtitle.length) {
+        setDisplayedSubtitle(fullSubtitle.slice(0, currentIndex));
+        currentIndex++;
+      } else {
+        setIsSubtitleTypingComplete(true);
+        clearInterval(interval);
+      }
+    }, 30);
+    
+    return () => clearInterval(interval);
+  }, [isTypingComplete]);
 
   // Load demo projects
   useEffect(() => {
@@ -578,7 +604,12 @@ const AIAssistant = () => {
               {displayedGreeting}
               {!isTypingComplete && <span className="animate-pulse ml-0.5">|</span>}
             </h1>
-            <p className="text-white/50 text-sm">Discover and track opportunities in your client base</p>
+            <p className="text-white/50 text-sm">
+              {displayedSubtitle}
+              {isTypingComplete && !isSubtitleTypingComplete && (
+                <span className="animate-pulse ml-0.5">|</span>
+              )}
+            </p>
           </div>
         </div>
         
