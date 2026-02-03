@@ -91,11 +91,11 @@ const southAfricaData: RegionalData = {
     { range: "> R10M", value: "R 947,490,312", investors: 52 },
   ],
   advisors: [
-    { initials: "CZ", name: "Christo van Zyl" },
-    { initials: "DH", name: "Dale Harding" },
-    { initials: "EW", name: "Emile Wegner" },
-    { initials: "IN", name: "Ihan Nel" },
-    { initials: "RS", name: "Riaan Swart" },
+    { initials: "JB", name: "Johan Botha" },
+    { initials: "SM", name: "Sarah Mostert" },
+    { initials: "PN", name: "Pieter Naudé" },
+    { initials: "LV", name: "Linda van Wyk" },
+    { initials: "DG", name: "David Greenberg" },
   ],
 };
 
