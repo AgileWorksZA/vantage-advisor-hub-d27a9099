@@ -1,35 +1,67 @@
 
-# Remove "Recent Activity" from Tab Menu
+# Remove 3-Dot Button and Scroll Bar from Recent Activity
 
 ## Overview
 
-Remove the "Recent Activity" tab from the visible tab navigation menu on the client detail page, while keeping the TabsContent so users can still access it via the "Show more" link on the Summary tab.
+Remove the 3-dot menu button (MoreVertical icon) and the ScrollArea wrapper from the Recent Activity card on the client summary tab.
 
 ---
 
 ## File to Modify
 
-| File | Change |
-|------|--------|
-| `src/pages/ClientDetail.tsx` | Remove "recent-activity" from the tabs array |
+| File | Changes |
+|------|---------|
+| `src/components/client-detail/ClientSummaryTab.tsx` | Remove MoreVertical button and ScrollArea component |
 
 ---
 
 ## Change Details
 
-Remove this line from the tabs array (around line 252):
+### 1. Remove the 3-dot button (lines 227-229)
 
-```typescript
-// Remove this line:
-{ value: "recent-activity", label: "Recent Activity" },
+Current code:
+```tsx
+<div className="flex items-center justify-between">
+  <CardTitle className="text-lg">Recent Activity</CardTitle>
+  <Button variant="ghost" size="icon" className="h-8 w-8">
+    <MoreVertical className="w-4 h-4" />
+  </Button>
+</div>
 ```
 
-The TabsContent for "recent-activity" will remain in place, so the "Show more" link on the Summary tab will continue to work correctly - it just won't appear as a visible tab in the navigation bar.
+Change to:
+```tsx
+<CardTitle className="text-lg">Recent Activity</CardTitle>
+```
+
+### 2. Remove ScrollArea wrapper (lines 233-257)
+
+Current code:
+```tsx
+<ScrollArea className="h-[300px] pr-4">
+  <div className="space-y-0">
+    {/* activity items */}
+  </div>
+</ScrollArea>
+```
+
+Change to:
+```tsx
+<div className="space-y-0">
+  {/* activity items */}
+</div>
+```
+
+### 3. Clean up unused imports
+
+Remove from imports:
+- `MoreVertical` from lucide-react (line 20)
+- `ScrollArea` from @/components/ui/scroll-area (line 12)
 
 ---
 
 ## Result
 
-- The "Recent Activity" tab will no longer appear in the top menu after "Documents"
-- The Recent Activity content remains accessible via the "Show more" link on the Summary tab
-- All 13 remaining tabs will display: Summary, Details, CRM, Meetings, Family, Businesses, Contacts, Workflows, Compliance, Products, Notes, Communication, Documents
+- The Recent Activity card header will show only the title without the 3-dot menu button
+- The activity list will display without a scroll container, showing all 5 items naturally
+- Cleaner appearance with no scrollbar visible
