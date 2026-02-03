@@ -1,164 +1,84 @@
 
 
-## Fixed-Size Widget Layout System
+## Fix Widget Heights and Birthday Overflow
 
-### Problem Analysis
+### Problem Summary
 
-The current implementation uses `react-grid-layout` which operates on a **proportional column model**:
-- Container width is divided equally among columns
-- Widget width = `(containerWidth / cols) * widget.w`
-- This means widgets always stretch/shrink to fill their allocated space
+1. **Birthday widget overflow**: The widget displays 10 birthday entries, but the widget height (`h: 3` × 120px = 360px) isn't enough space. Text is overflowing the bottom border.
 
-**What the reference screenshots show:**
-- Widgets have **absolute fixed pixel sizes** (e.g., ~350px wide, ~380px tall)
-- Widget dimensions never change regardless of screen width
-- When the viewport narrows, widgets wrap to the next row
-- No horizontal scrollbar, no text overflow
+2. **Insights widgets too tall**: Insights widgets use `h: 4` (480px) while Dashboard widgets use `h: 3` (360px). The user wants them to match.
 
-### Solution: Hybrid Fixed-Width Grid
+---
 
-We need to fundamentally change the approach:
+## Solution
 
-1. **Calculate a fixed column width** based on the target widget size
-2. **Set the grid width to the exact pixel width needed** for the widgets that fit
-3. **Use flexbox for the outer container** to handle wrapping naturally
-4. Alternatively, force react-grid-layout to use exact pixel widths by calculating the container width to match the column calculation exactly
+### 1. Birthday Widget - Show Fewer Rows
 
-### Technical Implementation
+Instead of displaying all 10 birthdays (which overflow), display only the first 6 birthdays. This fits within the widget height without overflow.
 
-**Option A: Force exact column widths in react-grid-layout**
+**File**: `src/pages/Dashboard.tsx`
 
-Calculate the grid `width` prop to be exactly what's needed for the visible columns:
-```typescript
-// Target widget width for w:3 widgets
-const TARGET_WIDGET_WIDTH = 350;
-const GRID_MARGIN = 16;
-
-// Calculate how many widgets fit
-const widgetsPerRow = Math.max(1, Math.floor(
-  (containerWidth + GRID_MARGIN) / (TARGET_WIDGET_WIDTH + GRID_MARGIN)
-));
-
-// Calculate exact grid width so columns = target width exactly
-// Formula: colWidth = (width - margin*(cols-1)) / cols
-// We want colWidth * 3 = TARGET_WIDGET_WIDTH
-// So colWidth = TARGET_WIDGET_WIDTH / 3
-// width = colWidth * cols + margin * (cols - 1)
-const colWidth = TARGET_WIDGET_WIDTH / 3;
-const visibleCols = widgetsPerRow * 3;
-const exactGridWidth = colWidth * visibleCols + GRID_MARGIN * (visibleCols - 1);
-```
-
-Pass `exactGridWidth` as the `width` prop instead of `containerWidth`. This ensures widgets are exactly the target size.
-
-**Option B: Use flexbox wrapper (simpler, more reliable)**
-
-Wrap widgets in a flexbox container with `flex-wrap: wrap` and give each widget a fixed width. Keep react-grid-layout for drag-and-drop reordering, but disable its width stretching.
-
-### Recommended Approach: Fixed Grid Width Calculation
-
-Modify `DraggableWidgetGrid.tsx`:
-
-1. Calculate how many widgets fit at target width
-2. Calculate the exact grid width that produces that target widget width
-3. Center the grid container if there's leftover space
-4. Widgets maintain exact pixel dimensions at all times
-
-### Code Changes
-
-**File: `src/components/widgets/DraggableWidgetGrid.tsx`**
+**Change**: Add `.slice(0, 6)` to the birthday data mapping:
 
 ```tsx
-const GRID_MARGIN = 16;
-const DEFAULT_TARGET_WIDGET_WIDTH = 350; // Fixed widget width for w:3
+// Before
+{regionalData.birthdays.map(person => (
+  <tr key={person.name}>...</tr>
+))}
 
-export const DraggableWidgetGrid = ({
-  layout,
-  onLayoutChange,
-  children,
-  rowHeight = 120, // Taller rows for fixed-size widgets
-  targetWidgetWidth = DEFAULT_TARGET_WIDGET_WIDTH,
-  baseWidgetUnits = 3,
-}: DraggableWidgetGridProps) => {
-  // ... container width measurement code stays the same ...
-
-  // Calculate how many w:3 widgets can fit
-  const widgetsPerRow = Math.max(1, Math.floor(
-    (containerWidth + GRID_MARGIN) / (targetWidgetWidth + GRID_MARGIN)
-  ));
-
-  const visibleCols = widgetsPerRow * baseWidgetUnits;
-
-  // Calculate exact grid width so each w:3 widget = targetWidgetWidth exactly
-  // react-grid-layout formula: colWidth = (width - margin*(cols-1)) / cols
-  // We want: colWidth * 3 = targetWidgetWidth → colWidth = targetWidgetWidth / 3
-  const colWidth = targetWidgetWidth / baseWidgetUnits;
-  const exactGridWidth = (colWidth * visibleCols) + (GRID_MARGIN * (visibleCols - 1));
-
-  // Adjust layout for current column count
-  const adjustedLayout = layout.map(item => ({
-    ...item,
-    w: Math.min(item.w, visibleCols),
-    x: item.x >= visibleCols ? 0 : Math.min(item.x, visibleCols - Math.min(item.w, visibleCols)),
-  }));
-
-  return (
-    <div ref={containerRef} className="w-full flex justify-start">
-      <Responsive
-        key={visibleCols}
-        className="layout"
-        layouts={{ lg: adjustedLayout }}
-        breakpoints={{ lg: 0 }}
-        cols={{ lg: visibleCols }}
-        width={exactGridWidth}  // Use exact width, not container width
-        rowHeight={rowHeight}
-        onDragStop={(currentLayout) => onLayoutChange(currentLayout as WidgetLayout[])}
-        draggableHandle=".widget-drag-handle"
-        margin={[GRID_MARGIN, GRID_MARGIN]}
-        containerPadding={[0, 0]}
-        isResizable={false}
-        compactType="vertical"
-        preventCollision={false}
-        useCSSTransforms={true}
-      >
-        {children}
-      </Responsive>
-    </div>
-  );
-};
+// After
+{regionalData.birthdays.slice(0, 6).map(person => (
+  <tr key={person.name}>...</tr>
+))}
 ```
 
-### Expected Behavior
+This displays only the first 6 upcoming birthdays, preventing overflow while still providing useful information.
 
-| Container Width | Widgets Per Row | Exact Grid Width | Widget Width (w:3) |
-|-----------------|-----------------|------------------|-------------------|
-| 1500px | 4 | 1448px | 350px |
-| 1100px | 3 | 1082px | 350px |
-| 750px | 2 | 716px | 350px |
-| 400px | 1 | 350px | 350px |
+---
 
-- Widgets **never shrink or stretch**
-- Grid is left-aligned within the container (or can be centered)
-- As screen narrows, widgets wrap to new rows
-- Content inside widgets never overflows
+### 2. Insights Widgets - Match Dashboard Height
 
-### Row Height Adjustment
+Update the Insights layout from `h: 4` to `h: 3` for all standard widgets to match the Dashboard.
 
-Current `rowHeight=100` may be too short for fixed-size widgets. Based on the reference screenshots, widgets appear taller. Adjusting to `rowHeight=120` or `130` will better match the reference.
+**File**: `src/pages/Insights.tsx`
 
-### Files to Modify
+**Change**: Update `defaultInsightsLayout`:
+
+| Widget | Current Height | New Height |
+|--------|---------------|------------|
+| commission-type | h: 4 | h: 3 |
+| commission-earned | h: 4 | h: 3 |
+| monthly-commission | h: 4 | h: 3 |
+| commission-snapshot | h: 4 | h: 3 |
+| commission-summary | h: 4 | h: 3 |
+| leaderboard | h: 4 | h: 3 |
+
+```tsx
+const defaultInsightsLayout: WidgetLayout[] = [
+  { i: 'commission-type', x: 0, y: 0, w: 3, h: 3 },
+  { i: 'commission-earned', x: 3, y: 0, w: 3, h: 3 },
+  { i: 'monthly-commission', x: 6, y: 0, w: 3, h: 3 },
+  { i: 'commission-snapshot', x: 9, y: 0, w: 3, h: 3 },
+  { i: 'commission-summary', x: 0, y: 3, w: 6, h: 3 },
+  { i: 'leaderboard', x: 6, y: 3, w: 3, h: 3 },
+];
+```
+
+---
+
+## Files to Modify
 
 | File | Changes |
 |------|---------|
-| `src/components/widgets/DraggableWidgetGrid.tsx` | Calculate exact grid width to force fixed widget sizes. Add container centering/alignment. |
-| `src/pages/Dashboard.tsx` | Optionally adjust `targetWidgetWidth` if needed (default should work). |
-| `src/pages/Insights.tsx` | Optionally adjust `targetWidgetWidth` if needed (default should work). |
+| `src/pages/Dashboard.tsx` | Limit birthday display to 6 rows using `.slice(0, 6)` |
+| `src/pages/Insights.tsx` | Change all widget heights from `h: 4` to `h: 3` |
 
-### Result
+---
 
-- Widgets maintain their exact pixel size regardless of viewport
-- Wrapping occurs naturally when space runs out
-- No horizontal scrollbars within widgets
-- No text overflow - content is contained within fixed widget bounds
-- Drag-and-drop still works for repositioning widgets
+## Result
+
+- Birthday widget displays 6 entries that fit within the widget bounds
+- No text overflow at the bottom of the widget border
+- Insights widgets match Dashboard widget height (360px)
+- Consistent visual appearance across both pages
 
