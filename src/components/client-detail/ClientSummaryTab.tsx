@@ -75,22 +75,43 @@ const recentActivities = [
     description: 'FAIS Control document generated',
     timestamp: new Date(Date.now() - 48 * 60 * 60 * 1000), // 2 days ago
   },
+  {
+    id: 6,
+    type: "product_sold",
+    title: "Premium adjusted",
+    description: 'Updated premium on "Sanlam Investment"',
+    timestamp: new Date(Date.now() - 72 * 60 * 60 * 1000), // 3 days ago
+  },
+  {
+    id: 7,
+    type: "note_added",
+    title: "Call logged",
+    description: 'Follow-up call regarding policy renewal',
+    timestamp: new Date(Date.now() - 96 * 60 * 60 * 1000), // 4 days ago
+  },
+  {
+    id: 8,
+    type: "document_uploaded",
+    title: "Document signed",
+    description: 'Signed "Beneficiary Nomination Form"',
+    timestamp: new Date(Date.now() - 120 * 60 * 60 * 1000), // 5 days ago
+  },
 ];
 
 const getActivityIcon = (type: string) => {
   switch (type) {
     case "product_sold":
-      return <DollarSign className="w-5 h-5 text-amber-500" />;
+      return <DollarSign className="w-4 h-4 text-amber-500" />;
     case "document_uploaded":
-      return <Image className="w-5 h-5 text-purple-500" />;
+      return <Image className="w-4 h-4 text-purple-500" />;
     case "note_added":
-      return <MessageSquare className="w-5 h-5 text-blue-500" />;
+      return <MessageSquare className="w-4 h-4 text-blue-500" />;
     case "profile_updated":
-      return <User className="w-5 h-5 text-green-500" />;
+      return <User className="w-4 h-4 text-green-500" />;
     case "compliance_created":
-      return <FileCheck className="w-5 h-5 text-[hsl(180,70%,45%)]" />;
+      return <FileCheck className="w-4 h-4 text-[hsl(180,70%,45%)]" />;
     default:
-      return <MessageSquare className="w-5 h-5 text-muted-foreground" />;
+      return <MessageSquare className="w-4 h-4 text-muted-foreground" />;
   }
 };
 
@@ -228,20 +249,22 @@ const ClientSummaryTab = ({ client, clientId, onShowMoreActivity }: ClientSummar
               {recentActivities.map((activity) => (
                 <div 
                   key={activity.id} 
-                  className="flex gap-3 py-3 border-b border-border/50 last:border-0"
+                  className="flex gap-2 py-1.5 border-b border-border/50 last:border-0"
                 >
                   <div className="shrink-0 mt-0.5">
                     {getActivityIcon(activity.type)}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className={`font-medium text-sm ${getTitleColor(activity.type)}`}>
-                      {activity.title}
-                    </p>
-                    <p className="text-sm text-muted-foreground mt-0.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className={`font-medium text-xs ${getTitleColor(activity.type)}`}>
+                        {activity.title}
+                      </p>
+                      <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                        {formatDistanceToNow(activity.timestamp, { addSuffix: true })}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground truncate">
                       {activity.description}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {formatDistanceToNow(activity.timestamp, { addSuffix: true })}
                     </p>
                   </div>
                 </div>
@@ -249,7 +272,7 @@ const ClientSummaryTab = ({ client, clientId, onShowMoreActivity }: ClientSummar
             </div>
             
             {/* Show more link */}
-            <div className="pt-4 border-t mt-4">
+            <div className="pt-2 border-t mt-2">
               <Button 
                 variant="link" 
                 className="p-0 h-auto text-[hsl(180,70%,45%)] hover:text-[hsl(180,70%,35%)]"
