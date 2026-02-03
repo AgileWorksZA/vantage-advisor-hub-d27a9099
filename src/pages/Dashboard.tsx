@@ -56,6 +56,8 @@ const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showAllBirthdays, setShowAllBirthdays] = useState(false);
+  const [showAllAccounts, setShowAllAccounts] = useState(false);
   
   // Use global region context with filtered data
   const { selectedRegion, setSelectedRegion, filteredRegionalData } = useRegion();
@@ -222,13 +224,21 @@ const Dashboard = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredRegionalData.topAccounts.map(account => <tr key={account.investor} className="border-t border-border">
+                      {filteredRegionalData.topAccounts.slice(0, 7).map(account => <tr key={account.investor} className="border-t border-border">
                           <td className="py-2">{account.investor}</td>
                           <td className="py-2 text-right text-muted-foreground">{account.bookPercent}</td>
                           <td className="py-2 text-right">{account.value}</td>
                         </tr>)}
                     </tbody>
                   </table>
+                  {filteredRegionalData.topAccounts.length > 7 && (
+                    <button 
+                      className="w-full text-center text-xs text-primary hover:underline mt-2"
+                      onClick={() => setShowAllAccounts(true)}
+                    >
+                      Show more ({filteredRegionalData.topAccounts.length - 7} more)
+                    </button>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -314,13 +324,21 @@ const Dashboard = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredRegionalData.birthdays.slice(0, 6).map(person => <tr key={person.name} className="border-t border-border">
+                      {filteredRegionalData.birthdays.slice(0, 7).map(person => <tr key={person.name} className="border-t border-border">
                           <td className="py-1.5">{person.name}</td>
                           <td className="py-1.5 text-right text-muted-foreground">{person.nextBirthday}</td>
                           <td className="py-1.5 text-right">{person.age}</td>
                         </tr>)}
                     </tbody>
                   </table>
+                  {filteredRegionalData.birthdays.length > 7 && (
+                    <button 
+                      className="w-full text-center text-xs text-primary hover:underline mt-2"
+                      onClick={() => setShowAllBirthdays(true)}
+                    >
+                      Show more ({filteredRegionalData.birthdays.length - 7} more)
+                    </button>
+                  )}
                 </CardContent>
               </Card>
             </div>
