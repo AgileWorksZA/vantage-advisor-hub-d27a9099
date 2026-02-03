@@ -1,57 +1,108 @@
 
 
-# Consolidate Expanded Details into Single Row with Reduced Spacing
+# Add Typewriter Effect to AI Assistant Greeting
 
-## Problem
+## Overview
 
-The current implementation creates a separate `TableRow` for each detail item (Non-vested, Retirement, Savings, Vested), which adds unnecessary vertical space. The user wants all details in a single row with reduced spacing, aligned to the correct columns.
+Update the greeting in the AI Assistant header to:
+1. Not show "Adviser" as a fallback while loading - display an empty string instead
+2. Add a typewriter animation that types out the full greeting text character by character
 
-## Solution
+## Technical Approach
 
-Revert to a single `TableRow` for all details, but use proper column alignment with empty cells. Display all detail items in a compact vertical list within the "Investment product" column, with their amounts in the "Investment amount" column.
+### 1. Update Initial State and Loading Logic
 
-## Changes Required
+**File: `src/pages/AIAssistant.tsx`**
 
-### File: `src/components/client-detail/Client360ViewTab.tsx`
+- Change the initial `userName` state from `"Adviser"` to an empty string `""`
+- This ensures no placeholder text is shown while the profile is loading
 
-**Update lines 170-182**
+### 2. Create Typewriter Effect State
 
-Replace the multiple row structure with a single row containing aligned columns:
+Add new state variables to manage the typewriter animation:
+- `displayedGreeting`: The text currently shown on screen (starts empty)
+- `fullGreeting`: The complete greeting text to type out
+- `isTypingGreeting`: Whether the typewriter is currently animating
 
+### 3. Implement Typewriter Animation
+
+Create a `useEffect` that:
+- Constructs the full greeting string when `userName` changes (e.g., "Good Evening, Emile")
+- Only shows "Good Evening" (without comma/name) if userName is still empty
+- Types out the greeting one character at a time with a short delay (e.g., 50ms per character)
+- Uses `setInterval` to progressively reveal each character
+
+### 4. Update the JSX
+
+Replace the current greeting display:
 ```tsx
-{isExpanded && product.details && (
-  <TableRow key={`${product.number}-details`} className="bg-muted/20 border-b border-border/50">
-    <TableCell></TableCell>
-    <TableCell className="text-sm text-muted-foreground py-1">
-      <div className="space-y-0.5">
-        {product.details.map((detail, i) => (
-          <div key={i}>{detail.label}</div>
-        ))}
-      </div>
-    </TableCell>
-    <TableCell></TableCell>
-    <TableCell className="text-sm py-1">
-      <div className="space-y-0.5">
-        {product.details.map((detail, i) => (
-          <div key={i}>{detail.amount}</div>
-        ))}
-      </div>
-    </TableCell>
-    <TableCell colSpan={5}></TableCell>
-  </TableRow>
-)}
+// Before
+<h1 className="text-xl font-semibold text-gradient-ai">
+  {getGreeting(timeOfDay)}, {userName}
+</h1>
+
+// After  
+<h1 className="text-xl font-semibold text-gradient-ai">
+  {displayedGreeting}
+  <span className="animate-pulse">|</span> {/* Optional: blinking cursor */}
+</h1>
 ```
 
-This approach:
-- Uses a **single row** for all details
-- Reduces spacing with `py-1` padding and `space-y-0.5` between items
-- Keeps labels aligned with "Investment product" column (column 2)
-- Keeps amounts aligned with "Investment amount" column (column 4)
-- Removes any action elements from these informational items
+## Implementation Details
 
-## Summary
+### State Changes (around line 97)
+```typescript
+const [userName, setUserName] = useState("");  // Changed from "Adviser"
+const [displayedGreeting, setDisplayedGreeting] = useState("");
+const [isTypingComplete, setIsTypingComplete] = useState(false);
+```
 
-| Location | Change |
-|----------|--------|
-| Lines 170-182 | Replace multiple `TableRow` elements with a single row containing compact, vertically-stacked labels and amounts in their respective columns |
+### Typewriter Effect Hook (new useEffect after line 149)
+```typescript
+useEffect(() => {
+  // Build the full greeting
+  const greeting = getGreeting(timeOfDay);
+  const fullText = userName ? `${greeting}, ${userName}` : greeting;
+  
+  // Reset and start typing
+  setDisplayedGreeting("");
+  setIsTypingComplete(false);
+  
+  let currentIndex = 0;
+  const interval = setInterval(() => {
+    if (currentIndex <= fullText.length) {
+      setDisplayedGreeting(fullText.slice(0, currentIndex));
+      currentIndex++;
+    } else {
+      setIsTypingComplete(true);
+      clearInterval(interval);
+    }
+  }, 50); // 50ms per character
+  
+  return () => clearInterval(interval);
+}, [userName, timeOfDay]);
+```
+
+### JSX Update (line 553-555)
+```tsx
+<h1 className="text-xl font-semibold text-gradient-ai">
+  {displayedGreeting}
+  {!isTypingComplete && <span className="animate-pulse ml-0.5">|</span>}
+</h1>
+```
+
+## Summary of Changes
+
+| File | Change |
+|------|--------|
+| `src/pages/AIAssistant.tsx` (line 97) | Change `userName` initial state from `"Adviser"` to `""` |
+| `src/pages/AIAssistant.tsx` (new state) | Add `displayedGreeting` and `isTypingComplete` state variables |
+| `src/pages/AIAssistant.tsx` (new effect) | Add typewriter animation `useEffect` |
+| `src/pages/AIAssistant.tsx` (line 553-555) | Update greeting JSX to use `displayedGreeting` with optional blinking cursor |
+
+## Animation Details
+
+- **Speed**: 50ms per character (adjustable)
+- **Cursor**: Optional blinking `|` character that disappears when typing completes
+- **Re-trigger**: Animation restarts if `userName` or `timeOfDay` changes
 
