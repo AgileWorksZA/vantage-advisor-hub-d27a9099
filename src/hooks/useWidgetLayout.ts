@@ -45,13 +45,22 @@ export const useWidgetLayout = ({ pageId, defaultLayout, userId }: UseWidgetLayo
         // Validate and cast the layout data
         const savedLayout = data.layout as unknown as WidgetLayout[];
         if (savedLayout.length > 0 && savedLayout[0].i !== undefined) {
-          // Build lookup from default layout for validation
-          const defaultWidthMap = new Map(defaultLayout.map(item => [item.i, item.w]));
+          // Build lookup from default layout for validation/migrations
+          const defaultLayoutMap = new Map(
+            defaultLayout.map(item => [item.i, { w: item.w, h: item.h }])
+          );
           
           // Check if saved layout has invalid widths (corrupted by responsive reflow)
           const isInvalidLayout = savedLayout.some(item => {
-            const defaultWidth = defaultWidthMap.get(item.i);
-            return defaultWidth !== undefined && item.w !== defaultWidth;
+            const defaults = defaultLayoutMap.get(item.i);
+            return defaults !== undefined && item.w !== defaults.w;
+          });
+
+          // Widgets are not resizable in the UI, so any height mismatch is safe to auto-migrate.
+          // This prevents old saved layouts (e.g. Insights using h:4) from keeping widgets taller.
+          const needsHeightMigration = savedLayout.some(item => {
+            const defaults = defaultLayoutMap.get(item.i);
+            return defaults !== undefined && item.h !== defaults.h;
           });
           
           if (isInvalidLayout) {
@@ -67,6 +76,27 @@ export const useWidgetLayout = ({ pageId, defaultLayout, userId }: UseWidgetLayo
               }, {
                 onConflict: 'user_id,page_id'
               });
+          } else if (needsHeightMigration) {
+            const migratedLayout = savedLayout.map(item => {
+              const defaults = defaultLayoutMap.get(item.i);
+              if (!defaults) return item;
+              return { ...item, h: defaults.h };
+            });
+
+            setLayout(migratedLayout);
+            await supabase
+              .from('user_widget_layouts')
+              .upsert(
+                {
+                  user_id: userId,
+                  page_id: pageId,
+                  layout: migratedLayout as unknown as Json,
+                  updated_at: new Date().toISOString(),
+                },
+                {
+                  onConflict: 'user_id,page_id',
+                }
+              );
           } else {
             setLayout(savedLayout);
           }
