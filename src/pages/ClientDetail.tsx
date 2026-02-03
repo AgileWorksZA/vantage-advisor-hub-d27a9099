@@ -47,6 +47,7 @@ import ClientNotesTab from "@/components/client-detail/ClientNotesTab";
 import ClientCommunicationTab from "@/components/client-detail/ClientCommunicationTab";
 import ClientDocumentsTab from "@/components/client-detail/ClientDocumentsTab";
 import ClientMeetingsTab from "@/components/client-detail/ClientMeetingsTab";
+import ClientRecentActivityTab from "@/components/client-detail/ClientRecentActivityTab";
 import { useClientDetail } from "@/hooks/useClientDetail";
 import { getDisplayName } from "@/types/client";
 
@@ -250,6 +251,7 @@ const ClientDetail = () => {
                 { value: "notes", label: "Notes" },
                 { value: "communication", label: "Communication" },
                 { value: "documents", label: "Documents" },
+                { value: "recent-activity", label: "Recent Activity" },
               ].map((tab) => (
                 <TabsTrigger
                   key={tab.value}
@@ -263,7 +265,11 @@ const ClientDetail = () => {
 
             <div className="mt-6">
               <TabsContent value="summary" className="mt-0">
-                <ClientSummaryTab client={client} clientId={clientId!} />
+                <ClientSummaryTab 
+                  client={client} 
+                  clientId={clientId!} 
+                  onShowMoreActivity={() => setActiveTab("recent-activity")}
+                />
               </TabsContent>
               <TabsContent value="details" className="mt-0">
                 <ClientDetailsTab client={client} onUpdate={updateClient} />
@@ -300,6 +306,9 @@ const ClientDetail = () => {
               </TabsContent>
               <TabsContent value="documents" className="mt-0">
                 <ClientDocumentsTab />
+              </TabsContent>
+              <TabsContent value="recent-activity" className="mt-0">
+                <ClientRecentActivityTab clientName={clientName} />
               </TabsContent>
             </div>
           </Tabs>
