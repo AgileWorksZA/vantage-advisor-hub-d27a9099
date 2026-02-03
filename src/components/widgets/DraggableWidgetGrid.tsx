@@ -2,11 +2,11 @@ import { ReactNode, useRef, useState, useEffect } from 'react';
 import { Responsive } from 'react-grid-layout/legacy';
 import 'react-grid-layout/css/styles.css';
 
-// Fixed 12-column grid (original design)
-const FIXED_COLS = 12;
 const GRID_MARGIN = 16;
-// Default minimum width before wrapping occurs - based on original ~100px per column
-const DEFAULT_MIN_COL_WIDTH = 80;
+
+// Target width for a standard widget (w:3 in original 12-col grid)
+// This is the "original" width we want to preserve
+const DEFAULT_TARGET_WIDGET_WIDTH = 280;
 
 export interface WidgetLayout {
   i: string;
@@ -26,7 +26,8 @@ interface DraggableWidgetGridProps {
   onLayoutChange: (layout: WidgetLayout[]) => void;
   children: ReactNode;
   rowHeight?: number;
-  minColWidth?: number; // Configurable wrap threshold per page
+  targetWidgetWidth?: number; // Target pixel width for a w:3 widget
+  baseWidgetUnits?: number; // How many column units = one "standard" widget (default: 3)
 }
 
 export const DraggableWidgetGrid = ({
@@ -34,7 +35,8 @@ export const DraggableWidgetGrid = ({
   onLayoutChange,
   children,
   rowHeight = 100,
-  minColWidth = DEFAULT_MIN_COL_WIDTH,
+  targetWidgetWidth = DEFAULT_TARGET_WIDGET_WIDTH,
+  baseWidgetUnits = 3,
 }: DraggableWidgetGridProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState<number | null>(null);
@@ -70,21 +72,22 @@ export const DraggableWidgetGrid = ({
     return <div ref={containerRef} className="w-full min-h-[200px]" />;
   }
 
-  // Calculate how many columns can visibly fit
-  // This determines wrapping behavior while keeping widget proportions
-  const effectiveColWidth = (containerWidth - (FIXED_COLS - 1) * GRID_MARGIN) / FIXED_COLS;
-  const visibleCols = effectiveColWidth < minColWidth 
-    ? Math.max(3, Math.floor(containerWidth / (minColWidth + GRID_MARGIN)))
-    : FIXED_COLS;
+  // Calculate how many "standard widgets" (w:3) can fit side by side
+  // Each widget needs targetWidgetWidth + margin
+  const widgetsPerRow = Math.max(1, Math.floor(
+    (containerWidth + GRID_MARGIN) / (targetWidgetWidth + GRID_MARGIN)
+  ));
 
-  // Adjust layout - widgets that exceed visible columns wrap to next row
+  // Convert to column units (each standard widget = baseWidgetUnits columns)
+  const visibleCols = widgetsPerRow * baseWidgetUnits;
+
+  // Adjust layout for current column count
   const adjustedLayout = layout.map(item => ({
     ...item,
-    w: Math.min(item.w, visibleCols), // Cap width to visible columns
+    w: Math.min(item.w, visibleCols),
     x: item.x >= visibleCols ? 0 : Math.min(item.x, visibleCols - Math.min(item.w, visibleCols)),
   }));
 
-  // Always use visibleCols so widget widths stay proportional
   const layouts = { lg: adjustedLayout };
 
   return (
