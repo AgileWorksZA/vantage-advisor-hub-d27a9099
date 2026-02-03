@@ -57,8 +57,8 @@ const Dashboard = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   
-  // Use global region context
-  const { selectedRegion, setSelectedRegion, regionalData } = useRegion();
+  // Use global region context with filtered data
+  const { selectedRegion, setSelectedRegion, filteredRegionalData } = useRegion();
 
   // Widget layout hook
   const { layout, onLayoutChange, loading: layoutLoading } = useWidgetLayout({
@@ -189,7 +189,7 @@ const Dashboard = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {regionalData.providers.map(provider => <tr key={provider.name} className="border-t border-border">
+                      {filteredRegionalData.providers.map(provider => <tr key={provider.name} className="border-t border-border">
                           <td className="py-2">{provider.name}</td>
                           <td className="py-2 text-right text-muted-foreground">{provider.bookPercent}</td>
                           <td className="py-2 text-right">{provider.value}</td>
@@ -222,7 +222,7 @@ const Dashboard = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {regionalData.topAccounts.map(account => <tr key={account.investor} className="border-t border-border">
+                      {filteredRegionalData.topAccounts.map(account => <tr key={account.investor} className="border-t border-border">
                           <td className="py-2">{account.investor}</td>
                           <td className="py-2 text-right text-muted-foreground">{account.bookPercent}</td>
                           <td className="py-2 text-right">{account.value}</td>
@@ -246,7 +246,7 @@ const Dashboard = () => {
                   </Button>
                 </CardHeader>
                 <CardContent className="px-4 pb-4">
-                  <p className="text-xl font-semibold mb-2">{regionalData.currencySymbol} {regionalData.totalAUM}</p>
+                  <p className="text-xl font-semibold mb-2">{filteredRegionalData.currencySymbol} {filteredRegionalData.totalAUM}</p>
                   <div className="h-32">
                     <EChartsWrapper
                       height={128}
@@ -259,7 +259,7 @@ const Dashboard = () => {
                           type: 'pie',
                           radius: ['45%', '75%'],
                           center: ['50%', '50%'],
-                          data: regionalData.products.map(p => ({
+                          data: filteredRegionalData.products.map(p => ({
                             name: p.name,
                             value: p.value,
                             itemStyle: { color: p.color }
@@ -281,7 +281,7 @@ const Dashboard = () => {
                     />
                   </div>
                   <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs mt-2">
-                    {regionalData.products.map(item => <div key={item.name} className="flex items-center gap-1">
+                    {filteredRegionalData.products.map(item => <div key={item.name} className="flex items-center gap-1">
                         <span className="w-2 h-2 rounded-full" style={{
                       backgroundColor: item.color
                     }}></span>
@@ -314,7 +314,7 @@ const Dashboard = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {regionalData.birthdays.slice(0, 6).map(person => <tr key={person.name} className="border-t border-border">
+                      {filteredRegionalData.birthdays.slice(0, 6).map(person => <tr key={person.name} className="border-t border-border">
                           <td className="py-1.5">{person.name}</td>
                           <td className="py-1.5 text-right text-muted-foreground">{person.nextBirthday}</td>
                           <td className="py-1.5 text-right">{person.age}</td>
@@ -347,7 +347,7 @@ const Dashboard = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {regionalData.clientsByValue.map(row => <tr key={row.range} className="border-t border-border">
+                      {filteredRegionalData.clientsByValue.map(row => <tr key={row.range} className="border-t border-border">
                           <td className="py-2">{row.range}</td>
                           <td className="py-2 text-right">{row.value}</td>
                           <td className="py-2 text-right text-muted-foreground">{row.investors}</td>

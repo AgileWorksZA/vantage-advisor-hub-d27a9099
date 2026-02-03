@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Check } from "lucide-react";
 import {
   Popover,
@@ -10,26 +10,18 @@ import { cn } from "@/lib/utils";
 import { useRegion } from "@/contexts/RegionContext";
 
 export const AdvisorFilter = () => {
-  const { regionalData } = useRegion();
+  const { regionalData, selectedAdvisors, setSelectedAdvisors } = useRegion();
   const advisors = regionalData.advisors;
 
-  const [selectedAdvisors, setSelectedAdvisors] = useState<string[]>(
-    advisors.map((a) => a.initials)
-  );
   const [isOpen, setIsOpen] = useState(false);
   const [hoveredAdvisor, setHoveredAdvisor] = useState<string | null>(null);
 
-  // Reset selection when region changes
-  useEffect(() => {
-    setSelectedAdvisors(advisors.map((a) => a.initials));
-  }, [advisors]);
-
   const toggleAdvisor = (initials: string) => {
-    setSelectedAdvisors((prev) =>
-      prev.includes(initials)
-        ? prev.filter((i) => i !== initials)
-        : [...prev, initials]
-    );
+    if (selectedAdvisors.includes(initials)) {
+      setSelectedAdvisors(selectedAdvisors.filter((i) => i !== initials));
+    } else {
+      setSelectedAdvisors([...selectedAdvisors, initials]);
+    }
   };
 
   const toggleAll = () => {
