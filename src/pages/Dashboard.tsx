@@ -314,7 +314,7 @@ const Dashboard = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {regionalData.birthdays.map(person => <tr key={person.name} className="border-t border-border">
+                      {regionalData.birthdays.slice(0, 6).map(person => <tr key={person.name} className="border-t border-border">
                           <td className="py-1.5">{person.name}</td>
                           <td className="py-1.5 text-right text-muted-foreground">{person.nextBirthday}</td>
                           <td className="py-1.5 text-right">{person.age}</td>
