@@ -35,23 +35,38 @@ export const DraggableWidgetGrid = ({
   rowHeight = 100,
 }: DraggableWidgetGridProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [containerWidth, setContainerWidth] = useState(1200);
+  const [containerWidth, setContainerWidth] = useState<number | null>(null);
 
   // Measure container width with ResizeObserver
   useEffect(() => {
     const element = containerRef.current;
     if (!element) return;
 
-    // Initial measurement
-    setContainerWidth(element.getBoundingClientRect().width);
+    // Initial measurement - use requestAnimationFrame to ensure layout is complete
+    const measureWidth = () => {
+      const width = element.getBoundingClientRect().width;
+      if (width > 0) {
+        setContainerWidth(width);
+      }
+    };
+
+    // Measure on next frame to ensure container has rendered with proper width
+    requestAnimationFrame(measureWidth);
 
     const observer = new ResizeObserver(([entry]) => {
-      setContainerWidth(entry.contentRect.width);
+      if (entry.contentRect.width > 0) {
+        setContainerWidth(entry.contentRect.width);
+      }
     });
 
     observer.observe(element);
     return () => observer.disconnect();
   }, []);
+
+  // Don't render until we have an accurate width measurement
+  if (containerWidth === null) {
+    return <div ref={containerRef} className="w-full min-h-[200px]" />;
+  }
 
   // Calculate how many columns can visibly fit
   // This determines wrapping behavior while keeping widget proportions
@@ -72,28 +87,26 @@ export const DraggableWidgetGrid = ({
 
   return (
     <div ref={containerRef} className="w-full">
-      {containerWidth > 0 && (
-        <Responsive
-          className="layout"
-          layouts={layouts}
-          breakpoints={{ lg: 0 }}
-          cols={{ lg: visibleCols }}
-          width={containerWidth}
-          rowHeight={rowHeight}
-          onLayoutChange={(currentLayout: any) => 
-            onLayoutChange(currentLayout as WidgetLayout[])
-          }
-          draggableHandle=".widget-drag-handle"
-          margin={[GRID_MARGIN, GRID_MARGIN] as [number, number]}
-          containerPadding={[0, 0] as [number, number]}
-          isResizable={false}
-          compactType="vertical"
-          preventCollision={false}
-          useCSSTransforms={true}
-        >
-          {children}
-        </Responsive>
-      )}
+      <Responsive
+        className="layout"
+        layouts={layouts}
+        breakpoints={{ lg: 0 }}
+        cols={{ lg: visibleCols }}
+        width={containerWidth}
+        rowHeight={rowHeight}
+        onLayoutChange={(currentLayout: any) => 
+          onLayoutChange(currentLayout as WidgetLayout[])
+        }
+        draggableHandle=".widget-drag-handle"
+        margin={[GRID_MARGIN, GRID_MARGIN] as [number, number]}
+        containerPadding={[0, 0] as [number, number]}
+        isResizable={false}
+        compactType="vertical"
+        preventCollision={false}
+        useCSSTransforms={true}
+      >
+        {children}
+      </Responsive>
     </div>
   );
 };
