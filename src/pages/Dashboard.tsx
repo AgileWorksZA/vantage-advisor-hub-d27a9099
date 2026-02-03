@@ -223,28 +223,21 @@ const Dashboard = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredRegionalData.topAccounts.slice(0, 7).map(account => <tr key={account.investor} className="border-t border-border">
-                          <td className="py-2 max-w-[120px] truncate" title={account.investor}>{account.investor}</td>
-                          <td className="py-2 text-right text-muted-foreground whitespace-nowrap">{account.bookPercent}</td>
-                          <td className="py-2 text-right whitespace-nowrap">{account.value}</td>
-                        </tr>)}
+                      {[...filteredRegionalData.topAccounts]
+                        .sort((a, b) => {
+                          const parseValue = (v: string) => parseFloat(v.replace(/[^0-9.-]/g, ''));
+                          return parseValue(b.value) - parseValue(a.value);
+                        })
+                        .slice(0, 5)
+                        .map(account => (
+                          <tr key={account.investor} className="border-t border-border">
+                            <td className="py-2 max-w-[120px] truncate" title={account.investor}>{account.investor}</td>
+                            <td className="py-2 text-right text-muted-foreground whitespace-nowrap">{account.bookPercent}</td>
+                            <td className="py-2 text-right whitespace-nowrap">{account.value}</td>
+                          </tr>
+                        ))}
                     </tbody>
                   </table>
-                  {filteredRegionalData.topAccounts.length > 7 && (
-                    <button 
-                      className="w-full text-center text-xs text-primary hover:underline mt-2"
-                      onClick={() => {
-                        const accountData = filteredRegionalData.topAccounts.map(a => ({
-                          name: a.investor,
-                          value: a.value,
-                          bookPercent: a.bookPercent
-                        }));
-                        navigate(`/clients?filter=accounts&data=${encodeURIComponent(JSON.stringify(accountData))}`);
-                      }}
-                    >
-                      Show more ({filteredRegionalData.topAccounts.length - 7} more)
-                    </button>
-                  )}
                 </CardContent>
               </Card>
             </div>
