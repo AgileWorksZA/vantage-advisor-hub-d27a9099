@@ -10,7 +10,7 @@ import ChatPanel from "@/components/ai-assistant/ChatPanel";
 import OpportunityCard, { ClientOpportunity } from "@/components/ai-assistant/OpportunityCard";
 import OpportunityMetrics from "@/components/ai-assistant/OpportunityMetrics";
 import OpportunitySelectionBar from "@/components/ai-assistant/OpportunitySelectionBar";
-import ProjectsList from "@/components/ai-assistant/ProjectsList";
+import OpportunitiesList from "@/components/ai-assistant/ProjectsList";
 import CreateProjectDialog from "@/components/ai-assistant/CreateProjectDialog";
 import AddOpportunityDialog from "@/components/ai-assistant/AddOpportunityDialog";
 import AddTaskDialog from "@/components/ai-assistant/AddTaskDialog";
@@ -694,8 +694,8 @@ const AIAssistant = () => {
           </div>
         )}
 
-        {/* Projects List - Always visible */}
-        <ProjectsList
+        {/* Opportunities List - Always visible */}
+        <OpportunitiesList
           projects={allProjects}
           opportunities={projectOpportunities}
           tasks={allTasks}
