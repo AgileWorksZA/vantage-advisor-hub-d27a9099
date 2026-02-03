@@ -55,7 +55,7 @@ const sidebarItems = [
   { icon: LayoutDashboard, label: "Dash", path: "/dashboard" },
   { icon: Users, label: "Clients", path: "/clients" },
   { icon: Briefcase, label: "Portfolio", path: "/portfolio" },
-  { icon: Mail, label: "Email", path: "/email" },
+  { icon: Mail, label: "Message", path: "/email" },
   { icon: CalendarIcon, label: "Calendar", path: "/calendar" },
   { icon: ListTodo, label: "Tasks", path: "/tasks" },
   { icon: LineChart, label: "Insights", path: "/insights" },
