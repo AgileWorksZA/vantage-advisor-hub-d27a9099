@@ -1,54 +1,57 @@
 
 
-# Align Expanded Details with Table Columns
+# Consolidate Expanded Details into Single Row with Reduced Spacing
 
 ## Problem
 
-The expanded row content (Non-vested, Retirement, Savings, Vested with their amounts) is currently using a simple flex layout with fixed widths. It needs to align with:
-- **Labels** → "Investment product" column (column 2)
-- **Amounts** → "Investment amount" column (column 4)
+The current implementation creates a separate `TableRow` for each detail item (Non-vested, Retirement, Savings, Vested), which adds unnecessary vertical space. The user wants all details in a single row with reduced spacing, aligned to the correct columns.
 
 ## Solution
 
-Instead of using a single `colSpan={9}` cell with a flex layout, use individual `TableCell` elements to match the table's column structure:
-
-| Column | Content |
-|--------|---------|
-| 1 (Investment house) | Empty |
-| 2 (Investment product) | Detail label (Non-vested, etc.) |
-| 3 (Investment number) | Empty |
-| 4 (Investment amount) | Detail amount |
-| 5-9 | Empty (colSpan for remaining columns) |
+Revert to a single `TableRow` for all details, but use proper column alignment with empty cells. Display all detail items in a compact vertical list within the "Investment product" column, with their amounts in the "Investment amount" column.
 
 ## Changes Required
 
 ### File: `src/components/client-detail/Client360ViewTab.tsx`
 
-**Update the expanded details row (lines 170-182)**
+**Update lines 170-182**
 
-Replace the current single-cell structure with multiple cells matching column positions:
+Replace the multiple row structure with a single row containing aligned columns:
 
 ```tsx
 {isExpanded && product.details && (
-  <>
-    {product.details.map((detail, i) => (
-      <TableRow key={`${product.number}-detail-${i}`} className="bg-muted/20 border-b border-border/50">
-        <TableCell></TableCell>
-        <TableCell className="text-sm text-muted-foreground">{detail.label}</TableCell>
-        <TableCell></TableCell>
-        <TableCell className="text-sm">{detail.amount}</TableCell>
-        <TableCell colSpan={5}></TableCell>
-      </TableRow>
-    ))}
-  </>
+  <TableRow key={`${product.number}-details`} className="bg-muted/20 border-b border-border/50">
+    <TableCell></TableCell>
+    <TableCell className="text-sm text-muted-foreground py-1">
+      <div className="space-y-0.5">
+        {product.details.map((detail, i) => (
+          <div key={i}>{detail.label}</div>
+        ))}
+      </div>
+    </TableCell>
+    <TableCell></TableCell>
+    <TableCell className="text-sm py-1">
+      <div className="space-y-0.5">
+        {product.details.map((detail, i) => (
+          <div key={i}>{detail.amount}</div>
+        ))}
+      </div>
+    </TableCell>
+    <TableCell colSpan={5}></TableCell>
+  </TableRow>
 )}
 ```
 
-This creates a separate row for each detail item, with the label in column 2 (aligning with "Investment product") and the amount in column 4 (aligning with "Investment amount").
+This approach:
+- Uses a **single row** for all details
+- Reduces spacing with `py-1` padding and `space-y-0.5` between items
+- Keeps labels aligned with "Investment product" column (column 2)
+- Keeps amounts aligned with "Investment amount" column (column 4)
+- Removes any action elements from these informational items
 
 ## Summary
 
 | Location | Change |
 |----------|--------|
-| Lines 170-182 | Replace single `colSpan={9}` cell with proper column-aligned structure using multiple `TableCell` elements |
+| Lines 170-182 | Replace multiple `TableRow` elements with a single row containing compact, vertically-stacked labels and amounts in their respective columns |
 
