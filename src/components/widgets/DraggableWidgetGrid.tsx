@@ -1,8 +1,10 @@
 import { ReactNode, useRef, useState, useEffect } from 'react';
-import { Responsive, WidthProvider } from 'react-grid-layout/legacy';
+import { Responsive } from 'react-grid-layout/legacy';
 import 'react-grid-layout/css/styles.css';
 
-const ResponsiveGridLayout = WidthProvider(Responsive);
+// Minimum widget width in pixels - widgets will wrap rather than shrink below this
+const MIN_WIDGET_WIDTH = 280;
+const GRID_MARGIN = 16;
 
 export interface WidgetLayout {
   i: string;
@@ -22,6 +24,7 @@ interface DraggableWidgetGridProps {
   onLayoutChange: (layout: WidgetLayout[]) => void;
   children: ReactNode;
   rowHeight?: number;
+  minWidgetWidth?: number;
 }
 
 export const DraggableWidgetGrid = ({
@@ -29,54 +32,66 @@ export const DraggableWidgetGrid = ({
   onLayoutChange,
   children,
   rowHeight = 100,
+  minWidgetWidth = MIN_WIDGET_WIDTH,
 }: DraggableWidgetGridProps) => {
-  // Define responsive breakpoints and column counts
-  const breakpoints = { lg: 1200, md: 992, sm: 768, xs: 480 };
-  const cols = { lg: 12, md: 9, sm: 6, xs: 3 };
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState(1200);
 
-  // Generate layouts for all breakpoints based on current layout
-  const generateResponsiveLayouts = () => {
-    const layouts: { [key: string]: WidgetLayout[] } = {
-      lg: layout,
-      md: layout.map(item => ({
-        ...item,
-        // For medium screens, adjust x position to fit 9 columns
-        x: item.x >= 9 ? 0 : item.x >= 6 ? Math.max(0, item.x - 3) : item.x,
-        w: Math.min(item.w, 9),
-      })),
-      sm: layout.map(item => ({
-        ...item,
-        // For small screens, 6 columns max
-        x: item.x >= 6 ? 0 : item.x >= 3 ? Math.max(0, item.x - 3) : item.x,
-        w: Math.min(item.w, 6),
-      })),
-      xs: layout.map(item => ({
-        ...item,
-        // For extra small screens, 3 columns, stack vertically
-        x: 0,
-        w: 3,
-      })),
-    };
-    return layouts;
-  };
+  // Measure container width with ResizeObserver
+  useEffect(() => {
+    const element = containerRef.current;
+    if (!element) return;
+
+    // Initial measurement
+    setContainerWidth(element.getBoundingClientRect().width);
+
+    const observer = new ResizeObserver(([entry]) => {
+      setContainerWidth(entry.contentRect.width);
+    });
+
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
+  // Calculate dynamic column count based on container width
+  const dynamicCols = Math.max(1, Math.floor(
+    (containerWidth + GRID_MARGIN) / (minWidgetWidth + GRID_MARGIN)
+  ));
+
+  // Adjust layout for current column count
+  const adjustedLayout = layout.map(item => ({
+    ...item,
+    x: Math.min(item.x, Math.max(0, dynamicCols - item.w)),
+    w: Math.min(item.w, dynamicCols),
+  }));
+
+  // Generate layouts object for Responsive component
+  const layouts = { lg: adjustedLayout };
 
   return (
-    <ResponsiveGridLayout
-      className="layout"
-      layouts={generateResponsiveLayouts()}
-      breakpoints={breakpoints}
-      cols={cols}
-      rowHeight={rowHeight}
-      onLayoutChange={(currentLayout: any) => onLayoutChange(currentLayout as WidgetLayout[])}
-      draggableHandle=".widget-drag-handle"
-      margin={[16, 16] as [number, number]}
-      containerPadding={[0, 0] as [number, number]}
-      isResizable={false}
-      compactType="vertical"
-      preventCollision={false}
-      useCSSTransforms={true}
-    >
-      {children}
-    </ResponsiveGridLayout>
+    <div ref={containerRef} className="w-full">
+      {containerWidth > 0 && (
+        <Responsive
+          className="layout"
+          layouts={layouts}
+          breakpoints={{ lg: 0 }}
+          cols={{ lg: dynamicCols }}
+          width={containerWidth}
+          rowHeight={rowHeight}
+          onLayoutChange={(currentLayout: any) => 
+            onLayoutChange(currentLayout as WidgetLayout[])
+          }
+          draggableHandle=".widget-drag-handle"
+          margin={[GRID_MARGIN, GRID_MARGIN] as [number, number]}
+          containerPadding={[0, 0] as [number, number]}
+          isResizable={false}
+          compactType="vertical"
+          preventCollision={false}
+          useCSSTransforms={true}
+        >
+          {children}
+        </Responsive>
+      )}
+    </div>
   );
 };
