@@ -28,6 +28,11 @@ export interface ClientsByValueData {
   investors: number;
 }
 
+export interface AdvisorData {
+  initials: string;
+  name: string;
+}
+
 export interface RegionalData {
   currencySymbol: string;
   totalAUM: string;
@@ -36,6 +41,7 @@ export interface RegionalData {
   birthdays: BirthdayData[];
   products: ProductData[];
   clientsByValue: ClientsByValueData[];
+  advisors: AdvisorData[];
 }
 
 const southAfricaData: RegionalData = {
@@ -84,6 +90,13 @@ const southAfricaData: RegionalData = {
     { range: "R3 000 001 – R10M", value: "R 1,501,814,056", investors: 286 },
     { range: "> R10M", value: "R 947,490,312", investors: 52 },
   ],
+  advisors: [
+    { initials: "CZ", name: "Christo van Zyl" },
+    { initials: "DH", name: "Dale Harding" },
+    { initials: "EW", name: "Emile Wegner" },
+    { initials: "IN", name: "Ihan Nel" },
+    { initials: "RS", name: "Riaan Swart" },
+  ],
 };
 
 const australiaData: RegionalData = {
@@ -130,6 +143,13 @@ const australiaData: RegionalData = {
     { range: "A$500,001 – A$1M", value: "A$ 567,834,291", investors: 682 },
     { range: "A$1M – A$5M", value: "A$ 1,892,471,038", investors: 518 },
     { range: "> A$5M", value: "A$ 1,626,245,730", investors: 89 },
+  ],
+  advisors: [
+    { initials: "JM", name: "James Mitchell" },
+    { initials: "ST", name: "Sarah Thompson" },
+    { initials: "MO", name: "Michael O'Brien" },
+    { initials: "EA", name: "Emily Anderson" },
+    { initials: "TM", name: "Thomas Murphy" },
   ],
 };
 
@@ -178,6 +198,13 @@ const canadaData: RegionalData = {
     { range: "C$1M – C$5M", value: "C$ 2,229,059,996", investors: 623 },
     { range: "> C$5M", value: "C$ 2,318,222,396", investors: 142 },
   ],
+  advisors: [
+    { initials: "PT", name: "Pierre Tremblay" },
+    { initials: "MB", name: "Marie Bouchard" },
+    { initials: "JM", name: "James MacDonald" },
+    { initials: "SG", name: "Sophie Gagnon" },
+    { initials: "RS", name: "Robert Singh" },
+  ],
 };
 
 const unitedKingdomData: RegionalData = {
@@ -225,6 +252,13 @@ const unitedKingdomData: RegionalData = {
     { range: "£500,001 – £2M", value: "£ 1,138,956,862", investors: 398 },
     { range: "> £2M", value: "£ 1,096,245,980", investors: 76 },
   ],
+  advisors: [
+    { initials: "WS", name: "William Smith" },
+    { initials: "EJ", name: "Elizabeth Jones" },
+    { initials: "TW", name: "Thomas Williams" },
+    { initials: "VB", name: "Victoria Brown" },
+    { initials: "JT", name: "James Taylor" },
+  ],
 };
 
 const unitedStatesData: RegionalData = {
@@ -271,6 +305,13 @@ const unitedStatesData: RegionalData = {
     { range: "$500,001 – $1M", value: "$ 668,717,999", investors: 684 },
     { range: "$1M – $5M", value: "$ 2,229,059,996", investors: 547 },
     { range: "> $5M", value: "$ 2,318,222,396", investors: 118 },
+  ],
+  advisors: [
+    { initials: "MJ", name: "Michael Johnson" },
+    { initials: "JW", name: "Jennifer Williams" },
+    { initials: "RB", name: "Robert Brown" },
+    { initials: "MG", name: "Maria Garcia" },
+    { initials: "WD", name: "William Davis" },
   ],
 };
 
