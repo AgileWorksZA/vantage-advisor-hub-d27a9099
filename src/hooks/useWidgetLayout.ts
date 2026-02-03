@@ -45,7 +45,31 @@ export const useWidgetLayout = ({ pageId, defaultLayout, userId }: UseWidgetLayo
         // Validate and cast the layout data
         const savedLayout = data.layout as unknown as WidgetLayout[];
         if (savedLayout.length > 0 && savedLayout[0].i !== undefined) {
-          setLayout(savedLayout);
+          // Build lookup from default layout for validation
+          const defaultWidthMap = new Map(defaultLayout.map(item => [item.i, item.w]));
+          
+          // Check if saved layout has invalid widths (corrupted by responsive reflow)
+          const isInvalidLayout = savedLayout.some(item => {
+            const defaultWidth = defaultWidthMap.get(item.i);
+            return defaultWidth !== undefined && item.w !== defaultWidth;
+          });
+          
+          if (isInvalidLayout) {
+            // Auto-heal: use default layout and persist it
+            setLayout(defaultLayout);
+            await supabase
+              .from('user_widget_layouts')
+              .upsert({
+                user_id: userId,
+                page_id: pageId,
+                layout: defaultLayout as unknown as Json,
+                updated_at: new Date().toISOString(),
+              }, {
+                onConflict: 'user_id,page_id'
+              });
+          } else {
+            setLayout(savedLayout);
+          }
         }
       }
       setLoading(false);

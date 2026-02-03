@@ -488,7 +488,7 @@ const Insights = () => {
             </div>
           </div>
 
-          <DraggableWidgetGrid layout={layout} onLayoutChange={onLayoutChange}>
+          <DraggableWidgetGrid layout={layout} onLayoutChange={onLayoutChange} minColWidth={100}>
             {/* Commission by Type */}
             <div key="commission-type">
               <Card className="h-full">
