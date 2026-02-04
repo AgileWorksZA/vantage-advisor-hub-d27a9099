@@ -2,9 +2,21 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+// Allowed origins for CORS - restrict to known application domains
+const allowedOrigins = [
+  'https://vantage-advisor-hub.lovable.app',
+  'https://id-preview--d091f7d9-c6a2-4a6f-9460-00caa554b446.lovable.app',
+  'http://localhost:8080',
+  'http://localhost:5173',
+];
+
+const getCorsHeaders = (req: Request) => {
+  const origin = req.headers.get('origin') || '';
+  const allowedOrigin = allowedOrigins.includes(origin) ? origin : allowedOrigins[0];
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+  };
 };
 
 // Input validation schema
@@ -13,6 +25,8 @@ const requestSchema = z.object({
 });
 
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -251,7 +265,7 @@ Respond ONLY with valid JSON, no additional text.`;
     return new Response(
       JSON.stringify({ error: 'Internal server error' }),
       {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
         status: 500
       }
     );
