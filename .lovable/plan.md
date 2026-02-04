@@ -1,168 +1,217 @@
 
-# Add Task Statuses Tab and Link to Task Dropdowns
+# Seed 500 Tasks Across Clients
 
 ## Overview
 
-This implementation adds a "Task Statuses" tab to the Notes & Tasks administration screen, populates it with default statuses, and ensures both Task Status and Priorities dropdowns in the Task screens are properly linked to the database values.
+This implementation creates an Edge Function to seed 500 realistic tasks distributed across existing clients in the database. Tasks will be varied across task types, priorities, statuses, and due dates to simulate a realistic ticketing system workload.
 
-## Current State Analysis
+## Current Data Analysis
 
-### Identified Issues
+| Data Type | Available Values |
+|-----------|------------------|
+| **Clients** | 210 clients in database |
+| **Task Types** | Product change, Client complaint, Review / Renewal |
+| **Priorities** | Critical, High, Medium, Low |
+| **Statuses** | Not started, In Progress, Escalated, Closed |
 
-| Issue | Details |
-|-------|---------|
-| Tab ID mismatch | AdminLayout uses `"subjects"` but NotesTasksSection checks for `"note-subjects"` |
-| Missing Task Statuses tab | No tab for managing task statuses in admin |
-| Priority list_type mismatch | Database has `priorities`, useTaskTypes looks for `task_priorities` |
-| No task_statuses data | Missing `task_statuses` entries in `admin_general_lists` |
+## Distribution Strategy
 
-### Current Tab Configuration
+### Task Distribution by Status
+
+| Status | Percentage | Count |
+|--------|------------|-------|
+| Not started | 30% | 150 tasks |
+| In Progress | 35% | 175 tasks |
+| Escalated | 10% | 50 tasks |
+| Closed | 25% | 125 tasks |
+
+### Task Distribution by Priority
+
+| Priority | Percentage | Count |
+|----------|------------|-------|
+| Critical | 10% | 50 tasks |
+| High | 25% | 125 tasks |
+| Medium | 45% | 225 tasks |
+| Low | 20% | 100 tasks |
+
+### Task Distribution by Type
+
+| Type | Percentage | Count |
+|------|------------|-------|
+| Product change | 40% | 200 tasks |
+| Client complaint | 25% | 125 tasks |
+| Review / Renewal | 35% | 175 tasks |
+
+### Due Date Distribution
+
+| Period | Percentage | Count |
+|--------|------------|-------|
+| Overdue (past 30 days) | 15% | 75 tasks |
+| Due today | 5% | 25 tasks |
+| Due this week | 20% | 100 tasks |
+| Due next week | 25% | 125 tasks |
+| Due next month | 25% | 125 tasks |
+| No due date | 10% | 50 tasks |
+
+## Edge Function: `seed-demo-tasks`
+
+### Implementation Details
 
 ```text
-AdminLayout.tsx tabs:
-├── subjects → Should map to admin_note_subjects table
-├── task-types → maps to list_type: task_types
-├── priorities → maps to list_type: priorities
+supabase/functions/seed-demo-tasks/index.ts
+├── CORS headers (standard pattern)
+├── Task templates array (50 realistic task titles/descriptions)
+├── Distribution arrays for types, priorities, statuses
+├── Date generation utilities
+├── Main seeding logic
+│   ├── Authenticate user
+│   ├── Fetch all client IDs for user
+│   ├── Generate 500 tasks distributed across clients
+│   ├── Batch insert tasks (100 per batch)
+│   ├── Create task_clients junction entries for multi-client linking
+│   └── Return summary
+└── Error handling
 ```
 
-### useTaskTypes Hook Expectations
+### Task Title Templates (50 variations)
 
-The hook fetches from `admin_general_lists` with these list_types:
-- `task_statuses` - for status dropdown
-- `task_priorities` - for priority dropdown (or `priorities`)
-- `task_types` - for type dropdown
+Sample titles by type:
 
-## Implementation Plan
+**Product Change:**
+- Review and update investment portfolio allocation
+- Process pension contribution adjustment request
+- Update beneficiary details on life insurance policy
+- Review asset rebalancing requirements
+- Process fund switch request
+- Update premium payment frequency
+- Review annuity payout options
+- Process policy surrender request
+- Update risk profile assessment
+- Review retirement funding strategy
 
-### 1. Update AdminLayout.tsx
+**Client Complaint:**
+- Address billing discrepancy concern
+- Resolve statement delivery issue
+- Investigate missed payment dispute
+- Handle service response time complaint
+- Address communication preference issue
+- Resolve incorrect tax certificate
+- Handle failed debit order complaint
+- Address policy document error
+- Investigate premium increase query
+- Handle claims processing delay
 
-Add the new "Task Statuses" tab and fix the tab ID for Note Subjects:
+**Review / Renewal:**
+- Annual portfolio performance review
+- Quarterly investment review meeting
+- Life cover adequacy assessment
+- Retirement planning annual review
+- Short-term insurance renewal
+- Medical aid benefit review
+- Gap cover policy renewal
+- Income protection review
+- Disability cover assessment
+- Estate planning document review
 
-```typescript
-tabs: [
-  { id: "note-subjects", label: "Note Subjects" },  // Fix ID
-  { id: "task-types", label: "Task Types" },
-  { id: "task-statuses", label: "Task Statuses" },  // NEW
-  { id: "priorities", label: "Priorities" },
-]
-```
+### Data Fields Population
 
-### 2. Update NotesTasksSection.tsx
+| Field | Generation Method |
+|-------|-------------------|
+| `title` | Random selection from 50 templates |
+| `description` | Detailed description based on title |
+| `task_type` | Weighted random (40/25/35 split) |
+| `priority` | Weighted random (10/25/45/20 split) |
+| `status` | Weighted random (30/35/10/25 split) |
+| `due_date` | Random within defined date ranges |
+| `follow_up_date` | 3-7 days after due_date (if applicable) |
+| `sla_deadline` | 1-2 days before due_date (if applicable) |
+| `client_id` | Round-robin across all clients |
+| `is_pinned` | 5% chance of being pinned |
+| `source` | Random: Manual (60%), Email (20%), System (20%) |
+| `tags` | Random selection from tag pool |
+| `notes` | 50% chance of having 1-3 notes |
+| `estimated_hours` | Random 0.5-8 hours |
 
-Extend the `tabToListType` mapping:
+### Multi-Client Linking
 
-```typescript
-const tabToListType: Record<string, string> = {
-  "task-types": "task_types",
-  "task-statuses": "task_statuses",  // NEW
-  "priorities": "priorities",
-};
-```
+For 10% of tasks (50 tasks), create additional `task_clients` entries to demonstrate multi-client linking. These will link 2-3 clients per task.
 
-### 3. Update useTaskTypes.ts
+## Files to Create
 
-Modify the hook to also look for `priorities` list_type (in addition to `task_priorities`) for backward compatibility:
-
-```typescript
-// In the query
-.in("list_type", [
-  "task_types", 
-  "task_categories", 
-  "task_resolution_types", 
-  "task_sources", 
-  "task_statuses", 
-  "task_priorities",
-  "priorities"  // Add for compatibility
-])
-
-// In the switch statement
-case "task_priorities":
-case "priorities":
-  priorities.push(option);
-  break;
-```
-
-### 4. Seed Default Task Statuses
-
-Insert default task statuses into `admin_general_lists`:
-
-| Code | Name | Display Order |
-|------|------|---------------|
-| Open | Open | 1 |
-| In Progress | In Progress | 2 |
-| Closed | Closed | 3 |
-
-This will be done via database insert.
-
-## Files to Modify
-
-| File | Changes |
+| File | Purpose |
 |------|---------|
-| `src/components/administration/AdminLayout.tsx` | Add task-statuses tab, fix note-subjects ID |
-| `src/components/administration/notes-tasks/NotesTasksSection.tsx` | Add task-statuses to tabToListType mapping |
-| `src/hooks/useTaskTypes.ts` | Support both `priorities` and `task_priorities` list_types |
+| `supabase/functions/seed-demo-tasks/index.ts` | Edge function to seed 500 tasks |
 
-## Database Changes
+## Batch Processing
 
-Insert default task statuses (via SQL insert, not migration since this is data not schema):
+To avoid timeout issues:
+- Tasks inserted in batches of 100
+- Junction table entries inserted after main tasks
+- Total of 5 batch operations
 
-```sql
-INSERT INTO admin_general_lists (user_id, list_type, code, name, display_order, is_active)
-SELECT 
-  auth.uid(),
-  'task_statuses',
-  code,
-  name,
-  display_order,
-  true
-FROM (VALUES 
-  ('Open', 'Open', 1),
-  ('In Progress', 'In Progress', 2),
-  ('Closed', 'Closed', 3)
-) AS v(code, name, display_order)
-ON CONFLICT DO NOTHING;
+## Sample Generated Task
+
+```json
+{
+  "title": "Annual portfolio performance review",
+  "description": "Schedule and conduct annual portfolio performance review with client. Discuss investment returns, asset allocation, and rebalancing recommendations.",
+  "task_type": "Review \\ Renewal",
+  "priority": "Medium",
+  "status": "Not started",
+  "due_date": "2026-02-10",
+  "follow_up_date": "2026-02-14",
+  "sla_deadline": "2026-02-08",
+  "client_id": "uuid-of-client",
+  "is_pinned": false,
+  "source": "Manual",
+  "tags": ["annual-review", "portfolio"],
+  "notes": [
+    {
+      "id": "uuid",
+      "content": "Client prefers afternoon meetings",
+      "created_at": "2026-01-15T10:30:00Z",
+      "created_by": "user-uuid",
+      "is_internal": false
+    }
+  ],
+  "estimated_hours": 2.5
+}
 ```
 
-Note: Since this is user-scoped data, each user will need to seed their own statuses. We can add this to the existing seed edge function or handle it in the UI.
+## Expected Result
 
-## UI Flow After Implementation
+After running the seed function:
 
-```text
-Notes & Tasks Section
-├── Note Subjects tab → admin_note_subjects table
-├── Task Types tab → admin_general_lists (list_type: task_types)
-├── Task Statuses tab → admin_general_lists (list_type: task_statuses)  [NEW]
-└── Priorities tab → admin_general_lists (list_type: priorities)
+| Metric | Value |
+|--------|-------|
+| Total Tasks | 500 |
+| Tasks per Client (avg) | ~2.4 (500 / 210 clients) |
+| Multi-client Tasks | ~50 |
+| Pinned Tasks | ~25 |
+| Overdue Tasks | ~75 |
+| Due Today | ~25 |
+
+## How to Trigger
+
+The function will be callable from the Administration section or via direct API call:
+
+```typescript
+const response = await supabase.functions.invoke('seed-demo-tasks');
 ```
 
-## Data Flow for Task Dropdowns
+## Technical Notes
 
-```text
-Task Create/Edit Screens
-├── Status Dropdown → useTaskTypes().taskStatuses → admin_general_lists (list_type: task_statuses)
-├── Priority Dropdown → useTaskTypes().taskPriorities → admin_general_lists (list_type: priorities)
-└── Type Dropdown → useTaskTypes().taskTypes → admin_general_lists (list_type: task_types)
-```
+1. **Idempotent Design**: Function can be run multiple times; new tasks are always appended
+2. **User-Scoped**: Tasks created for authenticated user only
+3. **RLS Compliant**: All records include proper `user_id` for RLS policies
+4. **Realistic Dates**: Uses current date as reference for date calculations
+5. **Linked Clients**: Properly creates `task_clients` junction entries
 
-## Expected Behavior
+## Implementation Order
 
-| Action | Result |
-|--------|--------|
-| Navigate to Notes & Tasks | Shows 4 tabs including new "Task Statuses" |
-| Click Task Statuses tab | Shows table with Open, In Progress, Closed |
-| Add new status | Appears in Task dropdown immediately |
-| Edit/delete status | Reflected in Task dropdown |
-| Open Task Detail Sheet | Status dropdown shows database values |
-| Open Create Task Dialog | Status dropdown shows database values |
-| Open Task Filters | Status filter shows database values |
-
-## Fallback Behavior
-
-If no statuses exist in the database, the `useTaskTypes` hook falls back to hardcoded defaults:
-- Not Started
-- In Progress  
-- Pending Client
-- Completed
-- Cancelled
-
-This ensures the UI still works while the user sets up their admin data.
+1. Create Edge Function with task templates
+2. Implement distribution logic
+3. Add batch insert functionality
+4. Create task_clients entries for multi-client linking
+5. Deploy and test
+6. Verify data appears correctly in Tasks page
