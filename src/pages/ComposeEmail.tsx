@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import DOMPurify from "dompurify";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
@@ -367,7 +368,7 @@ const ComposeEmail = () => {
                   <Label className="text-sm font-medium text-muted-foreground">Signature</Label>
                   <div
                     className="p-4 bg-muted/30 rounded-md border border-border text-sm prose prose-sm max-w-none"
-                    dangerouslySetInnerHTML={{ __html: settings.email_signature }}
+                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(settings.email_signature) }}
                   />
                   <p className="text-xs text-muted-foreground">
                     Edit signature in{" "}
