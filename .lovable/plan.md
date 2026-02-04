@@ -1,233 +1,230 @@
 
-# Multi-Channel Communication Data & Email Viewer Implementation
+# Outlook-Style Email View & Reply Implementation
 
-## Issues Identified
+## Overview
 
-### 1. Direct Messages Not Visible
-The seeded data was created for user_id `fa9f27f6-b772-4edb-b95f-5331c7636e2d`, but the current logged-in user has a different ID. RLS policies filter messages to the authenticated user only.
-
-**Solution**: Update the edge function to seed data for the currently authenticated user (from the request's auth token).
-
-### 2. No Email Detail View
-Currently, clicking an email row does nothing. Need to create:
-- An `EmailViewDialog` component to display email content
-- Support for viewing HTML body with proper styling
-- Reply functionality (opens compose with pre-filled data)
-- Previous mail trail display for threaded conversations
-
-### 3. No Attachment System
-The `has_attachments` flag exists but there's no:
-- `email_attachments` table to store attachment metadata
-- Sample documents (PDFs) to attach
-- Preview/download functionality
+Replace the current modal-based email viewer with a full-page Outlook-style email interface that includes:
+1. **Email View Page** - Full content display with action buttons, client badges, and task linking
+2. **Reply Page** - Compose interface with quoted content in Outlook format
+3. **Forward Functionality** - Using "Fwd:" prefix instead of "Re:"
 
 ## Architecture
 
 ```text
-Email System Enhancement
-├── Database Changes
-│   ├── email_attachments table (new)
-│   └── direct_message_attachments table (new, for media in chats)
-├── Sample Documents (public/downloads/)
-│   ├── Portfolio_Report_Q4_2024.pdf (placeholder content)
-│   ├── Tax_Certificate_2024.pdf
-│   ├── FICA_Documents.pdf
-│   ├── Financial_Plan_2025.pdf
-│   └── Policy_Schedule.pdf
-├── New Components
-│   ├── EmailViewDialog.tsx - Email detail viewer
-│   └── AttachmentPreview.tsx - Attachment list with download/preview
-├── Updated Edge Function
-│   └── seed-demo-communications - Use authenticated user + create attachments
-└── Email.tsx Updates
-    └── Email row click → Open EmailViewDialog
+Email Flow Redesign
+├── Email List (/email)
+│   └── Click email row → Navigate to /email/view/:id
+├── Email View Page (/email/view/:id)
+│   ├── Action Bar: Move to archive | Reply | Forward
+│   ├── Subject + Date header
+│   ├── Metadata Section: From, To, Clients (with avatars)
+│   ├── Task Linking Section (collapsible)
+│   └── Email Body (HTML rendered)
+└── Reply/Forward Page (/email/compose)
+    ├── Action Bar: Send | Attach File | Discard | Save
+    ├── Form Fields: From, To (badges), +BCC, CC, Subject
+    ├── Clients Section (with avatars)
+    ├── Task Linking Section (collapsible)
+    ├── Rich Text Editor
+    └── Quoted Content (yellow left-border styled)
 ```
 
-## Database Schema Changes
+## Key Components
 
-### New Table: `email_attachments`
+### 1. New Route: `/email/view/:id`
 
-| Column | Type | Description |
-|--------|------|-------------|
-| id | uuid | Primary key |
-| email_id | uuid | FK to emails |
-| user_id | uuid | Owner |
-| file_name | text | Display name (e.g., "Portfolio_Report.pdf") |
-| file_path | text | Path in storage or public folder |
-| file_size | integer | Size in bytes |
-| content_type | text | MIME type (application/pdf, image/png) |
-| created_at | timestamp | Record creation |
+Create a new page that replaces the dialog with a full-page email view matching the first screenshot.
 
-### New Table: `direct_message_attachments`
+### 2. EmailViewPage Component
 
-| Column | Type | Description |
-|--------|------|-------------|
-| id | uuid | Primary key |
-| message_id | uuid | FK to direct_messages |
-| user_id | uuid | Owner |
-| file_name | text | Display name |
-| file_path | text | Storage path |
-| file_size | integer | Size in bytes |
-| content_type | text | MIME type |
-| created_at | timestamp | Record creation |
+Layout matching Image 1:
+| Section | Content |
+|---------|---------|
+| **Action Bar** | Move to archive, Reply (outlined), Forward (outlined) buttons |
+| **Header** | Subject line (large) + Date/time on right |
+| **Metadata Box** | From field (read-only input style), To field, Clients with avatar badges |
+| **Task Linking** | Collapsible panel with Guess Task, Search Task, New Task, Guess Completed Task buttons |
+| **Task Table** | Linked tasks with toggle, task number, title, type, assignee, due date, client columns |
+| **Email Body** | Rendered HTML content with light blue background container |
 
-## Sample Documents
+### 3. Enhanced Compose Page
 
-Create placeholder PDF files in `public/downloads/` folder:
+Update the existing `/email/compose` page to match Image 2:
 
-| File | Content Description |
-|------|---------------------|
-| `Portfolio_Report_Q4_2024.pdf` | Quarterly performance summary with graphs |
-| `Tax_Certificate_2024.pdf` | IT3(b) Tax certificate |
-| `FICA_Documents.pdf` | Client onboarding FICA bundle |
-| `Financial_Plan_2025.pdf` | Comprehensive financial plan |
-| `Policy_Schedule.pdf` | Life insurance policy schedule |
-| `Statement_Jan_2025.pdf` | Monthly investment statement |
+| Section | Updates Required |
+|---------|------------------|
+| **Action Bar** | Send (teal filled), Attach File (outlined), Discard (outlined), Save (outlined) |
+| **Form Fields** | From, To* (with badge pills + remove buttons), +BCC button, CC field |
+| **Subject** | Pre-filled with "Re:" or "Fwd:" based on mode |
+| **Clients** | Avatar badges with initials + name + green status dot |
+| **Task Linking** | Same collapsible panel as view page |
+| **Rich Text Editor** | Full toolbar matching Outlook |
+| **Quoted Content** | Yellow/gold left border styling for original email |
 
-For demo purposes, these will be simple HTML-to-PDF style documents rendered as static files.
+### 4. Client Avatar Badges
 
-## EmailViewDialog Component
+New component for displaying clients with:
+- Two-letter avatar (initials)
+- Client name in "Surname, I (FirstName)" format
+- Green status dot
+- Remove (×) button
 
-### Layout
-```text
-┌─────────────────────────────────────────────────────────────────┐
-│  [←]  Email Details                                  [Reply] [X] │
-├─────────────────────────────────────────────────────────────────┤
-│  From: client@email.com                                          │
-│  To: adviser@vantage.co                                          │
-│  Date: 04/02/2025 14:30 PM                                      │
-│  Subject: RE: Your Q4 2024 Portfolio Performance Summary        │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                   │
-│  Dear Johan,                                                      │
-│                                                                   │
-│  Thank you for sending this through. I'm pleased with the       │
-│  performance. Can we schedule a call next week to discuss...    │
-│                                                                   │
-│  Regards,                                                         │
-│  Thabo                                                           │
-│                                                                   │
-├─────────────────────────────────────────────────────────────────┤
-│  📎 Attachments (2)                                              │
-│  ┌──────────────────────┐  ┌──────────────────────┐             │
-│  │ 📄 Portfolio.pdf     │  │ 📄 Tax_Cert.pdf      │             │
-│  │    245 KB  [↓]       │  │    89 KB  [↓]        │             │
-│  └──────────────────────┘  └──────────────────────┘             │
-├─────────────────────────────────────────────────────────────────┤
-│  ▼ Previous Messages                                             │
-│  ─────────────────────────────────────────────────────────────  │
-│  On 03/02/2025, Johan wrote:                                     │
-│  > Please find attached your quarterly portfolio...              │
-│  > Key Highlights:                                               │
-│  > • Portfolio Value: R2,456,789 (+4.2%)                        │
-└─────────────────────────────────────────────────────────────────┘
-```
+## Technical Implementation
 
-### Features
-- Full HTML email body rendering (sanitized with DOMPurify)
-- Attachment list with file icons, sizes, and download buttons
-- Previous mail trail detection (look for emails with same subject prefix)
-- Reply button pre-fills compose with:
-  - "RE:" prefix on subject
-  - Original sender as recipient
-  - Quoted original message in body
-- Mark as read on open
-
-## Updated Seed Function
-
-The `seed-demo-communications` edge function will be updated to:
-
-1. **Get authenticated user from request** instead of hardcoding
-2. **Create email_attachments records** linking to sample files
-3. **Create direct_message_attachments** for some WhatsApp messages
-4. **Set `media_url`** field on direct_messages that have attachments
-
-### Attachment Distribution
-
-| Email Subject Contains | Attachments |
-|------------------------|-------------|
-| "Portfolio Performance" | Portfolio_Report_Q4_2024.pdf |
-| "Tax Certificate" | Tax_Certificate_2024.pdf |
-| "FICA Documents" | FICA_Documents.pdf |
-| "Financial Plan" | Financial_Plan_2025.pdf |
-| "Policy" | Policy_Schedule.pdf |
-| "Statement" | Statement_Jan_2025.pdf |
-
-### WhatsApp Attachments
-- Portfolio summary PDFs sent in conversations
-- Proof of address images (simulated)
-
-## Email.tsx Changes
-
-### Current (line 310-340)
-```tsx
-<tr key={email.id} className={cn(...)}>
-  ...table cells...
-</tr>
-```
-
-### Updated
-```tsx
-<tr
-  key={email.id}
-  onClick={() => handleEmailClick(email)}
-  className={cn(..., "cursor-pointer")}
->
-  ...table cells...
-</tr>
-
-{/* Add dialog */}
-<EmailViewDialog
-  open={selectedEmailOpen}
-  onOpenChange={setSelectedEmailOpen}
-  email={selectedEmail}
-  onReply={handleReply}
-/>
-```
-
-## New Hooks
-
-### useEmailDetail
-Fetch single email with full body and attachments:
-```tsx
-const { email, attachments, loading, relatedEmails } = useEmailDetail(emailId);
-```
-
-## Files to Create
+### Files to Create
 
 | File | Purpose |
 |------|---------|
-| `src/components/email/EmailViewDialog.tsx` | Email detail viewer modal |
-| `src/components/email/AttachmentList.tsx` | Display attachments with download |
-| `src/hooks/useEmailDetail.ts` | Fetch single email + attachments |
-| `public/downloads/Portfolio_Report_Q4_2024.pdf` | Sample attachment |
-| `public/downloads/Tax_Certificate_2024.pdf` | Sample attachment |
-| `public/downloads/FICA_Documents.pdf` | Sample attachment |
-| `public/downloads/Financial_Plan_2025.pdf` | Sample attachment |
-| `public/downloads/Policy_Schedule.pdf` | Sample attachment |
-| `public/downloads/Statement_Jan_2025.pdf` | Sample attachment |
+| `src/pages/EmailView.tsx` | New full-page email viewer |
+| `src/components/email/EmailHeader.tsx` | Reusable email header with From/To/Clients |
+| `src/components/email/TaskLinkingSection.tsx` | Collapsible task linking UI |
+| `src/components/email/ClientAvatarBadge.tsx` | Client badge with avatar, name, remove |
+| `src/components/email/EmailQuotedContent.tsx` | Quoted email formatting component |
 
-## Files to Modify
+### Files to Modify
 
 | File | Changes |
 |------|---------|
-| `src/pages/Email.tsx` | Add click handler, dialog state, EmailViewDialog |
-| `src/hooks/useEmails.ts` | Add getEmailById method returning full email |
-| `supabase/functions/seed-demo-communications/index.ts` | Use auth user, create attachments |
+| `src/App.tsx` | Add route `/email/view/:id` |
+| `src/pages/Email.tsx` | Replace dialog click → navigate to view page |
+| `src/pages/ComposeEmail.tsx` | Major redesign to match Image 2 layout |
+| `src/components/email/EmailViewDialog.tsx` | Remove or deprecate (replaced by page) |
+
+### Route Structure
+
+```
+/email                    → Email list (unchanged)
+/email/view/:id           → NEW: Full email view page
+/email/compose            → Enhanced compose (supports reply/forward modes)
+/email/compose?mode=reply&emailId=xxx     → Reply mode
+/email/compose?mode=forward&emailId=xxx   → Forward mode
+```
+
+### Query Parameters for Compose
+
+| Param | Purpose |
+|-------|---------|
+| `mode` | "reply" or "forward" |
+| `emailId` | Original email ID for loading quote |
+| `to` | Pre-filled recipient(s) |
+| `subject` | Pre-filled subject line |
+| `clientId` | Pre-linked client ID |
+
+## Detailed Component Specifications
+
+### EmailViewPage Layout
+
+```text
+┌──────────────────────────────────────────────────────────────────────────┐
+│  ┌────────────────┐  ┌─────────┐  ┌───────────┐                          │
+│  │ Move to archive│  │ ↩ Reply │  │ ↪ Forward │                          │
+│  └────────────────┘  └─────────┘  └───────────┘                          │
+├──────────────────────────────────────────────────────────────────────────┤
+│  Re: Schedule your Momentic demo                      02/09/2025 03:10 PM│
+├──────────────────────────────────────────────────────────────────────────┤
+│  ┌─ Light Gray Background ─────────────────────────────────────────────┐ │
+│  │ From    │ Wei-Wei Wu <wei-wei@momentic.ai>                 (input)  │ │
+│  │ To      │ emilewegner@efgroup.co.za                        (input)  │ │
+│  │ Clients │ [CW] Wegner, C (Jonathan) ×   + Add                       │ │
+│  └─────────────────────────────────────────────────────────────────────┘ │
+├──────────────────────────────────────────────────────────────────────────┤
+│  Task linking   [🔮 Guess Task] [🔍 Search Task] [✓ New Task] [📋 GCT]  │
+│  ┌──────────────────────────────────────────────────────────────────┐  ↑ │
+│  │ Linked │ Task number │ Title │ Task type │ Assignee │ Due date │Client│
+│  │   ●    │ Task-95178  │       │ Transfer  │ D.Harding│ 15/08/25 │ W,C  │
+│  └──────────────────────────────────────────────────────────────────┘    │
+│                                                      1 to 1 of 1  ◀ ▶   │
+├──────────────────────────────────────────────────────────────────────────┤
+│  ┌─ Light Blue Background ─────────────────────────────────────────────┐ │
+│  │  ┌─ Yellow Bar ────────────────────────────────────────────────────┐│ │
+│  │  │ You don't often get email from wei-wei@momentic.ai. Learn why  ││ │
+│  │  └─────────────────────────────────────────────────────────────────┘│ │
+│  │                                                                      │ │
+│  │  Hey Emile,                                                          │ │
+│  │                                                                      │ │
+│  │  Before Momentic, Webflow's flakiest tests had a 40% pass rate...   │ │
+│  │                                                                      │ │
+│  └─────────────────────────────────────────────────────────────────────┘ │
+└──────────────────────────────────────────────────────────────────────────┘
+```
+
+### Reply Mode - Subject Formatting
+
+```typescript
+// Reply: Add "Re:" if not already present
+const replySubject = subject?.startsWith("Re:") 
+  ? subject 
+  : `Re: ${subject}`;
+
+// Forward: Add "Fwd:" if not already present  
+const forwardSubject = subject?.startsWith("Fwd:") 
+  ? subject 
+  : `Fwd: ${subject}`;
+```
+
+### Quoted Content Format (Outlook Style)
+
+```html
+<div style="border-left: 3px solid #d4a832; padding-left: 12px; margin-top: 16px;">
+  <p><strong>From:</strong> Wei-Wei Wu</p>
+  <p><strong>Sent:</strong> Tuesday, 2 September 2025 15:18</p>
+  <p><strong>To:</strong> emilewegner@efgroup.co.za</p>
+  <p><strong>Subject:</strong> Re: Schedule your Momentic demo</p>
+  <br/>
+  [Original email content]
+</div>
+```
+
+### Task Linking Section
+
+Collapsible panel with:
+- **Header**: "Task linking" label with collapse chevron
+- **Action Buttons**: 
+  - Guess Task (AI icon)
+  - Search Task (search icon)
+  - New Task (checkmark icon) 
+  - Guess Completed Task (document icon)
+- **Table Columns**: Linked (toggle), Task number, Title, Task type, Assignee, Due date, Client
+- **Pagination**: "1 to 1 of 1" with navigation arrows
+
+### Client Avatar Badge Component
+
+```typescript
+interface ClientAvatarBadgeProps {
+  id: string;
+  initials: string;
+  name: string;           // "Wegner, C (Jonathan)"
+  hasGreenDot?: boolean;  // Active/online indicator
+  onRemove?: () => void;  // X button handler
+}
+```
 
 ## Implementation Order
 
-1. **Database migration** - Create email_attachments and direct_message_attachments tables
-2. **Sample PDFs** - Create placeholder PDF documents
-3. **Update seed function** - Auth user detection + attachment seeding
-4. **EmailViewDialog** - Build the email viewer component
-5. **Email.tsx updates** - Make rows clickable, add dialog
-6. **Test end-to-end** - Verify emails display with attachments
+1. **Create ClientAvatarBadge component** - Reusable avatar + name + remove button
+2. **Create TaskLinkingSection component** - Collapsible panel with task table
+3. **Create EmailViewPage** - Full-page email viewer at `/email/view/:id`
+4. **Update App.tsx routing** - Add new route
+5. **Update Email.tsx** - Navigate to view page instead of opening dialog
+6. **Create EmailQuotedContent component** - Outlook-style quoted content formatting
+7. **Enhance ComposeEmail.tsx** - Match Image 2 layout with reply/forward modes
+8. **Update EmailViewDialog.tsx** - Keep for backward compatibility or deprecate
 
-## Technical Notes
+## Database Considerations
 
-- PDF files will be simple single-page documents with basic content
-- The seed function will be called with the user's auth token to properly associate data
-- Email threading uses subject matching (same subject with "RE:" prefix)
-- DOMPurify already installed for HTML sanitization
-- Reply flow navigates to /email/compose with query params for pre-fill
+No schema changes required. Uses existing:
+- `emails` table for email data
+- `tasks` table for task linking
+- `task_communications` junction table for linking
+- `clients` table for client info
+
+## Key Differences from Current Implementation
+
+| Current | New (Outlook-Style) |
+|---------|---------------------|
+| Modal/Dialog popup | Full page navigation |
+| Simple Reply button | Reply + Forward buttons |
+| No task linking on view | Full task linking panel |
+| Basic client links | Avatar badges with initials |
+| Plain quoted text | Styled Outlook-format quote |
+| No From/To input styling | Input-styled read-only fields |
