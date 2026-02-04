@@ -129,7 +129,7 @@ export function TaskDetailSheet({
   const handleSendMessage = () => {
     // Navigate to compose with task_id
     const clientIds = taskClients.map((c) => c.client_id).join(",");
-    navigate(`/compose-email?task_id=${task.id}&clients=${clientIds}`);
+    navigate(`/email/compose?task_id=${task.id}&clients=${clientIds}`);
   };
 
   const handleDeleteTask = async () => {
