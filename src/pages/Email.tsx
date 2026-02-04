@@ -85,19 +85,23 @@ const EmailPage = () => {
   
   // Set default folder based on URL param, fetch_mode setting, or default
   useEffect(() => {
-    if (!settingsLoading && activeFolder === null) {
-      const folderFromUrl = searchParams.get("folder") as EmailFolder | null;
-      if (folderFromUrl && folderItems.some(f => f.folder === folderFromUrl)) {
-        // Use folder from URL if valid
+    const folderFromUrl = searchParams.get("folder") as EmailFolder | null;
+    
+    // If we have a folder in URL, always use it (for back navigation)
+    if (folderFromUrl && folderItems.some(f => f.folder === folderFromUrl)) {
+      if (activeFolder !== folderFromUrl) {
         setActiveFolder(folderFromUrl);
-      } else if (emailSettings?.fetch_mode === "inbox") {
+      }
+    } else if (!settingsLoading && activeFolder === null) {
+      // No URL param - set default based on fetch_mode
+      if (emailSettings?.fetch_mode === "inbox") {
         setActiveFolder("Inbox");
       } else {
         // Default to Task Pool if fetch_mode is task_pool or no settings
         setActiveFolder("Task Pool");
       }
     }
-  }, [settingsLoading, emailSettings?.fetch_mode, activeFolder, searchParams]);
+  }, [settingsLoading, emailSettings?.fetch_mode, searchParams]);
 
   const { emails, loading: emailsLoading, isFetching, folderCounts, refetch, triggerFetch, moveToFolder, markAsRead } = useEmails(activeFolder || "Task Pool");
 
