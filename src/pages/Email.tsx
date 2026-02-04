@@ -48,9 +48,9 @@ import { cn } from "@/lib/utils";
 
 type EmailFolder = Email["folder"];
 
-const folderItems: { icon: React.ComponentType<any>; label: string; folder: EmailFolder | null }[] = [
-  { icon: Inbox, label: "Task Pool", folder: "Task Pool" },
+const folderItems: { icon: React.ComponentType<any>; label: string; folder: EmailFolder | null; indent?: boolean }[] = [
   { icon: Inbox, label: "Inbox", folder: "Inbox" },
+  { icon: Inbox, label: "Task Pool", folder: "Task Pool", indent: true },
   { icon: FileText, label: "Draft", folder: "Draft" },
   { icon: Send, label: "Sent", folder: "Sent" },
   { icon: Clock, label: "Queue", folder: "Queue" },
@@ -254,7 +254,8 @@ const EmailPage = () => {
                       }
                     }}
                     className={cn(
-                      "w-full flex items-center gap-2 px-4 py-2 text-sm",
+                      "w-full flex items-center gap-2 py-2 text-sm",
+                      folder.indent ? "pl-8 pr-4" : "px-4",
                       activeFolder === folder.folder
                         ? "text-[hsl(180,70%,45%)] bg-[hsl(180,70%,45%)]/10"
                         : "text-foreground hover:bg-muted/50"
