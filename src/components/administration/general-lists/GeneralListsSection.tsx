@@ -17,6 +17,9 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { adminSections } from "../AdminLayout";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { Database, Loader2 } from "lucide-react";
 
 interface GeneralListItem {
   id: string;
@@ -53,6 +56,7 @@ const listTypeMap: Record<string, string> = {
 export function GeneralListsSection() {
   const { tab } = useParams();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const activeTab = tab || "advisor-codes";
   const listType = listTypeMap[activeTab] || "advisor_codes";
 
@@ -76,8 +80,47 @@ export function GeneralListsSection() {
     description: "",
     is_active: true,
   });
+  const [isSeeding, setIsSeeding] = useState(false);
 
   const section = adminSections.find((s) => s.id === "general-lists");
+
+  const handleSeedReferenceData = async () => {
+    setIsSeeding(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        toast({
+          title: "Not authenticated",
+          description: "Please log in to seed reference data",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const response = await supabase.functions.invoke("seed-admin-reference-data");
+      
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+
+      const result = response.data;
+      toast({
+        title: result.success ? "Success" : "Partial Success",
+        description: `Seeded ${result.counts.currencies} currencies, ${result.counts.banks} banks, ${result.counts.locations} locations`,
+      });
+      
+      refetch();
+    } catch (error) {
+      console.error("Seed error:", error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to seed reference data",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSeeding(false);
+    }
+  };
   const tabs = section?.tabs || [];
 
   const columns: ColumnDef<GeneralListItem>[] = [
@@ -149,14 +192,33 @@ export function GeneralListsSection() {
         </TabsList>
 
         <div className="mt-6">
-          <AdminSectionHeader
-            title={tabs.find((t) => t.id === activeTab)?.label || "General Lists"}
-            itemCount={data.length}
-            searchValue={searchTerm}
-            onSearchChange={setSearchTerm}
-            onAdd={handleAdd}
-            onReset={() => refetch()}
-          />
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex-1">
+              <AdminSectionHeader
+                title={tabs.find((t) => t.id === activeTab)?.label || "General Lists"}
+                itemCount={data.length}
+                searchValue={searchTerm}
+                onSearchChange={setSearchTerm}
+                onAdd={handleAdd}
+                onReset={() => refetch()}
+              />
+            </div>
+            {(activeTab === "currencies" || activeTab === "banks" || activeTab === "locations") && (
+              <Button
+                variant="outline"
+                onClick={handleSeedReferenceData}
+                disabled={isSeeding}
+                className="ml-4 gap-2"
+              >
+                {isSeeding ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Database className="h-4 w-4" />
+                )}
+                Seed Reference Data
+              </Button>
+            )}
+          </div>
 
           <div className="mt-4">
             <AdminDataTable
