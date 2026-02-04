@@ -1869,6 +1869,65 @@ export type Database = {
           },
         ]
       }
+      direct_messages: {
+        Row: {
+          channel: string
+          client_id: string | null
+          content: string
+          created_at: string
+          deleted_at: string | null
+          direction: string
+          external_id: string | null
+          id: string
+          is_deleted: boolean
+          media_url: string | null
+          sent_at: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          channel: string
+          client_id?: string | null
+          content: string
+          created_at?: string
+          deleted_at?: string | null
+          direction: string
+          external_id?: string | null
+          id?: string
+          is_deleted?: boolean
+          media_url?: string | null
+          sent_at?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          channel?: string
+          client_id?: string | null
+          content?: string
+          created_at?: string
+          deleted_at?: string | null
+          direction?: string
+          external_id?: string | null
+          id?: string
+          is_deleted?: boolean
+          media_url?: string | null
+          sent_at?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "direct_messages_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_types: {
         Row: {
           category: string
@@ -2048,6 +2107,10 @@ export type Database = {
           settings: Json | null
           updated_at: string
           user_id: string
+          whatsapp_api_token: string | null
+          whatsapp_business_id: string | null
+          whatsapp_is_active: boolean | null
+          whatsapp_phone_number: string | null
         }
         Insert: {
           created_at?: string
@@ -2061,6 +2124,10 @@ export type Database = {
           settings?: Json | null
           updated_at?: string
           user_id: string
+          whatsapp_api_token?: string | null
+          whatsapp_business_id?: string | null
+          whatsapp_is_active?: boolean | null
+          whatsapp_phone_number?: string | null
         }
         Update: {
           created_at?: string
@@ -2074,6 +2141,10 @@ export type Database = {
           settings?: Json | null
           updated_at?: string
           user_id?: string
+          whatsapp_api_token?: string | null
+          whatsapp_business_id?: string | null
+          whatsapp_is_active?: boolean | null
+          whatsapp_phone_number?: string | null
         }
         Relationships: []
       }

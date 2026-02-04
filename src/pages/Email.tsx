@@ -17,7 +17,6 @@ import {
   Search,
   PenSquare,
   Inbox,
-  Archive,
   RefreshCw,
   FileText,
   Send,
@@ -38,9 +37,12 @@ import commandCenterIcon from "@/assets/command-center-icon.png";
 import vantageLogo from "@/assets/vantage-logo.png";
 import { useEmails, Email } from "@/hooks/useEmails";
 import { useEmailSettings } from "@/hooks/useEmailSettings";
+import { CommunicationChannel } from "@/hooks/useCommunicationCampaigns";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { EmailSetupDialog } from "@/components/email/EmailSetupDialog";
 import { EmailClientBadges } from "@/components/email/EmailClientBadges";
+import { CommunicationTypeSelector } from "@/components/email/CommunicationTypeSelector";
+import { ChatInterface } from "@/components/email/ChatInterface";
 import { cn } from "@/lib/utils";
 
 type EmailFolder = Email["folder"];
@@ -73,6 +75,7 @@ const EmailPage = () => {
   const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
   const [activeFolder, setActiveFolder] = useState<EmailFolder>("Task Pool");
   const [setupDialogOpen, setSetupDialogOpen] = useState(false);
+  const [activeChannel, setActiveChannel] = useState<CommunicationChannel>("Email");
 
   const { emails, loading: emailsLoading, isFetching, folderCounts, refetch, triggerFetch, moveToFolder } = useEmails(activeFolder);
   const { settings: emailSettings, isConnected } = useEmailSettings();
@@ -106,20 +109,6 @@ const EmailPage = () => {
     setSelectedEmails((prev) =>
       prev.includes(id) ? prev.filter((emailId) => emailId !== id) : [...prev, id]
     );
-  };
-
-  const handleMoveToInbox = async () => {
-    if (selectedEmails.length > 0) {
-      await moveToFolder(selectedEmails, "Inbox");
-      setSelectedEmails([]);
-    }
-  };
-
-  const handleMoveToArchive = async () => {
-    if (selectedEmails.length > 0) {
-      await moveToFolder(selectedEmails, "Archived");
-      setSelectedEmails([]);
-    }
   };
 
   const loading = authLoading || emailsLoading;
@@ -181,198 +170,206 @@ const EmailPage = () => {
           onAccountSettings={() => navigate("/practice")}
         />
 
-        {/* Email Content - Scrollable */}
+        {/* Communication Content */}
         <main className="flex-1 flex overflow-hidden">
-          {/* Email Folders Sidebar */}
-          <div className="w-48 bg-background border-r border-border flex flex-col">
-            <div className="p-4 border-b border-border flex items-center justify-between gap-2">
-              {isConnected && emailSettings?.email_address ? (
-                <p className="text-sm text-muted-foreground truncate flex-1">
-                  {emailSettings.email_address}
-                </p>
-              ) : (
-                <button
-                  onClick={() => setSetupDialogOpen(true)}
-                  className="text-sm text-muted-foreground italic truncate flex-1 text-left hover:text-foreground transition-colors"
-                >
-                  No email linked
-                </button>
-              )}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 shrink-0"
-                onClick={() => setSetupDialogOpen(true)}
-                title="Email Setup"
-              >
-                <Settings className="w-4 h-4" />
-              </Button>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="p-3 flex flex-wrap gap-2 border-b border-border">
-              <Button 
-                size="sm" 
-                className="bg-[hsl(180,70%,45%)] hover:bg-[hsl(180,70%,40%)] text-white"
-                onClick={() => navigate("/email/compose")}
-              >
-                <PenSquare className="w-4 h-4 mr-1" />
-                Compose
-              </Button>
-              <Button size="sm" variant="outline" className="text-xs" onClick={handleMoveToInbox} disabled={selectedEmails.length === 0}>
-                <Inbox className="w-3 h-3 mr-1" />
-                Move to inbox
-              </Button>
-              <Button size="sm" variant="outline" className="text-xs" onClick={handleMoveToArchive} disabled={selectedEmails.length === 0}>
-                <Archive className="w-3 h-3 mr-1" />
-                Move to archive
-              </Button>
-              <Button 
-                size="sm" 
-                variant="outline" 
-                className="text-xs" 
-                onClick={() => triggerFetch()}
-                disabled={isFetching}
-              >
-                <RefreshCw className={cn("w-3 h-3 mr-1", isFetching && "animate-spin")} />
-                Refresh emails
-              </Button>
-            </div>
-
-            {/* Folder List */}
-            <div className="flex-1 py-2">
-              {folderItems.map((folder) => (
-                <button
-                  key={folder.label}
-                  onClick={() => {
-                    if (folder.folder) {
-                      setActiveFolder(folder.folder);
-                      triggerFetch();
-                    }
-                  }}
-                  className={cn(
-                    "w-full flex items-center gap-2 px-4 py-2 text-sm",
-                    activeFolder === folder.folder
-                      ? "text-[hsl(180,70%,45%)] bg-[hsl(180,70%,45%)]/10"
-                      : "text-foreground hover:bg-muted/50"
-                  )}
-                >
-                  <folder.icon className="w-4 h-4" />
-                  <span className="flex-1 text-left">{folder.label}</span>
-                  {folder.folder && folderCounts[folder.folder] !== undefined && folderCounts[folder.folder] > 0 && (
-                    <span className="text-[hsl(180,70%,45%)] font-medium">{folderCounts[folder.folder]}</span>
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Email List */}
-          <div className="flex-1 flex flex-col bg-background">
-            {/* Email List Header */}
-            <div className="flex items-center justify-end gap-2 p-3 border-b border-border">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input placeholder="Search..." className="pl-10 w-48 h-8 text-sm" />
+          {/* Email Folders Sidebar - only show for Email channel */}
+          {activeChannel === "Email" && (
+            <div className="w-48 bg-background border-r border-border flex flex-col">
+              <div className="p-4 border-b border-border flex items-center justify-between gap-2">
+                {isConnected && emailSettings?.email_address ? (
+                  <p className="text-sm text-muted-foreground truncate flex-1">
+                    {emailSettings.email_address}
+                  </p>
+                ) : (
+                  <button
+                    onClick={() => setSetupDialogOpen(true)}
+                    className="text-sm text-muted-foreground italic truncate flex-1 text-left hover:text-foreground transition-colors"
+                  >
+                    No email linked
+                  </button>
+                )}
               </div>
-              <Button variant="outline" size="sm" className="h-8">
-                <Calendar className="w-4 h-4 mr-1" />
-                Date selection
-              </Button>
-              <Button variant="outline" size="icon" className="h-8 w-8">
-                <Filter className="w-4 h-4" />
-              </Button>
-            </div>
 
-            {/* Email Table */}
-            <div className="flex-1 overflow-auto">
-              {emailsLoading ? (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-                </div>
-              ) : (
-                <table className="w-full text-sm">
-                  <thead className="bg-muted/30 sticky top-0">
-                    <tr className="border-b border-border">
-                      <th className="w-10 p-3"></th>
-                      <th className="w-10 p-3"></th>
-                      <th className="text-left p-3 font-medium text-muted-foreground">From</th>
-                      <th className="text-left p-3 font-medium text-muted-foreground">Subject</th>
-                      <th className="text-left p-3 font-medium text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          Received on
-                          <span className="text-xs">↓</span>
-                        </div>
-                      </th>
-                      <th className="text-left p-3 font-medium text-muted-foreground">Clients</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {emails.length === 0 ? (
-                      <tr>
-                        <td colSpan={6} className="text-center py-12 text-muted-foreground">
-                          No emails in this folder.
-                        </td>
-                      </tr>
-                    ) : (
-                      emails.map((email) => (
-                        <tr
-                          key={email.id}
-                          className={cn(
-                            "border-b border-border hover:bg-muted/30 cursor-pointer",
-                            !email.isRead && "font-medium"
-                          )}
-                        >
-                          <td className="p-3">
-                            <Checkbox
-                              checked={selectedEmails.includes(email.id)}
-                              onCheckedChange={() => toggleEmailSelection(email.id)}
-                            />
-                          </td>
-                          <td className="p-3">
-                            {email.hasAttachment && (
-                              <Paperclip className="w-4 h-4 text-muted-foreground" />
-                            )}
-                          </td>
-                          <td className={cn("p-3", !email.isRead && "text-[hsl(180,70%,45%)]")}>
-                            {email.from}
-                          </td>
-                          <td className={cn("p-3", !email.isRead && "text-[hsl(180,70%,45%)]")}>
-                            {email.subject}
-                          </td>
-                          <td className="p-3 text-muted-foreground">{email.receivedOn}</td>
-                          <td className="p-3">
-                            <EmailClientBadges clients={email.clients} />
-                          </td>
-                        </tr>
-                      ))
+              {/* Action Buttons */}
+              <div className="p-3 flex flex-wrap gap-2 border-b border-border">
+                <Button 
+                  size="sm" 
+                  className="bg-[hsl(180,70%,45%)] hover:bg-[hsl(180,70%,40%)] text-white"
+                  onClick={() => navigate("/email/compose")}
+                >
+                  <PenSquare className="w-4 h-4 mr-1" />
+                  Compose
+                </Button>
+              </div>
+
+              {/* Folder List */}
+              <div className="flex-1 py-2">
+                {folderItems.map((folder) => (
+                  <button
+                    key={folder.label}
+                    onClick={() => {
+                      if (folder.folder) {
+                        setActiveFolder(folder.folder);
+                        triggerFetch();
+                      }
+                    }}
+                    className={cn(
+                      "w-full flex items-center gap-2 px-4 py-2 text-sm",
+                      activeFolder === folder.folder
+                        ? "text-[hsl(180,70%,45%)] bg-[hsl(180,70%,45%)]/10"
+                        : "text-foreground hover:bg-muted/50"
                     )}
-                  </tbody>
-                </table>
-              )}
+                  >
+                    <folder.icon className="w-4 h-4" />
+                    <span className="flex-1 text-left">{folder.label}</span>
+                    {folder.folder && folderCounts[folder.folder] !== undefined && folderCounts[folder.folder] > 0 && (
+                      <span className="text-[hsl(180,70%,45%)] font-medium">{folderCounts[folder.folder]}</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Main Content Area */}
+          <div className="flex-1 flex flex-col bg-background">
+            {/* Header with Channel Tabs */}
+            <div className="flex items-center justify-between gap-2 p-3 border-b border-border">
+              {/* Left side: Channel tabs */}
+              <CommunicationTypeSelector value={activeChannel} onChange={setActiveChannel} />
+
+              {/* Right side: Search, Date, Filter, Setup, Refresh */}
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input placeholder="Search..." className="pl-10 w-48 h-8 text-sm" />
+                </div>
+                <Button variant="outline" size="sm" className="h-8">
+                  <Calendar className="w-4 h-4 mr-1" />
+                  Date selection
+                </Button>
+                <Button variant="outline" size="icon" className="h-8 w-8">
+                  <Filter className="w-4 h-4" />
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  className="h-8 w-8"
+                  onClick={() => setSetupDialogOpen(true)}
+                  title="Communication Setup"
+                >
+                  <Settings className="w-4 h-4" />
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  className="h-8 w-8"
+                  onClick={() => triggerFetch()}
+                  disabled={isFetching}
+                  title="Refresh"
+                >
+                  <RefreshCw className={cn("w-4 h-4", isFetching && "animate-spin")} />
+                </Button>
+              </div>
             </div>
 
-            {/* Pagination */}
-            <div className="flex items-center justify-end gap-2 p-3 border-t border-border text-sm text-muted-foreground">
-              <Button variant="ghost" size="icon" className="h-6 w-6" disabled>
-                <ChevronsLeft className="w-4 h-4" />
-              </Button>
-              <Button variant="ghost" size="icon" className="h-6 w-6" disabled>
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
-              <span>1 to {emails.length} of {emails.length}</span>
-              <Button variant="ghost" size="icon" className="h-6 w-6" disabled>
-                <ChevronRight className="w-4 h-4" />
-              </Button>
-              <Button variant="ghost" size="icon" className="h-6 w-6" disabled>
-                <ChevronsRight className="w-4 h-4" />
-              </Button>
-            </div>
+            {/* Content based on active channel */}
+            {activeChannel === "Email" ? (
+              <>
+                {/* Email Table */}
+                <div className="flex-1 overflow-auto">
+                  {emailsLoading ? (
+                    <div className="flex items-center justify-center py-12">
+                      <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : (
+                    <table className="w-full text-sm">
+                      <thead className="bg-muted/30 sticky top-0">
+                        <tr className="border-b border-border">
+                          <th className="w-10 p-3"></th>
+                          <th className="w-10 p-3"></th>
+                          <th className="text-left p-3 font-medium text-muted-foreground">From</th>
+                          <th className="text-left p-3 font-medium text-muted-foreground">Subject</th>
+                          <th className="text-left p-3 font-medium text-muted-foreground">
+                            <div className="flex items-center gap-1">
+                              Received on
+                              <span className="text-xs">↓</span>
+                            </div>
+                          </th>
+                          <th className="text-left p-3 font-medium text-muted-foreground">Clients</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {emails.length === 0 ? (
+                          <tr>
+                            <td colSpan={6} className="text-center py-12 text-muted-foreground">
+                              No emails in this folder.
+                            </td>
+                          </tr>
+                        ) : (
+                          emails.map((email) => (
+                            <tr
+                              key={email.id}
+                              className={cn(
+                                "border-b border-border hover:bg-muted/30 cursor-pointer",
+                                !email.isRead && "font-medium"
+                              )}
+                            >
+                              <td className="p-3">
+                                <Checkbox
+                                  checked={selectedEmails.includes(email.id)}
+                                  onCheckedChange={() => toggleEmailSelection(email.id)}
+                                />
+                              </td>
+                              <td className="p-3">
+                                {email.hasAttachment && (
+                                  <Paperclip className="w-4 h-4 text-muted-foreground" />
+                                )}
+                              </td>
+                              <td className={cn("p-3", !email.isRead && "text-[hsl(180,70%,45%)]")}>
+                                {email.from}
+                              </td>
+                              <td className={cn("p-3", !email.isRead && "text-[hsl(180,70%,45%)]")}>
+                                {email.subject}
+                              </td>
+                              <td className="p-3 text-muted-foreground">{email.receivedOn}</td>
+                              <td className="p-3">
+                                <EmailClientBadges clients={email.clients} />
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+
+                {/* Pagination */}
+                <div className="flex items-center justify-end gap-2 p-3 border-t border-border text-sm text-muted-foreground">
+                  <Button variant="ghost" size="icon" className="h-6 w-6" disabled>
+                    <ChevronsLeft className="w-4 h-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-6 w-6" disabled>
+                    <ChevronLeft className="w-4 h-4" />
+                  </Button>
+                  <span>1 to {emails.length} of {emails.length}</span>
+                  <Button variant="ghost" size="icon" className="h-6 w-6" disabled>
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-6 w-6" disabled>
+                    <ChevronsRight className="w-4 h-4" />
+                  </Button>
+                </div>
+              </>
+            ) : (
+              /* Chat Interface for WhatsApp/SMS/Push */
+              <ChatInterface channel={activeChannel} />
+            )}
           </div>
         </main>
       </div>
 
-      {/* Email Setup Dialog */}
+      {/* Communication Setup Dialog */}
       <EmailSetupDialog
         open={setupDialogOpen}
         onOpenChange={setSetupDialogOpen}
