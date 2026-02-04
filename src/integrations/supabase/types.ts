@@ -2230,6 +2230,51 @@ export type Database = {
         }
         Relationships: []
       }
+      email_tasks: {
+        Row: {
+          created_at: string | null
+          email_id: string
+          id: string
+          is_linked: boolean | null
+          task_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          email_id: string
+          id?: string
+          is_linked?: boolean | null
+          task_id: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          email_id?: string
+          id?: string
+          is_linked?: boolean | null
+          task_id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_tasks_email_id_fkey"
+            columns: ["email_id"]
+            isOneToOne: false
+            referencedRelation: "emails"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_tasks_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       emails: {
         Row: {
           body_html: string | null

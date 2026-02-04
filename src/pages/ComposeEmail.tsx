@@ -20,7 +20,6 @@ import {
   Trash2,
   Save,
   Loader2,
-  Plus,
   X,
 } from "lucide-react";
 import commandCenterIcon from "@/assets/command-center-icon.png";
@@ -33,11 +32,18 @@ import {
   formatClientName,
   getClientInitials,
 } from "@/components/email/ClientAvatarBadge";
+import { InlineClientSearch } from "@/components/email/InlineClientSearch";
+import { TaskSearchDialog } from "@/components/email/TaskSearchDialog";
+import { AttachmentLinkDialog, AttachmentItem } from "@/components/email/AttachmentLinkDialog";
 import { EmailQuotedContent, generateQuotedHtml } from "@/components/email/EmailQuotedContent";
 import { useUserSettings } from "@/hooks/useUserSettings";
+import { useEmailSettings } from "@/hooks/useEmailSettings";
 import { useEmailDetail, LinkedClient } from "@/hooks/useEmailDetail";
+import { useEmailTasks, LinkedTaskDisplay } from "@/hooks/useEmailTasks";
 import { useCommunicationCampaigns, CommunicationChannel } from "@/hooks/useCommunicationCampaigns";
+import { useClientDocuments } from "@/hooks/useClientDocuments";
 import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 const sidebarItems = [
   { icon: LayoutDashboard, label: "Dash", path: "/dashboard" },
@@ -85,9 +91,26 @@ const ComposeEmail = () => {
   const [newCc, setNewCc] = useState("");
   const [newBcc, setNewBcc] = useState("");
   const [linkedClients, setLinkedClients] = useState<LinkedClient[]>([]);
+  
+  // Task linking state
+  const [taskSearchOpen, setTaskSearchOpen] = useState(false);
+  const [taskLinkConfirmation, setTaskLinkConfirmation] = useState<string | null>(null);
+  
+  // Attachment linking state
+  const [attachmentDialogOpen, setAttachmentDialogOpen] = useState(false);
+  const [pendingAttachments, setPendingAttachments] = useState<AttachmentItem[]>([]);
 
   const { settings } = useUserSettings();
+  const { settings: emailSettings } = useEmailSettings();
   const { createCampaign } = useCommunicationCampaigns();
+  
+  // Mock email ID for task linking (would be real in edit mode)
+  const currentEmailId = originalEmailId || null;
+  const { linkedTasks, linkTask, toggleTaskLink } = useEmailTasks(currentEmailId);
+  
+  // Use first linked client for document uploads
+  const primaryClientId = linkedClients[0]?.id;
+  const { uploadDocument } = useClientDocuments(primaryClientId || "");
 
   // Pre-fill form when original email loads
   useEffect(() => {
@@ -182,6 +205,65 @@ const ComposeEmail = () => {
 
   const handleRemoveClient = (clientId: string) => {
     setLinkedClients(linkedClients.filter((c) => c.id !== clientId));
+  };
+
+  const handleAddClient = (client: LinkedClient) => {
+    if (!linkedClients.find((c) => c.id === client.id)) {
+      setLinkedClients([...linkedClients, client]);
+    }
+  };
+
+  const handleLinkTasks = async (taskIds: string[]) => {
+    let successCount = 0;
+    for (const taskId of taskIds) {
+      const success = await linkTask(taskId);
+      if (success) successCount++;
+    }
+    if (successCount > 0) {
+      setTaskLinkConfirmation(`Task${successCount > 1 ? "s" : ""} linked. ${linkedTasks.length + successCount} task${linkedTasks.length + successCount !== 1 ? "s" : ""} found`);
+      setTimeout(() => setTaskLinkConfirmation(null), 5000);
+    }
+  };
+
+  const handleToggleTaskLink = async (taskId: string, linked: boolean) => {
+    const success = await toggleTaskLink(taskId, linked);
+    if (success && linked) {
+      setTaskLinkConfirmation(`Task has been linked. ${linkedTasks.length} task${linkedTasks.length !== 1 ? "s" : ""} found`);
+      setTimeout(() => setTaskLinkConfirmation(null), 5000);
+    }
+  };
+
+  const handleAttachFile = () => {
+    // For now, open the dialog with mock attachments from original email
+    // In production, this would handle file upload
+    if (originalEmail?.has_attachments) {
+      // Would fetch actual attachments here
+      setPendingAttachments([
+        { id: "1", name: "document.pdf" },
+        { id: "2", name: "spreadsheet.xlsx" },
+      ]);
+      setAttachmentDialogOpen(true);
+    } else {
+      toast({ title: "No attachments to link", description: "Use the file input to upload new files." });
+    }
+  };
+
+  const handleSaveAttachments = async (attachments: { id: string; documentType: string; isLinked: boolean }[]) => {
+    if (!primaryClientId) {
+      toast({ title: "Please link a client before saving attachments", variant: "destructive" });
+      return;
+    }
+
+    for (const att of attachments) {
+      const pendingAtt = pendingAttachments.find((p) => p.id === att.id);
+      if (pendingAtt) {
+        await uploadDocument({
+          name: pendingAtt.name,
+          // document_type_id would need to be looked up from document_types table
+        });
+      }
+    }
+    toast({ title: `${attachments.length} attachment(s) saved to client profile` });
   };
 
   const handleDiscard = () => {
@@ -349,7 +431,7 @@ const ComposeEmail = () => {
               {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
               Send
             </Button>
-            <Button variant="outline" size="sm" className="gap-1.5">
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={handleAttachFile}>
               <Paperclip className="w-4 h-4" />
               Attach File
             </Button>
@@ -370,7 +452,11 @@ const ComposeEmail = () => {
               {/* From */}
               <div className="flex items-center gap-3">
                 <Label className="w-16 text-sm text-muted-foreground">From</Label>
-                <Input value={userEmail} readOnly className="flex-1 bg-background" />
+                <Input 
+                  value={emailSettings?.email_address || userEmail} 
+                  readOnly 
+                  className="flex-1 bg-background" 
+                />
               </div>
 
               {/* To */}
@@ -533,19 +619,27 @@ const ComposeEmail = () => {
                       onRemove={() => handleRemoveClient(client.id)}
                     />
                   ))}
-                  <Button variant="ghost" size="sm" className="gap-1 text-xs h-8">
-                    <Plus className="w-3.5 h-3.5" />
-                    Add
-                  </Button>
+                  <InlineClientSearch
+                    selectedClients={linkedClients}
+                    onAddClient={handleAddClient}
+                  />
                 </div>
               </div>
             </div>
 
+            {/* Task Link Confirmation Banner */}
+            {taskLinkConfirmation && (
+              <div className="flex items-center gap-2 p-3 bg-[hsl(180,70%,45%)]/10 border border-[hsl(180,70%,45%)]/30 rounded-lg text-[hsl(180,70%,45%)]">
+                <span className="text-sm font-medium">{taskLinkConfirmation}</span>
+              </div>
+            )}
+
             {/* Task Linking */}
             <TaskLinkingSection
-              linkedTasks={[]}
+              linkedTasks={linkedTasks}
+              onToggleLink={handleToggleTaskLink}
               onGuessTask={() => toast({ title: "AI task matching coming soon" })}
-              onSearchTask={() => navigate("/tasks")}
+              onSearchTask={() => setTaskSearchOpen(true)}
               onNewTask={() => navigate("/tasks")}
               onGuessCompletedTask={() => toast({ title: "Completed task matching coming soon" })}
             />
@@ -588,6 +682,23 @@ const ComposeEmail = () => {
           </div>
         </div>
       </div>
+
+      {/* Task Search Dialog */}
+      <TaskSearchDialog
+        open={taskSearchOpen}
+        onOpenChange={setTaskSearchOpen}
+        clientIds={linkedClients.map((c) => c.id)}
+        onLinkTasks={handleLinkTasks}
+      />
+
+      {/* Attachment Link Dialog */}
+      <AttachmentLinkDialog
+        open={attachmentDialogOpen}
+        onOpenChange={setAttachmentDialogOpen}
+        attachments={pendingAttachments}
+        onSave={handleSaveAttachments}
+        clientId={primaryClientId}
+      />
     </div>
   );
 };
