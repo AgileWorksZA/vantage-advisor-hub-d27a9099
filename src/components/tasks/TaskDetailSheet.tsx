@@ -264,15 +264,15 @@ export function TaskDetailSheet({
               {/* Category */}
               <div className="space-y-2">
                 <Label>Category</Label>
-                <Select
-                  value={editedTask.category || ""}
-                  onValueChange={(value) => setEditedTask({ ...editedTask, category: value || null })}
+              <Select
+                  value={editedTask.category || "__none__"}
+                  onValueChange={(value) => setEditedTask({ ...editedTask, category: value === "__none__" ? null : value })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="__none__">None</SelectItem>
                     {taskCategories.map((c) => (
                       <SelectItem key={c.code} value={c.code}>{c.name}</SelectItem>
                     ))}

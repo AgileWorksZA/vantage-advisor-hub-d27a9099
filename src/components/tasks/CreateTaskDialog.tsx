@@ -261,12 +261,12 @@ export function CreateTaskDialog({ open, onClose, onCreate }: CreateTaskDialogPr
             {taskCategories.length > 0 && (
               <div className="space-y-2">
                 <Label>Category</Label>
-                <Select value={category} onValueChange={setCategory}>
+                <Select value={category || "__none__"} onValueChange={(val) => setCategory(val === "__none__" ? "" : val)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                <SelectContent>
+                    <SelectItem value="__none__">None</SelectItem>
                     {taskCategories.map((c) => (
                       <SelectItem key={c.code} value={c.code}>
                         {c.name}
