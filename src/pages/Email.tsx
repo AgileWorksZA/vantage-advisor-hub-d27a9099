@@ -74,14 +74,27 @@ const EmailPage = () => {
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
-  const [activeFolder, setActiveFolder] = useState<EmailFolder>("Task Pool");
+  const [activeFolder, setActiveFolder] = useState<EmailFolder | null>(null);
   const [setupDialogOpen, setSetupDialogOpen] = useState(false);
   const [activeChannel, setActiveChannel] = useState<CommunicationChannel>("Email");
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
   const [emailViewOpen, setEmailViewOpen] = useState(false);
 
-  const { emails, loading: emailsLoading, isFetching, folderCounts, refetch, triggerFetch, moveToFolder, markAsRead } = useEmails(activeFolder);
-  const { settings: emailSettings, isConnected } = useEmailSettings();
+  const { settings: emailSettings, isConnected, loading: settingsLoading } = useEmailSettings();
+  
+  // Set default folder based on fetch_mode setting once loaded
+  useEffect(() => {
+    if (!settingsLoading && activeFolder === null) {
+      if (emailSettings?.fetch_mode === "inbox") {
+        setActiveFolder("Inbox");
+      } else {
+        // Default to Task Pool if fetch_mode is task_pool or no settings
+        setActiveFolder("Task Pool");
+      }
+    }
+  }, [settingsLoading, emailSettings?.fetch_mode, activeFolder]);
+
+  const { emails, loading: emailsLoading, isFetching, folderCounts, refetch, triggerFetch, moveToFolder, markAsRead } = useEmails(activeFolder || "Task Pool");
 
   const handleEmailClick = (email: EmailListItem) => {
     // Navigate to the full-page email view
