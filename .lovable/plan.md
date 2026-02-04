@@ -1,211 +1,233 @@
 
+# Multi-Channel Communication Data & Email Viewer Implementation
 
-# Seed Demo Communications Data
+## Issues Identified
 
-## Overview
+### 1. Direct Messages Not Visible
+The seeded data was created for user_id `fa9f27f6-b772-4edb-b95f-5331c7636e2d`, but the current logged-in user has a different ID. RLS policies filter messages to the authenticated user only.
 
-Create an edge function to populate the `emails`, `direct_messages`, and `communications` tables with realistic financial adviser-client communications. The data will use existing clients from the database and include multi-message conversations with replies, attachments, and typical financial services topics.
+**Solution**: Update the edge function to seed data for the currently authenticated user (from the request's auth token).
 
-## Tables to Populate
+### 2. No Email Detail View
+Currently, clicking an email row does nothing. Need to create:
+- An `EmailViewDialog` component to display email content
+- Support for viewing HTML body with proper styling
+- Reply functionality (opens compose with pre-filled data)
+- Previous mail trail display for threaded conversations
 
-| Table | Purpose | Channels |
-|-------|---------|----------|
-| `emails` | Email inbox/sent items | Email (with attachments flag) |
-| `direct_messages` | Chat conversations | WhatsApp, SMS, Push |
-| `communications` | Communication log | All channels |
+### 3. No Attachment System
+The `has_attachments` flag exists but there's no:
+- `email_attachments` table to store attachment metadata
+- Sample documents (PDFs) to attach
+- Preview/download functionality
 
-## Database Schema Summary
-
-**emails table:**
-- `id`, `user_id`, `client_id`, `folder` (inbox/sent/drafts/archive)
-- `direction`, `from_address`, `to_addresses` (jsonb), `cc_addresses`
-- `subject`, `body_preview`, `body_html`, `has_attachments`
-- `sent_at`, `received_at`, `is_read`, `status`, `external_id`
-
-**direct_messages table:**
-- `id`, `user_id`, `client_id`, `channel` (whatsapp/sms/push)
-- `direction` (inbound/outbound), `content`, `media_url`
-- `status` (sent/delivered/read), `sent_at`
-
-**communications table:**
-- `id`, `user_id`, `client_id`, `channel` (Email/SMS/Phone/WhatsApp/Push/Webinar/Office Event)
-- `direction`, `from_identifier`, `to_identifier`, `subject`, `content`
-- `sent_at`, `status`
-
-## Communication Content Templates
-
-### Email Subjects & Threads (Financial Adviser Context)
-
-| Category | Subject Examples |
-|----------|------------------|
-| Portfolio Updates | "Your Q4 2024 Portfolio Performance Summary", "Monthly Investment Update - January 2025" |
-| Document Requests | "Updated FICA Documents Required", "Tax Certificate for 2024 Tax Year" |
-| Annual Reviews | "Reminder: Annual Financial Review Meeting", "Action Required: Review your investment goals" |
-| Policy Changes | "Important: Changes to your retirement annuity", "Confirmation: Premium adjustment processed" |
-| Claims | "Your claim reference #CL2024-7892 status update", "Documents received - claim in progress" |
-| General | "Thank you for your recent meeting", "Welcome to Vantage Financial Services" |
-| Client Replies | "RE: Questions about my investment", "RE: Urgent - Please call me" |
-
-### WhatsApp/SMS Conversation Examples
-
-**Portfolio Query Thread:**
-```text
-Client: Hi, I saw the market dropped yesterday. Should I be worried about my portfolio?
-Adviser: Good morning Mrs Van Niekerk! No need to worry - these fluctuations are normal. Your portfolio is well-diversified. Would you like me to send you a quick summary?
-Client: Yes please, that would help put my mind at ease
-Adviser: [Attachment: Portfolio_Summary_Jan2025.pdf] Here's your current position. As you can see, your long-term performance remains solid at 12.3% p.a.
-Client: Thank you so much! That's reassuring 👍
-```
-
-**Document Request Thread:**
-```text
-Adviser: Good day Mr Botha. This is a friendly reminder that your FICA documents expire next month. Could you please send updated proof of address?
-Client: Thanks for the reminder. I'll get that to you this week.
-Client: [Attachment: Utility_Bill_Jan2025.pdf] Here's my latest municipal account
-Adviser: Received, thank you! I'll update your records. You're all set until 2027.
-```
-
-**Meeting Reminder:**
-```text
-Adviser: Hi Chanelle! Just confirming our meeting tomorrow at 10:00 for your annual review. I'll have your updated financial plan ready.
-Client: Perfect, see you then! Can we also discuss offshore investments?
-Adviser: Absolutely! I'll prepare some options for you. See you tomorrow!
-```
-
-### Push Notification Examples
-
-| Type | Message |
-|------|---------|
-| Market Alert | "Market update: JSE All Share up 2.3% today. Your portfolio value increased by R12,450." |
-| Document Ready | "Your tax certificate is ready to download in your client portal." |
-| Meeting Reminder | "Reminder: Annual review meeting tomorrow at 14:00 with Johan Botha." |
-| Payment Confirmation | "Premium payment of R3,500 received. Thank you!" |
-| Birthday | "Happy Birthday from the Vantage team! 🎂" |
-
-## Edge Function Design
-
-### File: `supabase/functions/seed-demo-communications/index.ts`
-
-**Function Structure:**
-```text
-seed-demo-communications/
-├── Fetch existing clients (5-10 clients)
-├── Generate Emails
-│   ├── 15-20 email threads per client
-│   ├── Mix of inbox (inbound) and sent (outbound)
-│   ├── Varying is_read status
-│   ├── Some with has_attachments = true
-│   └── Realistic sent_at dates (past 90 days)
-├── Generate Direct Messages
-│   ├── WhatsApp: 3-5 conversations per client (5-15 messages each)
-│   ├── SMS: 2-3 short exchanges per client (2-5 messages each)
-│   └── Push: 5-8 notifications per client
-└── Generate Communications Log
-    └── Mirror of above for communication history
-```
-
-**Data Generation Logic:**
-
-1. **Fetch Clients**: Query 10 clients from database with email addresses
-2. **Generate Email Threads**: 
-   - Create 3-4 email threads per client (initial + 2-3 replies)
-   - Thread subjects: Portfolio updates, document requests, meeting confirmations
-   - Some unread, some with attachments
-   - Dates spread over last 60 days
-3. **Generate WhatsApp Conversations**:
-   - 3-5 back-and-forth exchanges per client
-   - Realistic message patterns (greetings, queries, confirmations)
-   - Status progression: sent → delivered → read
-4. **Generate SMS Messages**:
-   - Shorter, more urgent messages
-   - Meeting reminders, payment confirmations
-5. **Generate Push Notifications**:
-   - System-generated alerts
-   - Market updates, document notifications
-
-## Sample Email HTML Body
-
-```html
-<div style="font-family: Arial, sans-serif; max-width: 600px;">
-  <p>Dear Mrs Van Niekerk,</p>
-  
-  <p>Please find attached your quarterly portfolio performance summary for Q4 2024.</p>
-  
-  <p><strong>Key Highlights:</strong></p>
-  <ul>
-    <li>Portfolio Value: R2,456,789 (+4.2% this quarter)</li>
-    <li>Year-to-date Return: 12.3%</li>
-    <li>Asset Allocation: On target</li>
-  </ul>
-  
-  <p>I'd be happy to schedule a call to discuss these results in more detail.</p>
-  
-  <p>Kind regards,<br>
-  <strong>Johan Botha</strong><br>
-  Financial Adviser | Vantage Financial Services<br>
-  Tel: +27 21 555 1234</p>
-</div>
-```
-
-## Implementation Details
-
-### Date Distribution
+## Architecture
 
 ```text
-Timeline (last 60 days):
-├── Week 1-2 (recent): 40% of messages - mostly read
-├── Week 3-4: 30% of messages - mixed read/unread
-└── Week 5-8 (older): 30% of messages - all read
+Email System Enhancement
+├── Database Changes
+│   ├── email_attachments table (new)
+│   └── direct_message_attachments table (new, for media in chats)
+├── Sample Documents (public/downloads/)
+│   ├── Portfolio_Report_Q4_2024.pdf (placeholder content)
+│   ├── Tax_Certificate_2024.pdf
+│   ├── FICA_Documents.pdf
+│   ├── Financial_Plan_2025.pdf
+│   └── Policy_Schedule.pdf
+├── New Components
+│   ├── EmailViewDialog.tsx - Email detail viewer
+│   └── AttachmentPreview.tsx - Attachment list with download/preview
+├── Updated Edge Function
+│   └── seed-demo-communications - Use authenticated user + create attachments
+└── Email.tsx Updates
+    └── Email row click → Open EmailViewDialog
 ```
 
-### Message Status Distribution
+## Database Schema Changes
 
-| Channel | Status Distribution |
-|---------|---------------------|
-| Email | 70% read, 30% unread |
-| WhatsApp | 60% read, 30% delivered, 10% sent |
-| SMS | 70% delivered, 30% sent |
-| Push | 80% read, 20% delivered |
+### New Table: `email_attachments`
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | uuid | Primary key |
+| email_id | uuid | FK to emails |
+| user_id | uuid | Owner |
+| file_name | text | Display name (e.g., "Portfolio_Report.pdf") |
+| file_path | text | Path in storage or public folder |
+| file_size | integer | Size in bytes |
+| content_type | text | MIME type (application/pdf, image/png) |
+| created_at | timestamp | Record creation |
+
+### New Table: `direct_message_attachments`
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | uuid | Primary key |
+| message_id | uuid | FK to direct_messages |
+| user_id | uuid | Owner |
+| file_name | text | Display name |
+| file_path | text | Storage path |
+| file_size | integer | Size in bytes |
+| content_type | text | MIME type |
+| created_at | timestamp | Record creation |
+
+## Sample Documents
+
+Create placeholder PDF files in `public/downloads/` folder:
+
+| File | Content Description |
+|------|---------------------|
+| `Portfolio_Report_Q4_2024.pdf` | Quarterly performance summary with graphs |
+| `Tax_Certificate_2024.pdf` | IT3(b) Tax certificate |
+| `FICA_Documents.pdf` | Client onboarding FICA bundle |
+| `Financial_Plan_2025.pdf` | Comprehensive financial plan |
+| `Policy_Schedule.pdf` | Life insurance policy schedule |
+| `Statement_Jan_2025.pdf` | Monthly investment statement |
+
+For demo purposes, these will be simple HTML-to-PDF style documents rendered as static files.
+
+## EmailViewDialog Component
+
+### Layout
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│  [←]  Email Details                                  [Reply] [X] │
+├─────────────────────────────────────────────────────────────────┤
+│  From: client@email.com                                          │
+│  To: adviser@vantage.co                                          │
+│  Date: 04/02/2025 14:30 PM                                      │
+│  Subject: RE: Your Q4 2024 Portfolio Performance Summary        │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                   │
+│  Dear Johan,                                                      │
+│                                                                   │
+│  Thank you for sending this through. I'm pleased with the       │
+│  performance. Can we schedule a call next week to discuss...    │
+│                                                                   │
+│  Regards,                                                         │
+│  Thabo                                                           │
+│                                                                   │
+├─────────────────────────────────────────────────────────────────┤
+│  📎 Attachments (2)                                              │
+│  ┌──────────────────────┐  ┌──────────────────────┐             │
+│  │ 📄 Portfolio.pdf     │  │ 📄 Tax_Cert.pdf      │             │
+│  │    245 KB  [↓]       │  │    89 KB  [↓]        │             │
+│  └──────────────────────┘  └──────────────────────┘             │
+├─────────────────────────────────────────────────────────────────┤
+│  ▼ Previous Messages                                             │
+│  ─────────────────────────────────────────────────────────────  │
+│  On 03/02/2025, Johan wrote:                                     │
+│  > Please find attached your quarterly portfolio...              │
+│  > Key Highlights:                                               │
+│  > • Portfolio Value: R2,456,789 (+4.2%)                        │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Features
+- Full HTML email body rendering (sanitized with DOMPurify)
+- Attachment list with file icons, sizes, and download buttons
+- Previous mail trail detection (look for emails with same subject prefix)
+- Reply button pre-fills compose with:
+  - "RE:" prefix on subject
+  - Original sender as recipient
+  - Quoted original message in body
+- Mark as read on open
+
+## Updated Seed Function
+
+The `seed-demo-communications` edge function will be updated to:
+
+1. **Get authenticated user from request** instead of hardcoding
+2. **Create email_attachments records** linking to sample files
+3. **Create direct_message_attachments** for some WhatsApp messages
+4. **Set `media_url`** field on direct_messages that have attachments
+
+### Attachment Distribution
+
+| Email Subject Contains | Attachments |
+|------------------------|-------------|
+| "Portfolio Performance" | Portfolio_Report_Q4_2024.pdf |
+| "Tax Certificate" | Tax_Certificate_2024.pdf |
+| "FICA Documents" | FICA_Documents.pdf |
+| "Financial Plan" | Financial_Plan_2025.pdf |
+| "Policy" | Policy_Schedule.pdf |
+| "Statement" | Statement_Jan_2025.pdf |
+
+### WhatsApp Attachments
+- Portfolio summary PDFs sent in conversations
+- Proof of address images (simulated)
+
+## Email.tsx Changes
+
+### Current (line 310-340)
+```tsx
+<tr key={email.id} className={cn(...)}>
+  ...table cells...
+</tr>
+```
+
+### Updated
+```tsx
+<tr
+  key={email.id}
+  onClick={() => handleEmailClick(email)}
+  className={cn(..., "cursor-pointer")}
+>
+  ...table cells...
+</tr>
+
+{/* Add dialog */}
+<EmailViewDialog
+  open={selectedEmailOpen}
+  onOpenChange={setSelectedEmailOpen}
+  email={selectedEmail}
+  onReply={handleReply}
+/>
+```
+
+## New Hooks
+
+### useEmailDetail
+Fetch single email with full body and attachments:
+```tsx
+const { email, attachments, loading, relatedEmails } = useEmailDetail(emailId);
+```
 
 ## Files to Create
 
-| File | Description |
-|------|-------------|
-| `supabase/functions/seed-demo-communications/index.ts` | Edge function with all seeding logic |
+| File | Purpose |
+|------|---------|
+| `src/components/email/EmailViewDialog.tsx` | Email detail viewer modal |
+| `src/components/email/AttachmentList.tsx` | Display attachments with download |
+| `src/hooks/useEmailDetail.ts` | Fetch single email + attachments |
+| `public/downloads/Portfolio_Report_Q4_2024.pdf` | Sample attachment |
+| `public/downloads/Tax_Certificate_2024.pdf` | Sample attachment |
+| `public/downloads/FICA_Documents.pdf` | Sample attachment |
+| `public/downloads/Financial_Plan_2025.pdf` | Sample attachment |
+| `public/downloads/Policy_Schedule.pdf` | Sample attachment |
+| `public/downloads/Statement_Jan_2025.pdf` | Sample attachment |
 
-## Execution Flow
+## Files to Modify
 
-1. Create the edge function with comprehensive demo data
-2. Deploy the function
-3. Call the function to populate data for the authenticated user
+| File | Changes |
+|------|---------|
+| `src/pages/Email.tsx` | Add click handler, dialog state, EmailViewDialog |
+| `src/hooks/useEmails.ts` | Add getEmailById method returning full email |
+| `supabase/functions/seed-demo-communications/index.ts` | Use auth user, create attachments |
 
-## Sample Data Volume
+## Implementation Order
 
-| Channel | Count per Client | Total (10 clients) |
-|---------|------------------|-------------------|
-| Emails (inbox) | 8-12 | ~100 |
-| Emails (sent) | 5-8 | ~65 |
-| WhatsApp messages | 20-40 | ~300 |
-| SMS messages | 5-10 | ~75 |
-| Push notifications | 5-8 | ~65 |
-| **Total** | | **~605 records** |
-
-## Attachment Types Represented
-
-| Email Subject Contains | Implied Attachment |
-|------------------------|-------------------|
-| "Tax Certificate" | PDF - Tax Certificate |
-| "Portfolio Performance" | PDF - Portfolio Report |
-| "Updated Documents" | PDF - FICA Documents |
-| "Financial Plan" | PDF - Financial Plan |
-| "Policy Schedule" | PDF - Policy Document |
-| "Statement" | PDF - Statement |
+1. **Database migration** - Create email_attachments and direct_message_attachments tables
+2. **Sample PDFs** - Create placeholder PDF documents
+3. **Update seed function** - Auth user detection + attachment seeding
+4. **EmailViewDialog** - Build the email viewer component
+5. **Email.tsx updates** - Make rows clickable, add dialog
+6. **Test end-to-end** - Verify emails display with attachments
 
 ## Technical Notes
 
-- Edge function follows existing patterns from `seed-demo-tasks` and `seed-demo-clients`
-- Uses service role key for database access
-- Clears existing demo data before seeding to prevent duplicates
-- All records scoped to authenticated user's ID
-- Dates use realistic South African timezone considerations
-
+- PDF files will be simple single-page documents with basic content
+- The seed function will be called with the user's auth token to properly associate data
+- Email threading uses subject matching (same subject with "RE:" prefix)
+- DOMPurify already installed for HTML sanitization
+- Reply flow navigates to /email/compose with query params for pre-fill
