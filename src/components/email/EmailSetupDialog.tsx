@@ -117,7 +117,7 @@ export const EmailSetupDialog = ({ open, onOpenChange }: EmailSetupDialogProps) 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Email Setup</DialogTitle>
           <DialogDescription>
@@ -180,7 +180,7 @@ export const EmailSetupDialog = ({ open, onOpenChange }: EmailSetupDialogProps) 
           {/* IMAP Settings */}
           {selectedProvider === "imap" && (
             <div className="space-y-3 p-3 bg-muted/50 rounded-lg">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label htmlFor="imap-server">IMAP Server</Label>
                   <Input

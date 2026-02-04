@@ -89,6 +89,8 @@ export const useEmailSettings = () => {
       if (insertError) throw insertError;
 
       setSettings(data as EmailSettings);
+      // Refetch to ensure UI is in sync
+      await fetchSettings();
       toast.success("Email settings saved successfully");
       return true;
     } catch (err: any) {
