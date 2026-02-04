@@ -24,7 +24,7 @@ export const useTaskTypes = () => {
       const { data, error } = await supabase
         .from("admin_general_lists")
         .select("*")
-        .in("list_type", ["task_types", "task_categories", "task_resolution_types", "task_sources", "task_statuses", "task_priorities"])
+        .in("list_type", ["task_types", "task_categories", "task_resolution_types", "task_sources", "task_statuses", "task_priorities", "priorities"])
         .eq("is_active", true)
         .order("display_order", { ascending: true });
 
@@ -63,6 +63,7 @@ export const useTaskTypes = () => {
             statuses.push(option);
             break;
           case "task_priorities":
+          case "priorities":
             priorities.push(option);
             break;
         }

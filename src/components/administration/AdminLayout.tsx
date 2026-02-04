@@ -134,8 +134,9 @@ export const adminSections: AdminSection[] = [
     label: "Notes & Tasks", 
     icon: StickyNote,
     tabs: [
-      { id: "subjects", label: "Note Subjects" },
+      { id: "note-subjects", label: "Note Subjects" },
       { id: "task-types", label: "Task Types" },
+      { id: "task-statuses", label: "Task Statuses" },
       { id: "priorities", label: "Priorities" },
     ]
   },

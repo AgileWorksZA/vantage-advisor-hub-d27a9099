@@ -40,6 +40,7 @@ type NotesTasksItem = NoteSubject | GeneralListItem;
 
 const tabToListType: Record<string, string> = {
   "task-types": "task_types",
+  "task-statuses": "task_statuses",
   "priorities": "priorities",
 };
 
