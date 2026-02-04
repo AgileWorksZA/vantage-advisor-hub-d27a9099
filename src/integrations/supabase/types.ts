@@ -14,6 +14,456 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_communication_settings: {
+        Row: {
+          channel: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          provider: string | null
+          settings: Json
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          channel: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          provider?: string | null
+          settings?: Json
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          provider?: string | null
+          settings?: Json
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      admin_data_imports: {
+        Row: {
+          changed_by: string | null
+          created_at: string | null
+          deleted_at: string | null
+          duration_seconds: number | null
+          end_time: string | null
+          error_message: string | null
+          id: string
+          import_name: string
+          import_type: string
+          is_deleted: boolean | null
+          metadata: Json | null
+          processed_items: number | null
+          progress_percentage: number | null
+          remaining_time_seconds: number | null
+          source_reference: string | null
+          start_time: string | null
+          status: string
+          total_items: number | null
+          total_lines: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          changed_by?: string | null
+          created_at?: string | null
+          deleted_at?: string | null
+          duration_seconds?: number | null
+          end_time?: string | null
+          error_message?: string | null
+          id?: string
+          import_name: string
+          import_type: string
+          is_deleted?: boolean | null
+          metadata?: Json | null
+          processed_items?: number | null
+          progress_percentage?: number | null
+          remaining_time_seconds?: number | null
+          source_reference?: string | null
+          start_time?: string | null
+          status?: string
+          total_items?: number | null
+          total_lines?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          changed_by?: string | null
+          created_at?: string | null
+          deleted_at?: string | null
+          duration_seconds?: number | null
+          end_time?: string | null
+          error_message?: string | null
+          id?: string
+          import_name?: string
+          import_type?: string
+          is_deleted?: boolean | null
+          metadata?: Json | null
+          processed_items?: number | null
+          progress_percentage?: number | null
+          remaining_time_seconds?: number | null
+          source_reference?: string | null
+          start_time?: string | null
+          status?: string
+          total_items?: number | null
+          total_lines?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      admin_document_templates: {
+        Row: {
+          can_public_upload: boolean | null
+          category: string
+          code: string
+          content_template: string | null
+          created_at: string | null
+          deleted_at: string | null
+          has_content: boolean | null
+          id: string
+          is_active: boolean | null
+          is_deleted: boolean | null
+          name: string
+          name_secondary: string | null
+          requires_workflow_signature: boolean | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          can_public_upload?: boolean | null
+          category: string
+          code: string
+          content_template?: string | null
+          created_at?: string | null
+          deleted_at?: string | null
+          has_content?: boolean | null
+          id?: string
+          is_active?: boolean | null
+          is_deleted?: boolean | null
+          name: string
+          name_secondary?: string | null
+          requires_workflow_signature?: boolean | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          can_public_upload?: boolean | null
+          category?: string
+          code?: string
+          content_template?: string | null
+          created_at?: string | null
+          deleted_at?: string | null
+          has_content?: boolean | null
+          id?: string
+          is_active?: boolean | null
+          is_deleted?: boolean | null
+          name?: string
+          name_secondary?: string | null
+          requires_workflow_signature?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      admin_events: {
+        Row: {
+          actions: Json | null
+          created_at: string | null
+          deleted_at: string | null
+          id: string
+          is_active: boolean | null
+          is_deleted: boolean | null
+          module: string
+          name: string
+          trigger_conditions: Json | null
+          trigger_type: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          actions?: Json | null
+          created_at?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_deleted?: boolean | null
+          module: string
+          name: string
+          trigger_conditions?: Json | null
+          trigger_type: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          actions?: Json | null
+          created_at?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_deleted?: boolean | null
+          module?: string
+          name?: string
+          trigger_conditions?: Json | null
+          trigger_type?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      admin_funds: {
+        Row: {
+          asset_classes: number | null
+          cat1_status: string | null
+          cat2_status: string | null
+          code: string | null
+          created_at: string | null
+          deleted_at: string | null
+          domicile: string | null
+          exchange: string | null
+          fund_fact_sheet_url: string | null
+          fund_manager: string | null
+          fund_type: string | null
+          id: string
+          industry: string | null
+          is_active: boolean | null
+          is_allocation_approved: boolean | null
+          is_deleted: boolean | null
+          isin: string | null
+          location: string | null
+          morningstar_id: string | null
+          name: string
+          sector: string | null
+          source: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          asset_classes?: number | null
+          cat1_status?: string | null
+          cat2_status?: string | null
+          code?: string | null
+          created_at?: string | null
+          deleted_at?: string | null
+          domicile?: string | null
+          exchange?: string | null
+          fund_fact_sheet_url?: string | null
+          fund_manager?: string | null
+          fund_type?: string | null
+          id?: string
+          industry?: string | null
+          is_active?: boolean | null
+          is_allocation_approved?: boolean | null
+          is_deleted?: boolean | null
+          isin?: string | null
+          location?: string | null
+          morningstar_id?: string | null
+          name: string
+          sector?: string | null
+          source?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          asset_classes?: number | null
+          cat1_status?: string | null
+          cat2_status?: string | null
+          code?: string | null
+          created_at?: string | null
+          deleted_at?: string | null
+          domicile?: string | null
+          exchange?: string | null
+          fund_fact_sheet_url?: string | null
+          fund_manager?: string | null
+          fund_type?: string | null
+          id?: string
+          industry?: string | null
+          is_active?: boolean | null
+          is_allocation_approved?: boolean | null
+          is_deleted?: boolean | null
+          isin?: string | null
+          location?: string | null
+          morningstar_id?: string | null
+          name?: string
+          sector?: string | null
+          source?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      admin_general_lists: {
+        Row: {
+          code: string
+          created_at: string | null
+          deleted_at: string | null
+          description: string | null
+          display_order: number | null
+          id: string
+          is_active: boolean | null
+          is_deleted: boolean | null
+          list_type: string
+          metadata: Json | null
+          name: string
+          name_secondary: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_deleted?: boolean | null
+          list_type: string
+          metadata?: Json | null
+          name: string
+          name_secondary?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_deleted?: boolean | null
+          list_type?: string
+          metadata?: Json | null
+          name?: string
+          name_secondary?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      admin_note_subjects: {
+        Row: {
+          created_at: string | null
+          deleted_at: string | null
+          display_order: number | null
+          id: string
+          is_active: boolean | null
+          is_deleted: boolean | null
+          item_count: number | null
+          name: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          deleted_at?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_deleted?: boolean | null
+          item_count?: number | null
+          name: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          deleted_at?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_deleted?: boolean | null
+          item_count?: number | null
+          name?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      admin_product_benefits: {
+        Row: {
+          created_at: string | null
+          deleted_at: string | null
+          display_order: number | null
+          field_mapping: string | null
+          id: string
+          is_active: boolean | null
+          is_deleted: boolean | null
+          is_mapped: boolean | null
+          name: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          deleted_at?: string | null
+          display_order?: number | null
+          field_mapping?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_deleted?: boolean | null
+          is_mapped?: boolean | null
+          name: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          deleted_at?: string | null
+          display_order?: number | null
+          field_mapping?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_deleted?: boolean | null
+          is_mapped?: boolean | null
+          name?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      admin_system_settings: {
+        Row: {
+          category: string
+          created_at: string | null
+          description: string | null
+          id: string
+          setting_key: string
+          setting_value: Json
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          setting_key: string
+          setting_value: Json
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          setting_key?: string
+          setting_value?: Json
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       advice_workflows: {
         Row: {
           adviser_id: string | null
