@@ -1,172 +1,204 @@
 
 
-# Compose Email Dialog for Task Detail
+# Email Setup & Enhanced Email Table Implementation
 
-## Problem Summary
+## Overview
 
-When clicking the "Message" button on the Task Detail Sheet:
-1. The user navigates away from the task - they want to stay in the task context with a popup/dialog
-2. The linked clients are not automatically populated in the "To" field
+This plan implements email setup functionality with Gmail SSO integration and updates the email table to match the reference design with client matching and clickable client links.
 
-## Solution Architecture
+## Key Features
 
-Create a new `ComposeMessageDialog` component that can be opened as a modal overlay from anywhere in the app, and update the `ComposeToField` to support both filter-based and direct client selection modes.
+1. **Email Setup Dialog** - Accessible via button next to user email address
+2. **Mail Provider Configuration** - Support for Gmail (SSO), Microsoft, and IMAP/POP3
+3. **Fetch Mode Selection** - Pull to Inbox or collect from Task Pool folder
+4. **Email Fetch Triggers** - On folder click, navigation, or refresh with spinning indicator
+5. **Client Matching** - Match sender email against client database
+6. **Multiple Clients Display** - Show all matching clients with "+ X more" overflow
+7. **Clickable Client Names** - Link to client profile page
+
+## Architecture
 
 ```text
-+------------------------------------------+
-|              Task Detail Sheet           |
-|  +------------------------------------+  |
-|  |     Compose Message Dialog         |  |
-|  |  +------------------------------+  |  |
-|  |  | From: [current user]         |  |  |
-|  |  | To: [John Smith] [Mary Jones]|  |  |
-|  |  | Subject: [____________]      |  |  |
-|  |  | Message: [rich text editor]  |  |  |
-|  |  | [Send] [Save Draft] [Cancel] |  |  |
-|  |  +------------------------------+  |  |
-|  +------------------------------------+  |
-+------------------------------------------+
+Email.tsx
+├── EmailSettingsSetupDialog (new)
+│   ├── Provider selection (Gmail SSO, Microsoft, IMAP/POP3)
+│   ├── Fetch mode selection (Inbox / Task Pool)
+│   └── OAuth flow for Gmail/Microsoft
+├── useEmailSettings hook (new)
+│   ├── Load/save settings from admin_communication_settings
+│   └── Manage OAuth tokens
+├── Updated useEmails hook
+│   ├── Match from_address against clients table
+│   ├── Return matched client details
+│   └── Support isFetching state for spinner
+└── Updated email table
+    ├── New date format (DD/MM/YYYY HH:MM AM/PM)
+    ├── Unread emails in teal color
+    └── Clickable client names with overflow handling
 ```
 
-## Implementation Details
+## Database Changes
 
-### 1. Create ComposeMessageDialog Component
+**New table: `email_settings`** - Store user email configuration
 
-**File:** `src/components/email/ComposeMessageDialog.tsx`
+| Column | Type | Description |
+|--------|------|-------------|
+| id | uuid | Primary key |
+| user_id | uuid | Reference to auth.users |
+| provider | text | gmail, microsoft, imap |
+| email_address | text | User's email address |
+| fetch_mode | text | inbox or task_pool |
+| oauth_token | text | Encrypted token (nullable) |
+| settings | jsonb | Provider-specific config |
+| is_active | boolean | Whether sync is enabled |
+| last_sync_at | timestamp | Last successful sync |
+| created_at | timestamp | Row creation time |
+| updated_at | timestamp | Last update time |
 
-| Feature | Details |
-|---------|---------|
-| Dialog wrapper | Full-screen or large dialog using Radix Dialog |
-| Pre-populated clients | Accept `initialClientIds` prop |
-| Task context | Accept optional `taskId` prop for linking |
-| Channel support | Email, SMS, WhatsApp |
-| Actions | Send, Save Draft, Cancel |
-| On close | Return to previous context (no navigation) |
+**New junction table: `email_clients`** - Support multiple clients per email
 
-**Props Interface:**
-```typescript
-interface ComposeMessageDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  initialClientIds?: string[];  // Pre-populate To field
-  taskId?: string;              // For task linking
-  defaultChannel?: CommunicationChannel;
-}
-```
-
-### 2. Enhance ComposeToField for Direct Client Selection
-
-**File:** `src/components/email/ComposeToField.tsx`
-
-Add support for:
-- **Direct client IDs** (new): Accept array of pre-selected client IDs
-- **Filter mode** (existing): Continue supporting filter-based selection
-- **Hybrid mode**: Allow adding individual clients + filters
-
-**Updated Props:**
-```typescript
-interface ComposeToFieldProps {
-  // Existing filter-based props
-  recipientFilter: { conditions: FilterCondition[] };
-  onFilterChange: (filter: { conditions: FilterCondition[] }) => void;
-  recipientCount: number;
-  
-  // NEW: Direct client selection
-  selectedClientIds?: string[];
-  onSelectedClientIdsChange?: (ids: string[]) => void;
-  allClients?: ClientListItem[];  // For lookup
-}
-```
-
-**UI Changes:**
-- Show client badges for directly selected clients (removable)
-- Show "X recipients match" for filter-based selection
-- Allow mixing both modes
-
-### 3. Update TaskDetailSheet
-
-**File:** `src/components/tasks/TaskDetailSheet.tsx`
-
-| Current | Updated |
-|---------|---------|
-| Navigate to `/email/compose` | Open `ComposeMessageDialog` |
-| Pass clients via URL params | Pass as dialog props |
-
-**Changes:**
-```typescript
-// Add state for dialog
-const [composeDialogOpen, setComposeDialogOpen] = useState(false);
-
-// Update handler
-const handleSendMessage = () => {
-  setComposeDialogOpen(true);  // Open dialog instead of navigate
-};
-
-// Add dialog to JSX
-<ComposeMessageDialog
-  open={composeDialogOpen}
-  onOpenChange={setComposeDialogOpen}
-  initialClientIds={taskClients.map(tc => tc.client_id)}
-  taskId={task.id}
-/>
-```
+| Column | Type | Description |
+|--------|------|-------------|
+| id | uuid | Primary key |
+| email_id | uuid | Reference to emails |
+| client_id | uuid | Reference to clients |
+| created_at | timestamp | Row creation time |
 
 ## Files to Create
 
 | File | Purpose |
 |------|---------|
-| `src/components/email/ComposeMessageDialog.tsx` | Dialog-based email composer |
+| `src/components/email/EmailSetupDialog.tsx` | Email setup modal with provider selection and OAuth |
+| `src/hooks/useEmailSettings.ts` | Manage email settings CRUD and OAuth flow |
 
 ## Files to Modify
 
 | File | Changes |
 |------|---------|
-| `src/components/email/ComposeToField.tsx` | Add direct client selection support |
-| `src/components/tasks/TaskDetailSheet.tsx` | Use dialog instead of navigation |
+| `src/pages/Email.tsx` | Add setup button, spinning refresh icon, fetch triggers |
+| `src/hooks/useEmails.ts` | Add client matching logic, return matched clients with IDs, isFetching state |
 
-## Component Structure
+## Component Details
+
+### EmailSetupDialog.tsx
 
 ```text
-ComposeMessageDialog.tsx
-├── Dialog wrapper (Radix UI)
-├── CommunicationTypeSelector
-├── ComposeFromField (reused)
-├── ComposeToField (enhanced)
-│   ├── Direct client badges
-│   └── Filter-based selection
-├── AttachmentSection (reused)
-├── Subject input (Email only)
-├── RichTextEditor (reused)
-├── Signature preview (Email only)
-└── Action buttons (Send, Save Draft, Cancel)
+┌─────────────────────────────────────────────┐
+│  Email Setup                              X │
+├─────────────────────────────────────────────┤
+│                                             │
+│  Choose your email provider:                │
+│                                             │
+│  ┌─────────────────────────────────────┐    │
+│  │ 🔵 Gmail (Google SSO)               │    │
+│  │    Sign in with your Google account │    │
+│  └─────────────────────────────────────┘    │
+│                                             │
+│  ┌─────────────────────────────────────┐    │
+│  │ 🔷 Microsoft 365 / Outlook          │    │
+│  │    Sign in with Microsoft account   │    │
+│  └─────────────────────────────────────┘    │
+│                                             │
+│  ┌─────────────────────────────────────┐    │
+│  │ ⚙️ IMAP/POP3 (Other providers)      │    │
+│  │    Manual server configuration      │    │
+│  └─────────────────────────────────────┘    │
+│                                             │
+│  ─────────────────────────────────────────  │
+│                                             │
+│  Fetch mode:                                │
+│  ○ Pull emails into Inbox folder            │
+│  ● Collect from Task Pool folder            │
+│                                             │
+├─────────────────────────────────────────────┤
+│                    [Cancel]  [Connect]      │
+└─────────────────────────────────────────────┘
 ```
 
-## Client Pre-population Flow
+### Email Table Updates (matching reference image)
+
+**Visual Changes:**
+- Unread emails: From/Subject in teal color (hsl(180,70%,45%))
+- Date format: DD/MM/YYYY HH:MM AM/PM
+- Client names formatted as: "Surname, I (FirstName)"
+- Multiple clients: "First Client + X more client" (teal clickable)
+- Each client name clickable to navigate to `/clients/{client-id}`
+
+### Refresh Button with Spinner
 
 ```text
-1. User clicks "Message" button in TaskDetailSheet
-2. TaskDetailSheet passes taskClients[].client_id to dialog
-3. ComposeMessageDialog initializes selectedClientIds state
-4. ComposeToField receives selectedClientIds
-5. ComposeToField fetches client details and displays badges
-6. User sees linked clients already in "To" field
-7. User can add/remove recipients before sending
+Current:  [↻] Refresh emails
+Fetching: [⟳] Refresh emails  (spinning animation)
+```
+
+## Implementation Steps
+
+### Step 1: Database Migration
+Create `email_settings` and `email_clients` tables with RLS policies
+
+### Step 2: Create useEmailSettings Hook
+- Load email settings for current user
+- Save settings to database
+- Handle OAuth token storage
+- Provide connection status
+
+### Step 3: Create EmailSetupDialog Component
+- Provider selection cards (Gmail, Microsoft, IMAP)
+- Fetch mode radio buttons
+- OAuth flow for Gmail/Microsoft using existing patterns
+- Manual config form for IMAP/POP3
+
+### Step 4: Update Email.tsx
+- Replace static email display with Setup button
+- Add setup dialog state management
+- Implement spinning refresh icon
+- Trigger fetch on folder click and navigation
+
+### Step 5: Update useEmails Hook
+- Add isFetching state separate from loading
+- Match from_address against clients.email and clients.work_email
+- Return array of matched client objects with IDs
+- Support multiple client matches per email
+
+### Step 6: Update Email Table Display
+- Apply teal color to unread emails
+- Format dates correctly
+- Display client names with overflow handling
+- Make client names clickable links
+
+## Client Matching Logic
+
+```text
+For each email:
+1. Extract from_address domain and local part
+2. Query clients where:
+   - email ILIKE '%' || from_address || '%'
+   - OR work_email ILIKE '%' || from_address || '%'
+3. Return all matching clients (can be 0, 1, or many)
+4. Display format:
+   - 0 matches: empty
+   - 1 match: "Surname, I (FirstName)"
+   - 2+ matches: "Surname, I (FirstName) + X more client"
 ```
 
 ## Expected Behavior
 
-| Scenario | Result |
-|----------|--------|
-| Click "Message" on task with 2 clients | Dialog opens with 2 clients pre-selected |
-| Remove a client from To field | Client badge disappears, count updates |
-| Click Cancel or X | Dialog closes, user returns to task |
-| Click Send | Message sent, dialog closes, toast shown |
-| Click outside dialog | Dialog closes (optional: confirm if has content) |
+| Action | Result |
+|--------|--------|
+| Click Setup button | Opens EmailSetupDialog |
+| Select Gmail | Initiates Google OAuth flow |
+| Select fetch mode | Saves preference to database |
+| Click folder (Task Pool, Inbox) | Triggers email fetch, shows spinner |
+| Click "Message" in sidebar | Triggers email fetch |
+| Click Refresh | Fetches new emails with spinning icon |
+| Hover unread email | Row highlights, teal text visible |
+| Click client name | Navigates to client detail page |
+| Click "+ X more" | Shows popover with all client names |
 
-## Key Design Decisions
+## Technical Notes
 
-1. **Reuse existing components** - Leverage `ComposeFromField`, `RichTextEditor`, `AttachmentSection`
-2. **Dual selection mode** - Support both direct clients and filter-based bulk selection
-3. **No page navigation** - Everything happens in a dialog overlay
-4. **Task context preserved** - User stays on the task detail sheet throughout
+1. **Gmail OAuth** - Uses existing OAuth pattern from Auth.tsx but with extended scopes for Gmail API
+2. **Email Fetch** - Initially will be UI-ready; actual email fetching requires edge function (future enhancement)
+3. **Client Matching** - Performed on frontend initially using loaded clients data
+4. **RLS Policies** - All new tables will have user_id scoping with auth.uid() checks
 
