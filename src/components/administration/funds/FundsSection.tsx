@@ -16,13 +16,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Database, Loader2 } from "lucide-react";
+import { icons } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
+import { Json } from "@/integrations/supabase/types";
 
 interface AdminFund {
   id: string;
   name: string;
   code: string | null;
   isin: string | null;
+  morningstar_id: string | null;
   fund_manager: string | null;
   fund_fact_sheet_url: string | null;
   source: string | null;
@@ -47,6 +52,7 @@ interface GeneralListItem {
   description: string | null;
   display_order: number | null;
   is_active: boolean;
+  metadata: Json | null;
 }
 
 type FundItem = AdminFund | GeneralListItem;
@@ -58,6 +64,13 @@ const tabToListType: Record<string, string> = {
   "unlisted": "unlisted_funds",
 };
 
+// Icon component that renders dynamically from icon name
+function DynamicIcon({ iconName, className }: { iconName: string; className?: string }) {
+  const LucideIcon = icons[iconName as keyof typeof icons];
+  if (!LucideIcon) return <span className="text-muted-foreground">—</span>;
+  return <LucideIcon className={className} />;
+}
+
 export function FundsSection() {
   const { tab } = useParams();
   const navigate = useNavigate();
@@ -68,6 +81,10 @@ export function FundsSection() {
 
   const isInstrumentsTab = activeTab === "instruments";
   const listType = tabToListType[activeTab];
+
+  // Show seed button for these tabs
+  const showSeedButton = ["instruments", "exchanges", "sectors", "industries"].includes(activeTab);
+  const [isSeeding, setIsSeeding] = useState(false);
 
   const fundsHook = useAdminData<AdminFund>({
     table: "admin_funds",
@@ -91,6 +108,7 @@ export function FundsSection() {
     name: "",
     code: "",
     isin: "",
+    morningstar_id: "",
     fund_manager: "",
     fund_fact_sheet_url: "",
     source: "",
@@ -101,6 +119,9 @@ export function FundsSection() {
     domicile: "",
     fund_type: "",
     location: "",
+    exchange: "",
+    sector: "",
+    industry: "",
     is_active: true,
   });
 
@@ -113,43 +134,63 @@ export function FundsSection() {
     is_active: true,
   });
 
+  const handleSeedData = async () => {
+    setIsSeeding(true);
+    try {
+      const { data: result, error } = await supabase.functions.invoke("seed-instruments-data");
+      
+      if (error) {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to seed instrument data",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Success",
+          description: result.message || "Instrument data seeded successfully",
+        });
+        // Refetch both hooks to update data
+        fundsHook.refetch();
+        listHook.refetch();
+      }
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: "Failed to seed instrument data",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSeeding(false);
+    }
+  };
+
   const fundColumns: ColumnDef<AdminFund>[] = [
     { header: "Name", accessor: "name", sortable: true },
     { header: "Code", accessor: "code" },
     { header: "ISIN", accessor: "isin" },
-    { header: "Fund Manager", accessor: "fund_manager" },
+    { header: "Exchange", accessor: "exchange" },
+    { header: "Sector", accessor: "sector" },
+    { header: "Industry", accessor: "industry" },
+    { header: "Type", accessor: "fund_type" },
+    { header: "Domicile", accessor: "domicile" },
     {
-      header: "Fact Sheet",
-      accessor: "fund_fact_sheet_url",
-      render: (value) =>
-        value ? (
-          <a
-            href={value as string}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-primary hover:underline inline-flex items-center gap-1"
-          >
-            <ExternalLink className="h-3 w-3" />
-            View
-          </a>
-        ) : (
-          "—"
-        ),
-    },
-    { header: "Source", accessor: "source" },
-    { header: "Assets", accessor: "asset_classes" },
-    {
-      header: "Approved",
-      accessor: "is_allocation_approved",
+      header: "Active",
+      accessor: "is_active",
       render: (value) => <BooleanIndicator value={value as boolean} />,
     },
-    { header: "Cat I", accessor: "cat1_status" },
-    { header: "Cat II", accessor: "cat2_status" },
-    { header: "Domicile", accessor: "domicile" },
-    { header: "Location", accessor: "location" },
   ];
 
   const listColumns: ColumnDef<GeneralListItem>[] = [
+    {
+      header: "Icon",
+      accessor: "metadata",
+      render: (value) => {
+        const metadata = value as { icon?: string } | null;
+        const iconName = metadata?.icon;
+        return iconName ? <DynamicIcon iconName={iconName} className="h-4 w-4" /> : <span className="text-muted-foreground">—</span>;
+      },
+    },
     { header: "Code", accessor: "code", sortable: true },
     { header: "Name", accessor: "name", sortable: true },
     { header: "Description", accessor: "description" },
@@ -168,6 +209,7 @@ export function FundsSection() {
         name: "",
         code: "",
         isin: "",
+        morningstar_id: "",
         fund_manager: "",
         fund_fact_sheet_url: "",
         source: "",
@@ -178,6 +220,9 @@ export function FundsSection() {
         domicile: "",
         fund_type: "",
         location: "",
+        exchange: "",
+        sector: "",
+        industry: "",
         is_active: true,
       });
     } else {
@@ -200,6 +245,7 @@ export function FundsSection() {
         name: fund.name,
         code: fund.code || "",
         isin: fund.isin || "",
+        morningstar_id: fund.morningstar_id || "",
         fund_manager: fund.fund_manager || "",
         fund_fact_sheet_url: fund.fund_fact_sheet_url || "",
         source: fund.source || "",
@@ -210,6 +256,9 @@ export function FundsSection() {
         domicile: fund.domicile || "",
         fund_type: fund.fund_type || "",
         location: fund.location || "",
+        exchange: fund.exchange || "",
+        sector: fund.sector || "",
+        industry: fund.industry || "",
         is_active: fund.is_active ?? true,
       });
     } else {
@@ -232,6 +281,7 @@ export function FundsSection() {
         ...fundForm,
         code: fundForm.code || null,
         isin: fundForm.isin || null,
+        morningstar_id: fundForm.morningstar_id || null,
         fund_manager: fundForm.fund_manager || null,
         fund_fact_sheet_url: fundForm.fund_fact_sheet_url || null,
         source: fundForm.source || null,
@@ -240,6 +290,9 @@ export function FundsSection() {
         domicile: fundForm.domicile || null,
         fund_type: fundForm.fund_type || null,
         location: fundForm.location || null,
+        exchange: fundForm.exchange || null,
+        sector: fundForm.sector || null,
+        industry: fundForm.industry || null,
       };
       if (editItem) {
         await update({ id: editItem.id, ...payload });
@@ -281,14 +334,31 @@ export function FundsSection() {
         </TabsList>
 
         <div className="mt-6">
-          <AdminSectionHeader
-            title={tabs.find((t) => t.id === activeTab)?.label || "Funds & Instruments"}
-            itemCount={data.length}
-            searchValue={searchTerm}
-            onSearchChange={setSearchTerm}
-            onAdd={handleAdd}
-            onReset={() => refetch()}
-          />
+          <div className="flex items-center justify-between mb-4">
+            <AdminSectionHeader
+              title={tabs.find((t) => t.id === activeTab)?.label || "Funds & Instruments"}
+              itemCount={data.length}
+              searchValue={searchTerm}
+              onSearchChange={setSearchTerm}
+              onAdd={handleAdd}
+              onReset={() => refetch()}
+            />
+            {showSeedButton && (
+              <Button
+                variant="outline"
+                onClick={handleSeedData}
+                disabled={isSeeding}
+                className="ml-4"
+              >
+                {isSeeding ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Database className="h-4 w-4 mr-2" />
+                )}
+                Seed Instrument Data
+              </Button>
+            )}
+          </div>
 
           <div className="mt-4">
             {isInstrumentsTab ? (
@@ -331,18 +401,18 @@ export function FundsSection() {
                     onChange={(e) =>
                       setFundForm({ ...fundForm, name: e.target.value })
                     }
-                    placeholder="Fund name"
+                    placeholder="Instrument name"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="code">Code</Label>
+                  <Label htmlFor="code">Code/Ticker</Label>
                   <Input
                     id="code"
                     value={fundForm.code}
                     onChange={(e) =>
                       setFundForm({ ...fundForm, code: e.target.value })
                     }
-                    placeholder="e.g., FND001"
+                    placeholder="e.g., AAPL"
                   />
                 </div>
                 <div className="space-y-2">
@@ -354,6 +424,78 @@ export function FundsSection() {
                       setFundForm({ ...fundForm, isin: e.target.value })
                     }
                     placeholder="ISIN code"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="morningstar_id">Morningstar ID</Label>
+                  <Input
+                    id="morningstar_id"
+                    value={fundForm.morningstar_id}
+                    onChange={(e) =>
+                      setFundForm({ ...fundForm, morningstar_id: e.target.value })
+                    }
+                    placeholder="Morningstar ID"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="exchange">Exchange</Label>
+                  <Input
+                    id="exchange"
+                    value={fundForm.exchange}
+                    onChange={(e) =>
+                      setFundForm({ ...fundForm, exchange: e.target.value })
+                    }
+                    placeholder="e.g., NYSE"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="fund_type">Type</Label>
+                  <Input
+                    id="fund_type"
+                    value={fundForm.fund_type}
+                    onChange={(e) =>
+                      setFundForm({ ...fundForm, fund_type: e.target.value })
+                    }
+                    placeholder="e.g., Share"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="sector">Sector</Label>
+                  <Input
+                    id="sector"
+                    value={fundForm.sector}
+                    onChange={(e) =>
+                      setFundForm({ ...fundForm, sector: e.target.value })
+                    }
+                    placeholder="e.g., TECH"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="industry">Industry</Label>
+                  <Input
+                    id="industry"
+                    value={fundForm.industry}
+                    onChange={(e) =>
+                      setFundForm({ ...fundForm, industry: e.target.value })
+                    }
+                    placeholder="e.g., SOFT"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="domicile">Domicile</Label>
+                  <Input
+                    id="domicile"
+                    value={fundForm.domicile}
+                    onChange={(e) =>
+                      setFundForm({ ...fundForm, domicile: e.target.value })
+                    }
+                    placeholder="Country code"
                   />
                 </div>
               </div>
@@ -443,42 +585,6 @@ export function FundsSection() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="domicile">Domicile</Label>
-                  <Input
-                    id="domicile"
-                    value={fundForm.domicile}
-                    onChange={(e) =>
-                      setFundForm({ ...fundForm, domicile: e.target.value })
-                    }
-                    placeholder="Country"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="fund_type">Fund Type</Label>
-                  <Input
-                    id="fund_type"
-                    value={fundForm.fund_type}
-                    onChange={(e) =>
-                      setFundForm({ ...fundForm, fund_type: e.target.value })
-                    }
-                    placeholder="Type"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="location">Location</Label>
-                  <Input
-                    id="location"
-                    value={fundForm.location}
-                    onChange={(e) =>
-                      setFundForm({ ...fundForm, location: e.target.value })
-                    }
-                    placeholder="Location"
-                  />
-                </div>
-              </div>
-
               <div className="flex items-center justify-between">
                 <Label htmlFor="is_active">Active</Label>
                 <Switch
@@ -501,34 +607,21 @@ export function FundsSection() {
                     onChange={(e) =>
                       setListForm({ ...listForm, code: e.target.value })
                     }
-                    placeholder="e.g., EXC_001"
+                    placeholder="Unique code"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="display_order">Display Order</Label>
+                  <Label htmlFor="name">Name</Label>
                   <Input
-                    id="display_order"
-                    type="number"
-                    value={listForm.display_order}
+                    id="name"
+                    value={listForm.name}
                     onChange={(e) =>
-                      setListForm({ ...listForm, display_order: parseInt(e.target.value) || 0 })
+                      setListForm({ ...listForm, name: e.target.value })
                     }
+                    placeholder="Display name"
                   />
                 </div>
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="name">Name</Label>
-                <Input
-                  id="name"
-                  value={listForm.name}
-                  onChange={(e) =>
-                    setListForm({ ...listForm, name: e.target.value })
-                  }
-                  placeholder="Enter name"
-                />
-              </div>
-
               <div className="space-y-2">
                 <Label htmlFor="description">Description</Label>
                 <Input
@@ -537,19 +630,34 @@ export function FundsSection() {
                   onChange={(e) =>
                     setListForm({ ...listForm, description: e.target.value })
                   }
-                  placeholder="Enter description"
+                  placeholder="Optional description"
                 />
               </div>
-
-              <div className="flex items-center justify-between">
-                <Label htmlFor="is_active">Active</Label>
-                <Switch
-                  id="is_active"
-                  checked={listForm.is_active}
-                  onCheckedChange={(checked) =>
-                    setListForm({ ...listForm, is_active: checked })
-                  }
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="display_order">Display Order</Label>
+                  <Input
+                    id="display_order"
+                    type="number"
+                    value={listForm.display_order}
+                    onChange={(e) =>
+                      setListForm({
+                        ...listForm,
+                        display_order: parseInt(e.target.value) || 0,
+                      })
+                    }
+                  />
+                </div>
+                <div className="flex items-center justify-between p-3 border rounded-lg">
+                  <Label htmlFor="is_active">Active</Label>
+                  <Switch
+                    id="is_active"
+                    checked={listForm.is_active}
+                    onCheckedChange={(checked) =>
+                      setListForm({ ...listForm, is_active: checked })
+                    }
+                  />
+                </div>
               </div>
             </div>
           )}
@@ -558,9 +666,7 @@ export function FundsSection() {
             <Button variant="outline" onClick={() => setShowDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={handleSave}>
-              {editItem ? "Save Changes" : "Create"}
-            </Button>
+            <Button onClick={handleSave}>Save</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
