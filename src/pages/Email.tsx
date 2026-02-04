@@ -84,12 +84,11 @@ const EmailPage = () => {
   const { settings: emailSettings, isConnected } = useEmailSettings();
 
   const handleEmailClick = (email: EmailListItem) => {
-    setSelectedEmailId(email.id);
-    setEmailViewOpen(true);
-    // Mark as read when opening
+    // Navigate to the full-page email view
     if (!email.isRead) {
       markAsRead([email.id], true);
     }
+    navigate(`/email/view/${email.id}`);
   };
 
   useEffect(() => {
