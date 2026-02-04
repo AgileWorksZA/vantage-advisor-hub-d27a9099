@@ -18,6 +18,7 @@ import {
   Forward,
   Loader2,
   Plus,
+  FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -296,6 +297,27 @@ const EmailView = () => {
                 }
               />
 
+              {/* Attachments */}
+              {attachments.length > 0 && (
+                <div className="flex items-center gap-3">
+                  <Label className="w-16 text-sm text-muted-foreground">
+                    Attachments
+                  </Label>
+                  <div className="flex flex-wrap gap-2">
+                    {attachments.map((attachment) => (
+                      <button
+                        key={attachment.id}
+                        onClick={() => window.open(attachment.file_path, "_blank")}
+                        className="flex items-center gap-2 px-3 py-1.5 bg-muted/50 rounded border border-border hover:bg-muted transition-colors text-sm"
+                      >
+                        <FileText className="w-4 h-4 text-primary" />
+                        {attachment.file_name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Email Body */}
               <div className="bg-accent/30 rounded-lg p-6">
                 {sanitizedHtml ? (
@@ -309,16 +331,6 @@ const EmailView = () => {
                   </p>
                 )}
               </div>
-
-              {/* Attachments */}
-              {attachments.length > 0 && (
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">
-                    Attachments ({attachments.length})
-                  </Label>
-                  <AttachmentList attachments={attachments} />
-                </div>
-              )}
             </div>
           </ScrollArea>
         )}
