@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.seed-demo-tasks]
 verify_jwt = false
+
+[functions.seed-demo-communications]
+verify_jwt = false
