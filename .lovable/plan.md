@@ -1,292 +1,152 @@
 
 
-# Link Advice Process Workflow to Add Client Button
+# Auto-populate Date of Birth from ID Number
 
-## Summary
+## Overview
 
-This plan modifies the "Add Profile" button on the Clients page to present users with a choice dialog:
-1. **Just load the client** - Creates client record and stays on Clients page (current behavior)
-2. **Start with Advice Process** - Creates client record and immediately launches the Financial Planning Wizard
+This implementation adds automatic date of birth extraction from South African ID numbers for Individual clients. When a user enters an ID number, the date of birth field will be automatically populated based on the first 6 digits of the ID.
 
-The Financial Planning Wizard (6-step advice process) already exists and is currently used by the "Add new product" button in `ClientProductsTab.tsx`. This plan reuses that same workflow component.
+## SA ID Number Format
 
-## Current Architecture
+South African ID numbers encode the date of birth in the first 6 digits:
+- Positions 1-2: Year (YY)
+- Positions 3-4: Month (MM)
+- Positions 5-6: Day (DD)
 
-| Component | Purpose |
-|-----------|---------|
-| `Clients.tsx` | Main clients page with "Add Profile" button |
-| `AddClientDialog.tsx` | Form dialog for creating new clients |
-| `FinancialPlanningWizard.tsx` | 6-step advice process wizard (already built) |
-| `useFinancialPlanningWorkflow.ts` | Hook for managing workflow state in database |
+**Example**: `7905245013088` = 24 May 1979
 
-The Financial Planning Wizard includes these steps:
-1. Client Introduction
-2. Gather Information  
-3. Analyse Position
-4. Present Recommendation
-5. Implement Agreements
-6. Complete and Review
+## Century Detection Logic
 
-## Implementation Approach
+Since the year is only 2 digits, we need to determine the century:
+- If YY >= 00 and YY <= current_year's last 2 digits → 2000s (e.g., 05 = 2005)
+- If YY > current_year's last 2 digits → 1900s (e.g., 79 = 1979)
 
-### Phase 1: Create Choice Dialog Component
+This handles the common case where clients born after 2000 have IDs like `0501...` (January 2005).
 
-**New file: `src/components/clients/AddClientChoiceDialog.tsx`**
+## Files to Modify
 
-A simple dialog that appears when "Add Profile" is clicked, offering two options:
+### 1. `src/components/clients/AddClientDialog.tsx`
 
-```text
-+--------------------------------------------------+
-|  Add New Client                                   |
-+--------------------------------------------------+
-|                                                  |
-|  How would you like to proceed?                  |
-|                                                  |
-|  ┌────────────────────────────────────────────┐  |
-|  │  📋 Load Client Only                       │  |
-|  │  Create the client profile and return      │  |
-|  │  to the clients list                       │  |
-|  └────────────────────────────────────────────┘  |
-|                                                  |
-|  ┌────────────────────────────────────────────┐  |
-|  │  📊 Start Advice Process                   │  |
-|  │  Create the client and begin the           │  |
-|  │  financial planning workflow               │  |
-|  └────────────────────────────────────────────┘  |
-|                                                  |
-+--------------------------------------------------+
-```
+**Changes:**
+- Add a helper function `extractDateOfBirthFromId(idNumber: string): string | null`
+- Add a `useEffect` hook that watches the `id_number` field
+- When `client_type` is "individual" and `id_number` has at least 6 digits, auto-populate `date_of_birth`
 
-### Phase 2: Modify AddClientDialog to Return Client ID
-
-Currently `AddClientDialog` creates a client but doesn't return the new client's ID. We need to:
-
-1. Modify the insert query to use `.select().single()` to get the created record
-2. Add an optional `onClientCreated` callback prop that receives the new client ID and name
-3. Keep backward compatibility with existing `onClientAdded` callback
-
-**Changes to AddClientDialog.tsx:**
-
+**Helper Function:**
 ```typescript
-interface AddClientDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onClientAdded: () => void;
-  onClientCreated?: (client: { id: string; name: string }) => void; // NEW
-}
-
-// In onSubmit:
-const { data: newClient, error } = await supabase.from("clients").insert({
-  // ... existing fields
-}).select().single();
-
-if (error) throw error;
-
-toast.success("Client added successfully");
-form.reset();
-onOpenChange(false);
-onClientAdded();
-
-// Call new callback if provided
-if (onClientCreated && newClient) {
-  onClientCreated({
-    id: newClient.id,
-    name: `${newClient.first_name} ${newClient.surname}`
-  });
-}
-```
-
-### Phase 3: Update Clients.tsx
-
-Modify the Clients page to orchestrate the new flow:
-
-1. Import the choice dialog and Financial Planning Wizard
-2. Add state for managing dialog visibility and new client data
-3. Wire up the flow: Choice → Create Client → (optionally) Launch Wizard
-
-**New state in Clients.tsx:**
-
-```typescript
-const [choiceDialogOpen, setChoiceDialogOpen] = useState(false);
-const [addDialogMode, setAddDialogMode] = useState<"simple" | "advice">("simple");
-const [newClientForWizard, setNewClientForWizard] = useState<{id: string; name: string} | null>(null);
-const [showWizard, setShowWizard] = useState(false);
-```
-
-**Flow logic:**
-
-```text
-User clicks "+ Add Profile"
-        ↓
-Show AddClientChoiceDialog
-        ↓
-    ┌───────────────────────────────────┐
-    ↓                                   ↓
-"Load Client Only"              "Start Advice Process"
-    ↓                                   ↓
-setAddDialogMode("simple")      setAddDialogMode("advice")
-    ↓                                   ↓
-Open AddClientDialog            Open AddClientDialog
-    ↓                                   ↓
-On client created:              On client created:
-- Close dialog                  - Store client {id, name}
-- Refresh list                  - Close dialog
-- Done                          - Open FinancialPlanningWizard
-                                - Done
-```
-
-### Phase 4: Reuse FinancialPlanningWizard
-
-The existing `FinancialPlanningWizard` component is already fully functional. It:
-- Creates a workflow record in `financial_planning_workflows` table
-- Manages 6-step progress
-- Auto-saves every 2 minutes
-- Stores all data in the database
-
-We simply need to render it in `Clients.tsx` when the advice flow is selected.
-
-## File Changes Summary
-
-| File | Action | Description |
-|------|--------|-------------|
-| `src/components/clients/AddClientChoiceDialog.tsx` | **Create** | New dialog for choosing between simple add or advice process |
-| `src/components/clients/AddClientDialog.tsx` | **Modify** | Add `onClientCreated` callback prop to return new client ID and name |
-| `src/pages/Clients.tsx` | **Modify** | Orchestrate choice dialog, add dialog, and wizard flow |
-
-## AddClientChoiceDialog Component Design
-
-```typescript
-interface AddClientChoiceDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onChoiceSelected: (choice: "simple" | "advice") => void;
-}
-
-export const AddClientChoiceDialog = ({ 
-  open, 
-  onOpenChange, 
-  onChoiceSelected 
-}: AddClientChoiceDialogProps) => {
-  const handleChoice = (choice: "simple" | "advice") => {
-    onOpenChange(false);
-    onChoiceSelected(choice);
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Add New Client</DialogTitle>
-          <DialogDescription>
-            How would you like to proceed?
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-3 py-4">
-          <Button
-            variant="outline"
-            className="w-full h-auto p-4 flex flex-col items-start"
-            onClick={() => handleChoice("simple")}
-          >
-            <span className="font-medium">Load Client Only</span>
-            <span className="text-sm text-muted-foreground">
-              Create the client profile and return to the clients list
-            </span>
-          </Button>
-
-          <Button
-            variant="outline"
-            className="w-full h-auto p-4 flex flex-col items-start"
-            onClick={() => handleChoice("advice")}
-          >
-            <span className="font-medium">Start Advice Process</span>
-            <span className="text-sm text-muted-foreground">
-              Create the client and begin the financial planning workflow
-            </span>
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
+const extractDateOfBirthFromId = (idNumber: string): string | null => {
+  if (!idNumber || idNumber.length < 6) return null;
+  
+  const yearPart = idNumber.substring(0, 2);
+  const monthPart = idNumber.substring(2, 4);
+  const dayPart = idNumber.substring(4, 6);
+  
+  const year = parseInt(yearPart, 10);
+  const month = parseInt(monthPart, 10);
+  const day = parseInt(dayPart, 10);
+  
+  // Validate month and day
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+  
+  // Determine century: if year <= current year's last 2 digits, assume 2000s
+  const currentYear = new Date().getFullYear();
+  const currentYearLast2 = currentYear % 100;
+  const fullYear = year <= currentYearLast2 ? 2000 + year : 1900 + year;
+  
+  // Return in YYYY-MM-DD format for input[type="date"]
+  return `${fullYear}-${monthPart}-${dayPart}`;
 };
 ```
 
-## Updated Flow in Clients.tsx
-
+**useEffect Hook (watches form values):**
 ```typescript
-// State
-const [choiceDialogOpen, setChoiceDialogOpen] = useState(false);
-const [addDialogOpen, setAddDialogOpen] = useState(false);
-const [selectedMode, setSelectedMode] = useState<"simple" | "advice">("simple");
-const [newClientForWizard, setNewClientForWizard] = useState<{id: string; name: string} | null>(null);
-const [showWizard, setShowWizard] = useState(false);
+const watchIdNumber = form.watch("id_number");
+const watchClientType = form.watch("client_type");
 
-// Handler for choice selection
-const handleChoiceSelected = (choice: "simple" | "advice") => {
-  setSelectedMode(choice);
-  setAddDialogOpen(true);
-};
-
-// Handler when client is created
-const handleClientCreated = (client: { id: string; name: string }) => {
-  if (selectedMode === "advice") {
-    setNewClientForWizard(client);
-    setShowWizard(true);
+useEffect(() => {
+  if (watchClientType === "individual" && watchIdNumber && watchIdNumber.length >= 6) {
+    const extractedDob = extractDateOfBirthFromId(watchIdNumber);
+    if (extractedDob) {
+      form.setValue("date_of_birth", extractedDob);
+    }
   }
-  refetch();
-};
-
-// Button click opens choice dialog
-<Button onClick={() => setChoiceDialogOpen(true)}>
-  + Add Profile
-</Button>
-
-// Render dialogs
-<AddClientChoiceDialog
-  open={choiceDialogOpen}
-  onOpenChange={setChoiceDialogOpen}
-  onChoiceSelected={handleChoiceSelected}
-/>
-
-<AddClientDialog
-  open={addDialogOpen}
-  onOpenChange={setAddDialogOpen}
-  onClientAdded={refetch}
-  onClientCreated={handleClientCreated}
-/>
-
-{newClientForWizard && (
-  <FinancialPlanningWizard
-    open={showWizard}
-    onOpenChange={(open) => {
-      setShowWizard(open);
-      if (!open) setNewClientForWizard(null);
-    }}
-    clientId={newClientForWizard.id}
-    clientName={newClientForWizard.name}
-  />
-)}
+}, [watchIdNumber, watchClientType, form]);
 ```
 
-## Expected Behavior After Implementation
+### 2. `src/components/client-detail/AddFamilyMemberDialog.tsx`
+
+**Changes:**
+- Add the same `extractDateOfBirthFromId` helper function
+- Add `useEffect` to watch `id_number` and auto-populate `date_of_birth`
+- Family members are always individuals, so no client_type check needed
+
+**useEffect Hook:**
+```typescript
+const watchIdNumber = form.watch("id_number");
+
+useEffect(() => {
+  if (watchIdNumber && watchIdNumber.length >= 6) {
+    const extractedDob = extractDateOfBirthFromId(watchIdNumber);
+    if (extractedDob) {
+      form.setValue("date_of_birth", extractedDob);
+    }
+  }
+}, [watchIdNumber, form]);
+```
+
+### 3. `src/components/client-detail/ClientDetailsTab.tsx`
+
+**Changes:**
+- Add the same `extractDateOfBirthFromId` helper function
+- Modify the `handleChange` function to auto-populate `date_of_birth` when `id_number` changes
+- Only apply when `person_type` is "Individual"
+
+**Updated handleChange:**
+```typescript
+const handleChange = (field: string, value: string) => {
+  setFormData(prev => {
+    const updated = { ...prev, [field]: value };
+    
+    // Auto-populate date of birth from ID number for individuals
+    if (field === "id_number" && prev.person_type === "Individual" && value.length >= 6) {
+      const extractedDob = extractDateOfBirthFromId(value);
+      if (extractedDob) {
+        updated.date_of_birth = extractedDob;
+      }
+    }
+    
+    return updated;
+  });
+};
+```
+
+## Shared Utility Consideration
+
+Since the same function is used in 3 places, we could create a shared utility file. However, to minimize changes and keep the implementation focused, the helper function will be duplicated in each file. A future refactor could move this to `src/lib/utils.ts`.
+
+## Expected Behavior
 
 | Scenario | Result |
 |----------|--------|
-| Click "+ Add Profile" | Choice dialog appears with two options |
-| Select "Load Client Only" | AddClientDialog opens, client created, list refreshes |
-| Select "Start Advice Process" | AddClientDialog opens, client created, wizard launches immediately |
-| Complete or exit wizard | Wizard closes, client list already refreshed |
-| Cancel at choice dialog | Dialog closes, no action taken |
+| Enter ID `7905245013088` for Individual | Date of Birth auto-fills to `1979-05-24` |
+| Enter ID `0501015013088` for Individual | Date of Birth auto-fills to `2005-01-01` |
+| Enter ID for Business/Family client | Date of Birth NOT auto-filled |
+| Enter partial ID (less than 6 digits) | No auto-fill until 6+ digits entered |
+| Enter invalid month (e.g., `7913...`) | No auto-fill (validation fails) |
+| User manually changes date after auto-fill | Manual value is preserved |
+
+## Edge Cases Handled
+
+1. **Invalid month/day**: If extracted month > 12 or day > 31, no auto-population occurs
+2. **Partial ID**: Only triggers when at least 6 digits are entered
+3. **Non-individual clients**: Auto-population only for individual/person type clients
+4. **Manual override**: Users can still manually change the date after auto-population
+5. **Century boundary**: Properly handles both 1900s and 2000s birth years
 
 ## Technical Notes
 
-1. **Client record always created first**: Both paths create the client record before any workflow. The Financial Planning Wizard requires a valid `clientId` to function.
-
-2. **Workflow linked to client**: The `financial_planning_workflows` table has a `client_id` foreign key, so the workflow is properly associated with the new client.
-
-3. **No duplicate workflows**: Each time "Start Advice Process" is selected, a new workflow is created. Existing workflows for the same client (if any) are not affected.
-
-4. **Backward compatibility**: The existing `onClientAdded` callback continues to work. The new `onClientCreated` callback is optional.
-
-5. **All data stored in database**: The Financial Planning Wizard already stores all step data in the `financial_planning_workflows.step_data` JSONB column.
+1. **Form value watching**: Uses `form.watch()` from react-hook-form to reactively observe field changes
+2. **Date format**: Returns `YYYY-MM-DD` format which is required by HTML date inputs
+3. **No validation of actual date**: Does not validate if the day is valid for the month (e.g., Feb 30)
+4. **Performance**: The useEffect runs on every ID number keystroke, but the operation is lightweight
 
