@@ -1,79 +1,59 @@
 
-
-# Add Compose Button to WhatsApp, SMS, and Push Channels
+# Swap Task Pool and Inbox Order with Sub-folder Indentation
 
 ## Overview
 
-Add a "Compose" button to the `ConversationList` component so WhatsApp, SMS, and Push channels have the same compose functionality as the Email channel.
-
-## Current vs Target Layout
-
-**Current WhatsApp/SMS/Push Layout:**
-```
-┌──────────────────────┐
-│ [Search...]          │
-├──────────────────────┤
-│ Archived          ▶ │
-├──────────────────────┤
-│ Conversations...     │
-└──────────────────────┘
-```
-
-**Target Layout (matching Email):**
-```
-┌──────────────────────┐
-│ [Search...]          │
-├──────────────────────┤
-│ [Compose]            │
-├──────────────────────┤
-│ Archived          ▶ │
-├──────────────────────┤
-│ Conversations...     │
-└──────────────────────┘
-```
+Reorder the folder list so "Inbox" appears first, followed by "Task Pool" indented to indicate it's a sub-folder of Inbox.
 
 ## Changes Required
 
-### File: `src/components/email/ConversationList.tsx`
+### File: `src/pages/Email.tsx`
 
-**1. Add imports:**
+**1. Reorder and add indentation property to folderItems array (lines 51-59):**
+
 ```tsx
-import { PenSquare } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
+const folderItems: { icon: React.ComponentType<any>; label: string; folder: EmailFolder | null; indent?: boolean }[] = [
+  { icon: Inbox, label: "Inbox", folder: "Inbox" },
+  { icon: Inbox, label: "Task Pool", folder: "Task Pool", indent: true },
+  { icon: FileText, label: "Draft", folder: "Draft" },
+  { icon: Send, label: "Sent", folder: "Sent" },
+  { icon: Clock, label: "Queue", folder: "Queue" },
+  { icon: XCircle, label: "Failed", folder: "Failed" },
+  { icon: FolderArchive, label: "Archived", folder: "Archived" },
+];
 ```
 
-**2. Add navigate hook inside component:**
+**2. Update folder button rendering to apply indentation (lines 256-261):**
+
 ```tsx
-const navigate = useNavigate();
+className={cn(
+  "w-full flex items-center gap-2 py-2 text-sm",
+  folder.indent ? "pl-8 pr-4" : "px-4",  // Indent Task Pool
+  activeFolder === folder.folder
+    ? "text-[hsl(180,70%,45%)] bg-[hsl(180,70%,45%)]/10"
+    : "text-foreground hover:bg-muted/50"
+)}
 ```
-
-**3. Add Compose button section after Search (between lines 59-60):**
-```tsx
-{/* Compose Button */}
-<div className="p-3 border-b border-border">
-  <Button 
-    size="sm" 
-    className="bg-[hsl(180,70%,45%)] hover:bg-[hsl(180,70%,40%)] text-white"
-    onClick={() => navigate("/email/compose")}
-  >
-    <PenSquare className="w-4 h-4 mr-1" />
-    Compose
-  </Button>
-</div>
-```
-
-## Implementation Summary
-
-| Step | Change |
-|------|--------|
-| 1 | Add `PenSquare` to lucide-react imports |
-| 2 | Add `Button` component import |
-| 3 | Add `useNavigate` from react-router-dom |
-| 4 | Add `navigate` hook inside component |
-| 5 | Add Compose button section after Search input |
 
 ## Visual Result
 
-All four channels (Email, WhatsApp, SMS, Push) will now have a consistent "Compose" button in the same relative position within their sidebars.
+```
+┌──────────────────────┐
+│ Inbox            (5) │
+│   Task Pool      (3) │  ← Indented to show sub-folder
+│ Draft                │
+│ Sent                 │
+│ Queue                │
+│ Failed               │
+│ Archived             │
+└──────────────────────┘
+```
 
+## Summary
+
+| Step | Change |
+|------|--------|
+| 1 | Add `indent?: boolean` to folder type definition |
+| 2 | Swap Inbox and Task Pool order in array |
+| 3 | Add `indent: true` to Task Pool item |
+| 4 | Apply conditional `pl-8` padding for indented items |
