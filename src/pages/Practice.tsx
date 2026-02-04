@@ -197,17 +197,29 @@ const PersonnelList = ({
   searchQuery: string;
   setSearchQuery: (q: string) => void;
   onSelectPerson: (p: typeof personnelData[0]) => void;
-}) => (
+}) => {
+  const navigate = useNavigate();
+  
+  return (
   <div>
     <div className="flex items-center justify-between mb-6">
       <div>
         <h1 className="text-2xl font-semibold">Practice Settings</h1>
         <p className="text-muted-foreground">Manage your practice personnel and their settings</p>
       </div>
-      <Button className="bg-[hsl(180,70%,45%)] hover:bg-[hsl(180,70%,40%)]">
-        <Plus className="w-4 h-4 mr-2" />
-        Add Team Member
-      </Button>
+      <div className="flex gap-2">
+        <Button className="bg-[hsl(180,70%,45%)] hover:bg-[hsl(180,70%,40%)]">
+          <Plus className="w-4 h-4 mr-2" />
+          Add Team Member
+        </Button>
+        <Button 
+          variant="outline"
+          onClick={() => navigate("/administration")}
+        >
+          <Settings className="w-4 h-4 mr-2" />
+          Administration
+        </Button>
+      </div>
     </div>
 
     <Card>
@@ -283,7 +295,8 @@ const PersonnelList = ({
       </CardContent>
     </Card>
   </div>
-);
+  );
+};
 
 // Personnel Settings Component
 const PersonnelSettings = ({ 
