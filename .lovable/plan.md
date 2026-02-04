@@ -1,227 +1,292 @@
 
-# Required: ID Number as Required Field with Duplicate Detection
 
-## Overview
+# Link Advice Process Workflow to Add Client Button
 
-This plan implements three key requirements:
-1. **Make ID Number a required field** - All new clients must have an ID number
-2. **Add duplicate detection** - When entering an ID that already exists, show a popup allowing the user to cancel or navigate to the existing client
-3. **Assign random ID numbers to existing clients** - Update the ~137 clients currently without ID numbers
+## Summary
 
-## Current State Analysis
+This plan modifies the "Add Profile" button on the Clients page to present users with a choice dialog:
+1. **Just load the client** - Creates client record and stays on Clients page (current behavior)
+2. **Start with Advice Process** - Creates client record and immediately launches the Financial Planning Wizard
 
-**Database Status:**
-- 210 total clients in the database
-- 73 clients have ID numbers
-- 137 clients are missing ID numbers
-- 1 duplicate ID number exists (`7905245013085` appears twice)
+The Financial Planning Wizard (6-step advice process) already exists and is currently used by the "Add new product" button in `ClientProductsTab.tsx`. This plan reuses that same workflow component.
 
-**Files that create clients:**
-1. `AddClientDialog.tsx` - Main client creation dialog
-2. `AddFamilyMemberDialog.tsx` - Creates family member as client
-3. `AddBusinessDialog.tsx` - Creates business entity as client
+## Current Architecture
 
-**Current schema:** `id_number` is nullable (`is_nullable: YES`)
+| Component | Purpose |
+|-----------|---------|
+| `Clients.tsx` | Main clients page with "Add Profile" button |
+| `AddClientDialog.tsx` | Form dialog for creating new clients |
+| `FinancialPlanningWizard.tsx` | 6-step advice process wizard (already built) |
+| `useFinancialPlanningWorkflow.ts` | Hook for managing workflow state in database |
 
-## Implementation Plan
+The Financial Planning Wizard includes these steps:
+1. Client Introduction
+2. Gather Information  
+3. Analyse Position
+4. Present Recommendation
+5. Implement Agreements
+6. Complete and Review
 
-### Phase 1: Database Changes
+## Implementation Approach
 
-**1.1 Assign Random ID Numbers to Existing Clients**
+### Phase 1: Create Choice Dialog Component
 
-Create an edge function or use a migration to generate unique 13-digit South African ID numbers for clients without them:
+**New file: `src/components/clients/AddClientChoiceDialog.tsx`**
 
-```sql
--- Generate random SA-format ID numbers for existing clients without one
-UPDATE clients
-SET id_number = (
-  -- Format: YYMMDD + 4 random digits + citizenship (0=SA) + checksum
-  LPAD(FLOOR(RANDOM() * 99)::TEXT, 2, '0') ||
-  LPAD(FLOOR(RANDOM() * 12 + 1)::TEXT, 2, '0') ||
-  LPAD(FLOOR(RANDOM() * 28 + 1)::TEXT, 2, '0') ||
-  LPAD(FLOOR(RANDOM() * 10000)::TEXT, 4, '0') ||
-  '0' ||
-  LPAD(FLOOR(RANDOM() * 10)::TEXT, 1, '0') ||
-  LPAD(FLOOR(RANDOM() * 10)::TEXT, 1, '0')
-)
-WHERE id_number IS NULL OR id_number = '';
+A simple dialog that appears when "Add Profile" is clicked, offering two options:
+
+```text
++--------------------------------------------------+
+|  Add New Client                                   |
++--------------------------------------------------+
+|                                                  |
+|  How would you like to proceed?                  |
+|                                                  |
+|  ┌────────────────────────────────────────────┐  |
+|  │  📋 Load Client Only                       │  |
+|  │  Create the client profile and return      │  |
+|  │  to the clients list                       │  |
+|  └────────────────────────────────────────────┘  |
+|                                                  |
+|  ┌────────────────────────────────────────────┐  |
+|  │  📊 Start Advice Process                   │  |
+|  │  Create the client and begin the           │  |
+|  │  financial planning workflow               │  |
+|  └────────────────────────────────────────────┘  |
+|                                                  |
++--------------------------------------------------+
 ```
 
-**1.2 Add Unique Constraint**
+### Phase 2: Modify AddClientDialog to Return Client ID
 
-After all clients have ID numbers, add a unique constraint:
+Currently `AddClientDialog` creates a client but doesn't return the new client's ID. We need to:
 
-```sql
--- Add unique constraint on id_number (case-insensitive)
-CREATE UNIQUE INDEX idx_clients_id_number_unique 
-ON clients (LOWER(id_number)) 
-WHERE id_number IS NOT NULL AND id_number != '';
-```
+1. Modify the insert query to use `.select().single()` to get the created record
+2. Add an optional `onClientCreated` callback prop that receives the new client ID and name
+3. Keep backward compatibility with existing `onClientAdded` callback
 
-### Phase 2: Create Duplicate Detection Dialog
-
-**2.1 New Component: `DuplicateClientDialog.tsx`**
-
-A dialog that appears when a duplicate ID number is detected, offering two options:
-- **Cancel** - Close the dialog and return to editing the form
-- **Go to Existing Client** - Navigate to the existing client's detail page
+**Changes to AddClientDialog.tsx:**
 
 ```typescript
-// Props
-interface DuplicateClientDialogProps {
+interface AddClientDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  existingClient: {
-    id: string;
-    name: string;
-    idNumber: string;
-  } | null;
-  onCancel: () => void;
-  onNavigate: () => void;
+  onClientAdded: () => void;
+  onClientCreated?: (client: { id: string; name: string }) => void; // NEW
+}
+
+// In onSubmit:
+const { data: newClient, error } = await supabase.from("clients").insert({
+  // ... existing fields
+}).select().single();
+
+if (error) throw error;
+
+toast.success("Client added successfully");
+form.reset();
+onOpenChange(false);
+onClientAdded();
+
+// Call new callback if provided
+if (onClientCreated && newClient) {
+  onClientCreated({
+    id: newClient.id,
+    name: `${newClient.first_name} ${newClient.surname}`
+  });
 }
 ```
 
-### Phase 3: Update AddClientDialog.tsx
+### Phase 3: Update Clients.tsx
 
-**3.1 Make id_number required in schema**
+Modify the Clients page to orchestrate the new flow:
 
-```typescript
-// Change from optional to required
-id_number: z.string().min(1, "Identification number is required"),
-```
+1. Import the choice dialog and Financial Planning Wizard
+2. Add state for managing dialog visibility and new client data
+3. Wire up the flow: Choice → Create Client → (optionally) Launch Wizard
 
-**3.2 Add duplicate check before submission**
-
-Before inserting the client, check if the ID number already exists:
+**New state in Clients.tsx:**
 
 ```typescript
-const checkDuplicateIdNumber = async (idNumber: string) => {
-  const { data, error } = await supabase
-    .from("clients")
-    .select("id, first_name, surname, id_number")
-    .eq("id_number", idNumber)
-    .limit(1);
-  
-  if (data && data.length > 0) {
-    return data[0]; // Return existing client
-  }
-  return null;
-};
+const [choiceDialogOpen, setChoiceDialogOpen] = useState(false);
+const [addDialogMode, setAddDialogMode] = useState<"simple" | "advice">("simple");
+const [newClientForWizard, setNewClientForWizard] = useState<{id: string; name: string} | null>(null);
+const [showWizard, setShowWizard] = useState(false);
 ```
 
-**3.3 Add state for duplicate dialog**
+**Flow logic:**
 
-```typescript
-const [duplicateClient, setDuplicateClient] = useState<{
-  id: string;
-  name: string;
-  idNumber: string;
-} | null>(null);
-const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
+```text
+User clicks "+ Add Profile"
+        ↓
+Show AddClientChoiceDialog
+        ↓
+    ┌───────────────────────────────────┐
+    ↓                                   ↓
+"Load Client Only"              "Start Advice Process"
+    ↓                                   ↓
+setAddDialogMode("simple")      setAddDialogMode("advice")
+    ↓                                   ↓
+Open AddClientDialog            Open AddClientDialog
+    ↓                                   ↓
+On client created:              On client created:
+- Close dialog                  - Store client {id, name}
+- Refresh list                  - Close dialog
+- Done                          - Open FinancialPlanningWizard
+                                - Done
 ```
 
-**3.4 Update form label**
+### Phase 4: Reuse FinancialPlanningWizard
 
-```typescript
-<FormLabel>ID Number *</FormLabel>  // Add asterisk to indicate required
-```
+The existing `FinancialPlanningWizard` component is already fully functional. It:
+- Creates a workflow record in `financial_planning_workflows` table
+- Manages 6-step progress
+- Auto-saves every 2 minutes
+- Stores all data in the database
 
-### Phase 4: Update AddFamilyMemberDialog.tsx
-
-**4.1 Make id_number required**
-
-```typescript
-id_number: z.string().min(1, "Identification number is required"),
-```
-
-**4.2 Add duplicate detection**
-
-Same pattern as AddClientDialog - check before insert, show dialog if duplicate found.
-
-### Phase 5: Update AddBusinessDialog.tsx
-
-**5.1 Make registration_number required for businesses**
-
-For business entities, the registration number serves as the identifier:
-
-```typescript
-registration_number: z.string().min(1, "Registration number is required"),
-```
-
-**5.2 Add duplicate detection for registration numbers**
-
-Check against `id_number` field in clients table (where registration numbers are stored for businesses).
+We simply need to render it in `Clients.tsx` when the advice flow is selected.
 
 ## File Changes Summary
 
 | File | Action | Description |
 |------|--------|-------------|
-| Database migration | **Create** | Assign random IDs to existing clients, add unique constraint |
-| `src/components/clients/DuplicateClientDialog.tsx` | **Create** | Dialog component for duplicate detection |
-| `src/components/clients/AddClientDialog.tsx` | **Modify** | Make id_number required, add duplicate check |
-| `src/components/client-detail/AddFamilyMemberDialog.tsx` | **Modify** | Make id_number required, add duplicate check |
-| `src/components/client-detail/AddBusinessDialog.tsx` | **Modify** | Make registration_number required, add duplicate check |
+| `src/components/clients/AddClientChoiceDialog.tsx` | **Create** | New dialog for choosing between simple add or advice process |
+| `src/components/clients/AddClientDialog.tsx` | **Modify** | Add `onClientCreated` callback prop to return new client ID and name |
+| `src/pages/Clients.tsx` | **Modify** | Orchestrate choice dialog, add dialog, and wizard flow |
 
-## DuplicateClientDialog UI Design
+## AddClientChoiceDialog Component Design
 
-```text
-+--------------------------------------------------+
-|  ⚠️ Duplicate Identification Number Found         |
-+--------------------------------------------------+
-|                                                  |
-|  A client with this identification number        |
-|  already exists in the system.                   |
-|                                                  |
-|  Existing Client: Van Niekerk, M (Marthinus)     |
-|  ID Number: 6908155012081                        |
-|                                                  |
-+--------------------------------------------------+
-|  [Cancel]           [Go to Existing Client]      |
-+--------------------------------------------------+
+```typescript
+interface AddClientChoiceDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onChoiceSelected: (choice: "simple" | "advice") => void;
+}
+
+export const AddClientChoiceDialog = ({ 
+  open, 
+  onOpenChange, 
+  onChoiceSelected 
+}: AddClientChoiceDialogProps) => {
+  const handleChoice = (choice: "simple" | "advice") => {
+    onOpenChange(false);
+    onChoiceSelected(choice);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Add New Client</DialogTitle>
+          <DialogDescription>
+            How would you like to proceed?
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-3 py-4">
+          <Button
+            variant="outline"
+            className="w-full h-auto p-4 flex flex-col items-start"
+            onClick={() => handleChoice("simple")}
+          >
+            <span className="font-medium">Load Client Only</span>
+            <span className="text-sm text-muted-foreground">
+              Create the client profile and return to the clients list
+            </span>
+          </Button>
+
+          <Button
+            variant="outline"
+            className="w-full h-auto p-4 flex flex-col items-start"
+            onClick={() => handleChoice("advice")}
+          >
+            <span className="font-medium">Start Advice Process</span>
+            <span className="text-sm text-muted-foreground">
+              Create the client and begin the financial planning workflow
+            </span>
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
 ```
 
-## Flow Diagram
+## Updated Flow in Clients.tsx
 
-```text
-User enters ID Number in Add Client form
-                    ↓
-            User clicks "Add Client"
-                    ↓
-         Check if ID exists in database
-                    ↓
-    ┌───────────────┴───────────────┐
-    ↓                               ↓
-No duplicate                   Duplicate found
-    ↓                               ↓
-Create new client          Show DuplicateClientDialog
-    ↓                               ↓
-Success toast              ┌───────┴───────┐
-                           ↓               ↓
-                        [Cancel]    [Go to Client]
-                           ↓               ↓
-                    Close dialog    Navigate to
-                    User can edit   /clients/{id}
+```typescript
+// State
+const [choiceDialogOpen, setChoiceDialogOpen] = useState(false);
+const [addDialogOpen, setAddDialogOpen] = useState(false);
+const [selectedMode, setSelectedMode] = useState<"simple" | "advice">("simple");
+const [newClientForWizard, setNewClientForWizard] = useState<{id: string; name: string} | null>(null);
+const [showWizard, setShowWizard] = useState(false);
+
+// Handler for choice selection
+const handleChoiceSelected = (choice: "simple" | "advice") => {
+  setSelectedMode(choice);
+  setAddDialogOpen(true);
+};
+
+// Handler when client is created
+const handleClientCreated = (client: { id: string; name: string }) => {
+  if (selectedMode === "advice") {
+    setNewClientForWizard(client);
+    setShowWizard(true);
+  }
+  refetch();
+};
+
+// Button click opens choice dialog
+<Button onClick={() => setChoiceDialogOpen(true)}>
+  + Add Profile
+</Button>
+
+// Render dialogs
+<AddClientChoiceDialog
+  open={choiceDialogOpen}
+  onOpenChange={setChoiceDialogOpen}
+  onChoiceSelected={handleChoiceSelected}
+/>
+
+<AddClientDialog
+  open={addDialogOpen}
+  onOpenChange={setAddDialogOpen}
+  onClientAdded={refetch}
+  onClientCreated={handleClientCreated}
+/>
+
+{newClientForWizard && (
+  <FinancialPlanningWizard
+    open={showWizard}
+    onOpenChange={(open) => {
+      setShowWizard(open);
+      if (!open) setNewClientForWizard(null);
+    }}
+    clientId={newClientForWizard.id}
+    clientName={newClientForWizard.name}
+  />
+)}
 ```
 
-## Random ID Number Generation Format
+## Expected Behavior After Implementation
 
-South African ID numbers follow this format:
-- Positions 1-6: Date of birth (YYMMDD)
-- Positions 7-10: Gender and sequence (SSSS - 0000-4999 for female, 5000-9999 for male)
-- Position 11: Citizenship (0 = SA citizen, 1 = permanent resident)
-- Position 12: Usually 8 (historical)
-- Position 13: Checksum digit
-
-For random generation, we'll use a simplified format that looks realistic but uses random values to ensure uniqueness.
+| Scenario | Result |
+|----------|--------|
+| Click "+ Add Profile" | Choice dialog appears with two options |
+| Select "Load Client Only" | AddClientDialog opens, client created, list refreshes |
+| Select "Start Advice Process" | AddClientDialog opens, client created, wizard launches immediately |
+| Complete or exit wizard | Wizard closes, client list already refreshed |
+| Cancel at choice dialog | Dialog closes, no action taken |
 
 ## Technical Notes
 
-1. **Case-insensitive uniqueness**: The unique index uses `LOWER(id_number)` to prevent duplicates that differ only in case
+1. **Client record always created first**: Both paths create the client record before any workflow. The Financial Planning Wizard requires a valid `clientId` to function.
 
-2. **Empty string handling**: The constraint only applies to non-null, non-empty values to handle edge cases
+2. **Workflow linked to client**: The `financial_planning_workflows` table has a `client_id` foreign key, so the workflow is properly associated with the new client.
 
-3. **Existing duplicate cleanup**: The one existing duplicate (`7905245013085`) will need to be resolved before adding the unique constraint - one record will get a new random ID
+3. **No duplicate workflows**: Each time "Start Advice Process" is selected, a new workflow is created. Existing workflows for the same client (if any) are not affected.
 
-4. **Business entities**: Registration numbers are stored in the `id_number` field for business clients, so the same constraint applies
+4. **Backward compatibility**: The existing `onClientAdded` callback continues to work. The new `onClientCreated` callback is optional.
 
-5. **Navigation after detection**: When user clicks "Go to Existing Client", they navigate to `/clients/{existingClientId}` which loads the full client detail page
+5. **All data stored in database**: The Financial Planning Wizard already stores all step data in the `financial_planning_workflows.step_data` JSONB column.
+
