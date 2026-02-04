@@ -1,133 +1,115 @@
 
 
-# Email Page Layout Alignment
+# Fix Header Row Alignment Across All Channels
 
-## Overview
+## Problem Analysis
 
-Restructure the Email page to have consistent sidebar width and layout across all communication channels (Email, WhatsApp, SMS, Push). The WhatsApp width (`w-72`) becomes the standard for all channels.
+The channel tabs header row shifts position when switching between Email and WhatsApp/SMS/Push because:
 
-## Changes Required
-
-### 1. Email Sidebar Width: `w-48` → `w-72`
-
-Change line 188 in `src/pages/Email.tsx`:
-```tsx
-// FROM:
-<div className="w-48 bg-background border-r border-border flex flex-col">
-
-// TO:
-<div className="w-72 bg-background border-r border-border flex flex-col">
+**Email Layout:**
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│ Email Sidebar (w-72)    │ Main Content Area                          │
+│ ┌──────────────────────┐│ ┌────────────────────────────────────────┐ │
+│ │ [Search emails...]   ││ │ [Tabs] [Date][Filter][⚙][↻]           │ │◄─ Tabs at top
+│ │ [Compose]            ││ └────────────────────────────────────────┘ │
+│ │ Folders...           ││ Email Table                                │
+│ └──────────────────────┘│                                            │
+└──────────────────────────────────────────────────────────────────────┘
 ```
 
-### 2. Remove Search from Header (Lines 254-257)
-
-Remove the search input from the header area so filters remain in fixed position:
-```tsx
-// REMOVE:
-<div className="relative">
-  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-  <Input placeholder="Search..." className="pl-10 w-48 h-8 text-sm" />
-</div>
+**WhatsApp Layout:**
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│ (No sidebar)            │ Main Content Area                          │
+│                         │ ┌────────────────────────────────────────┐ │
+│                         │ │ [Tabs] [Date][Filter][⚙][↻]           │ │◄─ Tabs at top
+│                         │ └────────────────────────────────────────┘ │
+│                         │ ┌────────────────┬───────────────────────┐ │
+│                         │ │ [Search...]    │ Chat Panel            │ │◄─ Search below tabs
+│                         │ │ ConversationList                       │ │
+│                         │ └────────────────┴───────────────────────┘ │
+└──────────────────────────────────────────────────────────────────────┘
 ```
 
-### 3. Restructure Email Sidebar Layout
+The tabs row is in the SAME position for both, but the **visual perception** differs because:
+1. Email has a sidebar that starts with search (aligned with tabs row)
+2. WhatsApp has no sidebar, so the ConversationList search appears BELOW the tabs row
 
-**New order:**
-1. **Search** - Add at top (matching ConversationList style)
-2. **Compose Button** - Below search
-3. **Folder List** - Task Pool through Archived
-4. **Email Address** - Move to bottom with `border-t`
+## Solution
 
-**Updated sidebar structure:**
+Move the channel tabs row and action buttons ABOVE the main flex container so they appear at a consistent position, with content (sidebar + main area OR chat interface) below.
+
+**Target Layout (Both Channels):**
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│ Header Row (full width)                                              │
+│ [Email][WhatsApp][SMS][Push]                    [Date][Filter][⚙][↻] │
+├──────────────────────────────────────────────────────────────────────┤
+│ Content Area (sidebar + main OR chat interface)                      │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+## Changes to `src/pages/Email.tsx`
+
+### 1. Move Header Row Above Main Content
+
+Restructure the layout so the channel tabs header is rendered BEFORE the `<main>` element that contains the sidebars and content:
+
 ```tsx
-{activeChannel === "Email" && (
-  <div className="w-72 bg-background border-r border-border flex flex-col">
-    {/* Search - NEW: Top position to align with other channels */}
-    <div className="p-3 border-b border-border">
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input placeholder="Search emails..." className="pl-10 h-9" />
-      </div>
-    </div>
+{/* Communication Content */}
+{/* Header with Channel Tabs - OUTSIDE main, consistent position */}
+<div className="flex items-center justify-between gap-2 p-3 border-b border-border bg-background">
+  {/* Left side: Channel tabs */}
+  <CommunicationTypeSelector value={activeChannel} onChange={setActiveChannel} />
 
-    {/* Action Buttons - Compose */}
-    <div className="p-3 flex flex-wrap gap-2 border-b border-border">
-      <Button ...>Compose</Button>
-    </div>
-
-    {/* Folder List */}
-    <div className="flex-1 py-2">
-      {folderItems.map(...)}
-    </div>
-
-    {/* Email Address - MOVED: Below Archived with top border */}
-    <div className="p-4 border-t border-border">
-      {isConnected && emailSettings?.email_address ? (
-        <p className="text-sm text-muted-foreground truncate">
-          {emailSettings.email_address}
-        </p>
-      ) : (
-        <button onClick={() => setSetupDialogOpen(true)} ...>
-          No email linked
-        </button>
-      )}
-    </div>
+  {/* Right side: Date, Filter, Setup, Refresh */}
+  <div className="flex items-center gap-2">
+    <Button variant="outline" size="sm" className="h-8">
+      <Calendar className="w-4 h-4 mr-1" />
+      Date selection
+    </Button>
+    <Button variant="outline" size="icon" className="h-8 w-8">
+      <Filter className="w-4 h-4" />
+    </Button>
+    <Button 
+      variant="outline" 
+      size="icon" 
+      className="h-8 w-8"
+      onClick={() => setSetupDialogOpen(true)}
+      title="Communication Setup"
+    >
+      <Settings className="w-4 h-4" />
+    </Button>
+    <Button 
+      variant="outline" 
+      size="icon" 
+      className="h-8 w-8"
+      onClick={() => triggerFetch()}
+      disabled={isFetching}
+      title="Refresh"
+    >
+      <RefreshCw className={cn("w-4 h-4", isFetching && "animate-spin")} />
+    </Button>
   </div>
-)}
+</div>
+
+<main className="flex-1 flex overflow-hidden">
+  {/* Sidebar and content areas */}
+</main>
 ```
 
-## Visual Layout Comparison
+### 2. Remove Duplicate Header from Main Content Area
 
-**Before:**
-```
-┌──────────────────────────────────────────────────────────────────────┐
-│ Email Sidebar (w-48)    │ Header                                     │
-│ ┌──────────────────────┐│ [Tabs]        [Search][Date][Filter][⚙][↻] │
-│ │ adviser@email.com    ││                                            │
-│ │ [Compose]            ││                                            │
-│ │ Task Pool ... Archived││                                           │
-│ └──────────────────────┘│                                            │
-└──────────────────────────────────────────────────────────────────────┘
+Delete the header row that's currently inside the main content area (lines 256-290).
 
-│ WhatsApp Sidebar (w-72) │ Header                                     │
-│ ┌──────────────────────┐│ [Tabs]        [Search][Date][Filter][⚙][↻] │
-│ │ [Search...]          ││                                            │
-│ │ Archived             ││                                            │
-│ │ Conversations...     ││                                            │
-│ └──────────────────────┘│                                            │
-```
+## Implementation Summary
 
-**After (Aligned):**
-```
-┌──────────────────────────────────────────────────────────────────────┐
-│ Email Sidebar (w-72)    │ Header                                     │
-│ ┌──────────────────────┐│ [Tabs]              [Date][Filter][⚙][↻]   │
-│ │ [Search emails...]   ││                                            │
-│ │ [Compose]            ││                                            │
-│ │ Task Pool            ││                                            │
-│ │ ... Archived         ││                                            │
-│ │ adviser@email.com    ││                                            │
-│ └──────────────────────┘│                                            │
-└──────────────────────────────────────────────────────────────────────┘
+| Step | Description |
+|------|-------------|
+| 1 | Extract the channel tabs header row from inside `<main>` |
+| 2 | Place it directly after `<AppHeader>` and before `<main>` |
+| 3 | Remove the duplicate header section from the main content area |
 
-│ WhatsApp Sidebar (w-72) │ Header                                     │
-│ ┌──────────────────────┐│ [Tabs]              [Date][Filter][⚙][↻]   │
-│ │ [Search WhatsApp...] ││                                            │
-│ │ Archived             ││                                            │
-│ │ Conversations...     ││                                            │
-│ └──────────────────────┘│                                            │
-```
-
-## Files to Modify
-
-| File | Changes |
-|------|---------|
-| `src/pages/Email.tsx` | 1. Change sidebar width `w-48` → `w-72`<br>2. Remove search from header<br>3. Add search to top of sidebar<br>4. Move email address to bottom of sidebar |
-
-## Implementation Order
-
-1. Change sidebar width from `w-48` to `w-72`
-2. Remove search input from header (lines 254-257)
-3. Add search input at top of email sidebar (before Compose)
-4. Move email address display to bottom of sidebar (after folder list)
+This ensures the tabs row stays at a **fixed vertical position** regardless of which channel is selected, and the sidebar/content simply fills the space below.
 
