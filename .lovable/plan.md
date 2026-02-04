@@ -1,216 +1,286 @@
 
-# Populate Administrative Reference Data
+# Populate Instruments, Exchanges, Sectors & Industries
 
 ## Overview
 
-This implementation populates three administrative lookup tables with comprehensive world reference data:
-- **Currencies**: 180+ world currencies with ISO 4217 codes
-- **Banks**: 150+ major banks globally (focus on international and South African banks)
-- **Locations**: 250 countries/territories with ISO 3166 codes
+This implementation populates the Funds & Instruments section with share instruments from the top 5 global exchanges plus the JSE, along with their associated exchanges, sectors, and industries with icons.
 
-## Architecture Approach
+## Target Exchanges (6 Total)
 
-Since the `admin_general_lists` table requires a `user_id` (data is user-scoped with RLS), I'll create a **Supabase Edge Function** that seeds this reference data for the authenticated user. This approach:
+| Exchange | Code | Location | Top 100 Instruments |
+|----------|------|----------|---------------------|
+| NYSE | NYSE | United States | Apple, Microsoft, Berkshire, etc. |
+| NASDAQ | NASDAQ | United States | Alphabet, Amazon, Meta, Tesla, etc. |
+| Tokyo Stock Exchange | TSE | Japan | Toyota, Sony, Mitsubishi, etc. |
+| Shanghai Stock Exchange | SSE | China | ICBC, PetroChina, Kweichow Moutai, etc. |
+| London Stock Exchange | LSE | United Kingdom | Shell, AstraZeneca, HSBC, etc. |
+| Johannesburg Stock Exchange | JSE | South Africa | Naspers, Anglo American, FirstRand, etc. |
 
-1. Respects the existing RLS policies
-2. Seeds data on-demand for each user
-3. Avoids duplicate entries (uses upsert with ON CONFLICT)
-4. Can be called from a "Seed Reference Data" button in the UI
+## Data Structure
 
-## Implementation Details
+### 1. Exchanges Table (`admin_general_lists` with `list_type: 'exchanges'`)
 
-### 1. Edge Function: `seed-admin-reference-data`
+| Code | Name | Icon |
+|------|------|------|
+| NYSE | New York Stock Exchange | Building2 |
+| NASDAQ | NASDAQ | BarChart3 |
+| TSE | Tokyo Stock Exchange | Landmark |
+| SSE | Shanghai Stock Exchange | Building |
+| LSE | London Stock Exchange | Castle |
+| JSE | Johannesburg Stock Exchange | TrendingUp |
 
-**File:** `supabase/functions/seed-admin-reference-data/index.ts`
+**Icon storage:** Uses `metadata` JSONB column: `{"icon": "Building2"}`
 
-This function will:
-- Authenticate the user
-- Insert reference data for currencies, banks, and locations
-- Use ON CONFLICT to avoid duplicates
-- Return success/failure status
+### 2. Sectors Table (`admin_general_lists` with `list_type: 'sectors'`)
 
-**Data to Insert:**
+| Code | Name | Icon |
+|------|------|------|
+| TECH | Technology | Cpu |
+| HLTH | Healthcare | Heart |
+| FINA | Financials | Banknote |
+| CONS | Consumer Discretionary | ShoppingCart |
+| STAP | Consumer Staples | Package |
+| ENGY | Energy | Fuel |
+| INDU | Industrials | Factory |
+| MATL | Materials | Pickaxe |
+| REAL | Real Estate | Home |
+| UTIL | Utilities | Zap |
+| COMM | Communication Services | Radio |
 
-#### Currencies (180+ entries)
-| Code | Name | Description |
-|------|------|-------------|
-| USD | United States Dollar | US Dollar |
-| EUR | Euro | European Union |
-| GBP | British Pound Sterling | United Kingdom |
-| ZAR | South African Rand | South Africa |
-| JPY | Japanese Yen | Japan |
-| CHF | Swiss Franc | Switzerland |
-| AUD | Australian Dollar | Australia |
-| CAD | Canadian Dollar | Canada |
-| ... | ... | ... |
+### 3. Industries Table (`admin_general_lists` with `list_type: 'industries'`)
 
-#### Banks (150+ entries)
-| Code | Name | Description |
-|------|------|-------------|
-| ABSA | ABSA Bank | South Africa |
-| FNB | First National Bank | South Africa |
-| STD | Standard Bank | South Africa |
-| NED | Nedbank | South Africa |
-| CAP | Capitec Bank | South Africa |
-| HSBC | HSBC Holdings | United Kingdom |
-| JPM | JPMorgan Chase | United States |
-| BOA | Bank of America | United States |
-| CITI | Citibank | United States |
-| BARC | Barclays | United Kingdom |
-| ... | ... | ... |
+Industries are sub-categories of sectors. Examples:
 
-#### Locations/Countries (250 entries)
-| Code | Name | Description |
-|------|------|-------------|
-| ZA | South Africa | Republic of South Africa |
-| US | United States | United States of America |
-| GB | United Kingdom | United Kingdom of Great Britain |
-| DE | Germany | Federal Republic of Germany |
-| FR | France | French Republic |
-| JP | Japan | Japan |
-| CN | China | People's Republic of China |
-| AU | Australia | Commonwealth of Australia |
-| ... | ... | ... |
+| Code | Name | Sector | Icon |
+|------|------|--------|------|
+| SOFT | Software | Technology | Code |
+| SEMI | Semiconductors | Technology | Microchip |
+| BANK | Banks | Financials | Building2 |
+| PHAR | Pharmaceuticals | Healthcare | Pill |
+| AUTO | Automobiles | Consumer Discretionary | Car |
+| MINE | Mining | Materials | Gem |
+| TELE | Telecommunications | Communication | Phone |
+| RETL | Retail | Consumer Discretionary | Store |
+| ... | ... | ... | ... |
 
-### 2. Frontend Integration
+**Total: ~40 industries**
 
-**Modify:** `src/components/administration/general-lists/GeneralListsSection.tsx`
+### 4. Instruments Table (`admin_funds`)
 
-Add a "Seed Reference Data" button in the header that:
+Each instrument includes:
+
+| Field | Example Value |
+|-------|--------------|
+| name | Apple Inc. |
+| code | AAPL |
+| isin | US0378331005 |
+| morningstar_id | 0P000000GY |
+| exchange | NYSE |
+| sector | TECH |
+| industry | SOFT |
+| fund_type | Share |
+| domicile | US |
+| is_active | true |
+
+**Total: ~600 instruments (100 per exchange)**
+
+## Database Schema Updates
+
+The current `admin_funds` table already has all required columns:
+- `code` - Ticker symbol
+- `isin` - ISIN code
+- `morningstar_id` - Morningstar ID
+- `exchange` - References exchange code
+- `sector` - References sector code
+- `industry` - References industry code
+- `name` - Full instrument name
+
+A database migration will add a unique constraint on `(user_id, code, exchange)` in `admin_funds` to prevent duplicate instruments.
+
+## Implementation Approach
+
+### New Edge Function: `seed-instruments-data`
+
+**File:** `supabase/functions/seed-instruments-data/index.ts`
+
+This edge function will:
+1. Authenticate the user
+2. Seed 6 exchanges with icons
+3. Seed 11 sectors with icons
+4. Seed ~40 industries with icons
+5. Seed 600 instruments (100 per exchange)
+6. Use upsert to avoid duplicates
+
+### Frontend Integration
+
+**Modify:** `src/components/administration/funds/FundsSection.tsx`
+
+Add a "Seed Instrument Data" button that:
+- Appears only on Instruments/Exchanges/Sectors/Industries tabs
 - Calls the edge function
-- Shows a loading state
+- Shows loading state
 - Displays success/error toast
 - Refreshes the data table
 
-### 3. Database Migration
+### UI Enhancement for Icons
 
-**New Migration:** Create a database function that can be called to seed data for a specific user. This provides an alternative seeding method and can be used by the edge function.
+Update the table columns for Exchanges/Sectors/Industries to display icons:
+- Read icon name from `metadata.icon`
+- Render appropriate Lucide icon
 
-```sql
--- Function to seed reference data for a user
-CREATE OR REPLACE FUNCTION seed_admin_reference_data(p_user_id UUID)
-RETURNS void AS $$
-BEGIN
-  -- Insert currencies
-  INSERT INTO admin_general_lists (user_id, list_type, code, name, description, display_order, is_active)
-  VALUES 
-    (p_user_id, 'currencies', 'USD', 'United States Dollar', 'US Dollar', 1, true),
-    (p_user_id, 'currencies', 'EUR', 'Euro', 'European Union', 2, true),
-    -- ... more currencies
-  ON CONFLICT (user_id, list_type, code) DO NOTHING;
-  
-  -- Insert banks
-  INSERT INTO admin_general_lists (user_id, list_type, code, name, description, display_order, is_active)
-  VALUES 
-    (p_user_id, 'banks', 'ABSA', 'ABSA Bank', 'South Africa', 1, true),
-    -- ... more banks
-  ON CONFLICT (user_id, list_type, code) DO NOTHING;
-  
-  -- Insert locations
-  INSERT INTO admin_general_lists (user_id, list_type, code, name, description, display_order, is_active)
-  VALUES 
-    (p_user_id, 'locations', 'ZA', 'South Africa', 'Republic of South Africa', 1, true),
-    -- ... more countries
-  ON CONFLICT (user_id, list_type, code) DO NOTHING;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+---
+
+## Sample Instrument Data by Exchange
+
+### NYSE (100 instruments)
+```text
+AAPL - Apple Inc. (US0378331005) - Technology/Software
+MSFT - Microsoft Corporation (US5949181045) - Technology/Software
+BRK.A - Berkshire Hathaway (US0846707026) - Financials/Insurance
+JNJ - Johnson & Johnson (US4781601046) - Healthcare/Pharmaceuticals
+JPM - JPMorgan Chase (US46625H1005) - Financials/Banks
+V - Visa Inc. (US92826C8394) - Technology/Financial Technology
+PG - Procter & Gamble (US7427181091) - Consumer Staples/Household
+UNH - UnitedHealth Group (US91324P1021) - Healthcare/Insurance
+HD - Home Depot (US4370761029) - Consumer Discretionary/Retail
+MA - Mastercard (US57636Q1040) - Technology/Financial Technology
+... (90 more)
 ```
+
+### NASDAQ (100 instruments)
+```text
+GOOGL - Alphabet Inc. (US02079K3059) - Communication/Internet
+AMZN - Amazon.com (US0231351067) - Consumer Discretionary/E-commerce
+NVDA - NVIDIA Corporation (US67066G1040) - Technology/Semiconductors
+META - Meta Platforms (US30303M1027) - Communication/Social Media
+TSLA - Tesla Inc. (US88160R1014) - Consumer Discretionary/Automobiles
+AVGO - Broadcom Inc. (US11135F1012) - Technology/Semiconductors
+COST - Costco Wholesale (US22160K1051) - Consumer Staples/Retail
+ADBE - Adobe Inc. (US00724F1012) - Technology/Software
+NFLX - Netflix Inc. (US64110L1061) - Communication/Entertainment
+... (91 more)
+```
+
+### JSE (100 instruments)
+```text
+NPN - Naspers Limited (ZAE000015889) - Consumer Discretionary/Media
+AGL - Anglo American (GB00B1XZS820) - Materials/Mining
+FSR - FirstRand Limited (ZAE000066304) - Financials/Banks
+SOL - Sasol Limited (ZAE000006896) - Energy/Chemicals
+SBK - Standard Bank (ZAE000109815) - Financials/Banks
+MTN - MTN Group (ZAE000042164) - Communication/Telecom
+ABG - Absa Group (ZAE000255915) - Financials/Banks
+CFR - Compagnie Financière Richemont (CH0210483332) - Consumer Discretionary/Luxury
+BHP - BHP Group (AU000000BHP4) - Materials/Mining
+GLN - Glencore (JE00B4T3BW64) - Materials/Mining
+... (90 more)
+```
+
+### TSE (100 instruments)
+```text
+7203 - Toyota Motor (JP3633400001) - Consumer Discretionary/Automobiles
+6758 - Sony Group (JP3435000009) - Technology/Electronics
+8306 - Mitsubishi UFJ (JP3902900004) - Financials/Banks
+6861 - Keyence (JP3236200006) - Technology/Electronics
+6501 - Hitachi (JP3788600009) - Industrials/Conglomerate
+9984 - SoftBank Group (JP3436100006) - Communication/Investment
+6902 - Denso (JP3551500006) - Consumer Discretionary/Auto Parts
+7267 - Honda Motor (JP3854600008) - Consumer Discretionary/Automobiles
+... (92 more)
+```
+
+### SSE (100 instruments)
+```text
+601398 - ICBC (CNE1000003G1) - Financials/Banks
+601857 - PetroChina (CNE1000003W8) - Energy/Oil & Gas
+600519 - Kweichow Moutai (CNE0000018R8) - Consumer Staples/Beverages
+601288 - Agricultural Bank (CNE100000Q43) - Financials/Banks
+600036 - China Merchants Bank (CNE000001B33) - Financials/Banks
+601988 - Bank of China (CNE1000001Z5) - Financials/Banks
+600028 - Sinopec (CNE1000002Q2) - Energy/Oil & Gas
+... (93 more)
+```
+
+### LSE (100 instruments)
+```text
+SHEL - Shell plc (GB00BP6MXD84) - Energy/Oil & Gas
+AZN - AstraZeneca (GB0009895292) - Healthcare/Pharmaceuticals
+HSBA - HSBC Holdings (GB0005405286) - Financials/Banks
+ULVR - Unilever (GB00B10RZP78) - Consumer Staples/Personal Products
+BP - BP plc (GB0007980591) - Energy/Oil & Gas
+GSK - GSK plc (GB00BN7SWP63) - Healthcare/Pharmaceuticals
+RIO - Rio Tinto (GB0007188757) - Materials/Mining
+DGE - Diageo (GB0002374006) - Consumer Staples/Beverages
+... (92 more)
+```
+
+---
 
 ## Files to Create
 
 | File | Purpose |
 |------|---------|
-| `supabase/functions/seed-admin-reference-data/index.ts` | Edge function to seed reference data |
+| `supabase/functions/seed-instruments-data/index.ts` | Edge function to seed all instrument data |
 
 ## Files to Modify
 
 | File | Changes |
 |------|---------|
-| `src/components/administration/general-lists/GeneralListsSection.tsx` | Add "Seed Reference Data" button |
-| Database migration | Create seeding function with all reference data |
+| `src/components/administration/funds/FundsSection.tsx` | Add "Seed Instrument Data" button, add icon column rendering |
+| Database migration | Add unique constraint on `(user_id, code, exchange)` in `admin_funds` |
 
-## Reference Data Sources
-
-### Currencies
-- ISO 4217 standard currency codes
-- Includes major trading currencies and all sovereign currencies
-- 180+ currencies total
-
-### Banks
-- Major international banks (top 50 by assets)
-- All South African commercial banks
-- Regional banks from major economies
-- 150+ banks total
-
-### Countries/Locations
-- ISO 3166-1 alpha-2 country codes
-- All UN member states
-- Major territories and regions
-- 250 entries total
+---
 
 ## Expected Behavior
 
 | Action | Result |
 |--------|--------|
-| Navigate to Currencies tab | Shows empty table (no data yet) |
-| Click "Seed Reference Data" | Calls edge function, inserts 180+ currencies |
-| Navigate to Banks tab | Shows 150+ major world banks |
-| Navigate to Locations tab | Shows 250 countries/territories |
-| Click seed again | No duplicates created (ON CONFLICT DO NOTHING) |
+| Navigate to Instruments tab | Shows empty table (no data yet) |
+| Click "Seed Instrument Data" | Calls edge function, seeds all data |
+| Navigate to Exchanges tab | Shows 6 exchanges with icons |
+| Navigate to Sectors tab | Shows 11 sectors with icons |
+| Navigate to Industries tab | Shows ~40 industries with icons |
+| Navigate to Instruments tab | Shows 600 instruments with exchange/sector/industry references |
+| Search for "Apple" | Finds AAPL from NYSE |
+| Filter by exchange | Shows only instruments from selected exchange |
 
-## Sample Data Preview
+---
 
-### Currencies (partial list)
-```text
-USD - United States Dollar
-EUR - Euro  
-GBP - British Pound Sterling
-ZAR - South African Rand
-JPY - Japanese Yen
-CNY - Chinese Yuan
-AUD - Australian Dollar
-CAD - Canadian Dollar
-CHF - Swiss Franc
-INR - Indian Rupee
-... (180+ total)
+## Icon Rendering in UI
+
+The `metadata.icon` field stores Lucide icon names. The UI will:
+
+```typescript
+// In FundsSection.tsx for list columns
+{
+  header: "Icon",
+  accessor: "metadata",
+  render: (value) => {
+    const iconName = value?.icon;
+    const IconComponent = iconName ? Icons[iconName] : null;
+    return IconComponent ? <IconComponent className="h-4 w-4" /> : "—";
+  },
+}
 ```
 
-### Banks (partial list)
-```text
-ABSA - ABSA Bank (South Africa)
-FNB - First National Bank (South Africa)
-STD - Standard Bank (South Africa)
-NED - Nedbank (South Africa)
-CAP - Capitec Bank (South Africa)
-HSBC - HSBC Holdings (UK)
-JPM - JPMorgan Chase (US)
-BOA - Bank of America (US)
-BARC - Barclays (UK)
-DB - Deutsche Bank (Germany)
-... (150+ total)
-```
+---
 
-### Locations (partial list)
-```text
-ZA - South Africa
-US - United States
-GB - United Kingdom
-DE - Germany
-FR - France
-JP - Japan
-CN - China
-AU - Australia
-CA - Canada
-BR - Brazil
-... (250 total)
-```
+## Data Integrity
 
-## Implementation Notes
+- **Exchanges** are referenced by code in `admin_funds.exchange`
+- **Sectors** are referenced by code in `admin_funds.sector`
+- **Industries** are referenced by code in `admin_funds.industry`
+- Unique constraint prevents duplicate instruments per user
+- Upsert pattern allows re-running seed without duplicates
 
-1. **Edge Function Approach**: Using an edge function allows seeding to happen on-demand with proper authentication, respecting RLS policies.
+---
 
-2. **Idempotent Seeding**: Using `ON CONFLICT DO NOTHING` ensures the seed operation can be run multiple times without creating duplicates.
+## Summary
 
-3. **Display Order**: Countries/currencies are ordered alphabetically by code for consistency, with commonly-used items (like ZAR, USD, EUR) given lower display_order values to appear first.
+This implementation seeds:
+- **6 exchanges** (NYSE, NASDAQ, TSE, SSE, LSE, JSE) with icons
+- **11 sectors** with icons (Technology, Healthcare, Financials, etc.)
+- **~40 industries** with icons (Software, Banks, Pharmaceuticals, etc.)
+- **600 instruments** (100 per exchange) with ISIN, Morningstar ID, ticker, and sector/industry links
 
-4. **User-Scoped Data**: Each user gets their own copy of reference data, allowing customization (adding/removing items) without affecting other users.
+All data is stored in the database with proper user scoping and can be customized per user after seeding.
