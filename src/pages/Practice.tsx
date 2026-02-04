@@ -37,11 +37,11 @@ const personnelData = [
 const sidebarItems = [
   { icon: LayoutDashboard, label: "Dash", path: "/dashboard" },
   { icon: Users, label: "Clients", path: "/clients" },
-  { icon: Briefcase, label: "Portfolio", path: "/portfolio" },
+  { icon: LineChart, label: "Portfolio", path: "/portfolio" },
   { icon: Mail, label: "Message", path: "/email" },
   { icon: CalendarIcon, label: "Calendar", path: "/calendar" },
   { icon: ListTodo, label: "Tasks", path: "/tasks" },
-  { icon: LineChart, label: "Insights", path: "/insights" },
+  { icon: Briefcase, label: "Insights", path: "/insights" },
   { icon: Building2, label: "Practice", path: "/practice" },
 ];
 
