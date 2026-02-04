@@ -18,6 +18,7 @@ import {
   Forward,
   Loader2,
   FileText,
+  ArrowLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -286,6 +287,15 @@ const EmailView = () => {
             <div className="p-6 max-w-5xl mx-auto space-y-4">
               {/* Action Bar */}
               <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate(`/email?folder=${encodeURIComponent(email.folder)}`)}
+                  className="gap-1.5"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  Back
+                </Button>
                 <Button
                   variant="outline"
                   size="sm"
