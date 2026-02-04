@@ -1,204 +1,134 @@
 
 
-# Email Setup & Enhanced Email Table Implementation
+# Email Setup Dialog & Display Improvements
 
-## Overview
+## Issues Identified
 
-This plan implements email setup functionality with Gmail SSO integration and updates the email table to match the reference design with client matching and clickable client links.
+1. **Dialog size on smaller screens**: The dialog uses `sm:max-w-[500px]` which is fine, but it needs:
+   - Proper padding/margins on mobile (currently `w-full` which is good)
+   - `max-h-[90vh]` with scrollable content for smaller screen heights
+   - IMAP fields grid should stack on mobile (currently `grid-cols-2` always)
 
-## Key Features
+2. **Email address display doesn't update**: The Email.tsx shows `emailSettings?.email_address` when connected, but:
+   - The `useEmailSettings` hook data isn't being reactive after setup dialog closes
+   - Need to ensure the hook refetches after settings are saved
 
-1. **Email Setup Dialog** - Accessible via button next to user email address
-2. **Mail Provider Configuration** - Support for Gmail (SSO), Microsoft, and IMAP/POP3
-3. **Fetch Mode Selection** - Pull to Inbox or collect from Task Pool folder
-4. **Email Fetch Triggers** - On folder click, navigation, or refresh with spinning indicator
-5. **Client Matching** - Match sender email against client database
-6. **Multiple Clients Display** - Show all matching clients with "+ X more" overflow
-7. **Clickable Client Names** - Link to client profile page
+3. **No indication when email not linked**: Currently shows `userEmail` fallback, but should indicate "No email connected" or similar with a prompt to set up
 
-## Architecture
+## Changes Required
 
-```text
-Email.tsx
-├── EmailSettingsSetupDialog (new)
-│   ├── Provider selection (Gmail SSO, Microsoft, IMAP/POP3)
-│   ├── Fetch mode selection (Inbox / Task Pool)
-│   └── OAuth flow for Gmail/Microsoft
-├── useEmailSettings hook (new)
-│   ├── Load/save settings from admin_communication_settings
-│   └── Manage OAuth tokens
-├── Updated useEmails hook
-│   ├── Match from_address against clients table
-│   ├── Return matched client details
-│   └── Support isFetching state for spinner
-└── Updated email table
-    ├── New date format (DD/MM/YYYY HH:MM AM/PM)
-    ├── Unread emails in teal color
-    └── Clickable client names with overflow handling
+### 1. EmailSetupDialog.tsx - Mobile Responsiveness
+
+| Issue | Fix |
+|-------|-----|
+| Dialog may overflow on small screens | Add `max-h-[90vh]` and `overflow-y-auto` to content wrapper |
+| IMAP fields grid too narrow on mobile | Change `grid-cols-2` to `grid-cols-1 sm:grid-cols-2` |
+| Footer buttons stacking | Already handled by DialogFooter default classes |
+
+### 2. Email.tsx - Dynamic Email Address Display
+
+**Current Code (lines 188-191):**
+```tsx
+<p className="text-sm text-muted-foreground truncate flex-1">
+  {isConnected ? emailSettings?.email_address : userEmail}
+</p>
 ```
 
-## Database Changes
+**Updated Behavior:**
+- If connected: Show the configured email address
+- If not connected: Show "No email linked" with italic styling and a visual cue to click the setup button
 
-**New table: `email_settings`** - Store user email configuration
+### 3. useEmailSettings.ts - Ensure Reactivity
 
-| Column | Type | Description |
-|--------|------|-------------|
-| id | uuid | Primary key |
-| user_id | uuid | Reference to auth.users |
-| provider | text | gmail, microsoft, imap |
-| email_address | text | User's email address |
-| fetch_mode | text | inbox or task_pool |
-| oauth_token | text | Encrypted token (nullable) |
-| settings | jsonb | Provider-specific config |
-| is_active | boolean | Whether sync is enabled |
-| last_sync_at | timestamp | Last successful sync |
-| created_at | timestamp | Row creation time |
-| updated_at | timestamp | Last update time |
+Check if the hook properly updates when settings are saved. May need to trigger a refetch after `saveSettings` completes.
 
-**New junction table: `email_clients`** - Support multiple clients per email
+## Implementation Details
 
-| Column | Type | Description |
-|--------|------|-------------|
-| id | uuid | Primary key |
-| email_id | uuid | Reference to emails |
-| client_id | uuid | Reference to clients |
-| created_at | timestamp | Row creation time |
+### EmailSetupDialog.tsx Changes
 
-## Files to Create
+```text
+DialogContent
+├── Add: max-h-[90vh] overflow-y-auto
+├── ScrollArea wrapper (optional for smooth scrolling)
+└── IMAP grid: grid-cols-1 sm:grid-cols-2
+```
 
-| File | Purpose |
-|------|---------|
-| `src/components/email/EmailSetupDialog.tsx` | Email setup modal with provider selection and OAuth |
-| `src/hooks/useEmailSettings.ts` | Manage email settings CRUD and OAuth flow |
+### Email.tsx Email Address Section
+
+```text
+Current:
+┌────────────────────────────────────┐
+│ demo@vantage.co.za          [⚙️]   │
+└────────────────────────────────────┘
+
+Updated (not connected):
+┌────────────────────────────────────┐
+│ No email linked (click to setup) [⚙️]│
+└────────────────────────────────────┘
+
+Updated (connected):
+┌────────────────────────────────────┐
+│ user@gmail.com              [⚙️]   │
+└────────────────────────────────────┘
+```
 
 ## Files to Modify
 
 | File | Changes |
 |------|---------|
-| `src/pages/Email.tsx` | Add setup button, spinning refresh icon, fetch triggers |
-| `src/hooks/useEmails.ts` | Add client matching logic, return matched clients with IDs, isFetching state |
+| `src/components/email/EmailSetupDialog.tsx` | Add max-height, overflow scrolling, responsive IMAP grid |
+| `src/pages/Email.tsx` | Update email display logic to show "No email linked" state |
+| `src/hooks/useEmailSettings.ts` | Ensure `refetch` is called after save (if not already) |
 
-## Component Details
+## Detailed Changes
 
 ### EmailSetupDialog.tsx
 
-```text
-┌─────────────────────────────────────────────┐
-│  Email Setup                              X │
-├─────────────────────────────────────────────┤
-│                                             │
-│  Choose your email provider:                │
-│                                             │
-│  ┌─────────────────────────────────────┐    │
-│  │ 🔵 Gmail (Google SSO)               │    │
-│  │    Sign in with your Google account │    │
-│  └─────────────────────────────────────┘    │
-│                                             │
-│  ┌─────────────────────────────────────┐    │
-│  │ 🔷 Microsoft 365 / Outlook          │    │
-│  │    Sign in with Microsoft account   │    │
-│  └─────────────────────────────────────┘    │
-│                                             │
-│  ┌─────────────────────────────────────┐    │
-│  │ ⚙️ IMAP/POP3 (Other providers)      │    │
-│  │    Manual server configuration      │    │
-│  └─────────────────────────────────────┘    │
-│                                             │
-│  ─────────────────────────────────────────  │
-│                                             │
-│  Fetch mode:                                │
-│  ○ Pull emails into Inbox folder            │
-│  ● Collect from Task Pool folder            │
-│                                             │
-├─────────────────────────────────────────────┤
-│                    [Cancel]  [Connect]      │
-└─────────────────────────────────────────────┘
-```
+1. **Line 120**: Add responsive max-height and scroll
+   ```tsx
+   <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+   ```
 
-### Email Table Updates (matching reference image)
+2. **Line 183**: Make IMAP grid stack on mobile
+   ```tsx
+   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+   ```
 
-**Visual Changes:**
-- Unread emails: From/Subject in teal color (hsl(180,70%,45%))
-- Date format: DD/MM/YYYY HH:MM AM/PM
-- Client names formatted as: "Surname, I (FirstName)"
-- Multiple clients: "First Client + X more client" (teal clickable)
-- Each client name clickable to navigate to `/clients/{client-id}`
+### Email.tsx
 
-### Refresh Button with Spinner
-
-```text
-Current:  [↻] Refresh emails
-Fetching: [⟳] Refresh emails  (spinning animation)
-```
-
-## Implementation Steps
-
-### Step 1: Database Migration
-Create `email_settings` and `email_clients` tables with RLS policies
-
-### Step 2: Create useEmailSettings Hook
-- Load email settings for current user
-- Save settings to database
-- Handle OAuth token storage
-- Provide connection status
-
-### Step 3: Create EmailSetupDialog Component
-- Provider selection cards (Gmail, Microsoft, IMAP)
-- Fetch mode radio buttons
-- OAuth flow for Gmail/Microsoft using existing patterns
-- Manual config form for IMAP/POP3
-
-### Step 4: Update Email.tsx
-- Replace static email display with Setup button
-- Add setup dialog state management
-- Implement spinning refresh icon
-- Trigger fetch on folder click and navigation
-
-### Step 5: Update useEmails Hook
-- Add isFetching state separate from loading
-- Match from_address against clients.email and clients.work_email
-- Return array of matched client objects with IDs
-- Support multiple client matches per email
-
-### Step 6: Update Email Table Display
-- Apply teal color to unread emails
-- Format dates correctly
-- Display client names with overflow handling
-- Make client names clickable links
-
-## Client Matching Logic
-
-```text
-For each email:
-1. Extract from_address domain and local part
-2. Query clients where:
-   - email ILIKE '%' || from_address || '%'
-   - OR work_email ILIKE '%' || from_address || '%'
-3. Return all matching clients (can be 0, 1, or many)
-4. Display format:
-   - 0 matches: empty
-   - 1 match: "Surname, I (FirstName)"
-   - 2+ matches: "Surname, I (FirstName) + X more client"
-```
+1. **Lines 188-191**: Update email display section
+   ```tsx
+   <div className="p-4 border-b border-border flex items-center justify-between gap-2">
+     {isConnected && emailSettings?.email_address ? (
+       <p className="text-sm text-muted-foreground truncate flex-1">
+         {emailSettings.email_address}
+       </p>
+     ) : (
+       <button 
+         onClick={() => setSetupDialogOpen(true)}
+         className="text-sm text-muted-foreground italic truncate flex-1 text-left hover:text-foreground"
+       >
+         No email linked
+       </button>
+     )}
+     <Button
+       variant="ghost"
+       size="icon"
+       className="h-6 w-6 shrink-0"
+       onClick={() => setSetupDialogOpen(true)}
+       title="Email Setup"
+     >
+       <Settings className="w-4 h-4" />
+     </Button>
+   </div>
+   ```
 
 ## Expected Behavior
 
-| Action | Result |
-|--------|--------|
-| Click Setup button | Opens EmailSetupDialog |
-| Select Gmail | Initiates Google OAuth flow |
-| Select fetch mode | Saves preference to database |
-| Click folder (Task Pool, Inbox) | Triggers email fetch, shows spinner |
-| Click "Message" in sidebar | Triggers email fetch |
-| Click Refresh | Fetches new emails with spinning icon |
-| Hover unread email | Row highlights, teal text visible |
-| Click client name | Navigates to client detail page |
-| Click "+ X more" | Shows popover with all client names |
-
-## Technical Notes
-
-1. **Gmail OAuth** - Uses existing OAuth pattern from Auth.tsx but with extended scopes for Gmail API
-2. **Email Fetch** - Initially will be UI-ready; actual email fetching requires edge function (future enhancement)
-3. **Client Matching** - Performed on frontend initially using loaded clients data
-4. **RLS Policies** - All new tables will have user_id scoping with auth.uid() checks
+| Scenario | Display |
+|----------|---------|
+| No email configured | "No email linked" (italic, clickable) + Settings icon |
+| Email configured | Email address shown + Settings icon |
+| Small screen (dialog) | Dialog scrollable, IMAP fields stacked |
+| Medium+ screen (dialog) | IMAP fields side-by-side |
 
