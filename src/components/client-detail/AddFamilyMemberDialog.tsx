@@ -70,6 +70,17 @@ const AddFamilyMemberDialog = ({ open, onOpenChange, clientId, onSuccess }: AddF
     },
   });
 
+  // Helper function to get reciprocal relationship type
+  const getReciprocalRelationship = (type: string): "Spouse" | "Child" | "Parent" | "Sibling" => {
+    switch (type) {
+      case "Spouse": return "Spouse";
+      case "Child": return "Parent";
+      case "Parent": return "Child";
+      case "Sibling": return "Sibling";
+      default: return "Spouse";
+    }
+  };
+
   const onSubmit = async (data: FamilyMemberFormData) => {
     setIsSubmitting(true);
     try {
@@ -78,6 +89,15 @@ const AddFamilyMemberDialog = ({ open, onOpenChange, clientId, onSuccess }: AddF
         toast.error("You must be logged in");
         return;
       }
+
+      // Fetch original client's data for the reciprocal relationship
+      const { data: originalClient, error: originalClientError } = await supabase
+        .from("clients")
+        .select("first_name, surname, id_number")
+        .eq("id", clientId)
+        .single();
+
+      if (originalClientError) throw originalClientError;
 
       // First create the family member as a client
       const { data: newClient, error: clientError } = await supabase
@@ -102,7 +122,7 @@ const AddFamilyMemberDialog = ({ open, onOpenChange, clientId, onSuccess }: AddF
 
       if (clientError) throw clientError;
 
-      // Then create the relationship linking to the new client
+      // Create the primary relationship (new family member linked to original client)
       const { error: relationshipError } = await supabase
         .from("client_relationships")
         .insert({
@@ -118,6 +138,27 @@ const AddFamilyMemberDialog = ({ open, onOpenChange, clientId, onSuccess }: AddF
         });
 
       if (relationshipError) throw relationshipError;
+
+      // Create the reciprocal relationship (original client linked to new family member)
+      const reciprocalType = getReciprocalRelationship(data.relationship_type);
+      const { error: reciprocalError } = await supabase
+        .from("client_relationships")
+        .insert({
+          user_id: user.id,
+          client_id: newClient.id,
+          related_client_id: clientId,
+          name: `${originalClient.first_name} ${originalClient.surname}`,
+          entity_type: "Individual",
+          relationship_type: reciprocalType,
+          identification: originalClient.id_number || null,
+          id_type: "SA ID",
+          product_viewing_level: data.product_viewing_level || "Full",
+        });
+
+      if (reciprocalError) {
+        console.error("Error creating reciprocal relationship:", reciprocalError);
+        // Don't throw - primary relationship was created successfully
+      }
 
       toast.success("Family member added successfully");
       form.reset();

@@ -9,13 +9,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Pencil, Trash2, Plus, ChevronDown, ChevronRight, Loader2, ExternalLink } from "lucide-react";
-import { useClientRelationships } from "@/hooks/useClientRelationships";
+import { Pencil, Trash2, Plus, ChevronDown, ChevronRight, Loader2 } from "lucide-react";
+import { useClientRelationships, FamilyMemberListItem, BusinessListItem } from "@/hooks/useClientRelationships";
 import { useClientContacts } from "@/hooks/useClientContacts";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import AddFamilyMemberDialog from "./AddFamilyMemberDialog";
 import AddBusinessDialog from "./AddBusinessDialog";
 import AddContactDialog from "./AddContactDialog";
+import EditFamilyMemberDialog from "./EditFamilyMemberDialog";
 
 const ClientRelationshipsTab = () => {
   const { clientId } = useParams<{ clientId: string }>();
@@ -41,6 +42,8 @@ const ClientRelationshipsTab = () => {
   const [showAddFamily, setShowAddFamily] = useState(false);
   const [showAddBusiness, setShowAddBusiness] = useState(false);
   const [showAddContact, setShowAddContact] = useState(false);
+  const [editingFamilyMember, setEditingFamilyMember] = useState<FamilyMemberListItem | null>(null);
+  const [editingBusiness, setEditingBusiness] = useState<BusinessListItem | null>(null);
 
   const loading = relationshipsLoading || contactsLoading;
 
@@ -100,10 +103,13 @@ const ClientRelationshipsTab = () => {
                       <TableCell className="text-sm">{member.productViewing}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
-                          <Button variant="ghost" size="icon" className="h-8 w-8" title="View Client">
-                            <ExternalLink className="w-4 h-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8"
+                            onClick={() => setEditingFamilyMember(member)}
+                            title="Edit"
+                          >
                             <Pencil className="w-4 h-4" />
                           </Button>
                           <Button 
@@ -111,6 +117,7 @@ const ClientRelationshipsTab = () => {
                             size="icon" 
                             className="h-8 w-8 text-destructive hover:text-destructive"
                             onClick={() => deleteRelationship(member.id)}
+                            title="Delete"
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
@@ -173,10 +180,13 @@ const ClientRelationshipsTab = () => {
                       <TableCell className="text-sm">{business.productViewing}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
-                          <Button variant="ghost" size="icon" className="h-8 w-8" title="View Entity">
-                            <ExternalLink className="w-4 h-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8"
+                            onClick={() => setEditingBusiness(business)}
+                            title="Edit"
+                          >
                             <Pencil className="w-4 h-4" />
                           </Button>
                           <Button 
@@ -184,6 +194,7 @@ const ClientRelationshipsTab = () => {
                             size="icon" 
                             className="h-8 w-8 text-destructive hover:text-destructive"
                             onClick={() => deleteRelationship(business.id)}
+                            title="Delete"
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
@@ -286,6 +297,13 @@ const ClientRelationshipsTab = () => {
         onOpenChange={setShowAddContact}
         clientId={clientId || ""}
         onSuccess={refetchContacts}
+      />
+      <EditFamilyMemberDialog
+        open={!!editingFamilyMember}
+        onOpenChange={(open) => !open && setEditingFamilyMember(null)}
+        clientId={clientId || ""}
+        familyMember={editingFamilyMember}
+        onSuccess={refetchRelationships}
       />
     </div>
   );
