@@ -247,16 +247,16 @@ export const TaskSearchDialog = ({
             <div className="space-y-2 flex-1">
               <Label className="text-xs font-medium">Task Type</Label>
               <Select
-                value={filters.taskType?.[0] || ""}
+                value={filters.taskType?.[0] || "__all__"}
                 onValueChange={(value) =>
-                  setFilters((f) => ({ ...f, taskType: value ? [value] : [] }))
+                  setFilters((f) => ({ ...f, taskType: value === "__all__" ? [] : [value] }))
                 }
               >
                 <SelectTrigger className="h-8 text-xs">
                   <SelectValue placeholder="All Types" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Types</SelectItem>
+                  <SelectItem value="__all__">All Types</SelectItem>
                   {TASK_TYPES.map((type) => (
                     <SelectItem key={type} value={type}>{type}</SelectItem>
                   ))}
@@ -268,16 +268,16 @@ export const TaskSearchDialog = ({
             <div className="space-y-2 flex-1">
               <Label className="text-xs font-medium">Status</Label>
               <Select
-                value={filters.status?.[0] || ""}
+                value={filters.status?.[0] || "__all__"}
                 onValueChange={(value) =>
-                  setFilters((f) => ({ ...f, status: value ? [value] : [] }))
+                  setFilters((f) => ({ ...f, status: value === "__all__" ? [] : [value] }))
                 }
               >
                 <SelectTrigger className="h-8 text-xs">
                   <SelectValue placeholder="All Statuses" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Statuses</SelectItem>
+                  <SelectItem value="__all__">All Statuses</SelectItem>
                   {TASK_STATUSES.map((status) => (
                     <SelectItem key={status} value={status}>{status}</SelectItem>
                   ))}
