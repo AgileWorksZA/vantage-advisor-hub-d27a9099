@@ -32,11 +32,16 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Loader2,
+  Settings,
 } from "lucide-react";
 import commandCenterIcon from "@/assets/command-center-icon.png";
 import vantageLogo from "@/assets/vantage-logo.png";
 import { useEmails, Email } from "@/hooks/useEmails";
+import { useEmailSettings } from "@/hooks/useEmailSettings";
 import { AppHeader } from "@/components/layout/AppHeader";
+import { EmailSetupDialog } from "@/components/email/EmailSetupDialog";
+import { EmailClientBadges } from "@/components/email/EmailClientBadges";
+import { cn } from "@/lib/utils";
 
 type EmailFolder = Email["folder"];
 
@@ -67,8 +72,10 @@ const EmailPage = () => {
   const [authLoading, setAuthLoading] = useState(true);
   const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
   const [activeFolder, setActiveFolder] = useState<EmailFolder>("Task Pool");
+  const [setupDialogOpen, setSetupDialogOpen] = useState(false);
 
-  const { emails, loading: emailsLoading, folderCounts, refetch, moveToFolder, markAsRead } = useEmails(activeFolder);
+  const { emails, loading: emailsLoading, isFetching, folderCounts, refetch, triggerFetch, moveToFolder } = useEmails(activeFolder);
+  const { settings: emailSettings, isConnected } = useEmailSettings();
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -178,8 +185,19 @@ const EmailPage = () => {
         <main className="flex-1 flex overflow-hidden">
           {/* Email Folders Sidebar */}
           <div className="w-48 bg-background border-r border-border flex flex-col">
-            <div className="p-4 border-b border-border">
-              <p className="text-sm text-muted-foreground truncate">{userEmail}</p>
+            <div className="p-4 border-b border-border flex items-center justify-between gap-2">
+              <p className="text-sm text-muted-foreground truncate flex-1">
+                {isConnected ? emailSettings?.email_address : userEmail}
+              </p>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 shrink-0"
+                onClick={() => setSetupDialogOpen(true)}
+                title="Email Setup"
+              >
+                <Settings className="w-4 h-4" />
+              </Button>
             </div>
 
             {/* Action Buttons */}
@@ -200,8 +218,14 @@ const EmailPage = () => {
                 <Archive className="w-3 h-3 mr-1" />
                 Move to archive
               </Button>
-              <Button size="sm" variant="outline" className="text-xs" onClick={() => refetch()}>
-                <RefreshCw className="w-3 h-3 mr-1" />
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="text-xs" 
+                onClick={() => triggerFetch()}
+                disabled={isFetching}
+              >
+                <RefreshCw className={cn("w-3 h-3 mr-1", isFetching && "animate-spin")} />
                 Refresh emails
               </Button>
             </div>
@@ -211,12 +235,18 @@ const EmailPage = () => {
               {folderItems.map((folder) => (
                 <button
                   key={folder.label}
-                  onClick={() => folder.folder && setActiveFolder(folder.folder)}
-                  className={`w-full flex items-center gap-2 px-4 py-2 text-sm ${
+                  onClick={() => {
+                    if (folder.folder) {
+                      setActiveFolder(folder.folder);
+                      triggerFetch();
+                    }
+                  }}
+                  className={cn(
+                    "w-full flex items-center gap-2 px-4 py-2 text-sm",
                     activeFolder === folder.folder
                       ? "text-[hsl(180,70%,45%)] bg-[hsl(180,70%,45%)]/10"
                       : "text-foreground hover:bg-muted/50"
-                  }`}
+                  )}
                 >
                   <folder.icon className="w-4 h-4" />
                   <span className="flex-1 text-left">{folder.label}</span>
@@ -279,7 +309,10 @@ const EmailPage = () => {
                       emails.map((email) => (
                         <tr
                           key={email.id}
-                          className={`border-b border-border hover:bg-muted/30 cursor-pointer ${!email.isRead ? "font-medium" : ""}`}
+                          className={cn(
+                            "border-b border-border hover:bg-muted/30 cursor-pointer",
+                            !email.isRead && "font-medium"
+                          )}
                         >
                           <td className="p-3">
                             <Checkbox
@@ -292,10 +325,16 @@ const EmailPage = () => {
                               <Paperclip className="w-4 h-4 text-muted-foreground" />
                             )}
                           </td>
-                          <td className="p-3">{email.from}</td>
-                          <td className="p-3">{email.subject}</td>
+                          <td className={cn("p-3", !email.isRead && "text-[hsl(180,70%,45%)]")}>
+                            {email.from}
+                          </td>
+                          <td className={cn("p-3", !email.isRead && "text-[hsl(180,70%,45%)]")}>
+                            {email.subject}
+                          </td>
                           <td className="p-3 text-muted-foreground">{email.receivedOn}</td>
-                          <td className="p-3 text-muted-foreground">{email.clients}</td>
+                          <td className="p-3">
+                            <EmailClientBadges clients={email.clients} />
+                          </td>
                         </tr>
                       ))
                     )}
@@ -323,6 +362,12 @@ const EmailPage = () => {
           </div>
         </main>
       </div>
+
+      {/* Email Setup Dialog */}
+      <EmailSetupDialog
+        open={setupDialogOpen}
+        onOpenChange={setSetupDialogOpen}
+      />
     </div>
   );
 };

@@ -27,12 +27,17 @@ export interface Email {
   client_name?: string;
 }
 
+export interface MatchedClient {
+  id: string;
+  name: string;
+}
+
 export interface EmailListItem {
   id: string;
   from: string;
   subject: string;
   receivedOn: string;
-  clients: string;
+  clients: MatchedClient[];
   hasAttachment: boolean;
   isRead: boolean;
   folder: Email["folder"];
@@ -41,42 +46,81 @@ export interface EmailListItem {
 const formatDate = (dateString: string | null): string => {
   if (!dateString) return "-";
   const date = new Date(dateString);
-  return date.toLocaleString("en-ZA", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const day = date.getDate().toString().padStart(2, "0");
+  const month = (date.getMonth() + 1).toString().padStart(2, "0");
+  const year = date.getFullYear();
+  const hours = date.getHours();
+  const minutes = date.getMinutes().toString().padStart(2, "0");
+  const ampm = hours >= 12 ? "PM" : "AM";
+  const hour12 = hours % 12 || 12;
+  return `${day}/${month}/${year} ${hour12}:${minutes} ${ampm}`;
 };
 
-const transformEmailToListItem = (email: Email): EmailListItem => ({
-  id: email.id,
-  from: email.from_address,
-  subject: email.subject || "(No Subject)",
-  receivedOn: formatDate(email.received_at || email.created_at),
-  clients: email.client_name || "",
-  hasAttachment: email.has_attachments,
-  isRead: email.is_read,
-  folder: email.folder,
-});
+interface ClientRecord {
+  id: string;
+  first_name: string;
+  surname: string;
+  preferred_name: string | null;
+  email: string | null;
+  work_email: string | null;
+}
+
+// Match sender email against clients database
+const matchClientsForEmail = (fromAddress: string, clients: ClientRecord[]): MatchedClient[] => {
+  if (!fromAddress || !clients.length) return [];
+  
+  const emailLower = fromAddress.toLowerCase();
+  
+  return clients
+    .filter((client) => {
+      const clientEmail = client.email?.toLowerCase() || "";
+      const workEmail = client.work_email?.toLowerCase() || "";
+      return clientEmail === emailLower || workEmail === emailLower;
+    })
+    .map((client) => ({
+      id: client.id,
+      name: `${client.surname}, ${client.first_name?.charAt(0) || ""} (${client.preferred_name || client.first_name})`,
+    }));
+};
 
 export const useEmails = (folder?: Email["folder"]) => {
   const [emails, setEmails] = useState<EmailListItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [folderCounts, setFolderCounts] = useState<Record<string, number>>({});
+  const [allClients, setAllClients] = useState<ClientRecord[]>([]);
 
-  const fetchEmails = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  // Fetch all clients for email matching
+  const fetchClients = useCallback(async () => {
     try {
+      const { data } = await supabase
+        .from("clients")
+        .select("id, first_name, surname, preferred_name, email, work_email");
+      
+      setAllClients((data as ClientRecord[]) || []);
+    } catch (err) {
+      console.error("Error fetching clients for matching:", err);
+    }
+  }, []);
+
+  const fetchEmails = useCallback(async (showFetchingSpinner = false) => {
+    if (showFetchingSpinner) {
+      setIsFetching(true);
+    } else {
+      setLoading(true);
+    }
+    setError(null);
+    
+    try {
+      // Fetch clients if not loaded
+      if (allClients.length === 0) {
+        await fetchClients();
+      }
+      
       let query = supabase
         .from("emails")
-        .select(`
-          *,
-          clients!emails_client_id_fkey(first_name, surname)
-        `)
+        .select("*")
         .eq("is_deleted", false)
         .order("received_at", { ascending: false });
 
@@ -88,12 +132,23 @@ export const useEmails = (folder?: Email["folder"]) => {
 
       if (fetchError) throw fetchError;
 
-      const transformedEmails = (data || []).map((email: any) => ({
-        ...email,
-        client_name: email.clients 
-          ? `${email.clients.surname}, ${email.clients.first_name?.charAt(0)} (${email.clients.first_name})`
-          : "",
-      })).map(transformEmailToListItem);
+      // Get latest clients for matching
+      const { data: clientsData } = await supabase
+        .from("clients")
+        .select("id, first_name, surname, preferred_name, email, work_email");
+      
+      const clientsList = (clientsData as ClientRecord[]) || [];
+
+      const transformedEmails: EmailListItem[] = (data || []).map((email: any) => ({
+        id: email.id,
+        from: email.from_address,
+        subject: email.subject || "(No Subject)",
+        receivedOn: formatDate(email.received_at || email.created_at),
+        clients: matchClientsForEmail(email.from_address, clientsList),
+        hasAttachment: email.has_attachments,
+        isRead: email.is_read,
+        folder: email.folder,
+      }));
 
       setEmails(transformedEmails);
 
@@ -105,7 +160,7 @@ export const useEmails = (folder?: Email["folder"]) => {
 
       if (countData) {
         const counts: Record<string, number> = {};
-        countData.forEach((e: any) => {
+        countData.forEach((e: { folder: string }) => {
           counts[e.folder] = (counts[e.folder] || 0) + 1;
         });
         setFolderCounts(counts);
@@ -116,8 +171,14 @@ export const useEmails = (folder?: Email["folder"]) => {
       toast.error("Failed to load emails");
     } finally {
       setLoading(false);
+      setIsFetching(false);
     }
-  }, [folder]);
+  }, [folder, allClients.length, fetchClients]);
+
+  // Trigger fetch with spinner (for refresh button)
+  const triggerFetch = useCallback(() => {
+    fetchEmails(true);
+  }, [fetchEmails]);
 
   const createEmail = async (emailData: Partial<Email>) => {
     try {
@@ -234,9 +295,11 @@ export const useEmails = (folder?: Email["folder"]) => {
   return {
     emails,
     loading,
+    isFetching,
     error,
     folderCounts,
     refetch: fetchEmails,
+    triggerFetch,
     createEmail,
     updateEmail,
     moveToFolder,

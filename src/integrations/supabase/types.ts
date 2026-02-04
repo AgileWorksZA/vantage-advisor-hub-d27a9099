@@ -1996,6 +1996,87 @@ export type Database = {
           },
         ]
       }
+      email_clients: {
+        Row: {
+          client_id: string
+          created_at: string
+          email_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          email_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          email_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_clients_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_clients_email_id_fkey"
+            columns: ["email_id"]
+            isOneToOne: false
+            referencedRelation: "emails"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_settings: {
+        Row: {
+          created_at: string
+          email_address: string
+          fetch_mode: string
+          id: string
+          is_active: boolean | null
+          last_sync_at: string | null
+          oauth_token: string | null
+          provider: string
+          settings: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email_address: string
+          fetch_mode?: string
+          id?: string
+          is_active?: boolean | null
+          last_sync_at?: string | null
+          oauth_token?: string | null
+          provider: string
+          settings?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email_address?: string
+          fetch_mode?: string
+          id?: string
+          is_active?: boolean | null
+          last_sync_at?: string | null
+          oauth_token?: string | null
+          provider?: string
+          settings?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       emails: {
         Row: {
           body_html: string | null
