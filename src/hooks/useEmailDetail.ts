@@ -1,0 +1,136 @@
+import { useState, useEffect, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
+
+export interface EmailAttachment {
+  id: string;
+  email_id: string;
+  user_id: string;
+  file_name: string;
+  file_path: string;
+  file_size: number;
+  content_type: string;
+  created_at: string;
+}
+
+export interface EmailDetail {
+  id: string;
+  user_id: string;
+  client_id: string | null;
+  folder: string;
+  direction: string;
+  from_address: string;
+  to_addresses: string[];
+  cc_addresses: string[];
+  subject: string | null;
+  body_preview: string | null;
+  body_html: string | null;
+  has_attachments: boolean;
+  sent_at: string | null;
+  received_at: string | null;
+  is_read: boolean;
+  status: string | null;
+  external_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RelatedEmail {
+  id: string;
+  subject: string | null;
+  from_address: string;
+  received_at: string | null;
+  body_preview: string | null;
+  direction: string;
+}
+
+export const useEmailDetail = (emailId: string | null) => {
+  const [email, setEmail] = useState<EmailDetail | null>(null);
+  const [attachments, setAttachments] = useState<EmailAttachment[]>([]);
+  const [relatedEmails, setRelatedEmails] = useState<RelatedEmail[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchEmailDetail = useCallback(async () => {
+    if (!emailId) {
+      setEmail(null);
+      setAttachments([]);
+      setRelatedEmails([]);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Fetch email detail
+      const { data: emailData, error: emailError } = await supabase
+        .from("emails")
+        .select("*")
+        .eq("id", emailId)
+        .single();
+
+      if (emailError) throw emailError;
+      
+      // Cast to EmailDetail type
+      const typedEmail: EmailDetail = {
+        ...emailData,
+        to_addresses: emailData.to_addresses as string[] || [],
+        cc_addresses: emailData.cc_addresses as string[] || [],
+      };
+      
+      setEmail(typedEmail);
+
+      // Mark as read if not already
+      if (!emailData.is_read) {
+        await supabase
+          .from("emails")
+          .update({ is_read: true })
+          .eq("id", emailId);
+      }
+
+      // Fetch attachments
+      const { data: attachmentData } = await supabase
+        .from("email_attachments")
+        .select("*")
+        .eq("email_id", emailId);
+
+      setAttachments((attachmentData as EmailAttachment[]) || []);
+
+      // Fetch related emails (same thread based on subject)
+      if (emailData.subject) {
+        // Get base subject (remove RE:, FW: prefixes)
+        const baseSubject = emailData.subject
+          .replace(/^(RE:|FW:|Fwd:)\s*/gi, "")
+          .trim();
+
+        const { data: relatedData } = await supabase
+          .from("emails")
+          .select("id, subject, from_address, received_at, body_preview, direction")
+          .neq("id", emailId)
+          .or(`subject.ilike.%${baseSubject}%`)
+          .order("received_at", { ascending: true })
+          .limit(10);
+
+        setRelatedEmails((relatedData as RelatedEmail[]) || []);
+      }
+    } catch (err: any) {
+      console.error("Error fetching email detail:", err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [emailId]);
+
+  useEffect(() => {
+    fetchEmailDetail();
+  }, [fetchEmailDetail]);
+
+  return {
+    email,
+    attachments,
+    relatedEmails,
+    loading,
+    error,
+    refetch: fetchEmailDetail,
+  };
+};
