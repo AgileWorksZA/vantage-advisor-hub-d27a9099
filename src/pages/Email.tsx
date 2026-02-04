@@ -185,20 +185,13 @@ const EmailPage = () => {
         <main className="flex-1 flex overflow-hidden">
           {/* Email Folders Sidebar - only show for Email channel */}
           {activeChannel === "Email" && (
-            <div className="w-48 bg-background border-r border-border flex flex-col">
-              <div className="p-4 border-b border-border flex items-center justify-between gap-2">
-                {isConnected && emailSettings?.email_address ? (
-                  <p className="text-sm text-muted-foreground truncate flex-1">
-                    {emailSettings.email_address}
-                  </p>
-                ) : (
-                  <button
-                    onClick={() => setSetupDialogOpen(true)}
-                    className="text-sm text-muted-foreground italic truncate flex-1 text-left hover:text-foreground transition-colors"
-                  >
-                    No email linked
-                  </button>
-                )}
+            <div className="w-72 bg-background border-r border-border flex flex-col">
+              {/* Search - Top position to align with other channels */}
+              <div className="p-3 border-b border-border">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input placeholder="Search emails..." className="pl-10 h-9" />
+                </div>
               </div>
 
               {/* Action Buttons */}
@@ -239,6 +232,22 @@ const EmailPage = () => {
                   </button>
                 ))}
               </div>
+
+              {/* Email Address - Below Archived with top border */}
+              <div className="p-4 border-t border-border">
+                {isConnected && emailSettings?.email_address ? (
+                  <p className="text-sm text-muted-foreground truncate">
+                    {emailSettings.email_address}
+                  </p>
+                ) : (
+                  <button
+                    onClick={() => setSetupDialogOpen(true)}
+                    className="text-sm text-muted-foreground italic truncate text-left hover:text-foreground transition-colors"
+                  >
+                    No email linked
+                  </button>
+                )}
+              </div>
             </div>
           )}
 
@@ -249,12 +258,8 @@ const EmailPage = () => {
               {/* Left side: Channel tabs */}
               <CommunicationTypeSelector value={activeChannel} onChange={setActiveChannel} />
 
-              {/* Right side: Search, Date, Filter, Setup, Refresh */}
+              {/* Right side: Date, Filter, Setup, Refresh */}
               <div className="flex items-center gap-2">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input placeholder="Search..." className="pl-10 w-48 h-8 text-sm" />
-                </div>
                 <Button variant="outline" size="sm" className="h-8">
                   <Calendar className="w-4 h-4 mr-1" />
                   Date selection
