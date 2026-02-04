@@ -715,6 +715,9 @@ Deno.serve(async (req) => {
     // Clear existing demo data
     console.log('Clearing existing communications data...');
     
+    // Clear attachments first (due to foreign key constraints)
+    await supabase.from('email_attachments').delete().eq('user_id', userId);
+    await supabase.from('direct_message_attachments').delete().eq('user_id', userId);
     await supabase.from('emails').delete().eq('user_id', userId);
     await supabase.from('direct_messages').delete().eq('user_id', userId);
     await supabase.from('communications').delete().eq('user_id', userId);
@@ -935,10 +938,58 @@ Deno.serve(async (req) => {
 
     // Insert all data
     console.log(`Inserting ${emailsToInsert.length} emails...`);
-    const { error: emailsError } = await supabase.from('emails').insert(emailsToInsert);
+    const { data: insertedEmails, error: emailsError } = await supabase
+      .from('emails')
+      .insert(emailsToInsert)
+      .select('id, subject, has_attachments');
+    
     if (emailsError) {
       console.error('Error inserting emails:', emailsError);
       throw emailsError;
+    }
+
+    // Create attachments for emails that have has_attachments = true
+    const attachmentMap: Record<string, { fileName: string; filePath: string; fileSize: number }> = {
+      'Portfolio': { fileName: 'Portfolio_Report_Q4_2024.pdf', filePath: '/downloads/Portfolio_Report_Q4_2024.pdf', fileSize: 245000 },
+      'Tax Certificate': { fileName: 'Tax_Certificate_2024.pdf', filePath: '/downloads/Tax_Certificate_2024.pdf', fileSize: 89000 },
+      'FICA': { fileName: 'FICA_Documents.pdf', filePath: '/downloads/FICA_Documents.pdf', fileSize: 156000 },
+      'Financial Plan': { fileName: 'Financial_Plan_2025.pdf', filePath: '/downloads/Financial_Plan_2025.pdf', fileSize: 320000 },
+      'Policy': { fileName: 'Policy_Schedule.pdf', filePath: '/downloads/Policy_Schedule.pdf', fileSize: 178000 },
+      'Statement': { fileName: 'Statement_Jan_2025.pdf', filePath: '/downloads/Statement_Jan_2025.pdf', fileSize: 95000 },
+      'investment goals': { fileName: 'Investment_Goals_Analysis.pdf', filePath: '/downloads/Financial_Plan_2025.pdf', fileSize: 210000 },
+      'retirement annuity': { fileName: 'Regulatory_Changes_Summary.pdf', filePath: '/downloads/Policy_Schedule.pdf', fileSize: 145000 },
+    };
+
+    const emailAttachmentsToInsert: any[] = [];
+    
+    if (insertedEmails) {
+      for (const email of insertedEmails) {
+        if (email.has_attachments && email.subject) {
+          // Find matching attachment based on subject keywords
+          for (const [keyword, attachment] of Object.entries(attachmentMap)) {
+            if (email.subject.toLowerCase().includes(keyword.toLowerCase())) {
+              emailAttachmentsToInsert.push({
+                email_id: email.id,
+                user_id: userId,
+                file_name: attachment.fileName,
+                file_path: attachment.filePath,
+                file_size: attachment.fileSize,
+                content_type: 'application/pdf',
+              });
+              break; // Only one attachment per email
+            }
+          }
+        }
+      }
+    }
+
+    if (emailAttachmentsToInsert.length > 0) {
+      console.log(`Inserting ${emailAttachmentsToInsert.length} email attachments...`);
+      const { error: attachError } = await supabase.from('email_attachments').insert(emailAttachmentsToInsert);
+      if (attachError) {
+        console.error('Error inserting email attachments:', attachError);
+        // Don't throw - continue with other data
+      }
     }
 
     console.log(`Inserting ${directMessagesToInsert.length} direct messages...`);
@@ -960,6 +1011,7 @@ Deno.serve(async (req) => {
       message: 'Demo communications seeded successfully',
       counts: {
         emails: emailsToInsert.length,
+        emailAttachments: emailAttachmentsToInsert.length,
         directMessages: directMessagesToInsert.length,
         communications: communicationsToInsert.length,
         clientsProcessed: clients.length,

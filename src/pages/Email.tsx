@@ -35,7 +35,7 @@ import {
 } from "lucide-react";
 import commandCenterIcon from "@/assets/command-center-icon.png";
 import vantageLogo from "@/assets/vantage-logo.png";
-import { useEmails, Email } from "@/hooks/useEmails";
+import { useEmails, Email, EmailListItem } from "@/hooks/useEmails";
 import { useEmailSettings } from "@/hooks/useEmailSettings";
 import { CommunicationChannel } from "@/hooks/useCommunicationCampaigns";
 import { AppHeader } from "@/components/layout/AppHeader";
@@ -43,6 +43,7 @@ import { EmailSetupDialog } from "@/components/email/EmailSetupDialog";
 import { EmailClientBadges } from "@/components/email/EmailClientBadges";
 import { CommunicationTypeSelector } from "@/components/email/CommunicationTypeSelector";
 import { ChatInterface } from "@/components/email/ChatInterface";
+import { EmailViewDialog } from "@/components/email/EmailViewDialog";
 import { cn } from "@/lib/utils";
 
 type EmailFolder = Email["folder"];
@@ -76,9 +77,20 @@ const EmailPage = () => {
   const [activeFolder, setActiveFolder] = useState<EmailFolder>("Task Pool");
   const [setupDialogOpen, setSetupDialogOpen] = useState(false);
   const [activeChannel, setActiveChannel] = useState<CommunicationChannel>("Email");
+  const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
+  const [emailViewOpen, setEmailViewOpen] = useState(false);
 
-  const { emails, loading: emailsLoading, isFetching, folderCounts, refetch, triggerFetch, moveToFolder } = useEmails(activeFolder);
+  const { emails, loading: emailsLoading, isFetching, folderCounts, refetch, triggerFetch, moveToFolder, markAsRead } = useEmails(activeFolder);
   const { settings: emailSettings, isConnected } = useEmailSettings();
+
+  const handleEmailClick = (email: EmailListItem) => {
+    setSelectedEmailId(email.id);
+    setEmailViewOpen(true);
+    // Mark as read when opening
+    if (!email.isRead) {
+      markAsRead([email.id], true);
+    }
+  };
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -310,12 +322,13 @@ const EmailPage = () => {
                           emails.map((email) => (
                             <tr
                               key={email.id}
+                              onClick={() => handleEmailClick(email)}
                               className={cn(
-                                "border-b border-border hover:bg-muted/30 cursor-pointer",
-                                !email.isRead && "font-medium"
+                                "border-b border-border hover:bg-muted/30 cursor-pointer transition-colors",
+                                !email.isRead && "font-medium bg-muted/10"
                               )}
                             >
-                              <td className="p-3">
+                              <td className="p-3" onClick={(e) => e.stopPropagation()}>
                                 <Checkbox
                                   checked={selectedEmails.includes(email.id)}
                                   onCheckedChange={() => toggleEmailSelection(email.id)}
@@ -373,6 +386,19 @@ const EmailPage = () => {
       <EmailSetupDialog
         open={setupDialogOpen}
         onOpenChange={setSetupDialogOpen}
+      />
+
+      {/* Email View Dialog */}
+      <EmailViewDialog
+        open={emailViewOpen}
+        onOpenChange={(open) => {
+          setEmailViewOpen(open);
+          if (!open) {
+            // Refresh to update read status
+            refetch();
+          }
+        }}
+        emailId={selectedEmailId}
       />
     </div>
   );
