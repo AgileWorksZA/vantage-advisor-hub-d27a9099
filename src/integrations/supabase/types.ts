@@ -3073,9 +3073,184 @@ export type Database = {
           },
         ]
       }
+      task_clients: {
+        Row: {
+          client_id: string
+          created_at: string
+          id: string
+          role: string
+          task_id: string
+          user_id: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          id?: string
+          role?: string
+          task_id: string
+          user_id: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          id?: string
+          role?: string
+          task_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_clients_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_clients_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_communications: {
+        Row: {
+          communication_id: string
+          created_at: string
+          id: string
+          task_id: string
+          user_id: string
+        }
+        Insert: {
+          communication_id: string
+          created_at?: string
+          id?: string
+          task_id: string
+          user_id: string
+        }
+        Update: {
+          communication_id?: string
+          created_at?: string
+          id?: string
+          task_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_communications_communication_id_fkey"
+            columns: ["communication_id"]
+            isOneToOne: false
+            referencedRelation: "communications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_communications_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_documents: {
+        Row: {
+          document_id: string
+          document_type: string
+          id: string
+          notes: string | null
+          task_id: string
+          uploaded_at: string
+          uploaded_by: string | null
+          user_id: string
+        }
+        Insert: {
+          document_id: string
+          document_type: string
+          id?: string
+          notes?: string | null
+          task_id: string
+          uploaded_at?: string
+          uploaded_by?: string | null
+          user_id: string
+        }
+        Update: {
+          document_id?: string
+          document_type?: string
+          id?: string
+          notes?: string | null
+          task_id?: string
+          uploaded_at?: string
+          uploaded_by?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_documents_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_documents_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_history: {
+        Row: {
+          action: string
+          changed_at: string
+          changed_by: string | null
+          field_name: string | null
+          id: string
+          new_value: string | null
+          old_value: string | null
+          task_id: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          changed_at?: string
+          changed_by?: string | null
+          field_name?: string | null
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          task_id: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          changed_at?: string
+          changed_by?: string | null
+          field_name?: string | null
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          task_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_history_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tasks: {
         Row: {
+          actual_hours: number | null
           assigned_to_user_id: string | null
+          category: string | null
           client_id: string | null
           completed_at: string | null
           created_at: string
@@ -3083,19 +3258,36 @@ export type Database = {
           deleted_at: string | null
           description: string | null
           due_date: string | null
+          estimated_hours: number | null
+          first_response_at: string | null
+          follow_up_date: string | null
           id: string
+          internal_notes: Json | null
           is_deleted: boolean
+          is_pinned: boolean
           is_practice_task: boolean
+          last_activity_at: string | null
           notes: Json | null
           priority: Database["public"]["Enums"]["task_priority"]
+          resolution: string | null
+          resolution_category: string | null
+          sla_deadline: string | null
+          source: string | null
+          source_reference: string | null
           status: Database["public"]["Enums"]["task_status"]
+          subcategory: string | null
+          tags: string[] | null
+          task_number: number | null
           task_type: Database["public"]["Enums"]["task_type"]
           title: string
           updated_at: string
           user_id: string
+          watchers: string[] | null
         }
         Insert: {
+          actual_hours?: number | null
           assigned_to_user_id?: string | null
+          category?: string | null
           client_id?: string | null
           completed_at?: string | null
           created_at?: string
@@ -3103,19 +3295,36 @@ export type Database = {
           deleted_at?: string | null
           description?: string | null
           due_date?: string | null
+          estimated_hours?: number | null
+          first_response_at?: string | null
+          follow_up_date?: string | null
           id?: string
+          internal_notes?: Json | null
           is_deleted?: boolean
+          is_pinned?: boolean
           is_practice_task?: boolean
+          last_activity_at?: string | null
           notes?: Json | null
           priority?: Database["public"]["Enums"]["task_priority"]
+          resolution?: string | null
+          resolution_category?: string | null
+          sla_deadline?: string | null
+          source?: string | null
+          source_reference?: string | null
           status?: Database["public"]["Enums"]["task_status"]
+          subcategory?: string | null
+          tags?: string[] | null
+          task_number?: number | null
           task_type?: Database["public"]["Enums"]["task_type"]
           title: string
           updated_at?: string
           user_id: string
+          watchers?: string[] | null
         }
         Update: {
+          actual_hours?: number | null
           assigned_to_user_id?: string | null
+          category?: string | null
           client_id?: string | null
           completed_at?: string | null
           created_at?: string
@@ -3123,16 +3332,31 @@ export type Database = {
           deleted_at?: string | null
           description?: string | null
           due_date?: string | null
+          estimated_hours?: number | null
+          first_response_at?: string | null
+          follow_up_date?: string | null
           id?: string
+          internal_notes?: Json | null
           is_deleted?: boolean
+          is_pinned?: boolean
           is_practice_task?: boolean
+          last_activity_at?: string | null
           notes?: Json | null
           priority?: Database["public"]["Enums"]["task_priority"]
+          resolution?: string | null
+          resolution_category?: string | null
+          sla_deadline?: string | null
+          source?: string | null
+          source_reference?: string | null
           status?: Database["public"]["Enums"]["task_status"]
+          subcategory?: string | null
+          tags?: string[] | null
+          task_number?: number | null
           task_type?: Database["public"]["Enums"]["task_type"]
           title?: string
           updated_at?: string
           user_id?: string
+          watchers?: string[] | null
         }
         Relationships: [
           {
