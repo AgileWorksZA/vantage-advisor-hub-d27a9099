@@ -26,6 +26,15 @@ export const InlineClientSearch = ({
   const [searchQuery, setSearchQuery] = useState("");
   const { clients, loading } = useClients();
 
+  // Parse client name "Surname, I (FirstName)" into components
+  const parseClientName = (clientName: string): { firstName: string; surname: string } => {
+    const nameParts = clientName.match(/^([^,]+),\s*\w\s*\((.+)\)$/);
+    return {
+      surname: nameParts?.[1] || clientName,
+      firstName: nameParts?.[2] || "",
+    };
+  };
+
   // Filter clients based on search and exclude already selected
   const filteredClients = useMemo(() => {
     const excludeIds = new Set([
@@ -39,7 +48,11 @@ export const InlineClientSearch = ({
       if (!searchQuery.trim()) return true;
 
       const query = searchQuery.toLowerCase();
+      const { firstName, surname } = parseClientName(client.client);
+      
       return (
+        firstName.toLowerCase().includes(query) ||
+        surname.toLowerCase().includes(query) ||
         client.client.toLowerCase().includes(query) ||
         client.identification?.toLowerCase().includes(query) ||
         client.email?.toLowerCase().includes(query)
@@ -108,7 +121,7 @@ export const InlineClientSearch = ({
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search clients by name, ID, or email..."
+              placeholder="Search by first name, surname, ID, or email..."
               className="pl-9"
               autoFocus
             />
