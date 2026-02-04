@@ -1,3 +1,4 @@
+import { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Plus, RotateCcw, Settings2, ChevronLeft, ChevronRight } from "lucide-react";
@@ -10,6 +11,7 @@ interface AdminSectionHeaderProps {
   onAdd?: () => void;
   onReset?: () => void;
   addButtonLabel?: string;
+  customActions?: ReactNode;
   pagination?: {
     currentPage: number;
     totalPages: number;
@@ -25,6 +27,7 @@ export function AdminSectionHeader({
   onAdd,
   onReset,
   addButtonLabel = "Add new",
+  customActions,
   pagination,
 }: AdminSectionHeaderProps) {
   return (
@@ -52,6 +55,7 @@ export function AdminSectionHeader({
         </div>
 
         <div className="flex items-center gap-2">
+          {customActions}
           {onAdd && (
             <Button onClick={onAdd} className="gap-2 bg-primary hover:bg-primary/90">
               <Plus className="h-4 w-4" />
