@@ -186,9 +186,18 @@ const EmailPage = () => {
           {/* Email Folders Sidebar */}
           <div className="w-48 bg-background border-r border-border flex flex-col">
             <div className="p-4 border-b border-border flex items-center justify-between gap-2">
-              <p className="text-sm text-muted-foreground truncate flex-1">
-                {isConnected ? emailSettings?.email_address : userEmail}
-              </p>
+              {isConnected && emailSettings?.email_address ? (
+                <p className="text-sm text-muted-foreground truncate flex-1">
+                  {emailSettings.email_address}
+                </p>
+              ) : (
+                <button
+                  onClick={() => setSetupDialogOpen(true)}
+                  className="text-sm text-muted-foreground italic truncate flex-1 text-left hover:text-foreground transition-colors"
+                >
+                  No email linked
+                </button>
+              )}
               <Button
                 variant="ghost"
                 size="icon"
