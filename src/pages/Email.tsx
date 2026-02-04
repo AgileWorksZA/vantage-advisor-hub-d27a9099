@@ -181,6 +181,42 @@ const EmailPage = () => {
           onAccountSettings={() => navigate("/practice")}
         />
 
+        {/* Header with Channel Tabs - OUTSIDE main, consistent position */}
+        <div className="flex items-center justify-between gap-2 p-3 border-b border-border bg-background">
+          {/* Left side: Channel tabs */}
+          <CommunicationTypeSelector value={activeChannel} onChange={setActiveChannel} />
+
+          {/* Right side: Date, Filter, Setup, Refresh */}
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" className="h-8">
+              <Calendar className="w-4 h-4 mr-1" />
+              Date selection
+            </Button>
+            <Button variant="outline" size="icon" className="h-8 w-8">
+              <Filter className="w-4 h-4" />
+            </Button>
+            <Button 
+              variant="outline" 
+              size="icon" 
+              className="h-8 w-8"
+              onClick={() => setSetupDialogOpen(true)}
+              title="Communication Setup"
+            >
+              <Settings className="w-4 h-4" />
+            </Button>
+            <Button 
+              variant="outline" 
+              size="icon" 
+              className="h-8 w-8"
+              onClick={() => triggerFetch()}
+              disabled={isFetching}
+              title="Refresh"
+            >
+              <RefreshCw className={cn("w-4 h-4", isFetching && "animate-spin")} />
+            </Button>
+          </div>
+        </div>
+
         {/* Communication Content */}
         <main className="flex-1 flex overflow-hidden">
           {/* Email Folders Sidebar - only show for Email channel */}
@@ -253,42 +289,6 @@ const EmailPage = () => {
 
           {/* Main Content Area */}
           <div className="flex-1 flex flex-col bg-background">
-            {/* Header with Channel Tabs */}
-            <div className="flex items-center justify-between gap-2 p-3 border-b border-border">
-              {/* Left side: Channel tabs */}
-              <CommunicationTypeSelector value={activeChannel} onChange={setActiveChannel} />
-
-              {/* Right side: Date, Filter, Setup, Refresh */}
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" className="h-8">
-                  <Calendar className="w-4 h-4 mr-1" />
-                  Date selection
-                </Button>
-                <Button variant="outline" size="icon" className="h-8 w-8">
-                  <Filter className="w-4 h-4" />
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="icon" 
-                  className="h-8 w-8"
-                  onClick={() => setSetupDialogOpen(true)}
-                  title="Communication Setup"
-                >
-                  <Settings className="w-4 h-4" />
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="icon" 
-                  className="h-8 w-8"
-                  onClick={() => triggerFetch()}
-                  disabled={isFetching}
-                  title="Refresh"
-                >
-                  <RefreshCw className={cn("w-4 h-4", isFetching && "animate-spin")} />
-                </Button>
-              </div>
-            </div>
-
             {/* Content based on active channel */}
             {activeChannel === "Email" ? (
               <>
