@@ -23,12 +23,12 @@ const sidebarItems = [{
   label: "Clients",
   path: "/clients"
 }, {
-  icon: Briefcase,
+  icon: LineChart,
   label: "Portfolio",
   path: "/portfolio"
 }, {
   icon: Mail,
-  label: "Email",
+  label: "Message",
   path: "/email"
 }, {
   icon: CalendarIcon,
@@ -39,7 +39,7 @@ const sidebarItems = [{
   label: "Tasks",
   path: "/tasks"
 }, {
-  icon: LineChart,
+  icon: Briefcase,
   label: "Insights",
   path: "/insights"
 }, {
