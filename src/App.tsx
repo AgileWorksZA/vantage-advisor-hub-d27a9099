@@ -8,6 +8,7 @@ import { RegionProvider } from "@/contexts/RegionContext";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import TermsOfUse from "./pages/TermsOfUse";
+import EmailView from "./pages/EmailView";
 import PrivacyNotice from "./pages/PrivacyNotice";
 import PaiaManual from "./pages/PaiaManual";
 import Disclaimer from "./pages/Disclaimer";
@@ -47,6 +48,7 @@ const App = () => (
             <Route path="/clients/:clientId" element={<ClientDetail />} />
             <Route path="/portfolio" element={<Portfolio />} />
             <Route path="/email" element={<Email />} />
+            <Route path="/email/view/:id" element={<EmailView />} />
             <Route path="/email/compose" element={<ComposeEmail />} />
             <Route path="/calendar" element={<Calendar />} />
             <Route path="/insights" element={<Insights />} />

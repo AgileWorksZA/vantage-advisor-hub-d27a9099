@@ -43,10 +43,19 @@ export interface RelatedEmail {
   direction: string;
 }
 
+export interface LinkedClient {
+  id: string;
+  first_name: string;
+  surname: string;
+  initials: string | null;
+  email: string | null;
+}
+
 export const useEmailDetail = (emailId: string | null) => {
   const [email, setEmail] = useState<EmailDetail | null>(null);
   const [attachments, setAttachments] = useState<EmailAttachment[]>([]);
   const [relatedEmails, setRelatedEmails] = useState<RelatedEmail[]>([]);
+  const [linkedClients, setLinkedClients] = useState<LinkedClient[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -55,6 +64,7 @@ export const useEmailDetail = (emailId: string | null) => {
       setEmail(null);
       setAttachments([]);
       setRelatedEmails([]);
+      setLinkedClients([]);
       return;
     }
 
@@ -96,6 +106,35 @@ export const useEmailDetail = (emailId: string | null) => {
 
       setAttachments((attachmentData as EmailAttachment[]) || []);
 
+      // Fetch linked clients via email_clients junction table
+      const { data: emailClientsData } = await supabase
+        .from("email_clients")
+        .select("client_id")
+        .eq("email_id", emailId);
+
+      if (emailClientsData && emailClientsData.length > 0) {
+        const clientIds = emailClientsData.map((ec) => ec.client_id);
+        const { data: clientsData } = await supabase
+          .from("clients")
+          .select("id, first_name, surname, initials, email")
+          .in("id", clientIds);
+
+        setLinkedClients((clientsData as LinkedClient[]) || []);
+      } else {
+        // Fallback: if email has client_id directly
+        if (emailData.client_id) {
+          const { data: clientData } = await supabase
+            .from("clients")
+            .select("id, first_name, surname, initials, email")
+            .eq("id", emailData.client_id)
+            .single();
+
+          setLinkedClients(clientData ? [clientData as LinkedClient] : []);
+        } else {
+          setLinkedClients([]);
+        }
+      }
+
       // Fetch related emails (same thread based on subject)
       if (emailData.subject) {
         // Get base subject (remove RE:, FW: prefixes)
@@ -129,6 +168,7 @@ export const useEmailDetail = (emailId: string | null) => {
     email,
     attachments,
     relatedEmails,
+    linkedClients,
     loading,
     error,
     refetch: fetchEmailDetail,
