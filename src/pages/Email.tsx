@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
@@ -71,6 +71,7 @@ const sidebarItems = [
 
 const EmailPage = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
@@ -82,17 +83,21 @@ const EmailPage = () => {
 
   const { settings: emailSettings, isConnected, loading: settingsLoading } = useEmailSettings();
   
-  // Set default folder based on fetch_mode setting once loaded
+  // Set default folder based on URL param, fetch_mode setting, or default
   useEffect(() => {
     if (!settingsLoading && activeFolder === null) {
-      if (emailSettings?.fetch_mode === "inbox") {
+      const folderFromUrl = searchParams.get("folder") as EmailFolder | null;
+      if (folderFromUrl && folderItems.some(f => f.folder === folderFromUrl)) {
+        // Use folder from URL if valid
+        setActiveFolder(folderFromUrl);
+      } else if (emailSettings?.fetch_mode === "inbox") {
         setActiveFolder("Inbox");
       } else {
         // Default to Task Pool if fetch_mode is task_pool or no settings
         setActiveFolder("Task Pool");
       }
     }
-  }, [settingsLoading, emailSettings?.fetch_mode, activeFolder]);
+  }, [settingsLoading, emailSettings?.fetch_mode, activeFolder, searchParams]);
 
   const { emails, loading: emailsLoading, isFetching, folderCounts, refetch, triggerFetch, moveToFolder, markAsRead } = useEmails(activeFolder || "Task Pool");
 
