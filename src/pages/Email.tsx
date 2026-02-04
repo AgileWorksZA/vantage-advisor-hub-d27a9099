@@ -270,7 +270,7 @@ const EmailPage = () => {
               </div>
 
               {/* Email Address - Below Archived with top border */}
-              <div className="p-4 border-t border-border">
+              <div className="p-4">
                 {isConnected && emailSettings?.email_address ? (
                   <p className="text-sm text-muted-foreground truncate">
                     {emailSettings.email_address}
