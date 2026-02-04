@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { useNavigate } from "react-router-dom";
 import {
   Dialog,
   DialogContent,
@@ -27,6 +28,7 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import DuplicateClientDialog from "@/components/clients/DuplicateClientDialog";
 
 const familyMemberSchema = z.object({
   relationship_type: z.enum(["Spouse", "Child", "Parent", "Sibling"]),
@@ -34,7 +36,7 @@ const familyMemberSchema = z.object({
   first_name: z.string().min(1, "First name is required"),
   surname: z.string().min(1, "Surname is required"),
   initials: z.string().optional(),
-  id_number: z.string().optional(),
+  id_number: z.string().min(1, "Identification number is required"),
   date_of_birth: z.string().optional(),
   gender: z.enum(["Male", "Female", "Other"]).optional(),
   cell_number: z.string().optional(),
@@ -53,7 +55,12 @@ interface AddFamilyMemberDialogProps {
 
 const AddFamilyMemberDialog = ({ open, onOpenChange, clientId, onSuccess }: AddFamilyMemberDialogProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
-
+  const [duplicateClient, setDuplicateClient] = useState<{
+    id: string;
+    name: string;
+    idNumber: string;
+  } | null>(null);
+  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
   const form = useForm<FamilyMemberFormData>({
     resolver: zodResolver(familyMemberSchema),
     defaultValues: {
@@ -81,12 +88,39 @@ const AddFamilyMemberDialog = ({ open, onOpenChange, clientId, onSuccess }: AddF
     }
   };
 
+  // Check for duplicate ID number
+  const checkDuplicateIdNumber = async (idNumber: string) => {
+    const { data, error } = await supabase
+      .from("clients")
+      .select("id, first_name, surname, id_number")
+      .ilike("id_number", idNumber)
+      .limit(1);
+
+    if (data && data.length > 0) {
+      return data[0];
+    }
+    return null;
+  };
+
   const onSubmit = async (data: FamilyMemberFormData) => {
     setIsSubmitting(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         toast.error("You must be logged in");
+        return;
+      }
+
+      // Check for duplicate ID number
+      const existingClient = await checkDuplicateIdNumber(data.id_number);
+      if (existingClient) {
+        setDuplicateClient({
+          id: existingClient.id,
+          name: `${existingClient.surname}, ${existingClient.first_name}`,
+          idNumber: existingClient.id_number || "",
+        });
+        setShowDuplicateDialog(true);
+        setIsSubmitting(false);
         return;
       }
 
@@ -173,6 +207,7 @@ const AddFamilyMemberDialog = ({ open, onOpenChange, clientId, onSuccess }: AddF
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -279,7 +314,7 @@ const AddFamilyMemberDialog = ({ open, onOpenChange, clientId, onSuccess }: AddF
                 name="id_number"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>ID Number</FormLabel>
+                    <FormLabel>ID Number *</FormLabel>
                     <FormControl>
                       <Input {...field} />
                     </FormControl>
@@ -397,6 +432,18 @@ const AddFamilyMemberDialog = ({ open, onOpenChange, clientId, onSuccess }: AddF
         </Form>
       </DialogContent>
     </Dialog>
+
+    <DuplicateClientDialog
+      open={showDuplicateDialog}
+      onOpenChange={setShowDuplicateDialog}
+      existingClient={duplicateClient}
+      onCancel={() => {
+        setShowDuplicateDialog(false);
+        setDuplicateClient(null);
+      }}
+      onCloseParentDialog={() => onOpenChange(false)}
+    />
+  </>
   );
 };
 

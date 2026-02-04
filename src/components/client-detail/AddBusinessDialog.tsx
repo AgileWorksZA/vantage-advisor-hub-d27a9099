@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { useNavigate } from "react-router-dom";
 import {
   Dialog,
   DialogContent,
@@ -27,12 +28,13 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import DuplicateClientDialog from "@/components/clients/DuplicateClientDialog";
 
 const businessSchema = z.object({
   link_type: z.enum(["Beneficiary", "Owner", "Director", "Shareholder", "Trustee", "Member", "Business Partner"]),
   entity_type: z.enum(["Trust", "Company", "Close Corporation"]),
   business_name: z.string().min(1, "Business name is required"),
-  registration_number: z.string().optional(),
+  registration_number: z.string().min(1, "Registration number is required"),
   share_percentage: z.number().min(0).max(100).optional(),
   product_viewing_level: z.string().optional(),
 });
@@ -48,6 +50,12 @@ interface AddBusinessDialogProps {
 
 const AddBusinessDialog = ({ open, onOpenChange, clientId, onSuccess }: AddBusinessDialogProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [duplicateClient, setDuplicateClient] = useState<{
+    id: string;
+    name: string;
+    idNumber: string;
+  } | null>(null);
+  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
 
   const form = useForm<BusinessFormData>({
     resolver: zodResolver(businessSchema),
@@ -61,12 +69,39 @@ const AddBusinessDialog = ({ open, onOpenChange, clientId, onSuccess }: AddBusin
     },
   });
 
+  // Check for duplicate registration number (stored in id_number field)
+  const checkDuplicateRegistration = async (registrationNumber: string) => {
+    const { data, error } = await supabase
+      .from("clients")
+      .select("id, first_name, surname, id_number")
+      .ilike("id_number", registrationNumber)
+      .limit(1);
+
+    if (data && data.length > 0) {
+      return data[0];
+    }
+    return null;
+  };
+
   const onSubmit = async (data: BusinessFormData) => {
     setIsSubmitting(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         toast.error("You must be logged in");
+        return;
+      }
+
+      // Check for duplicate registration number
+      const existingClient = await checkDuplicateRegistration(data.registration_number);
+      if (existingClient) {
+        setDuplicateClient({
+          id: existingClient.id,
+          name: existingClient.first_name || existingClient.surname || "Unknown",
+          idNumber: existingClient.id_number || "",
+        });
+        setShowDuplicateDialog(true);
+        setIsSubmitting(false);
         return;
       }
 
@@ -80,7 +115,7 @@ const AddBusinessDialog = ({ open, onOpenChange, clientId, onSuccess }: AddBusin
           client_type: "business",
           first_name: data.business_name,
           surname: "", // Business entities use first_name as the full name
-          id_number: data.registration_number || null,
+          id_number: data.registration_number,
         })
         .select()
         .single();
@@ -118,6 +153,7 @@ const AddBusinessDialog = ({ open, onOpenChange, clientId, onSuccess }: AddBusin
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -195,7 +231,7 @@ const AddBusinessDialog = ({ open, onOpenChange, clientId, onSuccess }: AddBusin
               name="registration_number"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Registration Number</FormLabel>
+                  <FormLabel>Registration Number *</FormLabel>
                   <FormControl>
                     <Input {...field} placeholder="e.g., IT2345/2020" />
                   </FormControl>
@@ -265,6 +301,18 @@ const AddBusinessDialog = ({ open, onOpenChange, clientId, onSuccess }: AddBusin
         </Form>
       </DialogContent>
     </Dialog>
+
+    <DuplicateClientDialog
+      open={showDuplicateDialog}
+      onOpenChange={setShowDuplicateDialog}
+      existingClient={duplicateClient}
+      onCancel={() => {
+        setShowDuplicateDialog(false);
+        setDuplicateClient(null);
+      }}
+      onCloseParentDialog={() => onOpenChange(false)}
+    />
+  </>
   );
 };
 

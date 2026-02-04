@@ -2,12 +2,14 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { useNavigate } from "react-router-dom";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import DuplicateClientDialog from "./DuplicateClientDialog";
 import {
   Form,
   FormControl,
@@ -39,7 +41,7 @@ const clientSchema = z.object({
   first_name: z.string().min(1, "First name is required"),
   surname: z.string().min(1, "Surname is required"),
   initials: z.string().optional(),
-  id_number: z.string().optional(),
+  id_number: z.string().min(1, "Identification number is required"),
   country_of_issue: z.string().optional(),
   gender: z.enum(["Male", "Female", "Other"]).optional(),
   date_of_birth: z.string().optional(),
@@ -71,6 +73,13 @@ interface AddClientDialogProps {
 
 const AddClientDialog = ({ open, onOpenChange, onClientAdded }: AddClientDialogProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [duplicateClient, setDuplicateClient] = useState<{
+    id: string;
+    name: string;
+    idNumber: string;
+  } | null>(null);
+  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
+  const [pendingFormData, setPendingFormData] = useState<ClientFormData | null>(null);
 
   const form = useForm<ClientFormData>({
     resolver: zodResolver(clientSchema),
@@ -95,12 +104,40 @@ const AddClientDialog = ({ open, onOpenChange, onClientAdded }: AddClientDialogP
     },
   });
 
+  // Check for duplicate ID number before submission
+  const checkDuplicateIdNumber = async (idNumber: string) => {
+    const { data, error } = await supabase
+      .from("clients")
+      .select("id, first_name, surname, id_number")
+      .ilike("id_number", idNumber)
+      .limit(1);
+
+    if (data && data.length > 0) {
+      return data[0];
+    }
+    return null;
+  };
+
   const onSubmit = async (data: ClientFormData) => {
     setIsSubmitting(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         toast.error("You must be logged in to add a client");
+        return;
+      }
+
+      // Check for duplicate ID number
+      const existingClient = await checkDuplicateIdNumber(data.id_number);
+      if (existingClient) {
+        setDuplicateClient({
+          id: existingClient.id,
+          name: `${existingClient.surname}, ${existingClient.first_name}`,
+          idNumber: existingClient.id_number || "",
+        });
+        setPendingFormData(data);
+        setShowDuplicateDialog(true);
+        setIsSubmitting(false);
         return;
       }
 
@@ -150,11 +187,12 @@ const AddClientDialog = ({ open, onOpenChange, onClientAdded }: AddClientDialogP
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Add New Client</DialogTitle>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Add New Client</DialogTitle>
+          </DialogHeader>
         
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -290,7 +328,7 @@ const AddClientDialog = ({ open, onOpenChange, onClientAdded }: AddClientDialogP
                     name="id_number"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>ID Number</FormLabel>
+                        <FormLabel>ID Number *</FormLabel>
                         <FormControl>
                           <Input {...field} />
                         </FormControl>
@@ -536,6 +574,19 @@ const AddClientDialog = ({ open, onOpenChange, onClientAdded }: AddClientDialogP
         </Form>
       </DialogContent>
     </Dialog>
+
+    <DuplicateClientDialog
+      open={showDuplicateDialog}
+      onOpenChange={setShowDuplicateDialog}
+      existingClient={duplicateClient}
+      onCancel={() => {
+        setShowDuplicateDialog(false);
+        setDuplicateClient(null);
+        setPendingFormData(null);
+      }}
+      onCloseParentDialog={() => onOpenChange(false)}
+    />
+  </>
   );
 };
 
