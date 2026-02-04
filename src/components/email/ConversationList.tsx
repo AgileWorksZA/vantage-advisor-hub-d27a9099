@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { Search, Archive, ChevronRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Search, Archive, ChevronRight, PenSquare } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -34,6 +36,7 @@ export const ConversationList = ({
   onSelectClient,
   loading = false,
 }: ConversationListProps) => {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [showArchived, setShowArchived] = useState(false);
 
@@ -56,6 +59,18 @@ export const ConversationList = ({
             className="pl-10 h-9"
           />
         </div>
+      </div>
+
+      {/* Compose Button */}
+      <div className="p-3 border-b border-border">
+        <Button 
+          size="sm" 
+          className="bg-[hsl(180,70%,45%)] hover:bg-[hsl(180,70%,40%)] text-white"
+          onClick={() => navigate("/email/compose")}
+        >
+          <PenSquare className="w-4 h-4 mr-1" />
+          Compose
+        </Button>
       </div>
 
       {/* Archived toggle */}
