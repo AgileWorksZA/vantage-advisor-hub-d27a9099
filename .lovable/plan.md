@@ -1,241 +1,88 @@
 
-# Integrate Task Linking, Client Search, and Attachment Features into Email View
+
+# Enhance Inline Client Search to Match First Name and Surname Directly
 
 ## Overview
 
-The enhanced email features (inline client search, task linking with search dialog, and attachment classification) were implemented in ComposeEmail.tsx but not in EmailView.tsx. This plan adds these features to the Email View page.
+The `InlineClientSearch` component already opens a search dropdown inline with the "+ Add" button and shows results below as the user types. However, the current search matches against the formatted combined name (e.g., "Surname, I (FirstName)"), identification, and email.
 
-## Current Issue
+This plan enhances the search to more intuitively match on first name and surname by parsing the formatted name into its components.
 
-The EmailView.tsx page has:
-- `TaskLinkingSection` with `isReadOnly` set, hiding all action buttons
-- A static "+ Add" button for clients that does nothing
-- No `TaskSearchDialog` integration
-- No `AttachmentLinkDialog` integration
-- No `useEmailTasks` hook for actual task linking
+## Current Behavior
+
+The component:
+- Opens a popover when "+ Add" is clicked
+- Shows a search input field
+- Displays filtered results with avatars, green status dots, and ID numbers
+- Filters by `client.client` (formatted name), `identification`, and `email`
+
+## Enhancement
+
+Update the filtering logic to parse and match against first name and surname components separately, making searches like "John" or "Smith" work more naturally.
 
 ## Changes Required
 
-### File: `src/pages/EmailView.tsx`
+### File: `src/components/email/InlineClientSearch.tsx`
 
-**1. Add new imports:**
+**1. Add helper function to parse client name:**
 ```tsx
-import { InlineClientSearch } from "@/components/email/InlineClientSearch";
-import { TaskSearchDialog } from "@/components/email/TaskSearchDialog";
-import { AttachmentLinkDialog, AttachmentItem } from "@/components/email/AttachmentLinkDialog";
-import { useEmailTasks } from "@/hooks/useEmailTasks";
-import { useClientDocuments } from "@/hooks/useClientDocuments";
-import { LinkedClient } from "@/hooks/useEmailDetail";
+// Parse client name "Surname, I (FirstName)" into components
+const parseClientName = (clientName: string): { firstName: string; surname: string } => {
+  const nameParts = clientName.match(/^([^,]+),\s*\w\s*\((.+)\)$/);
+  return {
+    surname: nameParts?.[1] || clientName,
+    firstName: nameParts?.[2] || "",
+  };
+};
 ```
 
-**2. Add state management:**
+**2. Update filtering logic to match first name or surname:**
 ```tsx
-// Client management state
-const [editableClients, setEditableClients] = useState<LinkedClient[]>([]);
+const filteredClients = useMemo(() => {
+  const excludeIds = new Set([
+    ...selectedClients.map((c) => c.id),
+    ...excludeClientIds,
+  ]);
 
-// Task linking state
-const [taskSearchOpen, setTaskSearchOpen] = useState(false);
-const [taskLinkConfirmation, setTaskLinkConfirmation] = useState<string | null>(null);
+  return clients.filter((client) => {
+    if (excludeIds.has(client.id)) return false;
 
-// Attachment linking state
-const [attachmentDialogOpen, setAttachmentDialogOpen] = useState(false);
-const [pendingAttachments, setPendingAttachments] = useState<AttachmentItem[]>([]);
-```
+    if (!searchQuery.trim()) return true;
 
-**3. Add hooks:**
-```tsx
-const { linkedTasks, linkTask, toggleTaskLink } = useEmailTasks(id || null);
-
-// Use first linked client for document uploads
-const primaryClientId = editableClients[0]?.id;
-const { uploadDocument } = useClientDocuments(primaryClientId || "");
-```
-
-**4. Sync linkedClients to editableClients on load:**
-```tsx
-useEffect(() => {
-  if (linkedClients.length > 0 && editableClients.length === 0) {
-    setEditableClients(linkedClients);
-  }
-}, [linkedClients]);
-```
-
-**5. Add handler functions:**
-```tsx
-const handleAddClient = (client: LinkedClient) => {
-  if (!editableClients.find((c) => c.id === client.id)) {
-    setEditableClients([...editableClients, client]);
-  }
-};
-
-const handleRemoveClient = (clientId: string) => {
-  setEditableClients(editableClients.filter((c) => c.id !== clientId));
-};
-
-const handleLinkTasks = async (taskIds: string[]) => {
-  let successCount = 0;
-  for (const taskId of taskIds) {
-    const success = await linkTask(taskId);
-    if (success) successCount++;
-  }
-  if (successCount > 0) {
-    setTaskLinkConfirmation(`Task${successCount > 1 ? "s" : ""} linked. ${linkedTasks.length + successCount} task${linkedTasks.length + successCount !== 1 ? "s" : ""} found`);
-    setTimeout(() => setTaskLinkConfirmation(null), 5000);
-  }
-};
-
-const handleToggleTaskLink = async (taskId: string, linked: boolean) => {
-  const success = await toggleTaskLink(taskId, linked);
-  if (success && linked) {
-    setTaskLinkConfirmation(`Task has been linked. ${linkedTasks.length} task${linkedTasks.length !== 1 ? "s" : ""} found`);
-    setTimeout(() => setTaskLinkConfirmation(null), 5000);
-  }
-};
-
-const handleOpenAttachmentDialog = () => {
-  if (attachments.length > 0) {
-    setPendingAttachments(
-      attachments.map((a) => ({
-        id: a.id,
-        name: a.file_name,
-        filePath: a.file_path,
-      }))
+    const query = searchQuery.toLowerCase();
+    const { firstName, surname } = parseClientName(client.client);
+    
+    return (
+      firstName.toLowerCase().includes(query) ||
+      surname.toLowerCase().includes(query) ||
+      client.client.toLowerCase().includes(query) ||
+      client.identification?.toLowerCase().includes(query) ||
+      client.email?.toLowerCase().includes(query)
     );
-    setAttachmentDialogOpen(true);
-  }
-};
-
-const handleSaveAttachments = async (atts: { id: string; documentType: string; isLinked: boolean }[]) => {
-  if (!primaryClientId) {
-    toast({ title: "Please link a client before saving attachments", variant: "destructive" });
-    return;
-  }
-  // Save attachments to client profile
-  toast({ title: `${atts.length} attachment(s) saved to client profile` });
-};
+  });
+}, [clients, selectedClients, excludeClientIds, searchQuery]);
 ```
 
-**6. Update Clients section (replace static + Add button):**
+**3. Update placeholder text for clarity:**
 ```tsx
-{/* Clients */}
-<div className="flex items-start gap-3">
-  <Label className="w-16 text-sm text-muted-foreground pt-2">
-    Clients
-  </Label>
-  <div className="flex-1 flex flex-wrap items-center gap-2">
-    {editableClients.map((client) => (
-      <ClientAvatarBadge
-        key={client.id}
-        id={client.id}
-        initials={getClientInitials(client.first_name, client.surname)}
-        name={formatClientName(client.first_name, client.surname, client.initials)}
-        hasGreenDot
-        onRemove={() => handleRemoveClient(client.id)}
-      />
-    ))}
-    <InlineClientSearch
-      selectedClients={editableClients}
-      onAddClient={handleAddClient}
-    />
-  </div>
-</div>
-```
-
-**7. Update TaskLinkingSection (remove isReadOnly, add real functionality):**
-```tsx
-{/* Confirmation Banner */}
-{taskLinkConfirmation && (
-  <div className="bg-[hsl(180,70%,45%)]/10 border border-[hsl(180,70%,45%)] text-[hsl(180,70%,45%)] px-4 py-2 rounded-lg text-sm">
-    {taskLinkConfirmation}
-  </div>
-)}
-
-{/* Task Linking Section */}
-<TaskLinkingSection
-  linkedTasks={linkedTasks}
-  onToggleLink={handleToggleTaskLink}
-  onGuessTask={() => toast({ title: "AI task matching coming soon" })}
-  onSearchTask={() => setTaskSearchOpen(true)}
-  onNewTask={() => navigate("/tasks")}
-  onGuessCompletedTask={() => toast({ title: "Completed task matching coming soon" })}
-/>
-
-{/* Task Search Dialog */}
-<TaskSearchDialog
-  open={taskSearchOpen}
-  onOpenChange={setTaskSearchOpen}
-  clientIds={editableClients.map((c) => c.id)}
-  onLinkTasks={handleLinkTasks}
-/>
-```
-
-**8. Add Attachment Link Dialog:**
-```tsx
-{/* Attachment Link Dialog */}
-<AttachmentLinkDialog
-  open={attachmentDialogOpen}
-  onOpenChange={setAttachmentDialogOpen}
-  attachments={pendingAttachments}
-  onSave={handleSaveAttachments}
-  clientId={primaryClientId}
-/>
-```
-
-**9. Update attachments section to include "Classify" button:**
-```tsx
-{/* Attachments */}
-{attachments.length > 0 && (
-  <div className="flex items-center gap-3">
-    <Label className="w-16 text-sm text-muted-foreground">
-      Attachments
-    </Label>
-    <div className="flex flex-wrap gap-2">
-      {attachments.map((attachment) => (
-        <button
-          key={attachment.id}
-          onClick={() => window.open(attachment.file_path, "_blank")}
-          className="flex items-center gap-2 px-3 py-1.5 bg-muted/50 rounded border border-border hover:bg-muted transition-colors text-sm"
-        >
-          <FileText className="w-4 h-4 text-primary" />
-          {attachment.file_name}
-        </button>
-      ))}
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={handleOpenAttachmentDialog}
-        className="h-7 text-xs"
-      >
-        Classify & Save
-      </Button>
-    </div>
-  </div>
-)}
+placeholder="Search by first name, surname, ID, or email..."
 ```
 
 ## Summary of Changes
 
 | File | Change | Description |
 |------|--------|-------------|
-| `src/pages/EmailView.tsx` | Modify | Add imports for InlineClientSearch, TaskSearchDialog, AttachmentLinkDialog, useEmailTasks |
-| `src/pages/EmailView.tsx` | Modify | Add state for editable clients, task linking, attachment dialog |
-| `src/pages/EmailView.tsx` | Modify | Add useEmailTasks hook integration |
-| `src/pages/EmailView.tsx` | Modify | Replace static Add button with InlineClientSearch |
-| `src/pages/EmailView.tsx` | Modify | Remove isReadOnly from TaskLinkingSection, connect real callbacks |
-| `src/pages/EmailView.tsx` | Modify | Add TaskSearchDialog component |
-| `src/pages/EmailView.tsx` | Modify | Add AttachmentLinkDialog component |
-| `src/pages/EmailView.tsx` | Modify | Add confirmation banner for task linking |
+| `src/components/email/InlineClientSearch.tsx` | Modify | Add `parseClientName` helper function |
+| `src/components/email/InlineClientSearch.tsx` | Modify | Update filter logic to match first name and surname separately |
+| `src/components/email/InlineClientSearch.tsx` | Modify | Update placeholder text for clarity |
 
-## Visual Changes
+## Visual Behavior (Unchanged)
 
-After implementation, the EmailView page will have:
+The component will continue to:
+1. Show "+ Add" button inline with client badges
+2. Open a popover with search input when clicked
+3. Display matching results below with avatars, green status dots, and ID numbers
+4. Close and add the selected client when clicked
 
-1. **Clients Section**: Shows linked clients with removable badges + "+ Add" dropdown that dynamically searches clients as user types
+The enhancement makes the search more intuitive by allowing users to type just "John" to find "John Smith" or just "Smith" to find all clients with that surname.
 
-2. **Task Linking Section**: Shows buttons for "Guess Task", "Search Task", "New Task", "Guess Completed Task" and a table with linked tasks that have toggle switches
-
-3. **Confirmation Banner**: Teal banner that appears when task is linked showing "Task has been linked. X tasks found"
-
-4. **Attachments Section**: Clickable file chips + "Classify & Save" button that opens the attachment classification dialog
-
-5. **Task Search Dialog**: Full-featured search modal with filters and pagination when "Search Task" is clicked
