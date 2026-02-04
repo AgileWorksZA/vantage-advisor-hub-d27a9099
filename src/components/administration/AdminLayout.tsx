@@ -99,7 +99,7 @@ export const adminSections: AdminSection[] = [
   },
   { 
     id: "products", 
-    label: "Products", 
+    label: "Providers & Products", 
     icon: Package,
     tabs: [
       { id: "list", label: "Products List" },
