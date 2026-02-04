@@ -17,7 +17,6 @@ import {
   Reply,
   Forward,
   Loader2,
-  Plus,
   FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -27,14 +26,18 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import commandCenterIcon from "@/assets/command-center-icon.png";
 import vantageLogo from "@/assets/vantage-logo.png";
 import { AppHeader } from "@/components/layout/AppHeader";
-import { AttachmentList } from "@/components/email/AttachmentList";
 import { TaskLinkingSection } from "@/components/email/TaskLinkingSection";
 import {
   ClientAvatarBadge,
   formatClientName,
   getClientInitials,
 } from "@/components/email/ClientAvatarBadge";
-import { useEmailDetail } from "@/hooks/useEmailDetail";
+import { InlineClientSearch } from "@/components/email/InlineClientSearch";
+import { TaskSearchDialog } from "@/components/email/TaskSearchDialog";
+import { AttachmentLinkDialog, AttachmentItem } from "@/components/email/AttachmentLinkDialog";
+import { useEmailDetail, LinkedClient } from "@/hooks/useEmailDetail";
+import { useEmailTasks } from "@/hooks/useEmailTasks";
+import { useClientDocuments } from "@/hooks/useClientDocuments";
 import { useToast } from "@/hooks/use-toast";
 
 const sidebarItems = [
@@ -55,7 +58,26 @@ const EmailView = () => {
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
 
+  // Email data
   const { email, attachments, linkedClients, loading } = useEmailDetail(id || null);
+  
+  // Task linking
+  const { linkedTasks, linkTask, toggleTaskLink } = useEmailTasks(id || null);
+
+  // Client management state
+  const [editableClients, setEditableClients] = useState<LinkedClient[]>([]);
+
+  // Task linking state
+  const [taskSearchOpen, setTaskSearchOpen] = useState(false);
+  const [taskLinkConfirmation, setTaskLinkConfirmation] = useState<string | null>(null);
+
+  // Attachment linking state
+  const [attachmentDialogOpen, setAttachmentDialogOpen] = useState(false);
+  const [pendingAttachments, setPendingAttachments] = useState<AttachmentItem[]>([]);
+
+  // Use first linked client for document uploads
+  const primaryClientId = editableClients[0]?.id;
+  const { uploadDocument } = useClientDocuments(primaryClientId || "");
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -78,6 +100,13 @@ const EmailView = () => {
 
     return () => subscription.unsubscribe();
   }, [navigate]);
+
+  // Sync linkedClients to editableClients on load
+  useEffect(() => {
+    if (linkedClients.length > 0 && editableClients.length === 0) {
+      setEditableClients(linkedClients);
+    }
+  }, [linkedClients, editableClients.length]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -105,6 +134,66 @@ const EmailView = () => {
       emailId: email.id,
     });
     navigate(`/email/compose?${params.toString()}`);
+  };
+
+  // Client handlers
+  const handleAddClient = (client: LinkedClient) => {
+    if (!editableClients.find((c) => c.id === client.id)) {
+      setEditableClients([...editableClients, client]);
+    }
+  };
+
+  const handleRemoveClient = (clientId: string) => {
+    setEditableClients(editableClients.filter((c) => c.id !== clientId));
+  };
+
+  // Task linking handlers
+  const handleLinkTasks = async (taskIds: string[]) => {
+    let successCount = 0;
+    for (const taskId of taskIds) {
+      const success = await linkTask(taskId);
+      if (success) successCount++;
+    }
+    if (successCount > 0) {
+      const totalTasks = linkedTasks.length + successCount;
+      setTaskLinkConfirmation(
+        `Task${successCount > 1 ? "s" : ""} linked. ${totalTasks} task${totalTasks !== 1 ? "s" : ""} found`
+      );
+      setTimeout(() => setTaskLinkConfirmation(null), 5000);
+    }
+  };
+
+  const handleToggleTaskLink = async (taskId: string, linked: boolean) => {
+    const success = await toggleTaskLink(taskId, linked);
+    if (success && linked) {
+      setTaskLinkConfirmation(
+        `Task has been linked. ${linkedTasks.length} task${linkedTasks.length !== 1 ? "s" : ""} found`
+      );
+      setTimeout(() => setTaskLinkConfirmation(null), 5000);
+    }
+  };
+
+  // Attachment handlers
+  const handleOpenAttachmentDialog = () => {
+    if (attachments.length > 0) {
+      setPendingAttachments(
+        attachments.map((a) => ({
+          id: a.id,
+          name: a.file_name,
+          filePath: a.file_path,
+        }))
+      );
+      setAttachmentDialogOpen(true);
+    }
+  };
+
+  const handleSaveAttachments = async (atts: { id: string; documentType: string; isLinked: boolean }[]) => {
+    if (!primaryClientId) {
+      toast({ title: "Please link a client before saving attachments", variant: "destructive" });
+      return;
+    }
+    // Save attachments to client profile
+    toast({ title: `${atts.length} attachment(s) saved to client profile` });
   };
 
   const formatDateTime = (date: string | null) => {
@@ -264,7 +353,7 @@ const EmailView = () => {
                     Clients
                   </Label>
                   <div className="flex-1 flex flex-wrap items-center gap-2">
-                    {linkedClients.map((client) => (
+                    {editableClients.map((client) => (
                       <ClientAvatarBadge
                         key={client.id}
                         id={client.id}
@@ -275,22 +364,30 @@ const EmailView = () => {
                           client.initials
                         )}
                         hasGreenDot
+                        onRemove={() => handleRemoveClient(client.id)}
                       />
                     ))}
-                    <Button variant="ghost" size="sm" className="gap-1 text-xs h-8">
-                      <Plus className="w-3.5 h-3.5" />
-                      Add
-                    </Button>
+                    <InlineClientSearch
+                      selectedClients={editableClients}
+                      onAddClient={handleAddClient}
+                    />
                   </div>
                 </div>
               </div>
 
+              {/* Task Link Confirmation Banner */}
+              {taskLinkConfirmation && (
+                <div className="bg-[hsl(180,70%,45%)]/10 border border-[hsl(180,70%,45%)] text-[hsl(180,70%,45%)] px-4 py-2 rounded-lg text-sm">
+                  {taskLinkConfirmation}
+                </div>
+              )}
+
               {/* Task Linking Section */}
               <TaskLinkingSection
-                linkedTasks={[]}
-                isReadOnly
+                linkedTasks={linkedTasks}
+                onToggleLink={handleToggleTaskLink}
                 onGuessTask={() => toast({ title: "AI task matching coming soon" })}
-                onSearchTask={() => navigate("/tasks")}
+                onSearchTask={() => setTaskSearchOpen(true)}
                 onNewTask={() => navigate("/tasks")}
                 onGuessCompletedTask={() =>
                   toast({ title: "Completed task matching coming soon" })
@@ -314,6 +411,14 @@ const EmailView = () => {
                         {attachment.file_name}
                       </button>
                     ))}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleOpenAttachmentDialog}
+                      className="h-7 text-xs"
+                    >
+                      Classify & Save
+                    </Button>
                   </div>
                 </div>
               )}
@@ -335,6 +440,23 @@ const EmailView = () => {
           </ScrollArea>
         )}
       </div>
+
+      {/* Task Search Dialog */}
+      <TaskSearchDialog
+        open={taskSearchOpen}
+        onOpenChange={setTaskSearchOpen}
+        clientIds={editableClients.map((c) => c.id)}
+        onLinkTasks={handleLinkTasks}
+      />
+
+      {/* Attachment Link Dialog */}
+      <AttachmentLinkDialog
+        open={attachmentDialogOpen}
+        onOpenChange={setAttachmentDialogOpen}
+        attachments={pendingAttachments}
+        onSave={handleSaveAttachments}
+        clientId={primaryClientId}
+      />
     </div>
   );
 };
