@@ -12,6 +12,7 @@ export interface ClientContact {
   email: string | null;
   phone: string | null;
   notes: string | null;
+  contact_type: string | null;
   created_at: string;
   updated_at: string;
   is_deleted: boolean;
@@ -24,6 +25,7 @@ export interface ContactListItem {
   company: string;
   email: string;
   phone: string;
+  contactType: string;
 }
 
 const transformContactToListItem = (contact: ClientContact): ContactListItem => ({
@@ -33,6 +35,7 @@ const transformContactToListItem = (contact: ClientContact): ContactListItem => 
   company: contact.company || "",
   email: contact.email || "",
   phone: contact.phone || "",
+  contactType: contact.contact_type || "Other",
 });
 
 export const useClientContacts = (clientId: string) => {
@@ -82,6 +85,7 @@ export const useClientContacts = (clientId: string) => {
           email: contactData.email,
           phone: contactData.phone,
           notes: contactData.notes,
+          contact_type: contactData.contact_type || "Other",
         })
         .select()
         .single();
