@@ -102,10 +102,10 @@ export const adminSections: AdminSection[] = [
     label: "Providers & Products", 
     icon: Package,
     tabs: [
+      { id: "providers", label: "Providers" },
       { id: "list", label: "Products List" },
       { id: "classification", label: "Classification" },
       { id: "benefits", label: "Benefits" },
-      { id: "providers", label: "Providers" },
     ]
   },
   { 
