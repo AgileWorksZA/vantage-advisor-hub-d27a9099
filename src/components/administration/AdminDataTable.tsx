@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Pencil, Trash2, ArrowUpDown } from "lucide-react";
+import { Pencil, Trash2, ArrowUpDown, Check, X } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -234,4 +234,37 @@ export function StatusBadge({ isActive }: { isActive: boolean }) {
       {isActive ? "Active" : "Inactive"}
     </Badge>
   );
+}
+
+// Import status badge with colors
+export function ImportStatusBadge({ status }: { status: string }) {
+  const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+    "Completed": "default",
+    "In Progress": "outline", 
+    "Paused": "secondary",
+    "Failed": "destructive",
+    "Pending": "secondary",
+    "Cancelled": "secondary",
+  };
+  return <Badge variant={variants[status] || "secondary"}>{status}</Badge>;
+}
+
+// Boolean checkmark indicator
+export function BooleanIndicator({ value }: { value: boolean }) {
+  return value ? (
+    <Check className="h-4 w-4 text-green-600" />
+  ) : (
+    <X className="h-4 w-4 text-muted-foreground" />
+  );
+}
+
+// Duration formatter
+export function formatDuration(seconds: number | null): string {
+  if (!seconds) return "—";
+  const hrs = Math.floor(seconds / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+  if (hrs > 0) return `${hrs}h ${mins}m`;
+  if (mins > 0) return `${mins}m ${secs}s`;
+  return `${secs}s`;
 }

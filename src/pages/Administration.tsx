@@ -11,7 +11,17 @@ import vantageLogo from "@/assets/vantage-logo.png";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { AdminLayout, adminSections } from "@/components/administration/AdminLayout";
 import { GeneralListsSection } from "@/components/administration/general-lists/GeneralListsSection";
-import { Card, CardContent } from "@/components/ui/card";
+import { DataIntegrationsSection } from "@/components/administration/data-integrations/DataIntegrationsSection";
+import { PlanningToolsSection } from "@/components/administration/planning-tools/PlanningToolsSection";
+import { CampaignManagementSection } from "@/components/administration/campaign-management/CampaignManagementSection";
+import { CommunicationSection } from "@/components/administration/communication/CommunicationSection";
+import { DocumentsSection } from "@/components/administration/documents/DocumentsSection";
+import { ProductsSection } from "@/components/administration/products/ProductsSection";
+import { FundsSection } from "@/components/administration/funds/FundsSection";
+import { TransactionsSection } from "@/components/administration/transactions/TransactionsSection";
+import { NotesTasksSection } from "@/components/administration/notes-tasks/NotesTasksSection";
+import { EventsSection } from "@/components/administration/events/EventsSection";
+import { SystemSettingsSection } from "@/components/administration/system/SystemSettingsSection";
 
 const sidebarItems = [
   { icon: LayoutDashboard, label: "Dash", path: "/dashboard" },
@@ -74,19 +84,30 @@ const Administration = () => {
     switch (activeSection) {
       case "general-lists":
         return <GeneralListsSection />;
+      case "data-integrations":
+        return <DataIntegrationsSection />;
+      case "planning-tools":
+        return <PlanningToolsSection />;
+      case "campaign-management":
+        return <CampaignManagementSection />;
+      case "communication":
+        return <CommunicationSection />;
+      case "documents":
+        return <DocumentsSection />;
+      case "products":
+        return <ProductsSection />;
+      case "funds":
+        return <FundsSection />;
+      case "transactions":
+        return <TransactionsSection />;
+      case "notes-tasks":
+        return <NotesTasksSection />;
+      case "events":
+        return <EventsSection />;
+      case "system":
+        return <SystemSettingsSection />;
       default:
-        // Placeholder for other sections
-        const sectionInfo = adminSections.find(s => s.id === activeSection);
-        return (
-          <div className="p-6">
-            <h2 className="text-xl font-semibold mb-4">{sectionInfo?.label || "Section"}</h2>
-            <Card>
-              <CardContent className="py-12 text-center text-muted-foreground">
-                This section is under development. Coming soon!
-              </CardContent>
-            </Card>
-          </div>
-        );
+        return <GeneralListsSection />;
     }
   };
 

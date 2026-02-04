@@ -50,7 +50,7 @@ async function fetchAdminData(
   return result as AnyRecord[];
 }
 
-export function useAdminData({ 
+export function useAdminData<T extends AnyRecord = AnyRecord>({ 
   table, 
   filters = {}, 
   orderBy = { column: "created_at", ascending: false } 
@@ -92,7 +92,8 @@ export function useAdminData({
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, updates }: { id: string; updates: AnyRecord }) => {
+    mutationFn: async (itemWithId: AnyRecord & { id: string }) => {
+      const { id, ...updates } = itemWithId;
       const { data: result, error: updateError } = await supabase
         .from(table)
         .update(updates as never)
@@ -141,7 +142,7 @@ export function useAdminData({
         typeof value === "string" && 
         value.toLowerCase().includes(searchLower)
     );
-  });
+  }) as T[];
 
   return {
     data: filteredData,
