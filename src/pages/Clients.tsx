@@ -52,6 +52,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useClients } from "@/hooks/useClients";
 import AddClientDialog from "@/components/clients/AddClientDialog";
+import { AddClientChoiceDialog } from "@/components/clients/AddClientChoiceDialog";
+import { FinancialPlanningWizard } from "@/components/financial-planning-workflow/FinancialPlanningWizard";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { useRegion } from "@/contexts/RegionContext";
 
@@ -87,6 +89,12 @@ const Clients = () => {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [clientToDelete, setClientToDelete] = useState<{ id: string; name: string } | null>(null);
+  
+  // Add Client Choice Dialog state
+  const [choiceDialogOpen, setChoiceDialogOpen] = useState(false);
+  const [selectedMode, setSelectedMode] = useState<"simple" | "advice">("simple");
+  const [newClientForWizard, setNewClientForWizard] = useState<{ id: string; name: string } | null>(null);
+  const [showWizard, setShowWizard] = useState(false);
   
   // Dashboard widget filter state
   const [filterSource, setFilterSource] = useState<string | null>(null);
@@ -185,6 +193,21 @@ const Clients = () => {
       setDeleteDialogOpen(false);
       setClientToDelete(null);
     }
+  };
+
+  // Handler for choice dialog selection
+  const handleChoiceSelected = (choice: "simple" | "advice") => {
+    setSelectedMode(choice);
+    setAddDialogOpen(true);
+  };
+
+  // Handler when client is created
+  const handleClientCreated = (client: { id: string; name: string }) => {
+    if (selectedMode === "advice") {
+      setNewClientForWizard(client);
+      setShowWizard(true);
+    }
+    refetch();
   };
 
   if (authLoading) {
@@ -363,7 +386,7 @@ const Clients = () => {
             </div>
             <Button 
               className="bg-[hsl(180,70%,45%)] hover:bg-[hsl(180,70%,40%)] text-white"
-              onClick={() => setAddDialogOpen(true)}
+              onClick={() => setChoiceDialogOpen(true)}
             >
               + Add Profile
             </Button>
@@ -570,12 +593,33 @@ const Clients = () => {
         </main>
       </div>
 
+      {/* Add Client Choice Dialog */}
+      <AddClientChoiceDialog
+        open={choiceDialogOpen}
+        onOpenChange={setChoiceDialogOpen}
+        onChoiceSelected={handleChoiceSelected}
+      />
+
       {/* Add Client Dialog */}
       <AddClientDialog 
         open={addDialogOpen} 
         onOpenChange={setAddDialogOpen} 
         onClientAdded={refetch}
+        onClientCreated={handleClientCreated}
       />
+
+      {/* Financial Planning Wizard */}
+      {newClientForWizard && (
+        <FinancialPlanningWizard
+          open={showWizard}
+          onOpenChange={(open) => {
+            setShowWizard(open);
+            if (!open) setNewClientForWizard(null);
+          }}
+          clientId={newClientForWizard.id}
+          clientName={newClientForWizard.name}
+        />
+      )}
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

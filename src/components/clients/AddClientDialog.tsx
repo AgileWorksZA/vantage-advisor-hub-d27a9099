@@ -69,9 +69,10 @@ interface AddClientDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onClientAdded: () => void;
+  onClientCreated?: (client: { id: string; name: string }) => void;
 }
 
-const AddClientDialog = ({ open, onOpenChange, onClientAdded }: AddClientDialogProps) => {
+const AddClientDialog = ({ open, onOpenChange, onClientAdded, onClientCreated }: AddClientDialogProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [duplicateClient, setDuplicateClient] = useState<{
     id: string;
@@ -147,7 +148,7 @@ const AddClientDialog = ({ open, onOpenChange, onClientAdded }: AddClientDialogP
         dateOfBirth = data.date_of_birth;
       }
 
-      const { error } = await supabase.from("clients").insert({
+      const { data: newClient, error } = await supabase.from("clients").insert({
         user_id: user.id,
         profile_state: "Active",
         profile_type: data.profile_type,
@@ -170,7 +171,7 @@ const AddClientDialog = ({ open, onOpenChange, onClientAdded }: AddClientDialogP
         employer: data.employer || null,
         advisor: data.advisor || null,
         wealth_manager: data.wealth_manager || null,
-      });
+      }).select().single();
 
       if (error) throw error;
 
@@ -178,6 +179,14 @@ const AddClientDialog = ({ open, onOpenChange, onClientAdded }: AddClientDialogP
       form.reset();
       onOpenChange(false);
       onClientAdded();
+      
+      // Call new callback if provided with client data
+      if (onClientCreated && newClient) {
+        onClientCreated({
+          id: newClient.id,
+          name: `${newClient.first_name} ${newClient.surname}`,
+        });
+      }
     } catch (error: any) {
       console.error("Error adding client:", error);
       toast.error(error.message || "Failed to add client");
