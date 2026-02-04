@@ -1,4 +1,5 @@
 import { useRef, useCallback } from "react";
+import DOMPurify from "dompurify";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -14,6 +15,15 @@ import {
 } from "lucide-react";
 import { PersonalizationPopover } from "./PersonalizationPopover";
 import { CommunicationChannel } from "@/hooks/useCommunicationCampaigns";
+
+// Configure DOMPurify for safe HTML rendering
+const sanitizeHtml = (html: string): string => {
+  return DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: ['b', 'i', 'u', 'p', 'br', 'strong', 'em', 'a', 'ul', 'ol', 'li', 'span', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'],
+    ALLOWED_ATTR: ['href', 'target', 'style', 'class'],
+    ALLOW_DATA_ATTR: false,
+  });
+};
 
 interface RichTextEditorProps {
   value: string;
@@ -100,7 +110,7 @@ export const RichTextEditor = ({
           className="min-h-[120px] p-3 outline-none text-sm"
           onInput={handleInput}
           data-placeholder={placeholder}
-          dangerouslySetInnerHTML={{ __html: value }}
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(value) }}
         />
       </div>
     );
@@ -120,7 +130,7 @@ export const RichTextEditor = ({
           className="min-h-[80px] p-3 outline-none text-sm"
           onInput={handleInput}
           data-placeholder="Push notification message (keep it short)..."
-          dangerouslySetInnerHTML={{ __html: value }}
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(value) }}
         />
       </div>
     );
@@ -244,7 +254,7 @@ export const RichTextEditor = ({
         className="min-h-[200px] p-4 outline-none text-sm prose prose-sm max-w-none [&:empty]:before:content-[attr(data-placeholder)] [&:empty]:before:text-muted-foreground"
         onInput={handleInput}
         data-placeholder={placeholder}
-        dangerouslySetInnerHTML={{ __html: value }}
+        dangerouslySetInnerHTML={{ __html: sanitizeHtml(value) }}
       />
     </div>
   );
