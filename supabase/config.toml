@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.seed-instruments-data]
 verify_jwt = false
+
+[functions.seed-providers-data]
+verify_jwt = false

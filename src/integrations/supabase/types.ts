@@ -2659,42 +2659,113 @@ export type Database = {
       }
       product_providers: {
         Row: {
+          astute_code: string | null
+          auto_notify_changes: boolean | null
+          cc_static_update: string | null
           code: string
           contact_email: string | null
           contact_phone: string | null
+          contract_padding: number | null
+          country: string | null
           created_at: string
+          deleted_at: string | null
+          disable_manual_contract_update: boolean | null
+          email_legal: string | null
+          exclude_from_aging: boolean | null
+          fax_number_legal: string | null
           id: string
           is_active: boolean
+          is_approved: boolean | null
+          is_deleted: boolean | null
+          is_hidden: boolean | null
+          is_umbrella_provider: boolean | null
           name: string
+          portal_url: string | null
+          postal_address: Json | null
           provider_type: string
+          residential_address: Json | null
+          services: Json | null
+          tel_number: string | null
+          tel_number_legal: string | null
+          umbrella_provider_id: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          astute_code?: string | null
+          auto_notify_changes?: boolean | null
+          cc_static_update?: string | null
           code: string
           contact_email?: string | null
           contact_phone?: string | null
+          contract_padding?: number | null
+          country?: string | null
           created_at?: string
+          deleted_at?: string | null
+          disable_manual_contract_update?: boolean | null
+          email_legal?: string | null
+          exclude_from_aging?: boolean | null
+          fax_number_legal?: string | null
           id?: string
           is_active?: boolean
+          is_approved?: boolean | null
+          is_deleted?: boolean | null
+          is_hidden?: boolean | null
+          is_umbrella_provider?: boolean | null
           name: string
+          portal_url?: string | null
+          postal_address?: Json | null
           provider_type?: string
+          residential_address?: Json | null
+          services?: Json | null
+          tel_number?: string | null
+          tel_number_legal?: string | null
+          umbrella_provider_id?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          astute_code?: string | null
+          auto_notify_changes?: boolean | null
+          cc_static_update?: string | null
           code?: string
           contact_email?: string | null
           contact_phone?: string | null
+          contract_padding?: number | null
+          country?: string | null
           created_at?: string
+          deleted_at?: string | null
+          disable_manual_contract_update?: boolean | null
+          email_legal?: string | null
+          exclude_from_aging?: boolean | null
+          fax_number_legal?: string | null
           id?: string
           is_active?: boolean
+          is_approved?: boolean | null
+          is_deleted?: boolean | null
+          is_hidden?: boolean | null
+          is_umbrella_provider?: boolean | null
           name?: string
+          portal_url?: string | null
+          postal_address?: Json | null
           provider_type?: string
+          residential_address?: Json | null
+          services?: Json | null
+          tel_number?: string | null
+          tel_number_legal?: string | null
+          umbrella_provider_id?: string | null
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "product_providers_umbrella_provider_id_fkey"
+            columns: ["umbrella_provider_id"]
+            isOneToOne: false
+            referencedRelation: "product_providers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       products: {
         Row: {

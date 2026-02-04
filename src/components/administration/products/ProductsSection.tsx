@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAdminData } from "@/hooks/useAdminData";
+import { useProductProviders, ProductProvider } from "@/hooks/useProductProviders";
 import { AdminSectionHeader } from "../AdminSectionHeader";
 import { AdminDataTable, ColumnDef, StatusBadge, BooleanIndicator } from "../AdminDataTable";
 import { adminSections } from "../AdminLayout";
@@ -17,6 +18,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import { ProviderDetailDialog } from "./ProviderDetailDialog";
+import { Database } from "lucide-react";
 
 interface ProductBenefit {
   id: string;
@@ -39,17 +43,42 @@ interface GeneralListItem {
 
 type ProductItem = ProductBenefit | GeneralListItem;
 
+const COUNTRY_LABELS: Record<string, string> = {
+  ZA: "South Africa",
+  US: "United States",
+  UK: "United Kingdom",
+  AU: "Australia",
+  CA: "Canada",
+};
+
 export function ProductsSection() {
   const { tab } = useParams();
   const navigate = useNavigate();
-  const activeTab = tab || "products-list";
+  const activeTab = tab || "providers";
 
   const section = adminSections.find((s) => s.id === "products");
   const tabs = section?.tabs || [];
 
+  // Provider hooks
+  const {
+    providers,
+    allProviders,
+    isLoading: providersLoading,
+    searchTerm: providerSearchTerm,
+    setSearchTerm: setProviderSearchTerm,
+    updateProvider,
+    deleteProvider,
+    seedProviders,
+    refetch: refetchProviders,
+  } = useProductProviders();
+
+  const [selectedProvider, setSelectedProvider] = useState<ProductProvider | null>(null);
+  const [isSeeding, setIsSeeding] = useState(false);
+
   // Use different hooks based on active tab
   const isBenefitsTab = activeTab === "benefits";
   const isClassificationTab = activeTab === "classification";
+  const isProvidersTab = activeTab === "providers";
   
   const benefitsHook = useAdminData<ProductBenefit>({
     table: "admin_product_benefits",
@@ -62,27 +91,19 @@ export function ProductsSection() {
     orderBy: { column: "display_order", ascending: true },
   });
 
-  const providersHook = useAdminData<GeneralListItem>({
-    table: "admin_general_lists",
-    filters: { list_type: "product_providers" },
-    orderBy: { column: "name", ascending: true },
-  });
-
   const productsHook = useAdminData<GeneralListItem>({
     table: "admin_general_lists",
     filters: { list_type: "products" },
     orderBy: { column: "name", ascending: true },
   });
 
-  // Select the appropriate hook data
+  // Select the appropriate hook data for non-provider tabs
   const getActiveHookData = () => {
     switch (activeTab) {
       case "benefits":
         return benefitsHook;
       case "classification":
         return classificationHook;
-      case "providers":
-        return providersHook;
       default:
         return productsHook;
     }
@@ -110,6 +131,49 @@ export function ProductsSection() {
     display_order: 0,
     is_active: true,
   });
+
+  // Provider columns
+  const providerColumns: ColumnDef<ProductProvider>[] = [
+    { header: "Name", accessor: "name", sortable: true },
+    { header: "Code", accessor: "code", sortable: true },
+    { header: "Type", accessor: "provider_type", sortable: true },
+    {
+      header: "Country",
+      accessor: "country",
+      render: (value) => (
+        <Badge variant="outline">
+          {COUNTRY_LABELS[value as string] || (value as string) || "-"}
+        </Badge>
+      ),
+    },
+    {
+      header: "Services",
+      accessor: "services",
+      render: (value) => {
+        const services = value as string[] | null;
+        if (!services || services.length === 0) return "-";
+        return (
+          <div className="flex flex-wrap gap-1">
+            {services.slice(0, 2).map((s) => (
+              <Badge key={s} variant="secondary" className="text-xs">
+                {s}
+              </Badge>
+            ))}
+            {services.length > 2 && (
+              <Badge variant="secondary" className="text-xs">
+                +{services.length - 2}
+              </Badge>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      header: "Status",
+      accessor: "is_active",
+      render: (value) => <StatusBadge isActive={value as boolean} />,
+    },
+  ];
 
   const benefitColumns: ColumnDef<ProductBenefit>[] = [
     { header: "Name", accessor: "name", sortable: true },
@@ -199,8 +263,7 @@ export function ProductsSection() {
       }
     } else {
       if (!listForm.code.trim() || !listForm.name.trim()) return;
-      const listType = activeTab === "classification" ? "product_classification" : 
-                       activeTab === "providers" ? "product_providers" : "products";
+      const listType = activeTab === "classification" ? "product_classification" : "products";
       const payload = {
         ...listForm,
         list_type: listType,
@@ -219,6 +282,19 @@ export function ProductsSection() {
     await deleteItem(item.id);
   };
 
+  const handleProviderClick = (provider: ProductProvider) => {
+    setSelectedProvider(provider);
+  };
+
+  const handleSeedProviders = async () => {
+    setIsSeeding(true);
+    try {
+      await seedProviders();
+    } finally {
+      setIsSeeding(false);
+    }
+  };
+
   return (
     <div className="p-6 space-y-6">
       <Tabs
@@ -234,37 +310,82 @@ export function ProductsSection() {
         </TabsList>
 
         <div className="mt-6">
-          <AdminSectionHeader
-            title={tabs.find((t) => t.id === activeTab)?.label || "Products"}
-            itemCount={data.length}
-            searchValue={searchTerm}
-            onSearchChange={setSearchTerm}
-            onAdd={handleAdd}
-            onReset={() => refetch()}
-          />
+          {isProvidersTab ? (
+            <>
+              <AdminSectionHeader
+                title="Providers"
+                itemCount={providers.length}
+                searchValue={providerSearchTerm}
+                onSearchChange={setProviderSearchTerm}
+                onReset={() => refetchProviders()}
+                customActions={
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSeedProviders}
+                    disabled={isSeeding}
+                  >
+                    <Database className="h-4 w-4 mr-2" />
+                    {isSeeding ? "Seeding..." : "Seed Providers Data"}
+                  </Button>
+                }
+              />
 
-          <div className="mt-4">
-            {isBenefitsTab ? (
-              <AdminDataTable
-                data={data as ProductBenefit[]}
-                columns={benefitColumns}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                isLoading={isLoading}
+              <div className="mt-4">
+                <AdminDataTable
+                  data={providers}
+                  columns={providerColumns}
+                  onEdit={handleProviderClick}
+                  onDelete={(p) => deleteProvider(p.id)}
+                  isLoading={providersLoading}
+                />
+              </div>
+            </>
+          ) : (
+            <>
+              <AdminSectionHeader
+                title={tabs.find((t) => t.id === activeTab)?.label || "Products"}
+                itemCount={data.length}
+                searchValue={searchTerm}
+                onSearchChange={setSearchTerm}
+                onAdd={handleAdd}
+                onReset={() => refetch()}
               />
-            ) : (
-              <AdminDataTable
-                data={data as GeneralListItem[]}
-                columns={listColumns}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                isLoading={isLoading}
-              />
-            )}
-          </div>
+
+              <div className="mt-4">
+                {isBenefitsTab ? (
+                  <AdminDataTable
+                    data={data as ProductBenefit[]}
+                    columns={benefitColumns}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                    isLoading={isLoading}
+                  />
+                ) : (
+                  <AdminDataTable
+                    data={data as GeneralListItem[]}
+                    columns={listColumns}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                    isLoading={isLoading}
+                  />
+                )}
+              </div>
+            </>
+          )}
         </div>
       </Tabs>
 
+      {/* Provider Detail Dialog */}
+      <ProviderDetailDialog
+        provider={selectedProvider}
+        allProviders={allProviders}
+        open={!!selectedProvider}
+        onOpenChange={(open) => !open && setSelectedProvider(null)}
+        onSave={updateProvider}
+      />
+
+      {/* Add/Edit Dialog for non-provider items */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
         <DialogContent>
           <DialogHeader>
