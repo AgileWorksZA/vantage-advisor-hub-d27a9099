@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Info, Phone, Mail, Download, Save } from "lucide-react";
+import { extractDateOfBirthFromId } from "@/lib/utils";
 import {
   Select,
   SelectContent,
@@ -89,7 +90,19 @@ const ClientDetailsTab = ({ client, onUpdate }: ClientDetailsTabProps) => {
   }, [client]);
 
   const handleChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData(prev => {
+      const updated = { ...prev, [field]: value };
+      
+      // Auto-populate date of birth from ID number for individuals
+      if (field === "id_number" && prev.person_type === "Individual" && value.length >= 6) {
+        const extractedDob = extractDateOfBirthFromId(value);
+        if (extractedDob) {
+          updated.date_of_birth = extractedDob;
+        }
+      }
+      
+      return updated;
+    });
   };
 
   const handleSave = async () => {

@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
+import { extractDateOfBirthFromId } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useNavigate } from "react-router-dom";
@@ -104,6 +105,19 @@ const AddClientDialog = ({ open, onOpenChange, onClientAdded, onClientCreated }:
       wealth_manager: "",
     },
   });
+
+  // Watch ID number and client type for auto-populating date of birth
+  const watchIdNumber = form.watch("id_number");
+  const watchClientType = form.watch("client_type");
+
+  useEffect(() => {
+    if (watchClientType === "individual" && watchIdNumber && watchIdNumber.length >= 6) {
+      const extractedDob = extractDateOfBirthFromId(watchIdNumber);
+      if (extractedDob) {
+        form.setValue("date_of_birth", extractedDob);
+      }
+    }
+  }, [watchIdNumber, watchClientType, form]);
 
   // Check for duplicate ID number before submission
   const checkDuplicateIdNumber = async (idNumber: string) => {

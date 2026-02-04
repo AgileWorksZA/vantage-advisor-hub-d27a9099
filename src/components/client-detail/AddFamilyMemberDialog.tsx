@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
+import { extractDateOfBirthFromId } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useNavigate } from "react-router-dom";
@@ -76,6 +77,18 @@ const AddFamilyMemberDialog = ({ open, onOpenChange, clientId, onSuccess }: AddF
       product_viewing_level: "Full",
     },
   });
+
+  // Watch ID number for auto-populating date of birth
+  const watchIdNumber = form.watch("id_number");
+
+  useEffect(() => {
+    if (watchIdNumber && watchIdNumber.length >= 6) {
+      const extractedDob = extractDateOfBirthFromId(watchIdNumber);
+      if (extractedDob) {
+        form.setValue("date_of_birth", extractedDob);
+      }
+    }
+  }, [watchIdNumber, form]);
 
   // Helper function to get reciprocal relationship type
   const getReciprocalRelationship = (type: string): "Spouse" | "Child" | "Parent" | "Sibling" => {
