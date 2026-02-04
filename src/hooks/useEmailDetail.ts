@@ -49,6 +49,8 @@ export interface LinkedClient {
   surname: string;
   initials: string | null;
   email: string | null;
+  preferred_name?: string | null;
+  id_number?: string | null;
 }
 
 export const useEmailDetail = (emailId: string | null) => {
