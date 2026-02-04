@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   Sheet,
   SheetContent,
@@ -50,6 +49,7 @@ import { useTaskHistory } from "@/hooks/useTaskHistory";
 import { useClients } from "@/hooks/useClients";
 import { TaskClientSelector } from "./TaskClientSelector";
 import { TaskTimeline } from "./TaskTimeline";
+import { ComposeMessageDialog } from "@/components/email/ComposeMessageDialog";
 
 interface TaskDetailSheetProps {
   task: EnhancedTask | null;
@@ -70,7 +70,6 @@ export function TaskDetailSheet({
   onTogglePin,
   onAddNote,
 }: TaskDetailSheetProps) {
-  const navigate = useNavigate();
   const { taskTypes, taskStatuses, taskPriorities, taskCategories, taskResolutionTypes, taskSources } = useTaskTypes();
   const { clients } = useClients();
   
@@ -78,6 +77,7 @@ export function TaskDetailSheet({
   const [newNote, setNewNote] = useState("");
   const [isInternalNote, setIsInternalNote] = useState(false);
   const [activeTab, setActiveTab] = useState("details");
+  const [composeDialogOpen, setComposeDialogOpen] = useState(false);
 
   // Hooks for related data
   const { taskClients, fetchTaskClients, addClient, removeClient } = useTaskClients(task?.id);
@@ -127,9 +127,7 @@ export function TaskDetailSheet({
   };
 
   const handleSendMessage = () => {
-    // Navigate to compose with task_id
-    const clientIds = taskClients.map((c) => c.client_id).join(",");
-    navigate(`/email/compose?task_id=${task.id}&clients=${clientIds}`);
+    setComposeDialogOpen(true);
   };
 
   const handleDeleteTask = async () => {
@@ -540,6 +538,14 @@ export function TaskDetailSheet({
             </div>
           </TabsContent>
         </Tabs>
+
+        {/* Compose Message Dialog */}
+        <ComposeMessageDialog
+          open={composeDialogOpen}
+          onOpenChange={setComposeDialogOpen}
+          initialClientIds={taskClients.map((tc) => tc.client_id)}
+          taskId={task.id}
+        />
       </SheetContent>
     </Sheet>
   );
