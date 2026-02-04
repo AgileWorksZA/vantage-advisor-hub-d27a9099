@@ -167,12 +167,30 @@ export const useClientRelationships = (clientId: string) => {
 
   const deleteRelationship = async (relId: string) => {
     try {
+      // First get the relationship to find the reciprocal
+      const { data: relData } = await supabase
+        .from("client_relationships")
+        .select("client_id, related_client_id")
+        .eq("id", relId)
+        .single();
+
+      // Soft-delete the primary relationship
       const { error } = await supabase
         .from("client_relationships")
         .update({ is_deleted: true, deleted_at: new Date().toISOString() })
         .eq("id", relId);
 
       if (error) throw error;
+
+      // Find and soft-delete the reciprocal relationship if it exists
+      if (relData?.related_client_id) {
+        await supabase
+          .from("client_relationships")
+          .update({ is_deleted: true, deleted_at: new Date().toISOString() })
+          .eq("client_id", relData.related_client_id)
+          .eq("related_client_id", relData.client_id)
+          .eq("is_deleted", false);
+      }
 
       setFamilyMembers((prev) => prev.filter((f) => f.id !== relId));
       setBusinesses((prev) => prev.filter((b) => b.id !== relId));
