@@ -37,9 +37,7 @@ import {
 import ClientSummaryTab from "@/components/client-detail/ClientSummaryTab";
 import ClientDetailsTab from "@/components/client-detail/ClientDetailsTab";
 import ClientCRMTab from "@/components/client-detail/ClientCRMTab";
-import ClientFamilyTab from "@/components/client-detail/ClientFamilyTab";
-import ClientBusinessesTab from "@/components/client-detail/ClientBusinessesTab";
-import ClientContactsTab from "@/components/client-detail/ClientContactsTab";
+import ClientRelationshipsTab from "@/components/client-detail/ClientRelationshipsTab";
 import ClientWorkflowsTab from "@/components/client-detail/ClientWorkflowsTab";
 import ClientComplianceTab from "@/components/client-detail/ClientComplianceTab";
 import Client360ViewTab from "@/components/client-detail/Client360ViewTab";
@@ -49,6 +47,7 @@ import ClientDocumentsTab from "@/components/client-detail/ClientDocumentsTab";
 import ClientMeetingsTab from "@/components/client-detail/ClientMeetingsTab";
 import ClientRecentActivityTab from "@/components/client-detail/ClientRecentActivityTab";
 import { useClientDetail } from "@/hooks/useClientDetail";
+import { useClientRelationships } from "@/hooks/useClientRelationships";
 import { getDisplayName } from "@/types/client";
 
 const sidebarItems = [
@@ -73,6 +72,23 @@ const ClientDetail = () => {
 
   // Fetch client data from Supabase
   const { client, loading: clientLoading, error, updateClient, refetch } = useClientDetail(clientId);
+  
+  // Fetch relationships for the "Manage related entity" dropdown
+  const { familyMembers, businesses } = useClientRelationships(clientId || "");
+  
+  // Combine family members and businesses that have a related_client_id for quick navigation
+  const relatedEntities = [
+    ...familyMembers.filter(f => f.relatedClientId).map(f => ({
+      id: f.relatedClientId!,
+      name: f.name,
+      type: f.familyType,
+    })),
+    ...businesses.filter(b => b.relatedClientId).map(b => ({
+      id: b.relatedClientId!,
+      name: b.name,
+      type: b.type,
+    })),
+  ];
   
   const clientName = client ? getDisplayName(client) : "Loading...";
 
@@ -214,10 +230,31 @@ const ClientDetail = () => {
                   <SelectItem value="risk-profile">Risk profile</SelectItem>
                 </SelectContent>
               </Select>
-              <Button variant="outline" className="gap-2">
-                Manage related entity
-                <ChevronDown className="w-4 h-4" />
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="gap-2">
+                    Manage related entity
+                    <ChevronDown className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-64">
+                  {relatedEntities.length === 0 ? (
+                    <DropdownMenuItem disabled>No related entities</DropdownMenuItem>
+                  ) : (
+                    relatedEntities.map((entity) => (
+                      <DropdownMenuItem 
+                        key={entity.id}
+                        onClick={() => navigate(`/clients/${entity.id}`)}
+                      >
+                        <div className="flex flex-col">
+                          <span className="font-medium">{entity.name}</span>
+                          <span className="text-xs text-muted-foreground">{entity.type}</span>
+                        </div>
+                      </DropdownMenuItem>
+                    ))
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="icon">
@@ -243,9 +280,7 @@ const ClientDetail = () => {
                 { value: "details", label: "Details" },
                 { value: "crm", label: "CRM" },
                 { value: "meetings", label: "Meetings" },
-                { value: "family", label: "Family" },
-                { value: "businesses", label: "Businesses" },
-                { value: "contacts", label: "Contacts" },
+                { value: "relationships", label: "Relationships" },
                 { value: "workflows", label: "Workflows" },
                 { value: "compliance", label: "Compliance" },
                 { value: "notes", label: "Notes" },
@@ -282,14 +317,8 @@ const ClientDetail = () => {
               <TabsContent value="meetings" className="mt-0">
                 <ClientMeetingsTab />
               </TabsContent>
-              <TabsContent value="family" className="mt-0">
-                <ClientFamilyTab />
-              </TabsContent>
-              <TabsContent value="businesses" className="mt-0">
-                <ClientBusinessesTab />
-              </TabsContent>
-              <TabsContent value="contacts" className="mt-0">
-                <ClientContactsTab />
+              <TabsContent value="relationships" className="mt-0">
+                <ClientRelationshipsTab />
               </TabsContent>
               <TabsContent value="workflows" className="mt-0">
                 <ClientWorkflowsTab />

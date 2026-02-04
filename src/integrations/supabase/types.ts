@@ -321,6 +321,7 @@ export type Database = {
         Row: {
           client_id: string
           company: string | null
+          contact_type: string | null
           created_at: string
           deleted_at: string | null
           email: string | null
@@ -336,6 +337,7 @@ export type Database = {
         Insert: {
           client_id: string
           company?: string | null
+          contact_type?: string | null
           created_at?: string
           deleted_at?: string | null
           email?: string | null
@@ -351,6 +353,7 @@ export type Database = {
         Update: {
           client_id?: string
           company?: string | null
+          contact_type?: string | null
           created_at?: string
           deleted_at?: string | null
           email?: string | null
@@ -2869,6 +2872,11 @@ export type Database = {
         | "Sibling"
         | "Business Partner"
         | "Trustee"
+        | "Beneficiary"
+        | "Director"
+        | "Shareholder"
+        | "Member"
+        | "Owner"
       task_priority: "Low" | "Medium" | "High" | "Urgent"
       task_status:
         | "Not Started"
@@ -3064,6 +3072,11 @@ export const Constants = {
         "Sibling",
         "Business Partner",
         "Trustee",
+        "Beneficiary",
+        "Director",
+        "Shareholder",
+        "Member",
+        "Owner",
       ],
       task_priority: ["Low", "Medium", "High", "Urgent"],
       task_status: [

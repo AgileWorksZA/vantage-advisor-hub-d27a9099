@@ -12,7 +12,7 @@ export interface ClientRelationship {
   identification: string | null;
   id_type: string | null;
   product_viewing_level: string | null;
-  relationship_type: "Spouse" | "Child" | "Parent" | "Sibling" | "Business Partner" | "Trustee";
+  relationship_type: "Spouse" | "Child" | "Parent" | "Sibling" | "Business Partner" | "Trustee" | "Beneficiary" | "Director" | "Shareholder" | "Member" | "Owner";
   family_name: string | null;
   share_percentage: number | null;
   created_at: string;
@@ -29,6 +29,7 @@ export interface FamilyMemberListItem {
   productViewing: string;
   familyType: string;
   familyName: string;
+  relatedClientId: string | null;
 }
 
 export interface BusinessListItem {
@@ -40,10 +41,11 @@ export interface BusinessListItem {
   productViewing: string;
   share: string;
   familyName: string;
+  relatedClientId: string | null;
 }
 
 const familyRelationshipTypes = ["Spouse", "Child", "Parent", "Sibling"];
-const businessRelationshipTypes = ["Business Partner", "Trustee"];
+const businessRelationshipTypes = ["Business Partner", "Trustee", "Beneficiary", "Director", "Shareholder", "Member", "Owner"];
 
 export const useClientRelationships = (clientId: string) => {
   const [familyMembers, setFamilyMembers] = useState<FamilyMemberListItem[]>([]);
@@ -81,17 +83,19 @@ export const useClientRelationships = (clientId: string) => {
             productViewing: rel.product_viewing_level || "None",
             familyType: rel.relationship_type,
             familyName: rel.family_name || "",
+            relatedClientId: rel.related_client_id,
           });
         } else {
           business.push({
             id: rel.id,
             name: rel.name,
-            type: rel.entity_type,
+            type: rel.relationship_type,
             identification: rel.identification || "",
-            identificationType: rel.id_type || "Registration",
+            identificationType: rel.entity_type,
             productViewing: rel.product_viewing_level || "None",
             share: rel.share_percentage ? `${rel.share_percentage}%` : "-",
             familyName: rel.family_name || "-",
+            relatedClientId: rel.related_client_id,
           });
         }
       });
