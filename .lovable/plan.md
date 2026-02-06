@@ -1,150 +1,66 @@
 
 
-# Transform Demo Opportunity Clients into Real Database Clients with Holdings
+# Auto-Seed TLH Data and Link Client Clicks to TLH Execution Screen
 
 ## Overview
 
-Convert the 31 static demo clients from the AI Opportunity Scanner (John Smith, Mary Jones, etc.) and the 10 TLH demo clients (John Van Der Berg, Maria Pretorius, etc.) into real, persistent database records. Each client will be created with investment products and fund holdings mapped to their jurisdiction. A new edge function will handle the seeding of clients, product categories, products, client holdings, and TLH opportunities -- all linked to real `admin_funds` instrument IDs.
+Two changes:
+1. **Auto-seed**: Remove the manual "Seed TLH Data" button. Instead, automatically trigger the seeding edge function when the TLH hook detects no database records exist.
+2. **Client click -> TLH screen**: When clicking a client name in the "Tax Loss Harvesting" opportunities section on the AI Assistant page, open the TLH Dashboard (the full execution screen with fund switching, before/after comparisons, trade history, etc.) instead of navigating to the client detail page.
 
-## Current State
+---
 
-- **31 opportunity clients** in `sampleNewOpportunities.ts` use fake IDs (c1-c31) and static names
-- **10 TLH clients** in `tlhDemoData.ts` use fake IDs (za-1, au-1, etc.) with no DB records
-- Clicking any of these clients shows a toast "This is a demo client" because IDs are not valid UUIDs
-- **211 real clients** already exist in the database from `seed-demo-clients`
-- **576 instruments** exist in `admin_funds` across JSE, LSE, NYSE, NASDAQ, SSE, TSE
-- **No ASX or TSX instruments** exist yet -- AU and CA jurisdictions need instruments seeded too
-- `product_categories` and `products` tables exist but are **empty**
-- `client_products` table exists and is ready for holdings data
+## Change 1: Auto-Seed Demo Data
 
-## What Will Be Built
+### File: `src/hooks/useTLHData.ts`
 
-### 1. New Edge Function: `seed-tlh-clients`
+- After the existing `useEffect` that fetches DB opportunities, add a second `useEffect` that checks: if the fetch completed, no DB data was found, and seeding hasn't been attempted yet, automatically call the `seed-tlh-clients` edge function.
+- Add a `hasAttemptedSeed` state flag to prevent repeated seed attempts.
+- Remove the `isSeeding` and `seedTLHData` exports (no longer needed externally).
 
-A comprehensive seeding function that performs the following steps in order:
+### File: `src/components/tax-loss-harvesting/TLHDashboard.tsx`
 
-**Step A -- Seed ASX and TSX instruments into `admin_funds`**
-- Add top ETFs and shares for Australia (ASX: VAS, IOZ, A200, STW, BHP.AX, CBA.AX, CSL.AX, etc.)
-- Add top ETFs and shares for Canada (TSX: XIU, ZCN, XIC, VCN, RY.TO, TD.TO, SHOP.TO, etc.)
-- ~30-40 instruments per exchange, matched by real ISIN and Morningstar data
-- Uses UPSERT on ISIN to avoid duplicates
+- Remove the "Seed TLH Data" button from the header.
+- Remove the `isSeeded`, `isSeeding`, and `seedTLHData` destructured values from `useTLHData()`.
+- Show a subtle loading indicator in the header while auto-seeding is in progress (e.g., a small spinner with "Syncing data...").
 
-**Step B -- Seed opportunity clients into `clients` table**
-- All 31 clients from `sampleNewOpportunities.ts` (John Smith, Mary Jones, Peter Williams, etc.)
-- All TLH-specific clients from `tlhDemoData.ts` (John Van Der Berg, Maria Pretorius, Susan Khumalo, James Mitchell, William Thompson, Sarah Johnson, Marc Leblanc)
-- Assign each client to a jurisdiction (ZA, AU, GB, US, CA) with appropriate nationality, advisor, language, and contact details
-- Uses the same duplicate-detection pattern as `seed-demo-clients` (case-insensitive first_name|surname matching)
-- Returns a name-to-UUID mapping for subsequent steps
+---
 
-**Step C -- Seed product categories**
-- Investment-specific categories: Equity ETF, Unit Trust, Retirement Annuity (ZA), Superannuation (AU), RRSP (CA), ISA (GB), 401k/IRA (US), TFSA, Living Annuity, Preservation Fund, Discretionary Portfolio
-- Uses UPSERT on category code to avoid duplicates
+## Change 2: Client Click Opens TLH Execution Screen
 
-**Step D -- Seed products**
-- Create product records referencing real `admin_funds` instruments and product categories
-- Map fund names from `tlhDemoData` (Satrix Top 40, Vanguard S&P 500, iShares FTSE 100, etc.) to real admin_funds entries
-- Each product linked to a provider from `product_providers` where available
+### File: `src/components/ai-assistant/NewOpportunityRow.tsx`
 
-**Step E -- Seed client_products (holdings)**
-- Create realistic holdings for each client with:
-  - Purchase values and current values from the demo data
-  - Premium amounts and frequencies
-  - Start dates (historical, staggered)
-  - Links to real product and admin_fund IDs
-- Holdings per jurisdiction match the opportunity type (e.g., TLH clients hold underperforming funds, fee-optimization clients hold high-TER funds)
+- Pass the `opportunity.type` down to `ClientOpportunityList` as a new `opportunityType` prop.
 
-**Step F -- Seed tlh_opportunities**
-- Create records in the `tlh_opportunities` table with:
-  - Real `client_id` UUIDs (from Step B lookup)
-  - Real `current_fund_id` and `suggested_replacement_id` (from `admin_funds`)
-  - Accurate unrealized_gain_loss, estimated_tax_savings, holding_period
-  - Jurisdiction-appropriate data
+### File: `src/components/ai-assistant/ClientOpportunityList.tsx`
 
-### 2. Update `sampleNewOpportunities.ts`
+- Accept a new `opportunityType` prop.
+- Import `TLHDashboard` from the tax-loss-harvesting components.
+- Add local state: `tlhDashboardOpen` (boolean).
+- Update `handleClientClick`: 
+  - If `opportunityType === "tax-loss-harvesting"`, set `tlhDashboardOpen = true` (opens the TLH execution screen).
+  - Otherwise, keep existing behavior (navigate to client detail with UUID validation, or show toast for demo clients).
+- Render the `TLHDashboard` dialog at the bottom of the component, controlled by `tlhDashboardOpen` state.
 
-- Add a `jurisdiction` field to each opportunity type and client
-- Keep static data as fallback but add `dbClientId` optional field for real DB linkage
+---
 
-### 3. New Hook: `useOpportunityClients`
-
-- On mount, queries the `clients` table for all opportunity-related clients by name
-- Builds a name-to-UUID mapping
-- Enriches the static `sampleNewOpportunities` data with real `dbClientId` values
-- Falls back gracefully to demo mode if clients haven't been seeded yet
-
-### 4. Update Frontend Components
-
-**`ClientOpportunityList.tsx`**
-- Use the enriched data from `useOpportunityClients` to navigate with real UUIDs
-- Keep the existing UUID validation as a safety net
-
-**`NewOpportunitiesTable.tsx`**
-- Pass through enriched client data with real IDs
-
-**`useTLHData.ts`**
-- Add database query mode: fetch `tlh_opportunities` from DB when available
-- Fall back to static `tlhDemoData` if no DB records exist
-- Update `executeTrade` to write to `tlh_trades` table
-
-**`TLHDashboard.tsx`** and **`TLHOpportunitiesTable.tsx`**
-- Use real client IDs for navigation links
-- Show client detail links that navigate to real CRM profiles
-
-### 5. Jurisdiction-to-Exchange Mapping
-
-| Jurisdiction | Primary Exchange(s) | Funds to Seed |
-|---|---|---|
-| ZA | JSE | Already has 96 instruments. ETF pairs: STX40/ETFT40, GLD/ETFGLD, NPN/PRX, MTN/VOD |
-| AU | ASX (new) | ~30 instruments: VAS, IOZ, A200, STW, BHP, CBA, CSL, WBC, ANZ, NAB |
-| GB | LSE | Already has 95 instruments. Pairs: ISF/VUKE, BARC/LLOY, VOD/NG |
-| US | NYSE + NASDAQ | Already has 196 instruments. Pairs: VOO/IVV (to be added), SPY/SCHB, AAPL/MSFT |
-| CA | TSX (new) | ~30 instruments: XIU, ZCN, XIC, VCN, RY, TD, BMO, SHOP, ENB, CNR |
-
-### 6. Client Distribution by Jurisdiction
-
-| Jurisdiction | Opportunity Clients | TLH Clients | Total New |
-|---|---|---|---|
-| ZA | 12 (TLH) + 3 (Legacy) + 2 (Fee Opt) + 2 (Contrib) | 4 | ~19 |
-| AU | 2 (Legacy) + 1 (Fee Opt) + 1 (Contrib) | 1 | ~4 |
-| GB | 1 (Legacy) + 1 (Fee Opt) + 1 (Contrib) | 1 | ~3 |
-| US | 2 (Legacy) + 1 (Fee Opt) + 1 (Contrib) | 1 | ~4 |
-| CA | 1 (Legacy) + 1 (Fee Opt) + 1 (Contrib) | 1 | ~3 |
-
-## Technical Details
-
-### Edge Function Structure
-
-```text
-supabase/functions/seed-tlh-clients/index.ts
-
-1. Auth verification (same pattern as seed-demo-clients)
-2. Seed ASX/TSX instruments into admin_funds (UPSERT on isin)
-3. Seed opportunity + TLH clients into clients (duplicate detection)
-4. Look up all seeded clients to get UUID mapping
-5. Seed product_categories (UPSERT on code)
-6. Seed client_products with holdings data
-7. Seed tlh_opportunities with real fund + client references
-8. Return summary with counts
-```
-
-### File Changes Summary
+## File Changes Summary
 
 | File | Action | Description |
-|---|---|---|
-| `supabase/functions/seed-tlh-clients/index.ts` | Create | Edge function to seed all TLH/opportunity data |
-| `src/data/sampleNewOpportunities.ts` | Modify | Add jurisdiction field and optional dbClientId |
-| `src/hooks/useOpportunityClients.ts` | Create | Hook to enrich demo data with real client UUIDs |
-| `src/hooks/useTLHData.ts` | Modify | Add DB query mode for opportunities and trade execution |
-| `src/components/ai-assistant/ClientOpportunityList.tsx` | Modify | Use enriched data with real UUIDs |
-| `src/components/ai-assistant/NewOpportunitiesTable.tsx` | Modify | Pass enriched client data through |
-| `src/components/ai-assistant/NewOpportunityRow.tsx` | Modify | Accept enriched client data |
-| `src/components/tax-loss-harvesting/TLHOpportunitiesTable.tsx` | Modify | Use real client IDs for navigation |
-| `src/components/tax-loss-harvesting/TLHDashboard.tsx` | Modify | Add seed button for initial setup |
+|------|--------|-------------|
+| `src/hooks/useTLHData.ts` | Modify | Add auto-seed logic that triggers when no DB data is found; add `hasAttemptedSeed` guard |
+| `src/components/tax-loss-harvesting/TLHDashboard.tsx` | Modify | Remove manual "Seed TLH Data" button; show auto-sync indicator instead |
+| `src/components/ai-assistant/NewOpportunityRow.tsx` | Modify | Pass `opportunityType` prop to `ClientOpportunityList` |
+| `src/components/ai-assistant/ClientOpportunityList.tsx` | Modify | Accept `opportunityType`; open TLH Dashboard for TLH clients instead of navigating to client detail |
 
-### Triggering the Seed
+---
 
-- A "Seed TLH Data" button will be added to the TLH Dashboard header (similar to how other seed functions are triggered from their respective admin sections)
-- The button calls the `seed-tlh-clients` edge function
-- After successful seeding, the dashboard auto-refreshes to show DB-backed data
-- The button is hidden once data exists
+## How It Will Work
+
+1. User navigates to the AI Assistant page.
+2. The `useTLHData` hook initializes, queries the database for TLH opportunities.
+3. If no records exist, the hook automatically calls the `seed-tlh-clients` edge function in the background, then refreshes the data.
+4. In the "New Opportunities" section, user expands "Tax Loss Harvesting (TLH)".
+5. Clicking any client name (e.g., "John Smith") opens the full TLH Dashboard dialog -- the same execution screen with fund comparisons, switch actions, trade history, and metrics.
+6. For non-TLH opportunity types (Legacy Migration, Fee Optimization, Contributions), clicking a client still navigates to their CRM profile as before.
 
