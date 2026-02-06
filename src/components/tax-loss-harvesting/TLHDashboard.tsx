@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
 import {
   Collapsible,
   CollapsibleContent,
@@ -22,6 +23,8 @@ import {
   Settings,
   History,
   Target,
+  Database,
+  Loader2,
 } from "lucide-react";
 import ReactEChartsCore from "echarts-for-react";
 import { useTLHData } from "@/hooks/useTLHData";
@@ -47,6 +50,9 @@ export const TLHDashboard = ({ open, onOpenChange }: TLHDashboardProps) => {
     executeBulk,
     formatCurrency,
     selectedRegion,
+    isSeeded,
+    isSeeding,
+    seedTLHData,
   } = useTLHData();
 
   const [switchDialogOpen, setSwitchDialogOpen] = useState(false);
@@ -160,12 +166,31 @@ export const TLHDashboard = ({ open, onOpenChange }: TLHDashboardProps) => {
                 <h2 className="text-xl font-semibold">Tax Loss Harvesting</h2>
                 <p className="text-sm text-muted-foreground mt-1">
                   Region: {selectedRegion} · {opportunities.length} active opportunities
+                  {isSeeded && <span className="ml-2 text-emerald-600">(DB-backed)</span>}
                 </p>
               </div>
-              <Badge variant="outline" className="text-xs">
-                <Target className="w-3 h-3 mr-1" />
-                {selectedRegion} Jurisdiction
-              </Badge>
+              <div className="flex items-center gap-2">
+                {!isSeeded && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={seedTLHData}
+                    disabled={isSeeding}
+                    className="gap-1.5"
+                  >
+                    {isSeeding ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Database className="w-3.5 h-3.5" />
+                    )}
+                    {isSeeding ? "Seeding..." : "Seed TLH Data"}
+                  </Button>
+                )}
+                <Badge variant="outline" className="text-xs">
+                  <Target className="w-3 h-3 mr-1" />
+                  {selectedRegion} Jurisdiction
+                </Badge>
+              </div>
             </div>
           </div>
 

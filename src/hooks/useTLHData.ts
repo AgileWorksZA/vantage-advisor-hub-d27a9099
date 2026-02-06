@@ -1,5 +1,6 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRegion } from "@/contexts/RegionContext";
+import { supabase } from "@/integrations/supabase/client";
 import { tlhOpportunitiesByRegion, getTLHDashboardMetrics, TLHOpportunityDemo, TLHDashboardMetrics } from "@/data/tlhDemoData";
 import { toast } from "sonner";
 
@@ -26,11 +27,95 @@ export function useTLHData() {
 
   const [executedTrades, setExecutedTrades] = useState<TLHTradeRecord[]>([]);
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
+  const [dbOpportunities, setDbOpportunities] = useState<TLHOpportunityDemo[] | null>(null);
+  const [isSeeded, setIsSeeded] = useState(false);
+  const [isSeeding, setIsSeeding] = useState(false);
 
+  // Try to fetch TLH opportunities from DB
+  useEffect(() => {
+    const fetchDbOpportunities = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('tlh_opportunities')
+          .select('*')
+          .eq('jurisdiction', selectedRegion)
+          .eq('status', 'new')
+          .eq('is_deleted', false);
+
+        if (error) {
+          console.warn('Failed to fetch TLH opportunities from DB:', error);
+          return;
+        }
+
+        if (data && data.length > 0) {
+          setIsSeeded(true);
+          // Map DB records to TLHOpportunityDemo format for backward compatibility
+          const mapped: TLHOpportunityDemo[] = data.map(opp => ({
+            id: opp.id,
+            clientName: opp.client_name,
+            clientInitials: opp.client_name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase(),
+            currentFund: {
+              name: opp.current_fund_name,
+              ticker: opp.current_ticker || '',
+              isin: '',
+              sector: 'Equity - Large Cap',
+              fundType: 'ETF',
+              expenseRatio: 0.10,
+              morningstarRating: 4,
+              return1Y: 8.0,
+              return3Y: 10.0,
+              return5Y: 9.0,
+              sharpeRatio: 0.70,
+              maxDrawdown: -18.0,
+              riskRating: 'High' as const,
+              exchange: selectedRegion === 'ZA' ? 'JSE' : selectedRegion === 'AU' ? 'ASX' : selectedRegion === 'GB' ? 'LSE' : selectedRegion === 'CA' ? 'TSX' : 'NYSE',
+            },
+            replacementFund: {
+              name: opp.suggested_replacement_name || '',
+              ticker: '',
+              isin: '',
+              sector: 'Equity - Large Cap',
+              fundType: 'ETF',
+              expenseRatio: 0.08,
+              morningstarRating: 4,
+              return1Y: 8.2,
+              return3Y: 10.2,
+              return5Y: 9.2,
+              sharpeRatio: 0.72,
+              maxDrawdown: -17.5,
+              riskRating: 'High' as const,
+              exchange: selectedRegion === 'ZA' ? 'JSE' : selectedRegion === 'AU' ? 'ASX' : selectedRegion === 'GB' ? 'LSE' : selectedRegion === 'CA' ? 'TSX' : 'NYSE',
+            },
+            purchaseValue: Number(opp.purchase_value) || 0,
+            currentValue: Number(opp.current_value) || 0,
+            unrealizedLoss: Number(opp.unrealized_gain_loss) || 0,
+            costBasis: Number(opp.cost_basis) || 0,
+            holdingPeriod: (opp.holding_period as 'short_term' | 'long_term') || 'short_term',
+            washSaleOk: opp.wash_sale_ok ?? true,
+            estimatedTaxSavings: Number(opp.estimated_tax_savings) || 0,
+            jurisdiction: opp.jurisdiction || selectedRegion,
+            correlation: 0.97,
+            trackingError: 0.015,
+            feeDifferential: -0.02,
+            dbClientId: opp.client_id || undefined,
+          }));
+          setDbOpportunities(mapped);
+        } else {
+          setDbOpportunities(null);
+        }
+      } catch (err) {
+        console.warn('Error fetching TLH data from DB:', err);
+      }
+    };
+
+    fetchDbOpportunities();
+  }, [selectedRegion]);
+
+  // Use DB data if available, otherwise fall back to static
   const opportunities = useMemo(() => {
-    const regionOpps = tlhOpportunitiesByRegion[selectedRegion] || tlhOpportunitiesByRegion.ZA;
-    return regionOpps.filter((opp) => !dismissedIds.has(opp.id));
-  }, [selectedRegion, dismissedIds]);
+    const source = dbOpportunities || (tlhOpportunitiesByRegion[selectedRegion] || tlhOpportunitiesByRegion.ZA);
+    return source.filter((opp) => !dismissedIds.has(opp.id));
+  }, [selectedRegion, dismissedIds, dbOpportunities]);
 
   const dashboardMetrics = useMemo(() => {
     return getTLHDashboardMetrics(selectedRegion);
@@ -44,7 +129,7 @@ export function useTLHData() {
     return opportunities.reduce((sum, opp) => sum + opp.estimatedTaxSavings, 0);
   }, [opportunities]);
 
-  const executeTrade = (opportunity: TLHOpportunityDemo, replacementFund?: TLHOpportunityDemo["replacementFund"]) => {
+  const executeTrade = async (opportunity: TLHOpportunityDemo, replacementFund?: TLHOpportunityDemo["replacementFund"]) => {
     const fund = replacementFund || opportunity.replacementFund;
     const trade: TLHTradeRecord = {
       id: `trade-${Date.now()}`,
@@ -63,6 +148,36 @@ export function useTLHData() {
       executedAt: new Date().toISOString(),
     };
 
+    // Try to write to DB if we have DB-backed data
+    if (isSeeded) {
+      try {
+        await supabase.from('tlh_trades').insert({
+          user_id: (await supabase.auth.getUser()).data.user?.id,
+          opportunity_id: opportunity.id,
+          client_id: (opportunity as any).dbClientId || null,
+          sell_fund_name: opportunity.currentFund.name,
+          sell_ticker: opportunity.currentFund.ticker,
+          sell_value: opportunity.currentValue,
+          buy_fund_name: fund.name,
+          buy_ticker: fund.ticker,
+          buy_value: opportunity.currentValue,
+          realized_loss: opportunity.unrealizedLoss,
+          estimated_tax_saving: opportunity.estimatedTaxSavings,
+          trade_type: 'switch',
+          status: 'executed',
+          jurisdiction: opportunity.jurisdiction,
+        });
+
+        // Update opportunity status
+        await supabase
+          .from('tlh_opportunities')
+          .update({ status: 'executed', executed_at: new Date().toISOString() })
+          .eq('id', opportunity.id);
+      } catch (err) {
+        console.warn('Failed to write trade to DB:', err);
+      }
+    }
+
     setExecutedTrades((prev) => [...prev, trade]);
     setDismissedIds((prev) => new Set([...prev, opportunity.id]));
     toast.success(`Trade executed: Sold ${opportunity.currentFund.ticker}, Bought ${fund.ticker} for ${opportunity.clientName}`);
@@ -78,6 +193,23 @@ export function useTLHData() {
     toast.success(`${selectedOpps.length} trades executed successfully`);
   };
 
+  const seedTLHData = async () => {
+    setIsSeeding(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('seed-tlh-clients');
+      if (error) throw error;
+      toast.success(`TLH data seeded: ${data?.summary?.clients_added || 0} clients, ${data?.summary?.tlh_opportunities_added || 0} opportunities`);
+      setIsSeeded(true);
+      // Refresh data
+      window.location.reload();
+    } catch (err: any) {
+      toast.error(`Failed to seed TLH data: ${err.message}`);
+      console.error('Seed error:', err);
+    } finally {
+      setIsSeeding(false);
+    }
+  };
+
   return {
     opportunities,
     dashboardMetrics,
@@ -89,5 +221,8 @@ export function useTLHData() {
     executeBulk,
     formatCurrency,
     selectedRegion,
+    isSeeded,
+    isSeeding,
+    seedTLHData,
   };
 }

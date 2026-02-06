@@ -1,12 +1,11 @@
-import { useState } from "react";
 import { ChevronDown, Users, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { NewOpportunityType } from "@/data/sampleNewOpportunities";
+import { EnrichedOpportunityType } from "@/hooks/useOpportunityClients";
 import ClientOpportunityList from "./ClientOpportunityList";
 
 interface NewOpportunityRowProps {
-  opportunity: NewOpportunityType;
+  opportunity: EnrichedOpportunityType;
   formatCurrency: (value: number) => string;
   isExpanded: boolean;
   onToggle: () => void;
