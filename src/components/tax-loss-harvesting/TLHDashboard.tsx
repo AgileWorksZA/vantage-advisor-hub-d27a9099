@@ -96,13 +96,13 @@ export const TLHDashboard = ({ open, onOpenChange }: TLHDashboardProps) => {
             type: "linear" as const,
             x: 0, y: 0, x2: 0, y2: 1,
             colorStops: [
-              { offset: 0, color: "hsla(var(--primary), 0.3)" },
-              { offset: 1, color: "hsla(var(--primary), 0.02)" },
+              { offset: 0, color: "hsla(180, 70%, 45%, 0.3)" },
+              { offset: 1, color: "hsla(180, 70%, 45%, 0.02)" },
             ],
           },
         },
-        lineStyle: { color: "hsl(var(--primary))", width: 2 },
-        itemStyle: { color: "hsl(var(--primary))" },
+        lineStyle: { color: "hsl(180, 70%, 45%)", width: 2 },
+        itemStyle: { color: "hsl(180, 70%, 45%)" },
       },
     ],
   };
