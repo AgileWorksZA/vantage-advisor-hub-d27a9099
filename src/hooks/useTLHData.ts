@@ -29,7 +29,9 @@ export function useTLHData() {
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
   const [dbOpportunities, setDbOpportunities] = useState<TLHOpportunityDemo[] | null>(null);
   const [isSeeded, setIsSeeded] = useState(false);
-  const [isSeeding, setIsSeeding] = useState(false);
+  const [isAutoSeeding, setIsAutoSeeding] = useState(false);
+  const [hasAttemptedSeed, setHasAttemptedSeed] = useState(false);
+  const [fetchCompleted, setFetchCompleted] = useState(false);
 
   // Try to fetch TLH opportunities from DB
   useEffect(() => {
@@ -105,11 +107,90 @@ export function useTLHData() {
         }
       } catch (err) {
         console.warn('Error fetching TLH data from DB:', err);
+      } finally {
+        setFetchCompleted(true);
       }
     };
 
     fetchDbOpportunities();
   }, [selectedRegion]);
+
+  // Auto-seed: if fetch completed with no DB data and seeding hasn't been attempted
+  useEffect(() => {
+    if (!fetchCompleted || isSeeded || hasAttemptedSeed || isAutoSeeding) return;
+
+    const autoSeed = async () => {
+      setHasAttemptedSeed(true);
+      setIsAutoSeeding(true);
+      try {
+        console.log('Auto-seeding TLH data...');
+        const { data, error } = await supabase.functions.invoke('seed-tlh-clients');
+        if (error) throw error;
+        console.log('TLH auto-seed complete:', data?.summary);
+        
+        // Re-fetch opportunities after seeding
+        const { data: newData } = await supabase
+          .from('tlh_opportunities')
+          .select('*')
+          .eq('jurisdiction', selectedRegion)
+          .eq('status', 'new')
+          .eq('is_deleted', false);
+
+        if (newData && newData.length > 0) {
+          setIsSeeded(true);
+          const mapped: TLHOpportunityDemo[] = newData.map(opp => ({
+            id: opp.id,
+            clientName: opp.client_name,
+            clientInitials: opp.client_name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase(),
+            currentFund: {
+              name: opp.current_fund_name,
+              ticker: opp.current_ticker || '',
+              isin: '',
+              sector: 'Equity - Large Cap',
+              fundType: 'ETF',
+              expenseRatio: 0.10,
+              morningstarRating: 4,
+              return1Y: 8.0, return3Y: 10.0, return5Y: 9.0,
+              sharpeRatio: 0.70, maxDrawdown: -18.0,
+              riskRating: 'High' as const,
+              exchange: selectedRegion === 'ZA' ? 'JSE' : selectedRegion === 'AU' ? 'ASX' : selectedRegion === 'GB' ? 'LSE' : selectedRegion === 'CA' ? 'TSX' : 'NYSE',
+            },
+            replacementFund: {
+              name: opp.suggested_replacement_name || '',
+              ticker: '', isin: '',
+              sector: 'Equity - Large Cap',
+              fundType: 'ETF',
+              expenseRatio: 0.08,
+              morningstarRating: 4,
+              return1Y: 8.2, return3Y: 10.2, return5Y: 9.2,
+              sharpeRatio: 0.72, maxDrawdown: -17.5,
+              riskRating: 'High' as const,
+              exchange: selectedRegion === 'ZA' ? 'JSE' : selectedRegion === 'AU' ? 'ASX' : selectedRegion === 'GB' ? 'LSE' : selectedRegion === 'CA' ? 'TSX' : 'NYSE',
+            },
+            purchaseValue: Number(opp.purchase_value) || 0,
+            currentValue: Number(opp.current_value) || 0,
+            unrealizedLoss: Number(opp.unrealized_gain_loss) || 0,
+            costBasis: Number(opp.cost_basis) || 0,
+            holdingPeriod: (opp.holding_period as 'short_term' | 'long_term') || 'short_term',
+            washSaleOk: opp.wash_sale_ok ?? true,
+            estimatedTaxSavings: Number(opp.estimated_tax_savings) || 0,
+            jurisdiction: opp.jurisdiction || selectedRegion,
+            correlation: 0.97,
+            trackingError: 0.015,
+            feeDifferential: -0.02,
+            dbClientId: opp.client_id || undefined,
+          }));
+          setDbOpportunities(mapped);
+        }
+      } catch (err) {
+        console.warn('Auto-seed failed:', err);
+      } finally {
+        setIsAutoSeeding(false);
+      }
+    };
+
+    autoSeed();
+  }, [fetchCompleted, isSeeded, hasAttemptedSeed, isAutoSeeding, selectedRegion]);
 
   // Use DB data if available, otherwise fall back to static
   const opportunities = useMemo(() => {
@@ -193,23 +274,6 @@ export function useTLHData() {
     toast.success(`${selectedOpps.length} trades executed successfully`);
   };
 
-  const seedTLHData = async () => {
-    setIsSeeding(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('seed-tlh-clients');
-      if (error) throw error;
-      toast.success(`TLH data seeded: ${data?.summary?.clients_added || 0} clients, ${data?.summary?.tlh_opportunities_added || 0} opportunities`);
-      setIsSeeded(true);
-      // Refresh data
-      window.location.reload();
-    } catch (err: any) {
-      toast.error(`Failed to seed TLH data: ${err.message}`);
-      console.error('Seed error:', err);
-    } finally {
-      setIsSeeding(false);
-    }
-  };
-
   return {
     opportunities,
     dashboardMetrics,
@@ -222,7 +286,6 @@ export function useTLHData() {
     formatCurrency,
     selectedRegion,
     isSeeded,
-    isSeeding,
-    seedTLHData,
+    isAutoSeeding,
   };
 }
