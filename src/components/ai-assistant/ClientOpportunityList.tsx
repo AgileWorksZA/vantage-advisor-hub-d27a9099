@@ -2,25 +2,28 @@ import { useNavigate } from "react-router-dom";
 import { User, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { NewOpportunityClient } from "@/data/sampleNewOpportunities";
 import { toast } from "sonner";
+import { EnrichedOpportunityClient } from "@/hooks/useOpportunityClients";
 
 const isValidUUID = (id: string): boolean =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
 interface ClientOpportunityListProps {
-  clients: NewOpportunityClient[];
+  clients: EnrichedOpportunityClient[];
   formatCurrency: (value: number) => string;
 }
 
 const ClientOpportunityList = ({ clients, formatCurrency }: ClientOpportunityListProps) => {
   const navigate = useNavigate();
 
-  const handleClientClick = (clientId: string) => {
-    if (!isValidUUID(clientId)) {
-      toast.info("This is a demo client. Link to a real client record to view details.");
+  const handleClientClick = (client: EnrichedOpportunityClient) => {
+    // Use dbClientId (real UUID from DB) if available, otherwise check the static id
+    const navId = client.dbClientId || client.id;
+    if (!isValidUUID(navId)) {
+      toast.info("This is a demo client. Seed TLH data to link to real client records.");
       return;
     }
-    navigate(`/clients/${clientId}?from=ai-assistant`);
+    navigate(`/clients/${navId}?from=ai-assistant`);
   };
 
   return (
@@ -44,7 +47,7 @@ const ClientOpportunityList = ({ clients, formatCurrency }: ClientOpportunityLis
               </div>
               <div className="flex-1 min-w-0">
                 <button
-                  onClick={() => handleClientClick(client.id)}
+                  onClick={() => handleClientClick(client)}
                   className="text-sm font-medium text-white hover:text-amber-400 transition-colors truncate block text-left"
                 >
                   {client.name}
@@ -60,7 +63,7 @@ const ClientOpportunityList = ({ clients, formatCurrency }: ClientOpportunityLis
                 variant="ghost"
                 size="icon"
                 className="h-7 w-7 text-white/40 hover:text-white hover:bg-white/10"
-                onClick={() => handleClientClick(client.id)}
+                onClick={() => handleClientClick(client)}
               >
                 <ExternalLink className="w-3.5 h-3.5" />
               </Button>

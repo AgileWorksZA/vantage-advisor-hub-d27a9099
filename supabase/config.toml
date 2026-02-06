@@ -20,3 +20,9 @@ verify_jwt = false
 
 [functions.seed-demo-communications]
 verify_jwt = false
+
+[functions.seed-demo-clients]
+verify_jwt = false
+
+[functions.seed-tlh-clients]
+verify_jwt = false

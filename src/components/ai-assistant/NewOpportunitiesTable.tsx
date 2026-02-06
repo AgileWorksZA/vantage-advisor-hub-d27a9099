@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { sampleNewOpportunities, NewOpportunityType } from "@/data/sampleNewOpportunities";
+import { useOpportunityClients, EnrichedOpportunityType } from "@/hooks/useOpportunityClients";
 import NewOpportunityRow from "./NewOpportunityRow";
 
 interface NewOpportunitiesTableProps {
@@ -11,11 +11,11 @@ interface NewOpportunitiesTableProps {
 
 const NewOpportunitiesTable = ({ formatCurrency, typeFilter }: NewOpportunitiesTableProps) => {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const { enrichedOpportunities } = useOpportunityClients();
 
   // Filter opportunities by type if filter is active
   const filteredOpportunities = typeFilter
-    ? sampleNewOpportunities.filter((opp) => {
-        // Map filter values to opportunity types
+    ? enrichedOpportunities.filter((opp) => {
         const typeMap: Record<string, string[]> = {
           growth: ["contribution-opportunities"],
           derisking: ["tax-loss-harvesting", "fee-optimization"],
@@ -24,7 +24,7 @@ const NewOpportunitiesTable = ({ formatCurrency, typeFilter }: NewOpportunitiesT
         };
         return typeMap[typeFilter]?.includes(opp.type) || false;
       })
-    : sampleNewOpportunities;
+    : enrichedOpportunities;
 
   const handleToggle = (id: string) => {
     setExpandedIds((prev) => {
