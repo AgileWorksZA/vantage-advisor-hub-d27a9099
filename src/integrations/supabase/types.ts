@@ -3683,6 +3683,276 @@ export type Database = {
         }
         Relationships: []
       }
+      tlh_fund_replacements: {
+        Row: {
+          correlation: number | null
+          created_at: string | null
+          fee_differential: number | null
+          id: string
+          is_active: boolean | null
+          jurisdiction: string
+          original_fund_id: string | null
+          reason: string | null
+          replacement_fund_id: string | null
+          tracking_error: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          correlation?: number | null
+          created_at?: string | null
+          fee_differential?: number | null
+          id?: string
+          is_active?: boolean | null
+          jurisdiction?: string
+          original_fund_id?: string | null
+          reason?: string | null
+          replacement_fund_id?: string | null
+          tracking_error?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          correlation?: number | null
+          created_at?: string | null
+          fee_differential?: number | null
+          id?: string
+          is_active?: boolean | null
+          jurisdiction?: string
+          original_fund_id?: string | null
+          reason?: string | null
+          replacement_fund_id?: string | null
+          tracking_error?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tlh_fund_replacements_original_fund_id_fkey"
+            columns: ["original_fund_id"]
+            isOneToOne: false
+            referencedRelation: "admin_funds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tlh_fund_replacements_replacement_fund_id_fkey"
+            columns: ["replacement_fund_id"]
+            isOneToOne: false
+            referencedRelation: "admin_funds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tlh_opportunities: {
+        Row: {
+          client_id: string | null
+          client_name: string
+          cost_basis: number | null
+          created_at: string | null
+          current_fund_id: string | null
+          current_fund_name: string
+          current_ticker: string | null
+          current_value: number | null
+          deleted_at: string | null
+          estimated_tax_savings: number | null
+          executed_at: string | null
+          holding_period: string | null
+          id: string
+          is_deleted: boolean | null
+          jurisdiction: string | null
+          purchase_value: number | null
+          status: string | null
+          suggested_replacement_id: string | null
+          suggested_replacement_name: string | null
+          trade_notes: string | null
+          unrealized_gain_loss: number | null
+          updated_at: string | null
+          user_id: string
+          wash_sale_ok: boolean | null
+        }
+        Insert: {
+          client_id?: string | null
+          client_name: string
+          cost_basis?: number | null
+          created_at?: string | null
+          current_fund_id?: string | null
+          current_fund_name: string
+          current_ticker?: string | null
+          current_value?: number | null
+          deleted_at?: string | null
+          estimated_tax_savings?: number | null
+          executed_at?: string | null
+          holding_period?: string | null
+          id?: string
+          is_deleted?: boolean | null
+          jurisdiction?: string | null
+          purchase_value?: number | null
+          status?: string | null
+          suggested_replacement_id?: string | null
+          suggested_replacement_name?: string | null
+          trade_notes?: string | null
+          unrealized_gain_loss?: number | null
+          updated_at?: string | null
+          user_id: string
+          wash_sale_ok?: boolean | null
+        }
+        Update: {
+          client_id?: string | null
+          client_name?: string
+          cost_basis?: number | null
+          created_at?: string | null
+          current_fund_id?: string | null
+          current_fund_name?: string
+          current_ticker?: string | null
+          current_value?: number | null
+          deleted_at?: string | null
+          estimated_tax_savings?: number | null
+          executed_at?: string | null
+          holding_period?: string | null
+          id?: string
+          is_deleted?: boolean | null
+          jurisdiction?: string | null
+          purchase_value?: number | null
+          status?: string | null
+          suggested_replacement_id?: string | null
+          suggested_replacement_name?: string | null
+          trade_notes?: string | null
+          unrealized_gain_loss?: number | null
+          updated_at?: string | null
+          user_id?: string
+          wash_sale_ok?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tlh_opportunities_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tlh_opportunities_current_fund_id_fkey"
+            columns: ["current_fund_id"]
+            isOneToOne: false
+            referencedRelation: "admin_funds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tlh_opportunities_suggested_replacement_id_fkey"
+            columns: ["suggested_replacement_id"]
+            isOneToOne: false
+            referencedRelation: "admin_funds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tlh_trades: {
+        Row: {
+          buy_fund_id: string | null
+          buy_fund_name: string
+          buy_ticker: string | null
+          buy_value: number | null
+          client_id: string | null
+          created_at: string | null
+          deleted_at: string | null
+          estimated_tax_saving: number | null
+          executed_at: string | null
+          id: string
+          is_deleted: boolean | null
+          notes: string | null
+          opportunity_id: string | null
+          realized_loss: number | null
+          sell_fund_id: string | null
+          sell_fund_name: string
+          sell_ticker: string | null
+          sell_value: number | null
+          settled_at: string | null
+          status: string | null
+          trade_type: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          buy_fund_id?: string | null
+          buy_fund_name: string
+          buy_ticker?: string | null
+          buy_value?: number | null
+          client_id?: string | null
+          created_at?: string | null
+          deleted_at?: string | null
+          estimated_tax_saving?: number | null
+          executed_at?: string | null
+          id?: string
+          is_deleted?: boolean | null
+          notes?: string | null
+          opportunity_id?: string | null
+          realized_loss?: number | null
+          sell_fund_id?: string | null
+          sell_fund_name: string
+          sell_ticker?: string | null
+          sell_value?: number | null
+          settled_at?: string | null
+          status?: string | null
+          trade_type?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          buy_fund_id?: string | null
+          buy_fund_name?: string
+          buy_ticker?: string | null
+          buy_value?: number | null
+          client_id?: string | null
+          created_at?: string | null
+          deleted_at?: string | null
+          estimated_tax_saving?: number | null
+          executed_at?: string | null
+          id?: string
+          is_deleted?: boolean | null
+          notes?: string | null
+          opportunity_id?: string | null
+          realized_loss?: number | null
+          sell_fund_id?: string | null
+          sell_fund_name?: string
+          sell_ticker?: string | null
+          sell_value?: number | null
+          settled_at?: string | null
+          status?: string | null
+          trade_type?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tlh_trades_buy_fund_id_fkey"
+            columns: ["buy_fund_id"]
+            isOneToOne: false
+            referencedRelation: "admin_funds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tlh_trades_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tlh_trades_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "tlh_opportunities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tlh_trades_sell_fund_id_fkey"
+            columns: ["sell_fund_id"]
+            isOneToOne: false
+            referencedRelation: "admin_funds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_settings: {
         Row: {
           created_at: string
