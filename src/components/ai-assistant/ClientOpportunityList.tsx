@@ -3,7 +3,10 @@ import { User, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { NewOpportunityClient } from "@/data/sampleNewOpportunities";
+import { toast } from "sonner";
 
+const isValidUUID = (id: string): boolean =>
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 interface ClientOpportunityListProps {
   clients: NewOpportunityClient[];
   formatCurrency: (value: number) => string;
@@ -13,8 +16,10 @@ const ClientOpportunityList = ({ clients, formatCurrency }: ClientOpportunityLis
   const navigate = useNavigate();
 
   const handleClientClick = (clientId: string) => {
-    // Navigate to client detail - for demo, we'll just show the navigation intent
-    // In production, this would navigate to the actual client record
+    if (!isValidUUID(clientId)) {
+      toast.info("This is a demo client. Link to a real client record to view details.");
+      return;
+    }
     navigate(`/clients/${clientId}?from=ai-assistant`);
   };
 
