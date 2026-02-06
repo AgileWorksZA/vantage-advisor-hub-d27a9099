@@ -76,6 +76,7 @@ const NewOpportunityRow = ({
             <ClientOpportunityList
               clients={opportunity.clients}
               formatCurrency={formatCurrency}
+              opportunityType={opportunity.type}
             />
           </div>
         </CollapsibleContent>

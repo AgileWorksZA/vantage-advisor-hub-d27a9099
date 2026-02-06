@@ -23,7 +23,6 @@ import {
   Settings,
   History,
   Target,
-  Database,
   Loader2,
 } from "lucide-react";
 import ReactEChartsCore from "echarts-for-react";
@@ -51,8 +50,7 @@ export const TLHDashboard = ({ open, onOpenChange }: TLHDashboardProps) => {
     formatCurrency,
     selectedRegion,
     isSeeded,
-    isSeeding,
-    seedTLHData,
+    isAutoSeeding,
   } = useTLHData();
 
   const [switchDialogOpen, setSwitchDialogOpen] = useState(false);
@@ -167,30 +165,13 @@ export const TLHDashboard = ({ open, onOpenChange }: TLHDashboardProps) => {
                 <p className="text-sm text-muted-foreground mt-1">
                   Region: {selectedRegion} · {opportunities.length} active opportunities
                   {isSeeded && <span className="ml-2 text-emerald-600">(DB-backed)</span>}
+                  {isAutoSeeding && <span className="ml-2 text-muted-foreground inline-flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" /> Syncing data...</span>}
                 </p>
               </div>
-              <div className="flex items-center gap-2">
-                {!isSeeded && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={seedTLHData}
-                    disabled={isSeeding}
-                    className="gap-1.5"
-                  >
-                    {isSeeding ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    ) : (
-                      <Database className="w-3.5 h-3.5" />
-                    )}
-                    {isSeeding ? "Seeding..." : "Seed TLH Data"}
-                  </Button>
-                )}
-                <Badge variant="outline" className="text-xs">
-                  <Target className="w-3 h-3 mr-1" />
-                  {selectedRegion} Jurisdiction
-                </Badge>
-              </div>
+              <Badge variant="outline" className="text-xs">
+                <Target className="w-3 h-3 mr-1" />
+                {selectedRegion} Jurisdiction
+              </Badge>
             </div>
           </div>
 
