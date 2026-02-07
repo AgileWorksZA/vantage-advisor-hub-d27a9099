@@ -1,87 +1,60 @@
 
 
-# Replace Tracking Error Chart with Exact Replica of Reference Band Visualization
+# Step-Change Chart for Tax Losses Harvested
 
 ## Overview
 
-Replace the current `TrackingErrorBand` component (which has an ECharts timeline chart and a Radix Slider) with a pure CSS horizontal band visualization that exactly matches the reference image. The visualization shows a widening confidence cone from left to right, a horizontal center line, a vertical marker at the current tracking error position, and tick marks at 0%, 2%, 4%, 6%, >8%.
+Replace the smooth area chart for "Tax Losses Harvested" with a step-change (staircase) line chart matching the reference image. The reference shows sharp horizontal plateaus with sudden vertical jumps -- representing discrete harvesting events rather than a smooth accumulation curve. Each client will have a unique step pattern aligned with their portfolio size and harvesting activity.
 
-## Reference Image Analysis
+## Changes Required
 
-```text
-+-----------------------------------------------------------+
-| Tracking error (i)                              1.32%     |
-|                                                           |
-|   |                                                       |
-|   |------============================================     |
-|   |                                                       |
-|  0%       2%        4%        6%          > 8%            |
-+-----------------------------------------------------------+
-```
+### 1. Chart Configuration (`src/components/tax-loss-harvesting/TLHDashboard.tsx`)
 
-Key visual elements:
-- A horizontal center line spanning the full width
-- A light blue/lavender band that starts very narrow on the left (near 0%) and fans outward (widens) toward the right (>8%) -- like a cone or trumpet shape
-- A vertical black marker line at the current tracking error position
-- The band color is a soft blue/lavender (not teal)
-- Tick labels: 0%, 2%, 4%, 6%, > 8%
+Update the ECharts series configuration on lines 143-162:
+- Remove `smooth: true`
+- Add `step: 'end'` to create the staircase pattern (horizontal lines that jump vertically at data points)
+- Remove the area fill gradient to match the reference image (which shows a plain green line with no fill)
+- Keep tooltip, grid, axis styling unchanged
 
-## Changes
+### 2. Monthly Harvested Data (`src/data/tlhDemoData.ts`)
 
-### 1. Rewrite `TrackingErrorBand.tsx`
+Replace all `monthlyHarvested` arrays (for all 12 per-client records and 5 jurisdiction records) with step-change data patterns. Instead of smooth incremental growth, the data will show:
+- Periods of flat values (same value repeated across multiple months -- no harvesting activity)
+- Sudden jumps representing discrete TLH trade executions
+- Each client gets a unique pattern based on their profile:
 
-Strip out all ECharts and Slider logic. Build a pure CSS/HTML visualization:
+**Pattern design by client archetype:**
 
-- Remove imports: `ReactEChartsCore`, `Slider`, `useState`, `useMemo`
-- Simplify props to just `value: number` (the tracking error as a decimal, e.g., 0.0132 for 1.32%)
-- The max scale is 8% (values above clip to end)
-- Draw the widening band using an SVG polygon or CSS clip-path:
-  - A horizontal center line
-  - The band starts with ~0px height at x=0 and fans out to ~24px height at x=100%
-  - Fill with a soft lavender/blue color (e.g., `hsla(220, 60%, 75%, 0.4)`)
-- A vertical black marker line positioned at `(value * 100 / 0.08) * 100%`
-- Tick labels at fixed positions: 0%, 2%, 4%, 6%, > 8%
+| Client | Balance | Pattern Description | Steps |
+|--------|---------|-------------------|-------|
+| John Smith | 1.25M | 3 medium harvests spread across year | Flat-jump-flat-jump-flat-jump |
+| Mary Jones | 892K | 2 larger harvests, one early, one late | Jump-flat-jump-flat |
+| Peter Williams | 1.52M | 4 smaller frequent harvests | Jump-flat-jump-flat-jump-flat-jump |
+| Sarah Brown | 654K | 1 large harvest mid-year, 1 small late | Flat-flat-jump-flat-jump |
+| David Miller | 2.1M | 5 harvests, largest portfolio = most active | Many small jumps throughout |
+| Emma Davis | 446K | 2 small harvests | Flat-jump-flat-jump-flat |
+| Michael Wilson | 1.89M | 3 harvests clustered in Q2-Q3 | Flat-flat-jump-jump-jump-flat |
+| Lisa Anderson | 780K | 2 medium harvests | Jump-flat-flat-jump-flat |
+| James Taylor | 1.34M | 3 evenly-spaced harvests | Jump-flat-jump-flat-jump |
+| Jennifer Thomas | 560K | 1 large harvest plus 1 small | Flat-jump-flat-flat-jump |
+| Robert Jackson | 320K | 2 small harvests | Flat-jump-flat-jump |
+| Amanda White | 280K | 1 single harvest event | Flat-flat-jump-flat-flat |
 
-### 2. Update `TLHDashboard.tsx`
+Each array will have more data points (12 months, Jan-Dec) with repeated values creating visible plateaus between jumps. The final value in each array must match the client's `totalHarvested` value.
 
-- Remove the `timeline` prop from `TrackingErrorBand` (line 431)
-- The header already shows the percentage value and the info tooltip -- keep that unchanged
-- Just pass `value={metrics.trackingError}`
-
-### 3. Update ZA jurisdiction tracking error in `tlhDemoData.ts`
-
-The ZA jurisdiction has `trackingError: 0.032` (3.2%) which exceeds 3%. Change to `0.028` (2.8%).
-
-All per-client tracking errors are already under 3% -- no changes needed there.
-
-### 4. Remove `trackingErrorTimeline` from data
-
-Since the timeline chart is being removed:
-- Remove the `trackingErrorTimeline` field from `TLHClientMetrics` interface
-- Remove the `generateTimeline` function
-- Simplify `getClientTLHMetrics` to not generate timeline data
-- The `TLHClientMetrics` interface can just equal `TLHDashboardMetrics` (no extension needed)
+The 5 jurisdiction-level metric records (ZA, AU, GB, US, CA) will also get step-change patterns appropriate for aggregate portfolio activity.
 
 ## File Changes Summary
 
 | File | Action | Description |
 |------|--------|-------------|
-| `src/components/tax-loss-harvesting/TrackingErrorBand.tsx` | Rewrite | Replace ECharts chart + slider with pure CSS/SVG widening band matching reference image exactly |
-| `src/components/tax-loss-harvesting/TLHDashboard.tsx` | Modify | Remove `timeline` prop from TrackingErrorBand usage (line 431) |
-| `src/data/tlhDemoData.ts` | Modify | Fix ZA tracking error to 2.8%; remove `TLHClientMetrics` interface extension, `generateTimeline` function, and timeline references |
+| `src/components/tax-loss-harvesting/TLHDashboard.tsx` | Modify | Change chart from `smooth: true` to `step: 'end'`; remove area gradient fill |
+| `src/data/tlhDemoData.ts` | Modify | Replace all 17 `monthlyHarvested` arrays with step-change data patterns unique to each client/jurisdiction |
 
-## Technical Details
+## Technical Notes
 
-**Band SVG approach** (most precise match to the image):
-- Use an inline SVG with a polygon for the widening band
-- The polygon vertices create a cone shape: narrow at x=0, widening to full height at x=width
-- Center line is a simple horizontal line element
-- Marker is a vertical line positioned with CSS `left` percentage
-- Tick marks are positioned with absolute positioning
-
-**Color palette** (matching reference):
-- Band fill: `hsla(220, 70%, 80%, 0.35)` (soft lavender blue)
-- Center line: `#9ca3af` (gray-400)
-- Marker line: `#1f2937` (gray-800, near black)
-- Tick labels: `#9ca3af` (gray-400)
+- ECharts `step: 'end'` draws a horizontal line from each point, then jumps vertically to the next -- exactly matching the reference image's staircase pattern
+- Removing `areaStyle` entirely gives the clean green line without fill, matching the reference
+- All final values in `monthlyHarvested` arrays will continue to equal the respective `totalHarvested` to maintain data consistency
+- The x-axis will expand to show all 12 months for more granular step visualization
 
