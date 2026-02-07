@@ -44,6 +44,7 @@ import { useCommunicationCampaigns, CommunicationChannel } from "@/hooks/useComm
 import { useClientDocuments } from "@/hooks/useClientDocuments";
 import { useToast } from "@/hooks/use-toast";
 import { toast } from "sonner";
+import GlobalAIChat from "@/components/ai-assistant/GlobalAIChat";
 
 const sidebarItems = [
   { icon: LayoutDashboard, label: "Dash", path: "/dashboard" },
@@ -699,6 +700,7 @@ const ComposeEmail = () => {
         onSave={handleSaveAttachments}
         clientId={primaryClientId}
       />
+      <GlobalAIChat currentPage="email" />
     </div>
   );
 };

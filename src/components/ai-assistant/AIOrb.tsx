@@ -9,19 +9,16 @@ interface AIOrbProps {
 
 const AIOrb = ({ isProcessing, isChatOpen, onClick }: AIOrbProps) => {
   return (
-    <div 
-      className="relative w-24 h-24 cursor-pointer group"
-      onClick={onClick}
-    >
-      {/* Outer glow rings - only animate when chat is closed */}
+    <div className="relative w-24 h-24 group">
+      {/* Outer glow rings - only animate on hover, hidden when chat is open */}
       {!isChatOpen && (
         <>
           <div 
-            className="absolute inset-0 rounded-full bg-gradient-to-r from-violet-500/20 to-cyan-500/20 animate-ping" 
+            className="absolute inset-0 rounded-full bg-gradient-to-r from-violet-500/20 to-cyan-500/20 opacity-0 group-hover:opacity-100 group-hover:animate-ping" 
             style={{ animationDuration: '3s' }} 
           />
-          <div className="absolute inset-1 rounded-full bg-gradient-to-r from-violet-500/30 to-cyan-500/30 animate-pulse" />
-          <div className="absolute inset-2 rounded-full bg-gradient-to-r from-cyan-500/20 to-violet-500/20 animate-spin-slow" />
+          <div className="absolute inset-1 rounded-full bg-gradient-to-r from-violet-500/30 to-cyan-500/30 opacity-0 group-hover:opacity-100 group-hover:animate-pulse" />
+          <div className="absolute inset-2 rounded-full bg-gradient-to-r from-cyan-500/20 to-violet-500/20 opacity-0 group-hover:opacity-100 group-hover:animate-spin-slow" />
         </>
       )}
       
@@ -34,11 +31,14 @@ const AIOrb = ({ isProcessing, isChatOpen, onClick }: AIOrbProps) => {
         </>
       )}
       
-      {/* Core orb */}
-      <div className={cn(
-        "absolute inset-4 rounded-full bg-gradient-to-br from-violet-600 via-purple-600 to-cyan-500 orb-glow transition-all duration-300",
-        !isChatOpen && "group-hover:scale-110"
-      )}>
+      {/* Core orb - THIS is the click target */}
+      <div 
+        className={cn(
+          "absolute inset-4 rounded-full bg-gradient-to-br from-violet-600 via-purple-600 to-cyan-500 orb-glow transition-all duration-300 cursor-pointer",
+          !isChatOpen && "group-hover:scale-110"
+        )}
+        onClick={onClick}
+      >
         {/* Inner light */}
         <div className="absolute inset-2 rounded-full bg-gradient-to-t from-transparent to-white/30" />
         

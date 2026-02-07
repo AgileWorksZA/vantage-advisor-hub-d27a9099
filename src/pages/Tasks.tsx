@@ -25,6 +25,7 @@ import { TaskTable } from "@/components/tasks/TaskTable";
 import { TaskFilters as TaskFiltersComponent } from "@/components/tasks/TaskFilters";
 import { TaskDetailSheet } from "@/components/tasks/TaskDetailSheet";
 import { CreateTaskDialog } from "@/components/tasks/CreateTaskDialog";
+import GlobalAIChat from "@/components/ai-assistant/GlobalAIChat";
 
 const sidebarItems = [
   { icon: LayoutDashboard, label: "Dash", path: "/dashboard" },
@@ -163,6 +164,7 @@ const Tasks = () => {
 
       <TaskDetailSheet task={selectedTask} open={detailSheetOpen} onClose={() => { setDetailSheetOpen(false); setSelectedTask(null); }} onUpdate={updateTask} onDelete={deleteTask} onTogglePin={togglePin} onAddNote={addNote} />
       <CreateTaskDialog open={createDialogOpen} onClose={() => setCreateDialogOpen(false)} onCreate={createTask} />
+      <GlobalAIChat currentPage="tasks" />
     </div>
   );
 };

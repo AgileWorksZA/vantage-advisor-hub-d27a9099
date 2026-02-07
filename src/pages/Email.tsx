@@ -45,6 +45,7 @@ import { CommunicationTypeSelector } from "@/components/email/CommunicationTypeS
 import { ChatInterface } from "@/components/email/ChatInterface";
 import { EmailViewDialog } from "@/components/email/EmailViewDialog";
 import { cn } from "@/lib/utils";
+import GlobalAIChat from "@/components/ai-assistant/GlobalAIChat";
 
 type EmailFolder = Email["folder"];
 
@@ -427,6 +428,7 @@ const EmailPage = () => {
         }}
         emailId={selectedEmailId}
       />
+      <GlobalAIChat currentPage="email" />
     </div>
   );
 };

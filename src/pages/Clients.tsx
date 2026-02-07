@@ -56,6 +56,7 @@ import { AddClientChoiceDialog } from "@/components/clients/AddClientChoiceDialo
 import { FinancialPlanningWizard } from "@/components/financial-planning-workflow/FinancialPlanningWizard";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { useRegion } from "@/contexts/RegionContext";
+import GlobalAIChat from "@/components/ai-assistant/GlobalAIChat";
 
 const filterTabs = [
   { label: "Lead", color: "hsl(180, 70%, 45%)" },
@@ -641,6 +642,7 @@ const Clients = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <GlobalAIChat currentPage="clients" />
     </div>
   );
 };

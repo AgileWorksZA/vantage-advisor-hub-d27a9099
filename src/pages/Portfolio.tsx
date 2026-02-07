@@ -21,6 +21,7 @@ import {
 import commandCenterIcon from "@/assets/command-center-icon.png";
 import vantageLogo from "@/assets/vantage-logo.png";
 import { AppHeader } from "@/components/layout/AppHeader";
+import GlobalAIChat from "@/components/ai-assistant/GlobalAIChat";
 
 const sidebarItems = [
   { icon: LayoutDashboard, label: "Dash", path: "/dashboard" },
@@ -205,6 +206,7 @@ const Portfolio = () => {
           </Card>
         </main>
       </div>
+      <GlobalAIChat currentPage="portfolio" />
     </div>
   );
 };

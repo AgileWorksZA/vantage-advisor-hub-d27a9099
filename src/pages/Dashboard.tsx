@@ -13,6 +13,7 @@ import { useRegion } from "@/contexts/RegionContext";
 import { DraggableWidgetGrid, WidgetLayout } from "@/components/widgets/DraggableWidgetGrid";
 import { useWidgetLayout } from "@/hooks/useWidgetLayout";
 import { toast } from "sonner";
+import GlobalAIChat from "@/components/ai-assistant/GlobalAIChat";
 
 const sidebarItems = [{
   icon: LayoutDashboard,
@@ -460,6 +461,7 @@ const Dashboard = () => {
           </DraggableWidgetGrid>
         </main>
       </div>
+      <GlobalAIChat currentPage="dashboard" />
     </div>;
 };
 export default Dashboard;
