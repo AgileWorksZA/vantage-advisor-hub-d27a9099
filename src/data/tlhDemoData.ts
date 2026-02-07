@@ -732,3 +732,300 @@ export const getTLHDashboardMetrics = (jurisdiction: string): TLHDashboardMetric
 
   return metricsMap[jurisdiction] || metricsMap.ZA;
 };
+
+// --- Per-Client TLH Metrics ---
+
+export interface TLHClientMetrics extends TLHDashboardMetrics {
+  trackingErrorTimeline: { date: string; value: number }[];
+}
+
+function generateTimeline(finalValue: number, seed: number): { date: string; value: number }[] {
+  const points: { date: string; value: number }[] = [];
+  const startDate = new Date(2025, 0, 15); // Jan 15, 2025
+  const numPoints = 30;
+  const startValue = 0.002 + (seed % 5) * 0.001; // 0.2% - 0.7% starting range
+
+  for (let i = 0; i < numPoints; i++) {
+    const d = new Date(startDate);
+    d.setDate(d.getDate() + Math.round((i / (numPoints - 1)) * 365));
+    const progress = i / (numPoints - 1);
+    // Eased curve with small deterministic noise
+    const eased = progress * progress * 0.6 + progress * 0.4;
+    const noise = Math.sin(i * seed * 0.7) * 0.001;
+    const value = startValue + (finalValue - startValue) * eased + noise;
+    points.push({
+      date: d.toISOString().split("T")[0],
+      value: Math.max(0.001, parseFloat(value.toFixed(4))),
+    });
+  }
+  return points;
+}
+
+const clientMetricsData: Record<string, Omit<TLHClientMetrics, 'trackingErrorTimeline'>> = {
+  "John Smith": {
+    totalHarvested: 51040, estimatedTaxSavings: 23539, gainsDeferral: 20033,
+    shortToLongReclassification: 3506, lossHarvesting: 45345, trackingError: 0.0132,
+    trackingErrorTarget: 0.05, holdingsInModel: 72, holdingsSubstitutes: 18, holdingsNotInModel: 10,
+    taxSensitivity: "High", tlhEnabled: true, capitalGainsBudget: 40000,
+    shortTermTaxRate: 37, longTermTaxRate: 20,
+    monthlyHarvested: [
+      { month: "Jan", value: 4200 }, { month: "Feb", value: 8900 }, { month: "Mar", value: 14500 },
+      { month: "Apr", value: 21800 }, { month: "May", value: 31200 }, { month: "Jun", value: 38600 },
+      { month: "Jul", value: 44100 }, { month: "Aug", value: 48200 }, { month: "Sep", value: 51040 },
+    ],
+    shortTermLosses: [], longTermLosses: [],
+    shortTermLossTotal: -44779, shortTermDailyScan: -29019, shortTermNonDailyScan: -15760,
+    longTermLossTotal: -6259, longTermDailyScan: -2, longTermNonDailyScan: -6257,
+    netRealizedGains: 22000, netRealizedLosses: -32184,
+    netRealizedShortTerm: -43381, netRealizedLongTerm: 33196,
+    totalHoldings: 540, holdingsPrimaryCount: 536, holdingsSubstitutesCount: 2, holdingsNotInModelCount: 2,
+    currentPortfolio: "NQ HD Direct Indexing 70/30",
+    accountBalance: 1245800, totalEarnings: 82450, accountNumber: "US-4821-7736", clientName: "John Smith",
+  },
+  "Mary Jones": {
+    totalHarvested: 38200, estimatedTaxSavings: 17600, gainsDeferral: 14200,
+    shortToLongReclassification: 2800, lossHarvesting: 600, trackingError: 0.0095,
+    trackingErrorTarget: 0.05, holdingsInModel: 68, holdingsSubstitutes: 12, holdingsNotInModel: 8,
+    taxSensitivity: "Medium", tlhEnabled: true, capitalGainsBudget: 35000,
+    shortTermTaxRate: 35, longTermTaxRate: 18,
+    monthlyHarvested: [
+      { month: "Jan", value: 3100 }, { month: "Feb", value: 7400 }, { month: "Mar", value: 12100 },
+      { month: "Apr", value: 18200 }, { month: "May", value: 24800 }, { month: "Jun", value: 30500 },
+      { month: "Jul", value: 34900 }, { month: "Aug", value: 37200 }, { month: "Sep", value: 38200 },
+    ],
+    shortTermLosses: [], longTermLosses: [],
+    shortTermLossTotal: -31400, shortTermDailyScan: -22100, shortTermNonDailyScan: -9300,
+    longTermLossTotal: -6800, longTermDailyScan: -180, longTermNonDailyScan: -6620,
+    netRealizedGains: 18500, netRealizedLosses: -28400,
+    netRealizedShortTerm: -28900, netRealizedLongTerm: 18900,
+    totalHoldings: 420, holdingsPrimaryCount: 415, holdingsSubstitutesCount: 3, holdingsNotInModelCount: 2,
+    currentPortfolio: "S&P HD Direct Indexing 60/40",
+    accountBalance: 892400, totalEarnings: 54200, accountNumber: "US-3392-5518", clientName: "Mary Jones",
+  },
+  "Peter Williams": {
+    totalHarvested: 62800, estimatedTaxSavings: 28400, gainsDeferral: 22100,
+    shortToLongReclassification: 4800, lossHarvesting: 1500, trackingError: 0.0168,
+    trackingErrorTarget: 0.05, holdingsInModel: 82, holdingsSubstitutes: 22, holdingsNotInModel: 6,
+    taxSensitivity: "High", tlhEnabled: true, capitalGainsBudget: 55000,
+    shortTermTaxRate: 40, longTermTaxRate: 22,
+    monthlyHarvested: [
+      { month: "Jan", value: 5800 }, { month: "Feb", value: 12400 }, { month: "Mar", value: 20100 },
+      { month: "Apr", value: 29800 }, { month: "May", value: 39200 }, { month: "Jun", value: 48600 },
+      { month: "Jul", value: 55100 }, { month: "Aug", value: 60200 }, { month: "Sep", value: 62800 },
+    ],
+    shortTermLosses: [], longTermLosses: [],
+    shortTermLossTotal: -52400, shortTermDailyScan: -38200, shortTermNonDailyScan: -14200,
+    longTermLossTotal: -10400, longTermDailyScan: -420, longTermNonDailyScan: -9980,
+    netRealizedGains: 31200, netRealizedLosses: -48600,
+    netRealizedShortTerm: -51200, netRealizedLongTerm: 33800,
+    totalHoldings: 620, holdingsPrimaryCount: 612, holdingsSubstitutesCount: 5, holdingsNotInModelCount: 3,
+    currentPortfolio: "Russell HD Direct Indexing 75/25",
+    accountBalance: 1520000, totalEarnings: 104800, accountNumber: "US-7712-3341", clientName: "Peter Williams",
+  },
+  "Sarah Brown": {
+    totalHarvested: 24100, estimatedTaxSavings: 11200, gainsDeferral: 8800,
+    shortToLongReclassification: 1600, lossHarvesting: 800, trackingError: 0.0072,
+    trackingErrorTarget: 0.05, holdingsInModel: 58, holdingsSubstitutes: 8, holdingsNotInModel: 4,
+    taxSensitivity: "Low", tlhEnabled: true, capitalGainsBudget: 20000,
+    shortTermTaxRate: 32, longTermTaxRate: 15,
+    monthlyHarvested: [
+      { month: "Jan", value: 2100 }, { month: "Feb", value: 4800 }, { month: "Mar", value: 8200 },
+      { month: "Apr", value: 12400 }, { month: "May", value: 16800 }, { month: "Jun", value: 20200 },
+      { month: "Jul", value: 22800 }, { month: "Aug", value: 23700 }, { month: "Sep", value: 24100 },
+    ],
+    shortTermLosses: [], longTermLosses: [],
+    shortTermLossTotal: -18200, shortTermDailyScan: -12800, shortTermNonDailyScan: -5400,
+    longTermLossTotal: -5900, longTermDailyScan: -90, longTermNonDailyScan: -5810,
+    netRealizedGains: 12800, netRealizedLosses: -18200,
+    netRealizedShortTerm: -16400, netRealizedLongTerm: 11000,
+    totalHoldings: 340, holdingsPrimaryCount: 335, holdingsSubstitutesCount: 3, holdingsNotInModelCount: 2,
+    currentPortfolio: "MSCI HD Direct Indexing 55/45",
+    accountBalance: 654200, totalEarnings: 32800, accountNumber: "US-5543-9912", clientName: "Sarah Brown",
+  },
+  "David Miller": {
+    totalHarvested: 78500, estimatedTaxSavings: 35800, gainsDeferral: 28400,
+    shortToLongReclassification: 5200, lossHarvesting: 2200, trackingError: 0.0215,
+    trackingErrorTarget: 0.05, holdingsInModel: 92, holdingsSubstitutes: 28, holdingsNotInModel: 10,
+    taxSensitivity: "High", tlhEnabled: true, capitalGainsBudget: 75000,
+    shortTermTaxRate: 42, longTermTaxRate: 24,
+    monthlyHarvested: [
+      { month: "Jan", value: 7200 }, { month: "Feb", value: 15800 }, { month: "Mar", value: 26400 },
+      { month: "Apr", value: 38200 }, { month: "May", value: 50800 }, { month: "Jun", value: 62100 },
+      { month: "Jul", value: 70400 }, { month: "Aug", value: 76200 }, { month: "Sep", value: 78500 },
+    ],
+    shortTermLosses: [], longTermLosses: [],
+    shortTermLossTotal: -62800, shortTermDailyScan: -45200, shortTermNonDailyScan: -17600,
+    longTermLossTotal: -15700, longTermDailyScan: -1200, longTermNonDailyScan: -14500,
+    netRealizedGains: 42000, netRealizedLosses: -58200,
+    netRealizedShortTerm: -58400, netRealizedLongTerm: 42200,
+    totalHoldings: 780, holdingsPrimaryCount: 768, holdingsSubstitutesCount: 8, holdingsNotInModelCount: 4,
+    currentPortfolio: "Total Market HD Direct Indexing 80/20",
+    accountBalance: 2100000, totalEarnings: 156200, accountNumber: "US-9921-8847", clientName: "David Miller",
+  },
+  "Emma Davis": {
+    totalHarvested: 19800, estimatedTaxSavings: 9100, gainsDeferral: 7200,
+    shortToLongReclassification: 1200, lossHarvesting: 700, trackingError: 0.0058,
+    trackingErrorTarget: 0.05, holdingsInModel: 48, holdingsSubstitutes: 6, holdingsNotInModel: 2,
+    taxSensitivity: "Low", tlhEnabled: true, capitalGainsBudget: 15000,
+    shortTermTaxRate: 28, longTermTaxRate: 15,
+    monthlyHarvested: [
+      { month: "Jan", value: 1800 }, { month: "Feb", value: 4100 }, { month: "Mar", value: 7200 },
+      { month: "Apr", value: 10800 }, { month: "May", value: 14200 }, { month: "Jun", value: 17100 },
+      { month: "Jul", value: 18800 }, { month: "Aug", value: 19500 }, { month: "Sep", value: 19800 },
+    ],
+    shortTermLosses: [], longTermLosses: [],
+    shortTermLossTotal: -14200, shortTermDailyScan: -9800, shortTermNonDailyScan: -4400,
+    longTermLossTotal: -5600, longTermDailyScan: -50, longTermNonDailyScan: -5550,
+    netRealizedGains: 9800, netRealizedLosses: -14800,
+    netRealizedShortTerm: -12400, netRealizedLongTerm: 7400,
+    totalHoldings: 280, holdingsPrimaryCount: 276, holdingsSubstitutesCount: 2, holdingsNotInModelCount: 2,
+    currentPortfolio: "Growth HD Direct Indexing 65/35",
+    accountBalance: 445600, totalEarnings: 22400, accountNumber: "US-2234-6678", clientName: "Emma Davis",
+  },
+  "Michael Wilson": {
+    totalHarvested: 55200, estimatedTaxSavings: 25100, gainsDeferral: 19800,
+    shortToLongReclassification: 3800, lossHarvesting: 1500, trackingError: 0.0145,
+    trackingErrorTarget: 0.05, holdingsInModel: 85, holdingsSubstitutes: 20, holdingsNotInModel: 5,
+    taxSensitivity: "High", tlhEnabled: true, capitalGainsBudget: 60000,
+    shortTermTaxRate: 39, longTermTaxRate: 21,
+    monthlyHarvested: [
+      { month: "Jan", value: 5200 }, { month: "Feb", value: 11400 }, { month: "Mar", value: 18800 },
+      { month: "Apr", value: 27200 }, { month: "May", value: 36400 }, { month: "Jun", value: 44200 },
+      { month: "Jul", value: 50100 }, { month: "Aug", value: 53800 }, { month: "Sep", value: 55200 },
+    ],
+    shortTermLosses: [], longTermLosses: [],
+    shortTermLossTotal: -45800, shortTermDailyScan: -32400, shortTermNonDailyScan: -13400,
+    longTermLossTotal: -9400, longTermDailyScan: -800, longTermNonDailyScan: -8600,
+    netRealizedGains: 28400, netRealizedLosses: -42200,
+    netRealizedShortTerm: -42800, netRealizedLongTerm: 28600,
+    totalHoldings: 680, holdingsPrimaryCount: 672, holdingsSubstitutesCount: 5, holdingsNotInModelCount: 3,
+    currentPortfolio: "Large Cap HD Direct Indexing 70/30",
+    accountBalance: 1890000, totalEarnings: 128400, accountNumber: "US-6678-1123", clientName: "Michael Wilson",
+  },
+  "Lisa Anderson": {
+    totalHarvested: 31600, estimatedTaxSavings: 14500, gainsDeferral: 11200,
+    shortToLongReclassification: 2200, lossHarvesting: 1100, trackingError: 0.0110,
+    trackingErrorTarget: 0.05, holdingsInModel: 62, holdingsSubstitutes: 14, holdingsNotInModel: 6,
+    taxSensitivity: "Medium", tlhEnabled: true, capitalGainsBudget: 30000,
+    shortTermTaxRate: 34, longTermTaxRate: 18,
+    monthlyHarvested: [
+      { month: "Jan", value: 2800 }, { month: "Feb", value: 6200 }, { month: "Mar", value: 10800 },
+      { month: "Apr", value: 15800 }, { month: "May", value: 21400 }, { month: "Jun", value: 26200 },
+      { month: "Jul", value: 29400 }, { month: "Aug", value: 31000 }, { month: "Sep", value: 31600 },
+    ],
+    shortTermLosses: [], longTermLosses: [],
+    shortTermLossTotal: -24800, shortTermDailyScan: -17200, shortTermNonDailyScan: -7600,
+    longTermLossTotal: -6800, longTermDailyScan: -320, longTermNonDailyScan: -6480,
+    netRealizedGains: 16200, netRealizedLosses: -24800,
+    netRealizedShortTerm: -22600, netRealizedLongTerm: 14000,
+    totalHoldings: 440, holdingsPrimaryCount: 434, holdingsSubstitutesCount: 4, holdingsNotInModelCount: 2,
+    currentPortfolio: "Balanced HD Direct Indexing 60/40",
+    accountBalance: 780000, totalEarnings: 48200, accountNumber: "US-3345-7789", clientName: "Lisa Anderson",
+  },
+  "James Taylor": {
+    totalHarvested: 42900, estimatedTaxSavings: 19800, gainsDeferral: 15600,
+    shortToLongReclassification: 2800, lossHarvesting: 1400, trackingError: 0.0128,
+    trackingErrorTarget: 0.05, holdingsInModel: 74, holdingsSubstitutes: 16, holdingsNotInModel: 4,
+    taxSensitivity: "Medium", tlhEnabled: true, capitalGainsBudget: 42000,
+    shortTermTaxRate: 36, longTermTaxRate: 19,
+    monthlyHarvested: [
+      { month: "Jan", value: 3800 }, { month: "Feb", value: 8600 }, { month: "Mar", value: 14800 },
+      { month: "Apr", value: 21600 }, { month: "May", value: 29200 }, { month: "Jun", value: 35800 },
+      { month: "Jul", value: 40200 }, { month: "Aug", value: 42200 }, { month: "Sep", value: 42900 },
+    ],
+    shortTermLosses: [], longTermLosses: [],
+    shortTermLossTotal: -35200, shortTermDailyScan: -24800, shortTermNonDailyScan: -10400,
+    longTermLossTotal: -7700, longTermDailyScan: -480, longTermNonDailyScan: -7220,
+    netRealizedGains: 21400, netRealizedLosses: -32200,
+    netRealizedShortTerm: -32800, netRealizedLongTerm: 21800,
+    totalHoldings: 520, holdingsPrimaryCount: 514, holdingsSubstitutesCount: 4, holdingsNotInModelCount: 2,
+    currentPortfolio: "Diversified HD Direct Indexing 68/32",
+    accountBalance: 1340000, totalEarnings: 88600, accountNumber: "US-7789-2234", clientName: "James Taylor",
+  },
+  "Jennifer Thomas": {
+    totalHarvested: 21400, estimatedTaxSavings: 9800, gainsDeferral: 7600,
+    shortToLongReclassification: 1400, lossHarvesting: 800, trackingError: 0.0065,
+    trackingErrorTarget: 0.05, holdingsInModel: 52, holdingsSubstitutes: 8, holdingsNotInModel: 2,
+    taxSensitivity: "Low", tlhEnabled: true, capitalGainsBudget: 18000,
+    shortTermTaxRate: 30, longTermTaxRate: 16,
+    monthlyHarvested: [
+      { month: "Jan", value: 1900 }, { month: "Feb", value: 4400 }, { month: "Mar", value: 7600 },
+      { month: "Apr", value: 11200 }, { month: "May", value: 14800 }, { month: "Jun", value: 18200 },
+      { month: "Jul", value: 20200 }, { month: "Aug", value: 21000 }, { month: "Sep", value: 21400 },
+    ],
+    shortTermLosses: [], longTermLosses: [],
+    shortTermLossTotal: -16200, shortTermDailyScan: -11200, shortTermNonDailyScan: -5000,
+    longTermLossTotal: -5200, longTermDailyScan: -120, longTermNonDailyScan: -5080,
+    netRealizedGains: 11200, netRealizedLosses: -16200,
+    netRealizedShortTerm: -14800, netRealizedLongTerm: 9600,
+    totalHoldings: 310, holdingsPrimaryCount: 306, holdingsSubstitutesCount: 2, holdingsNotInModelCount: 2,
+    currentPortfolio: "Conservative HD Direct Indexing 50/50",
+    accountBalance: 560000, totalEarnings: 28400, accountNumber: "US-1123-4456", clientName: "Jennifer Thomas",
+  },
+  "Robert Jackson": {
+    totalHarvested: 12800, estimatedTaxSavings: 5900, gainsDeferral: 4600,
+    shortToLongReclassification: 800, lossHarvesting: 500, trackingError: 0.0042,
+    trackingErrorTarget: 0.05, holdingsInModel: 42, holdingsSubstitutes: 4, holdingsNotInModel: 2,
+    taxSensitivity: "Low", tlhEnabled: true, capitalGainsBudget: 10000,
+    shortTermTaxRate: 25, longTermTaxRate: 15,
+    monthlyHarvested: [
+      { month: "Jan", value: 1100 }, { month: "Feb", value: 2600 }, { month: "Mar", value: 4500 },
+      { month: "Apr", value: 6800 }, { month: "May", value: 8900 }, { month: "Jun", value: 10800 },
+      { month: "Jul", value: 12000 }, { month: "Aug", value: 12500 }, { month: "Sep", value: 12800 },
+    ],
+    shortTermLosses: [], longTermLosses: [],
+    shortTermLossTotal: -9600, shortTermDailyScan: -6800, shortTermNonDailyScan: -2800,
+    longTermLossTotal: -3200, longTermDailyScan: -40, longTermNonDailyScan: -3160,
+    netRealizedGains: 6800, netRealizedLosses: -9800,
+    netRealizedShortTerm: -8200, netRealizedLongTerm: 5200,
+    totalHoldings: 220, holdingsPrimaryCount: 216, holdingsSubstitutesCount: 2, holdingsNotInModelCount: 2,
+    currentPortfolio: "Income HD Direct Indexing 45/55",
+    accountBalance: 320000, totalEarnings: 15800, accountNumber: "US-8847-3345", clientName: "Robert Jackson",
+  },
+  "Amanda White": {
+    totalHarvested: 9600, estimatedTaxSavings: 4400, gainsDeferral: 3400,
+    shortToLongReclassification: 600, lossHarvesting: 400, trackingError: 0.0035,
+    trackingErrorTarget: 0.05, holdingsInModel: 38, holdingsSubstitutes: 4, holdingsNotInModel: 2,
+    taxSensitivity: "Low", tlhEnabled: true, capitalGainsBudget: 8000,
+    shortTermTaxRate: 24, longTermTaxRate: 15,
+    monthlyHarvested: [
+      { month: "Jan", value: 800 }, { month: "Feb", value: 2000 }, { month: "Mar", value: 3400 },
+      { month: "Apr", value: 5100 }, { month: "May", value: 6700 }, { month: "Jun", value: 8100 },
+      { month: "Jul", value: 9000 }, { month: "Aug", value: 9400 }, { month: "Sep", value: 9600 },
+    ],
+    shortTermLosses: [], longTermLosses: [],
+    shortTermLossTotal: -7200, shortTermDailyScan: -5100, shortTermNonDailyScan: -2100,
+    longTermLossTotal: -2400, longTermDailyScan: -20, longTermNonDailyScan: -2380,
+    netRealizedGains: 5100, netRealizedLosses: -7400,
+    netRealizedShortTerm: -6200, netRealizedLongTerm: 3900,
+    totalHoldings: 180, holdingsPrimaryCount: 176, holdingsSubstitutesCount: 2, holdingsNotInModelCount: 2,
+    currentPortfolio: "Starter HD Direct Indexing 40/60",
+    accountBalance: 280000, totalEarnings: 12200, accountNumber: "US-4456-6678", clientName: "Amanda White",
+  },
+};
+
+// Simple string hash for deterministic seed
+function hashString(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash) + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash);
+}
+
+export const getClientTLHMetrics = (clientName: string, jurisdiction: string): TLHClientMetrics => {
+  const clientData = clientMetricsData[clientName];
+  if (clientData) {
+    return {
+      ...clientData,
+      trackingErrorTimeline: generateTimeline(clientData.trackingError, hashString(clientName)),
+    };
+  }
+  // Fallback to jurisdiction-level data
+  const base = getTLHDashboardMetrics(jurisdiction);
+  return {
+    ...base,
+    trackingErrorTimeline: generateTimeline(base.trackingError, hashString(jurisdiction)),
+  };
+};
