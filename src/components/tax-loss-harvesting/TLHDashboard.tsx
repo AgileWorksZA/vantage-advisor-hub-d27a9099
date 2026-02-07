@@ -144,7 +144,7 @@ export const TLHDashboard = ({ open, onOpenChange, clientName, clientId }: TLHDa
       {
         data: metrics.monthlyHarvested.map((m) => m.value),
         type: "line" as const,
-        step: "end" as const,
+        smooth: 0.3,
         lineStyle: { color: "hsl(142, 76%, 36%)", width: 2 },
         itemStyle: { color: "hsl(142, 76%, 36%)" },
         symbol: "none",
