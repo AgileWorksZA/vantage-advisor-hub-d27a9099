@@ -201,7 +201,8 @@ export const TLHDashboard = ({ open, onOpenChange, clientName, clientId }: TLHDa
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-[95vw] w-[1400px] max-h-[92vh] overflow-y-auto p-0 gap-0">
+        <DialogContent className="max-w-[80vw] w-[1400px] max-h-[80vh] overflow-hidden p-0 gap-0">
+          <div className="overflow-y-auto max-h-[80vh] rounded-lg">
           <TooltipProvider delayDuration={200}>
             {/* Header */}
             <div className="px-6 pt-5 pb-3 border-b bg-card">
@@ -541,6 +542,7 @@ export const TLHDashboard = ({ open, onOpenChange, clientName, clientId }: TLHDa
               </p>
             </div>
           </TooltipProvider>
+          </div>
         </DialogContent>
       </Dialog>
 
