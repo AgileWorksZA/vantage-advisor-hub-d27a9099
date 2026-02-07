@@ -29,7 +29,7 @@ import ReactEChartsCore from "echarts-for-react";
 import { useTLHData } from "@/hooks/useTLHData";
 import { FundSwitchDialog } from "./FundSwitchDialog";
 import { TrackingErrorBand } from "./TrackingErrorBand";
-import { TLHOpportunityDemo, getClientTLHMetrics } from "@/data/tlhDemoData";
+import { TLHOpportunityDemo, getClientTLHMetrics, TLHDashboardMetrics } from "@/data/tlhDemoData";
 import { supabase } from "@/integrations/supabase/client";
 import { useRegion } from "@/contexts/RegionContext";
 
@@ -94,7 +94,7 @@ export const TLHDashboard = ({ open, onOpenChange, clientName, clientId }: TLHDa
     if (clientName) {
       return getClientTLHMetrics(clientName, selectedRegion);
     }
-    return { ...dashboardMetrics, trackingErrorTimeline: [] as { date: string; value: number }[] };
+    return dashboardMetrics;
   }, [clientName, selectedRegion, dashboardMetrics]);
 
   const handleConfirmTrade = (opp: TLHOpportunityDemo) => {
@@ -425,11 +425,7 @@ export const TLHDashboard = ({ open, onOpenChange, clientName, clientId }: TLHDa
                       </div>
                     </CardHeader>
                     <CardContent className="px-5 pb-5">
-                      <TrackingErrorBand
-                        value={metrics.trackingError}
-                        target={metrics.trackingErrorTarget}
-                        timeline={'trackingErrorTimeline' in metrics ? (metrics as any).trackingErrorTimeline : undefined}
-                      />
+                      <TrackingErrorBand value={metrics.trackingError} />
                     </CardContent>
                   </Card>
 
