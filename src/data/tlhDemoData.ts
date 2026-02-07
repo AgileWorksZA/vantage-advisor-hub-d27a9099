@@ -53,8 +53,25 @@ export interface TLHDashboardMetrics {
   monthlyHarvested: { month: string; value: number }[];
   shortTermLosses: { description: string; amount: number; scanType: string }[];
   longTermLosses: { description: string; amount: number; scanType: string }[];
+  shortTermLossTotal: number;
+  shortTermDailyScan: number;
+  shortTermNonDailyScan: number;
+  longTermLossTotal: number;
+  longTermDailyScan: number;
+  longTermNonDailyScan: number;
   netRealizedGains: number;
   netRealizedLosses: number;
+  netRealizedShortTerm: number;
+  netRealizedLongTerm: number;
+  totalHoldings: number;
+  holdingsPrimaryCount: number;
+  holdingsSubstitutesCount: number;
+  holdingsNotInModelCount: number;
+  currentPortfolio: string;
+  accountBalance: number;
+  totalEarnings: number;
+  accountNumber: string;
+  clientName: string;
 }
 
 const zaOpportunities: TLHOpportunityDemo[] = [
@@ -499,8 +516,25 @@ export const getTLHDashboardMetrics = (jurisdiction: string): TLHDashboardMetric
         { description: "Absa NewGold → 1nvest Gold", amount: -8920, scanType: "Non-Daily" },
         { description: "MTN Group → Vodacom", amount: -6230, scanType: "Non-Daily" },
       ],
+      shortTermLossTotal: -37130,
+      shortTermDailyScan: -29019,
+      shortTermNonDailyScan: -8111,
+      longTermLossTotal: -15150,
+      longTermDailyScan: -2,
+      longTermNonDailyScan: -15148,
       netRealizedGains: 28500,
       netRealizedLosses: -52280,
+      netRealizedShortTerm: -43381,
+      netRealizedLongTerm: 33196,
+      totalHoldings: 540,
+      holdingsPrimaryCount: 536,
+      holdingsSubstitutesCount: 2,
+      holdingsNotInModelCount: 2,
+      currentPortfolio: "JSE HD Direct Indexing 70/30",
+      accountBalance: 1245800,
+      totalEarnings: 82450,
+      accountNumber: "ZA-4821-7736",
+      clientName: "Van Der Berg Family Trust",
     },
     AU: {
       totalHarvested: 10750,
@@ -530,8 +564,25 @@ export const getTLHDashboardMetrics = (jurisdiction: string): TLHDashboardMetric
         { description: "VAS → IOZ", amount: -10750, scanType: "Daily" },
       ],
       longTermLosses: [],
+      shortTermLossTotal: -10750,
+      shortTermDailyScan: -10750,
+      shortTermNonDailyScan: 0,
+      longTermLossTotal: 0,
+      longTermDailyScan: 0,
+      longTermNonDailyScan: 0,
       netRealizedGains: 15200,
       netRealizedLosses: -10750,
+      netRealizedShortTerm: -8200,
+      netRealizedLongTerm: 12650,
+      totalHoldings: 420,
+      holdingsPrimaryCount: 415,
+      holdingsSubstitutesCount: 3,
+      holdingsNotInModelCount: 2,
+      currentPortfolio: "ASX HD Direct Indexing 60/40",
+      accountBalance: 892400,
+      totalEarnings: 54200,
+      accountNumber: "AU-3392-5518",
+      clientName: "Mitchell Investment Trust",
     },
     GB: {
       totalHarvested: 7600,
@@ -561,8 +612,25 @@ export const getTLHDashboardMetrics = (jurisdiction: string): TLHDashboardMetric
       longTermLosses: [
         { description: "ISF → VUKE", amount: -7600, scanType: "Non-Daily" },
       ],
+      shortTermLossTotal: 0,
+      shortTermDailyScan: 0,
+      shortTermNonDailyScan: 0,
+      longTermLossTotal: -7600,
+      longTermDailyScan: -2,
+      longTermNonDailyScan: -7598,
       netRealizedGains: 8200,
       netRealizedLosses: -7600,
+      netRealizedShortTerm: -2100,
+      netRealizedLongTerm: 2700,
+      totalHoldings: 380,
+      holdingsPrimaryCount: 375,
+      holdingsSubstitutesCount: 3,
+      holdingsNotInModelCount: 2,
+      currentPortfolio: "FTSE HD Direct Indexing 50/50",
+      accountBalance: 654200,
+      totalEarnings: 32800,
+      accountNumber: "GB-7712-3341",
+      clientName: "Thompson Family Portfolio",
     },
     US: {
       totalHarvested: 18500,
@@ -592,8 +660,25 @@ export const getTLHDashboardMetrics = (jurisdiction: string): TLHDashboardMetric
         { description: "VOO → IVV", amount: -18500, scanType: "Daily" },
       ],
       longTermLosses: [],
+      shortTermLossTotal: -44779,
+      shortTermDailyScan: -29019,
+      shortTermNonDailyScan: -15760,
+      longTermLossTotal: -6259,
+      longTermDailyScan: -2,
+      longTermNonDailyScan: -6257,
       netRealizedGains: 22000,
       netRealizedLosses: -18500,
+      netRealizedShortTerm: -43381,
+      netRealizedLongTerm: 33196,
+      totalHoldings: 540,
+      holdingsPrimaryCount: 536,
+      holdingsSubstitutesCount: 2,
+      holdingsNotInModelCount: 2,
+      currentPortfolio: "NQ HD Direct Indexing 70/30",
+      accountBalance: 2450000,
+      totalEarnings: 185400,
+      accountNumber: "US-8821-4456",
+      clientName: "Johnson Family Trust",
     },
     CA: {
       totalHarvested: 13200,
@@ -623,8 +708,25 @@ export const getTLHDashboardMetrics = (jurisdiction: string): TLHDashboardMetric
       longTermLosses: [
         { description: "XIU → ZCN", amount: -13200, scanType: "Non-Daily" },
       ],
+      shortTermLossTotal: -5400,
+      shortTermDailyScan: -3200,
+      shortTermNonDailyScan: -2200,
+      longTermLossTotal: -7800,
+      longTermDailyScan: 0,
+      longTermNonDailyScan: -7800,
       netRealizedGains: 18000,
       netRealizedLosses: -13200,
+      netRealizedShortTerm: -6200,
+      netRealizedLongTerm: 11000,
+      totalHoldings: 460,
+      holdingsPrimaryCount: 452,
+      holdingsSubstitutesCount: 5,
+      holdingsNotInModelCount: 3,
+      currentPortfolio: "TSX HD Direct Indexing 65/35",
+      accountBalance: 1120000,
+      totalEarnings: 72800,
+      accountNumber: "CA-5543-9912",
+      clientName: "Leblanc Investment Corp",
     },
   };
 
