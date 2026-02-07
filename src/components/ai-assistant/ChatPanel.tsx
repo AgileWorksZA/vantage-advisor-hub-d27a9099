@@ -15,19 +15,97 @@ interface ChatPanelProps {
   onSendMessage: (message: string) => void;
   messages: Message[];
   isTyping: boolean;
+  currentPage?: string;
 }
 
-const suggestedPrompts = [
-  "Show me upsell opportunities",
-  "Which clients should migrate to house portfolios?",
-  "Identify cross-sell potential this month",
-  "Find clients at risk of churning",
-  "Top growth opportunities in my book",
-];
+const getPromptsForPage = (page?: string): string[] => {
+  switch (page) {
+    case "dashboard":
+      return [
+        "Summarise my practice performance",
+        "Which clients need attention this week?",
+        "Show AUM trends",
+        "Any upcoming birthdays?",
+      ];
+    case "clients":
+      return [
+        "Find clients with incomplete FICA",
+        "Which clients haven't been reviewed in 12 months?",
+        "Show high-value clients without protection",
+        "Identify clients at risk of leaving",
+      ];
+    case "portfolio":
+      return [
+        "Show portfolios drifting from mandate",
+        "Which clients are over-exposed to equities?",
+        "Identify tax-loss harvesting opportunities",
+        "Compare fund performance",
+      ];
+    case "email":
+      return [
+        "Draft a follow-up email for my last meeting",
+        "Summarise unread messages",
+        "Find emails about policy renewals",
+        "Create a birthday greeting template",
+      ];
+    case "calendar":
+      return [
+        "What meetings do I have this week?",
+        "Schedule follow-ups for overdue reviews",
+        "Find gaps in my calendar for client calls",
+        "Prepare agenda for my next meeting",
+      ];
+    case "tasks":
+      return [
+        "Show overdue tasks",
+        "Which tasks are due this week?",
+        "Prioritise my task list",
+        "Find tasks without assigned clients",
+      ];
+    case "insights":
+      return [
+        "What are the top growth opportunities?",
+        "Show revenue trends",
+        "Identify cross-sell potential",
+        "Compare advisor performance",
+      ];
+    case "practice":
+      return [
+        "Show team utilisation",
+        "Which advisors have the most clients?",
+        "Identify training needs",
+        "Review practice compliance status",
+      ];
+    case "command-center":
+      return [
+        "What are today's priority nudges?",
+        "Show compliance alerts",
+        "Which clients need immediate attention?",
+        "Summarise portfolio drift alerts",
+      ];
+    case "ai-assistant":
+      return [
+        "Show me upsell opportunities",
+        "Which clients should migrate to house portfolios?",
+        "Identify cross-sell potential this month",
+        "Find clients at risk of churning",
+        "Top growth opportunities in my book",
+      ];
+    default:
+      return [
+        "How can I grow my practice?",
+        "Show me client insights",
+        "What tasks need attention?",
+        "Help me find opportunities",
+      ];
+  }
+};
 
-const ChatPanel = ({ isOpen, onClose, onSendMessage, messages, isTyping }: ChatPanelProps) => {
+const ChatPanel = ({ isOpen, onClose, onSendMessage, messages, isTyping, currentPage }: ChatPanelProps) => {
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const suggestedPrompts = getPromptsForPage(currentPage);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -55,10 +133,10 @@ const ChatPanel = ({ isOpen, onClose, onSendMessage, messages, isTyping }: ChatP
         />
       )}
       
-      {/* Chat Panel */}
+      {/* Chat Panel - always dark themed via glassmorphism */}
       <div
         className={cn(
-          "fixed top-0 right-0 h-full w-[25vw] min-w-[320px] max-w-[400px] glass-panel border-l border-white/10 z-50",
+          "fixed top-0 right-0 h-full w-[25vw] min-w-[320px] max-w-[400px] bg-slate-900/95 backdrop-blur-xl border-l border-white/10 z-50",
           "transition-transform duration-300 ease-out",
           isOpen ? "translate-x-0" : "translate-x-full"
         )}
@@ -72,7 +150,7 @@ const ChatPanel = ({ isOpen, onClose, onSendMessage, messages, isTyping }: ChatP
           </div>
           <div>
             <h3 className="text-white font-medium">AI Assistant</h3>
-            <p className="text-white/50 text-xs">Powered by Lovable AI</p>
+            <p className="text-white/50 text-xs">Powered by Vantage AI</p>
           </div>
         </div>
         <Button variant="ghost" size="icon" onClick={onClose} className="text-white/70 hover:text-white hover:bg-white/10">

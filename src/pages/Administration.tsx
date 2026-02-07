@@ -22,6 +22,7 @@ import { TransactionsSection } from "@/components/administration/transactions/Tr
 import { NotesTasksSection } from "@/components/administration/notes-tasks/NotesTasksSection";
 import { EventsSection } from "@/components/administration/events/EventsSection";
 import { SystemSettingsSection } from "@/components/administration/system/SystemSettingsSection";
+import GlobalAIChat from "@/components/ai-assistant/GlobalAIChat";
 
 const sidebarItems = [
   { icon: LayoutDashboard, label: "Dash", path: "/dashboard" },
@@ -170,6 +171,7 @@ const Administration = () => {
           </AdminLayout>
         </main>
       </div>
+      <GlobalAIChat currentPage="administration" />
     </div>
   );
 };

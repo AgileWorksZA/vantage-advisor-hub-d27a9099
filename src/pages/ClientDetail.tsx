@@ -49,6 +49,7 @@ import ClientRecentActivityTab from "@/components/client-detail/ClientRecentActi
 import { useClientDetail } from "@/hooks/useClientDetail";
 import { useClientRelationships } from "@/hooks/useClientRelationships";
 import { getDisplayName } from "@/types/client";
+import GlobalAIChat from "@/components/ai-assistant/GlobalAIChat";
 
 const sidebarItems = [
   { icon: LayoutDashboard, label: "Dash", path: "/dashboard" },
@@ -342,6 +343,7 @@ const ClientDetail = () => {
           </Tabs>
         </main>
       </div>
+      <GlobalAIChat currentPage="clients" />
     </div>
   );
 };

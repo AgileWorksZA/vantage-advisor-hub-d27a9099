@@ -21,6 +21,7 @@ import { ComplianceNudge } from "@/components/command-center/ComplianceNudge";
 import { ReviewRemindersNudge } from "@/components/command-center/ReviewRemindersNudge";
 import { DocumentExpiryNudge } from "@/components/command-center/DocumentExpiryNudge";
 import { AppHeader } from "@/components/layout/AppHeader";
+import GlobalAIChat from "@/components/ai-assistant/GlobalAIChat";
 
 const sidebarItems = [
   { icon: Users, label: "CRM", active: false },
@@ -191,6 +192,7 @@ const CommandCenter = () => {
           </div>
         </main>
       </div>
+      <GlobalAIChat currentPage="command-center" />
     </div>
   );
 };

@@ -23,6 +23,7 @@ import { TeamsTab } from "@/components/practice/TeamsTab";
 import { BrokerCodesTab } from "@/components/practice/BrokerCodesTab";
 import { CommunicationTabEnhanced } from "@/components/practice/CommunicationTabEnhanced";
 import { ActivityLogTabEnhanced } from "@/components/practice/ActivityLogTabEnhanced";
+import GlobalAIChat from "@/components/ai-assistant/GlobalAIChat";
 
 // Sample personnel data
 const personnelData = [
@@ -182,6 +183,7 @@ const Practice = () => {
           )}
         </main>
       </div>
+      <GlobalAIChat currentPage="practice" />
     </div>
   );
 };

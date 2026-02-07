@@ -40,6 +40,7 @@ import { useEmailDetail, LinkedClient } from "@/hooks/useEmailDetail";
 import { useEmailTasks } from "@/hooks/useEmailTasks";
 import { useClientDocuments } from "@/hooks/useClientDocuments";
 import { useToast } from "@/hooks/use-toast";
+import GlobalAIChat from "@/components/ai-assistant/GlobalAIChat";
 
 const sidebarItems = [
   { icon: LayoutDashboard, label: "Dash", path: "/dashboard" },
@@ -467,6 +468,7 @@ const EmailView = () => {
         onSave={handleSaveAttachments}
         clientId={primaryClientId}
       />
+      <GlobalAIChat currentPage="email" />
     </div>
   );
 };

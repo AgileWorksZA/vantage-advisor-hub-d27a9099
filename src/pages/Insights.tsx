@@ -41,6 +41,7 @@ import { EChartsWrapper, createGradient } from "@/components/ui/echarts-wrapper"
 import { format, subMonths } from "date-fns";
 import { DraggableWidgetGrid, WidgetLayout } from "@/components/widgets/DraggableWidgetGrid";
 import { useWidgetLayout } from "@/hooks/useWidgetLayout";
+import GlobalAIChat from "@/components/ai-assistant/GlobalAIChat";
 
 // Generate 60 months of commission by type data (5 years)
 const generateCommissionByTypeData = () => {
@@ -769,6 +770,7 @@ const Insights = () => {
           </DraggableWidgetGrid>
         </main>
       </div>
+      <GlobalAIChat currentPage="insights" />
     </div>
   );
 };

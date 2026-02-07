@@ -78,6 +78,7 @@ import { MeetingRecorder } from "@/components/calendar/MeetingRecorder";
 import { TranscriptionPanel } from "@/components/calendar/TranscriptionPanel";
 import { ActionItemsList } from "@/components/calendar/ActionItemsList";
 import { cn } from "@/lib/utils";
+import GlobalAIChat from "@/components/ai-assistant/GlobalAIChat";
 
 const sidebarItems = [
   { icon: LayoutDashboard, label: "Dash", path: "/dashboard" },
@@ -909,6 +910,7 @@ const CalendarPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <GlobalAIChat currentPage="calendar" />
     </div>
   );
 };

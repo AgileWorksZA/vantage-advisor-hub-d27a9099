@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Settings, LogOut, Moon, Sun } from "lucide-react";
+import { Settings, LogOut, Moon, Sun, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -9,6 +9,8 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
+
+const AI_CHAT_STORAGE_KEY = "vantage-ai-chat-enabled";
 
 interface UserMenuProps {
   userName: string;
@@ -21,6 +23,10 @@ export function UserMenu({ userName, userEmail, onSignOut, onAccountSettings }: 
   const [open, setOpen] = useState(false);
   const { theme, setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [aiChatEnabled, setAiChatEnabled] = useState(() => {
+    const stored = localStorage.getItem(AI_CHAT_STORAGE_KEY);
+    return stored !== "false";
+  });
 
   // Prevent hydration mismatch
   useEffect(() => {
@@ -44,6 +50,15 @@ export function UserMenu({ userName, userEmail, onSignOut, onAccountSettings }: 
 
   const toggleTheme = () => {
     setTheme(resolvedTheme === "dark" ? "light" : "dark");
+  };
+
+  const toggleAiChat = () => {
+    const newValue = !aiChatEnabled;
+    setAiChatEnabled(newValue);
+    localStorage.setItem(AI_CHAT_STORAGE_KEY, String(newValue));
+    window.dispatchEvent(
+      new CustomEvent("ai-chat-toggle", { detail: { enabled: newValue } })
+    );
   };
 
   const isDark = mounted && resolvedTheme === "dark";
@@ -106,6 +121,21 @@ export function UserMenu({ userName, userEmail, onSignOut, onAccountSettings }: 
             <Switch
               checked={isDark}
               onCheckedChange={toggleTheme}
+              className="pointer-events-none"
+            />
+          </button>
+          <button
+            onClick={toggleAiChat}
+            className={cn(
+              "w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors",
+              "hover:bg-muted/50"
+            )}
+          >
+            <Sparkles className="h-4 w-4 text-muted-foreground" />
+            <span className="flex-1 text-left">AI Assistant</span>
+            <Switch
+              checked={aiChatEnabled}
+              onCheckedChange={toggleAiChat}
               className="pointer-events-none"
             />
           </button>
