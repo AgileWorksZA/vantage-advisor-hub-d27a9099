@@ -4,9 +4,6 @@ import {
   DialogContent,
 } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,21 +12,15 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import {
-  TrendingDown,
-  DollarSign,
-  BarChart3,
-  PieChart,
   ChevronDown,
-  Settings,
-  History,
-  Target,
-  Loader2,
+  Info,
+  ArrowRightLeft,
+  Download,
 } from "lucide-react";
 import ReactEChartsCore from "echarts-for-react";
 import { useTLHData } from "@/hooks/useTLHData";
-import { TLHOpportunitiesTable } from "./TLHOpportunitiesTable";
-import { TLHTradeHistory } from "./TLHTradeHistory";
 import { FundSwitchDialog } from "./FundSwitchDialog";
+import { TrackingErrorBand } from "./TrackingErrorBand";
 import { TLHOpportunityDemo } from "@/data/tlhDemoData";
 
 interface TLHDashboardProps {
@@ -41,54 +32,69 @@ export const TLHDashboard = ({ open, onOpenChange }: TLHDashboardProps) => {
   const {
     opportunities,
     dashboardMetrics,
-    totalUnrealizedLoss,
-    totalEstimatedSavings,
     executedTrades,
     executeTrade,
-    dismissOpportunity,
-    executeBulk,
     formatCurrency,
     selectedRegion,
-    isSeeded,
-    isAutoSeeding,
   } = useTLHData();
 
   const [switchDialogOpen, setSwitchDialogOpen] = useState(false);
   const [selectedOpportunity, setSelectedOpportunity] = useState<TLHOpportunityDemo | null>(null);
-  const [shortTermOpen, setShortTermOpen] = useState(true);
-  const [longTermOpen, setLongTermOpen] = useState(true);
+  const [shortTermOpen, setShortTermOpen] = useState(false);
+  const [longTermOpen, setLongTermOpen] = useState(false);
+  const [netShortTermOpen, setNetShortTermOpen] = useState(false);
+  const [netLongTermOpen, setNetLongTermOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("overview");
 
-  const handleSwitchFund = (opp: TLHOpportunityDemo) => {
-    setSelectedOpportunity(opp);
-    setSwitchDialogOpen(true);
-  };
+  const metrics = dashboardMetrics;
 
   const handleConfirmTrade = (opp: TLHOpportunityDemo) => {
     executeTrade(opp);
   };
 
+  // Previous business day
+  const getPrevBusinessDay = () => {
+    const d = new Date();
+    const day = d.getDay();
+    if (day === 0) d.setDate(d.getDate() - 2);
+    else if (day === 1) d.setDate(d.getDate() - 3);
+    else d.setDate(d.getDate() - 1);
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  };
+
   const areaChartOption = {
-    tooltip: { trigger: "axis" as const },
+    tooltip: {
+      trigger: "axis" as const,
+      backgroundColor: "rgba(30,30,30,0.9)",
+      borderColor: "transparent",
+      textStyle: { color: "#fff", fontSize: 12 },
+      formatter: (params: Array<{ value: number; name: string }>) => {
+        if (Array.isArray(params) && params.length > 0) {
+          return `${params[0].name}: ${formatCurrency(params[0].value)}`;
+        }
+        return "";
+      },
+    },
     grid: { left: 50, right: 20, top: 10, bottom: 30 },
     xAxis: {
       type: "category" as const,
-      data: dashboardMetrics.monthlyHarvested.map((m) => m.month),
-      axisLine: { lineStyle: { color: "hsl(var(--border))" } },
-      axisLabel: { color: "hsl(var(--muted-foreground))", fontSize: 11 },
+      data: metrics.monthlyHarvested.map((m) => m.month),
+      axisLine: { lineStyle: { color: "#e5e7eb" } },
+      axisLabel: { color: "#9ca3af", fontSize: 11 },
     },
     yAxis: {
       type: "value" as const,
       axisLine: { show: false },
-      splitLine: { lineStyle: { color: "hsl(var(--border))" } },
+      splitLine: { lineStyle: { color: "#f3f4f6" } },
       axisLabel: {
-        color: "hsl(var(--muted-foreground))",
+        color: "#9ca3af",
         fontSize: 11,
         formatter: (val: number) => formatCurrency(val),
       },
     },
     series: [
       {
-        data: dashboardMetrics.monthlyHarvested.map((m) => m.value),
+        data: metrics.monthlyHarvested.map((m) => m.value),
         type: "line" as const,
         smooth: true,
         areaStyle: {
@@ -96,348 +102,336 @@ export const TLHDashboard = ({ open, onOpenChange }: TLHDashboardProps) => {
             type: "linear" as const,
             x: 0, y: 0, x2: 0, y2: 1,
             colorStops: [
-              { offset: 0, color: "hsla(180, 70%, 45%, 0.3)" },
-              { offset: 1, color: "hsla(180, 70%, 45%, 0.02)" },
+              { offset: 0, color: "hsla(142, 76%, 36%, 0.3)" },
+              { offset: 1, color: "hsla(142, 76%, 36%, 0.02)" },
             ],
           },
         },
-        lineStyle: { color: "hsl(180, 70%, 45%)", width: 2 },
-        itemStyle: { color: "hsl(180, 70%, 45%)" },
+        lineStyle: { color: "hsl(142, 76%, 36%)", width: 2 },
+        itemStyle: { color: "hsl(142, 76%, 36%)" },
+        symbol: "none",
       },
     ],
   };
 
-  const trackingErrorGaugeOption = {
-    series: [
-      {
-        type: "gauge" as const,
-        startAngle: 180,
-        endAngle: 0,
-        min: 0,
-        max: 0.1,
-        splitNumber: 5,
-        radius: "100%",
-        center: ["50%", "75%"],
-        axisLine: {
-          lineStyle: {
-            width: 16,
-            color: [
-              [dashboardMetrics.trackingErrorTarget, "hsl(142, 76%, 36%)"],
-              [0.08, "hsl(45, 93%, 47%)"],
-              [1, "hsl(0, 84%, 60%)"],
-            ],
-          },
-        },
-        pointer: {
-          length: "60%",
-          width: 4,
-          itemStyle: { color: "hsl(var(--foreground))" },
-        },
-        axisTick: { show: false },
-        splitLine: { show: false },
-        axisLabel: {
-          distance: -20,
-          fontSize: 10,
-          color: "hsl(var(--muted-foreground))",
-          formatter: (val: number) => `${(val * 100).toFixed(1)}%`,
-        },
-        detail: {
-          valueAnimation: true,
-          formatter: (val: number) => `${(val * 100).toFixed(2)}%`,
-          fontSize: 16,
-          offsetCenter: [0, "-10%"],
-          color: "hsl(var(--foreground))",
-        },
-        data: [{ value: dashboardMetrics.trackingError }],
-      },
-    ],
-  };
+  const tabs = ["Overview", "Holdings", "Activity", "Documents", "Details"];
+  const netTotal = metrics.netRealizedShortTerm + metrics.netRealizedLongTerm;
 
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-[95vw] w-[1400px] max-h-[92vh] overflow-y-auto p-0">
+        <DialogContent className="max-w-[95vw] w-[1400px] max-h-[92vh] overflow-y-auto p-0 gap-0">
           {/* Header */}
-          <div className="px-6 pt-6 pb-4 border-b">
-            <div className="flex items-center justify-between">
+          <div className="px-6 pt-5 pb-3 border-b bg-card">
+            <div className="flex items-start justify-between">
               <div>
-                <h2 className="text-xl font-semibold">Tax Loss Harvesting</h2>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Region: {selectedRegion} · {opportunities.length} active opportunities
-                  {isSeeded && <span className="ml-2 text-emerald-600">(DB-backed)</span>}
-                  {isAutoSeeding && <span className="ml-2 text-muted-foreground inline-flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" /> Syncing data...</span>}
-                </p>
+                <h2 className="text-lg font-semibold text-foreground">{metrics.clientName}</h2>
+                <p className="text-sm text-muted-foreground">{metrics.accountNumber}</p>
               </div>
-              <Badge variant="outline" className="text-xs">
-                <Target className="w-3 h-3 mr-1" />
-                {selectedRegion} Jurisdiction
-              </Badge>
+              <div className="text-right">
+                <div className="text-sm text-muted-foreground">Account Balance</div>
+                <div className="text-lg font-semibold text-foreground">{formatCurrency(metrics.accountBalance)}</div>
+                <div className="text-xs text-muted-foreground">
+                  Total earnings: <span className="text-emerald-600 font-medium">{formatCurrency(metrics.totalEarnings)}</span>
+                </div>
+              </div>
+            </div>
+            {/* Tabs + Actions */}
+            <div className="flex items-center justify-between mt-4">
+              <div className="flex gap-1">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab.toLowerCase())}
+                    className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                      activeTab === tab.toLowerCase()
+                        ? "bg-primary text-primary-foreground font-medium"
+                        : "text-muted-foreground hover:bg-muted"
+                    }`}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" className="gap-1.5 text-xs">
+                  <ArrowRightLeft className="w-3.5 h-3.5" />
+                  Trade
+                </Button>
+                <Button variant="outline" size="sm" className="gap-1.5 text-xs">
+                  <Download className="w-3.5 h-3.5" />
+                  Transfer Funds
+                </Button>
+              </div>
             </div>
           </div>
 
-          <div className="p-6 space-y-6">
-            {/* Summary Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <TrendingDown className="w-4 h-4 text-destructive" />
-                    <span className="text-xs text-muted-foreground font-medium">Total Harvestable</span>
-                  </div>
-                  <p className="text-xl font-bold text-destructive">{formatCurrency(totalUnrealizedLoss)}</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <DollarSign className="w-4 h-4 text-emerald-600" />
-                    <span className="text-xs text-muted-foreground font-medium">Est. Tax Savings</span>
-                  </div>
-                  <p className="text-xl font-bold text-emerald-600">{formatCurrency(totalEstimatedSavings)}</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <BarChart3 className="w-4 h-4 text-primary" />
-                    <span className="text-xs text-muted-foreground font-medium">Tax Losses Harvested</span>
-                  </div>
-                  <p className="text-xl font-bold">{formatCurrency(dashboardMetrics.totalHarvested)}</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <PieChart className="w-4 h-4 text-primary" />
-                    <span className="text-xs text-muted-foreground font-medium">Accounts Affected</span>
-                  </div>
-                  <p className="text-xl font-bold">{opportunities.length}</p>
-                </CardContent>
-              </Card>
-            </div>
+          {/* Date Range Bar */}
+          <div className="px-6 py-2.5 bg-muted/30 border-b flex items-center justify-between text-sm text-muted-foreground">
+            <span>Data from Jan 1, {new Date().getFullYear()} to {getPrevBusinessDay()}</span>
+            <Button variant="outline" size="sm" className="h-7 text-xs gap-1">
+              YTD <ChevronDown className="w-3 h-3" />
+            </Button>
+          </div>
 
-            {/* Charts Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              {/* Tax Losses Harvested Chart */}
-              <Card className="lg:col-span-2">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Tax Losses Harvested (Cumulative)</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ReactEChartsCore option={areaChartOption} style={{ height: 220 }} />
+          <div className="p-6 space-y-5">
+            {/* Hero Cards */}
+            <div className="grid grid-cols-2 gap-4">
+              <Card className="border">
+                <CardContent className="p-5">
+                  <p className="text-sm text-muted-foreground font-medium mb-1">Tax Losses Harvested</p>
+                  <p className="text-2xl font-bold text-foreground">{formatCurrency(metrics.totalHarvested)}</p>
                 </CardContent>
               </Card>
-
-              {/* Tracking Error Gauge */}
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Tracking Error</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ReactEChartsCore option={trackingErrorGaugeOption} style={{ height: 180 }} />
-                  <p className="text-xs text-muted-foreground text-center mt-1">
-                    Target: &lt; {(dashboardMetrics.trackingErrorTarget * 100).toFixed(1)}%
+              <Card className="border">
+                <CardContent className="p-5">
+                  <p className="text-sm text-muted-foreground font-medium mb-1">
+                    Estimated Tax Savings<sup className="text-[10px] ml-0.5">1</sup>
                   </p>
+                  <p className="text-2xl font-bold text-foreground">{formatCurrency(metrics.estimatedTaxSavings)}</p>
                 </CardContent>
               </Card>
             </div>
 
-            {/* Savings Breakdown + Holdings + Tax Settings */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Savings Breakdown */}
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Estimated Tax Savings Breakdown</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Gains Deferral</span>
-                    <span className="font-medium text-emerald-600">{formatCurrency(dashboardMetrics.gainsDeferral)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Short→Long Reclassification</span>
-                    <span className="font-medium text-emerald-600">{formatCurrency(dashboardMetrics.shortToLongReclassification)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Loss Harvesting</span>
-                    <span className="font-medium text-emerald-600">{formatCurrency(dashboardMetrics.lossHarvesting)}</span>
-                  </div>
-                  <Separator />
-                  <div className="flex justify-between text-sm font-semibold">
-                    <span>Total</span>
-                    <span className="text-emerald-600">
-                      {formatCurrency(dashboardMetrics.gainsDeferral + dashboardMetrics.shortToLongReclassification + dashboardMetrics.lossHarvesting)}
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Holdings */}
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Holdings in Portfolio</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Model Primary</span>
-                    <span className="font-medium">{dashboardMetrics.holdingsInModel}%</span>
-                  </div>
-                  <div className="w-full bg-muted rounded-full h-2">
-                    <div className="bg-primary rounded-full h-2" style={{ width: `${dashboardMetrics.holdingsInModel}%` }} />
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Model Substitutes</span>
-                    <span className="font-medium">{dashboardMetrics.holdingsSubstitutes}%</span>
-                  </div>
-                  <div className="w-full bg-muted rounded-full h-2">
-                    <div className="bg-amber-500 rounded-full h-2" style={{ width: `${dashboardMetrics.holdingsSubstitutes}%` }} />
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Not in Model</span>
-                    <span className="font-medium">{dashboardMetrics.holdingsNotInModel}%</span>
-                  </div>
-                  <div className="w-full bg-muted rounded-full h-2">
-                    <div className="bg-destructive rounded-full h-2" style={{ width: `${dashboardMetrics.holdingsNotInModel}%` }} />
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Tax Settings */}
-              <Card>
-                <CardHeader className="pb-2">
-                  <div className="flex items-center gap-2">
-                    <Settings className="w-4 h-4 text-muted-foreground" />
-                    <CardTitle className="text-sm font-medium">Tax Settings</CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-muted-foreground">TLH Active</span>
-                    <Switch checked={dashboardMetrics.tlhEnabled} />
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Tax Sensitivity</span>
-                    <Badge variant="secondary" className="text-xs">{dashboardMetrics.taxSensitivity}</Badge>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">CG Budget</span>
-                    <span className="font-medium">{formatCurrency(dashboardMetrics.capitalGainsBudget)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Short-Term Rate</span>
-                    <span className="font-medium">{dashboardMetrics.shortTermTaxRate}%</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Long-Term Rate</span>
-                    <span className="font-medium">{dashboardMetrics.longTermTaxRate}%</span>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Short/Long Term Losses Breakdown */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Collapsible open={shortTermOpen} onOpenChange={setShortTermOpen}>
+            {/* Two-Column Layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-[55%_45%] gap-5">
+              {/* LEFT COLUMN */}
+              <div className="space-y-5">
+                {/* Estimated Tax Savings Breakdown */}
                 <Card>
-                  <CollapsibleTrigger asChild>
-                    <CardHeader className="pb-2 cursor-pointer hover:bg-muted/30 transition-colors">
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-sm font-medium">Short-Term Losses</CardTitle>
-                        <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${shortTermOpen ? "rotate-180" : ""}`} />
-                      </div>
-                    </CardHeader>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <CardContent className="space-y-2">
-                      {dashboardMetrics.shortTermLosses.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">No short-term losses</p>
-                      ) : (
-                        dashboardMetrics.shortTermLosses.map((loss, i) => (
-                          <div key={i} className="flex items-center justify-between text-sm py-1 border-b last:border-0">
-                            <div>
-                              <p className="font-medium">{loss.description}</p>
-                              <p className="text-xs text-muted-foreground">{loss.scanType} scan</p>
-                            </div>
-                            <span className="text-destructive font-semibold">{formatCurrency(loss.amount)}</span>
-                          </div>
-                        ))
-                      )}
-                    </CardContent>
-                  </CollapsibleContent>
+                  <CardHeader className="pb-3 pt-4 px-5">
+                    <div className="flex items-center gap-2">
+                      <CardTitle className="text-sm font-semibold">Estimated Tax Savings</CardTitle>
+                      <Info className="w-3.5 h-3.5 text-muted-foreground" />
+                    </div>
+                  </CardHeader>
+                  <CardContent className="px-5 pb-4 space-y-2.5">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Gains deferral</span>
+                      <span className="font-medium">{formatCurrency(metrics.gainsDeferral)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Short to long</span>
+                      <span className="font-medium">{formatCurrency(metrics.shortToLongReclassification)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Loss harvesting</span>
+                      <span className="font-medium">{formatCurrency(metrics.lossHarvesting)}</span>
+                    </div>
+                    <Separator />
+                    <div className="flex justify-between text-sm font-semibold">
+                      <span>Estimated Tax Savings</span>
+                      <span>{formatCurrency(metrics.estimatedTaxSavings)}</span>
+                    </div>
+                  </CardContent>
                 </Card>
-              </Collapsible>
 
-              <Collapsible open={longTermOpen} onOpenChange={setLongTermOpen}>
+                {/* Tax Losses Harvested Chart + Breakdown */}
                 <Card>
-                  <CollapsibleTrigger asChild>
-                    <CardHeader className="pb-2 cursor-pointer hover:bg-muted/30 transition-colors">
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-sm font-medium">Long-Term Losses</CardTitle>
-                        <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${longTermOpen ? "rotate-180" : ""}`} />
-                      </div>
-                    </CardHeader>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <CardContent className="space-y-2">
-                      {dashboardMetrics.longTermLosses.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">No long-term losses</p>
-                      ) : (
-                        dashboardMetrics.longTermLosses.map((loss, i) => (
-                          <div key={i} className="flex items-center justify-between text-sm py-1 border-b last:border-0">
-                            <div>
-                              <p className="font-medium">{loss.description}</p>
-                              <p className="text-xs text-muted-foreground">{loss.scanType} scan</p>
-                            </div>
-                            <span className="text-destructive font-semibold">{formatCurrency(loss.amount)}</span>
-                          </div>
-                        ))
-                      )}
-                    </CardContent>
-                  </CollapsibleContent>
+                  <CardHeader className="pb-2 pt-4 px-5">
+                    <CardTitle className="text-sm font-semibold">Tax Losses Harvested</CardTitle>
+                  </CardHeader>
+                  <CardContent className="px-5 pb-4 space-y-4">
+                    {/* Legend */}
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <div className="w-3 h-3 rounded-sm" style={{ background: "hsl(142, 76%, 36%)" }} />
+                      Total tax losses harvested
+                    </div>
+
+                    {/* Chart */}
+                    <ReactEChartsCore option={areaChartOption} style={{ height: 180 }} />
+
+                    {/* Short Term Collapsible */}
+                    <Collapsible open={shortTermOpen} onOpenChange={setShortTermOpen}>
+                      <CollapsibleTrigger className="flex items-center justify-between w-full py-2 hover:bg-muted/30 rounded px-1 transition-colors">
+                        <div className="flex items-center gap-1.5">
+                          <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${shortTermOpen ? "rotate-0" : "-rotate-90"}`} />
+                          <span className="text-sm font-medium">Short term losses harvested</span>
+                        </div>
+                        <span className="text-sm font-semibold text-destructive">{formatCurrency(metrics.shortTermLossTotal)}</span>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="pl-6 space-y-1 pt-1">
+                        <div className="flex justify-between text-sm text-muted-foreground">
+                          <span>Daily scan</span>
+                          <span>{formatCurrency(metrics.shortTermDailyScan)}</span>
+                        </div>
+                        <div className="flex justify-between text-sm text-muted-foreground">
+                          <span>Non daily scan</span>
+                          <span>{formatCurrency(metrics.shortTermNonDailyScan)}</span>
+                        </div>
+                      </CollapsibleContent>
+                    </Collapsible>
+
+                    {/* Long Term Collapsible */}
+                    <Collapsible open={longTermOpen} onOpenChange={setLongTermOpen}>
+                      <CollapsibleTrigger className="flex items-center justify-between w-full py-2 hover:bg-muted/30 rounded px-1 transition-colors">
+                        <div className="flex items-center gap-1.5">
+                          <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${longTermOpen ? "rotate-0" : "-rotate-90"}`} />
+                          <span className="text-sm font-medium">Long term losses harvested</span>
+                        </div>
+                        <span className="text-sm font-semibold text-destructive">{formatCurrency(metrics.longTermLossTotal)}</span>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="pl-6 space-y-1 pt-1">
+                        <div className="flex justify-between text-sm text-muted-foreground">
+                          <span>Daily scan</span>
+                          <span>{formatCurrency(metrics.longTermDailyScan)}</span>
+                        </div>
+                        <div className="flex justify-between text-sm text-muted-foreground">
+                          <span>Non daily scan</span>
+                          <span>{formatCurrency(metrics.longTermNonDailyScan)}</span>
+                        </div>
+                      </CollapsibleContent>
+                    </Collapsible>
+
+                    <Separator />
+                    <div className="flex justify-between text-sm font-semibold pt-1">
+                      <span>Total Losses Harvested from TLH</span>
+                      <span>{formatCurrency(metrics.totalHarvested)}</span>
+                    </div>
+                  </CardContent>
                 </Card>
-              </Collapsible>
+
+                {/* Net Realized G/L */}
+                <Card>
+                  <CardHeader className="pb-2 pt-4 px-5">
+                    <CardTitle className="text-sm font-semibold">Total net realized gains / losses</CardTitle>
+                  </CardHeader>
+                  <CardContent className="px-5 pb-4 space-y-1">
+                    <Collapsible open={netShortTermOpen} onOpenChange={setNetShortTermOpen}>
+                      <CollapsibleTrigger className="flex items-center justify-between w-full py-2 hover:bg-muted/30 rounded px-1 transition-colors">
+                        <div className="flex items-center gap-1.5">
+                          <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${netShortTermOpen ? "rotate-0" : "-rotate-90"}`} />
+                          <span className="text-sm font-medium">Short term</span>
+                        </div>
+                        <span className={`text-sm font-semibold ${metrics.netRealizedShortTerm < 0 ? "text-destructive" : "text-emerald-600"}`}>
+                          {formatCurrency(metrics.netRealizedShortTerm)}
+                        </span>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="pl-6 py-1">
+                        <div className="flex justify-between text-sm text-muted-foreground">
+                          <span>Realized gains</span>
+                          <span>{formatCurrency(metrics.netRealizedGains)}</span>
+                        </div>
+                        <div className="flex justify-between text-sm text-muted-foreground">
+                          <span>Realized losses</span>
+                          <span>{formatCurrency(metrics.netRealizedLosses)}</span>
+                        </div>
+                      </CollapsibleContent>
+                    </Collapsible>
+
+                    <Collapsible open={netLongTermOpen} onOpenChange={setNetLongTermOpen}>
+                      <CollapsibleTrigger className="flex items-center justify-between w-full py-2 hover:bg-muted/30 rounded px-1 transition-colors">
+                        <div className="flex items-center gap-1.5">
+                          <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${netLongTermOpen ? "rotate-0" : "-rotate-90"}`} />
+                          <span className="text-sm font-medium">Long term</span>
+                        </div>
+                        <span className={`text-sm font-semibold ${metrics.netRealizedLongTerm < 0 ? "text-destructive" : "text-emerald-600"}`}>
+                          {formatCurrency(metrics.netRealizedLongTerm)}
+                        </span>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="pl-6 py-1">
+                        <p className="text-xs text-muted-foreground">Includes all long-term capital events</p>
+                      </CollapsibleContent>
+                    </Collapsible>
+
+                    <Separator />
+                    <div className="flex justify-between text-sm font-semibold pt-2">
+                      <span>Total net realized gains / losses</span>
+                      <span className={netTotal < 0 ? "text-destructive" : "text-emerald-600"}>
+                        {formatCurrency(netTotal)}
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* RIGHT COLUMN */}
+              <div className="space-y-5">
+                {/* Tracking Error */}
+                <Card>
+                  <CardHeader className="pb-2 pt-4 px-5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <CardTitle className="text-sm font-semibold">Tracking error</CardTitle>
+                        <Info className="w-3.5 h-3.5 text-muted-foreground" />
+                      </div>
+                      <span className="text-xl font-bold text-foreground">
+                        {(metrics.trackingError * 100).toFixed(2)}%
+                      </span>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="px-5 pb-5">
+                    <TrackingErrorBand value={metrics.trackingError} target={metrics.trackingErrorTarget} />
+                  </CardContent>
+                </Card>
+
+                {/* Holdings in Portfolio */}
+                <Card>
+                  <CardHeader className="pb-2 pt-4 px-5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <CardTitle className="text-sm font-semibold">Holdings in portfolio</CardTitle>
+                        <Info className="w-3.5 h-3.5 text-muted-foreground" />
+                      </div>
+                      <span className="text-xl font-bold text-foreground">{metrics.totalHoldings}</span>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="px-5 pb-4 space-y-3">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Model primary</span>
+                      <span className="font-medium">{metrics.holdingsPrimaryCount}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Model substitutes</span>
+                      <span className="font-medium">{metrics.holdingsSubstitutesCount}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Not in model</span>
+                      <span className="font-medium">{metrics.holdingsNotInModelCount}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Current Tax Settings */}
+                <Card>
+                  <CardHeader className="pb-2 pt-4 px-5">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-sm font-semibold">Current tax settings</CardTitle>
+                      <button className="text-xs font-medium text-primary hover:underline">Edit</button>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="px-5 pb-4 space-y-3">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Current portfolio</span>
+                      <span className="font-medium text-right max-w-[200px] truncate">{metrics.currentPortfolio}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Tax Sensitivity</span>
+                      <span className="font-medium">{metrics.taxSensitivity}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Tax Loss Harvesting</span>
+                      <span className="font-medium">{metrics.tlhEnabled ? "On" : "Off"}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Annual Capital Gains Budget</span>
+                      <span className="font-medium">{metrics.capitalGainsBudget > 0 ? formatCurrency(metrics.capitalGainsBudget) : "Off"}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Tax Rates</span>
+                      <span className="font-medium">ST: {metrics.shortTermTaxRate}% · LT: {metrics.longTermTaxRate}%</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
+          </div>
 
-            {/* Net Realized Summary */}
-            <Card>
-              <CardContent className="p-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Total Net Realized Gains</span>
-                    <span className="font-semibold text-emerald-600">{formatCurrency(dashboardMetrics.netRealizedGains)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Total Net Realized Losses</span>
-                    <span className="font-semibold text-destructive">{formatCurrency(dashboardMetrics.netRealizedLosses)}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Tabs: Opportunities & Trade History */}
-            <Tabs defaultValue="opportunities">
-              <TabsList>
-                <TabsTrigger value="opportunities" className="gap-1.5">
-                  <TrendingDown className="w-3.5 h-3.5" />
-                  Opportunities
-                </TabsTrigger>
-                <TabsTrigger value="history" className="gap-1.5">
-                  <History className="w-3.5 h-3.5" />
-                  Trade History
-                </TabsTrigger>
-              </TabsList>
-              <TabsContent value="opportunities" className="mt-4">
-                <TLHOpportunitiesTable
-                  opportunities={opportunities}
-                  onSwitchFund={handleSwitchFund}
-                  onDismiss={dismissOpportunity}
-                  onBulkExecute={executeBulk}
-                />
-              </TabsContent>
-              <TabsContent value="history" className="mt-4">
-                <TLHTradeHistory trades={executedTrades} />
-              </TabsContent>
-            </Tabs>
+          {/* Footer Disclaimer */}
+          <div className="px-6 py-3 border-t bg-muted/20">
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              <sup>1</sup> Estimated tax savings are modeled projections based on the below tax-savings strategies. They are hypothetical, illustrative, and not guaranteed. Results vary by investor. Not tax advice.
+            </p>
           </div>
         </DialogContent>
       </Dialog>
