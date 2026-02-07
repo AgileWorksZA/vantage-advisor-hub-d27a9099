@@ -19,12 +19,20 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   ChevronDown,
   Info,
   ArrowRightLeft,
   Download,
   ExternalLink,
 } from "lucide-react";
+import { subMonths, subYears, format } from "date-fns";
 import ReactEChartsCore from "echarts-for-react";
 import { useTLHData } from "@/hooks/useTLHData";
 import { FundSwitchDialog } from "./FundSwitchDialog";
@@ -71,6 +79,7 @@ export const TLHDashboard = ({ open, onOpenChange, clientName, clientId }: TLHDa
   const [netShortTermOpen, setNetShortTermOpen] = useState(false);
   const [netLongTermOpen, setNetLongTermOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
+  const [timePeriod, setTimePeriod] = useState("YTD");
   const [productCount, setProductCount] = useState<number | null>(null);
 
   // Fetch client product count if we have a valid UUID
@@ -101,6 +110,37 @@ export const TLHDashboard = ({ open, onOpenChange, clientName, clientId }: TLHDa
     executeTrade(opp);
   };
 
+  const getStartDate = (period: string) => {
+    const now = new Date();
+    switch (period) {
+      case "3M": return subMonths(now, 3);
+      case "6M": return subMonths(now, 6);
+      case "1Y": return subYears(now, 1);
+      case "3Y": return subYears(now, 3);
+      case "5Y": return subYears(now, 5);
+      case "YTD":
+      default: return new Date(now.getFullYear(), 0, 1);
+    }
+  };
+
+  const chartData = useMemo(() => {
+    const history = metrics.monthlyHarvestedHistory;
+    if (!history || history.length === 0) return metrics.monthlyHarvested;
+
+    switch (timePeriod) {
+      case "3M": return history.slice(-3);
+      case "6M": return history.slice(-6);
+      case "1Y": return history.slice(-12);
+      case "3Y": return history.slice(-36);
+      case "5Y": return history;
+      case "YTD":
+      default: return history.slice(-12);
+    }
+  }, [timePeriod, metrics]);
+
+  const axisInterval = timePeriod === "5Y" ? 11 : timePeriod === "3Y" ? 5 : 0;
+  const axisRotate = timePeriod === "3Y" || timePeriod === "5Y" ? 30 : 0;
+
   const getPrevBusinessDay = () => {
     const d = new Date();
     const day = d.getDay();
@@ -126,9 +166,9 @@ export const TLHDashboard = ({ open, onOpenChange, clientName, clientId }: TLHDa
     grid: { left: 50, right: 20, top: 10, bottom: 30 },
     xAxis: {
       type: "category" as const,
-      data: metrics.monthlyHarvested.map((m) => m.month),
+      data: chartData.map((m) => m.month),
       axisLine: { lineStyle: { color: "#e5e7eb" } },
-      axisLabel: { color: "#9ca3af", fontSize: 11 },
+      axisLabel: { color: "#9ca3af", fontSize: 11, interval: axisInterval, rotate: axisRotate },
     },
     yAxis: {
       type: "value" as const,
@@ -142,7 +182,7 @@ export const TLHDashboard = ({ open, onOpenChange, clientName, clientId }: TLHDa
     },
     series: [
       {
-        data: metrics.monthlyHarvested.map((m) => m.value),
+        data: chartData.map((m) => m.value),
         type: "line" as const,
         smooth: 0.3,
         lineStyle: { color: "hsl(142, 76%, 36%)", width: 2 },
@@ -220,10 +260,20 @@ export const TLHDashboard = ({ open, onOpenChange, clientName, clientId }: TLHDa
 
             {/* Date Range Bar */}
             <div className="px-6 py-2.5 bg-muted/30 border-b flex items-center justify-between text-sm text-muted-foreground">
-              <span>Data from Jan 1, {new Date().getFullYear()} to {getPrevBusinessDay()}</span>
-              <Button variant="outline" size="sm" className="h-7 text-xs gap-1">
-                YTD <ChevronDown className="w-3 h-3" />
-              </Button>
+              <span>Data from {format(getStartDate(timePeriod), "MMM d, yyyy")} to {getPrevBusinessDay()}</span>
+              <Select value={timePeriod} onValueChange={setTimePeriod}>
+                <SelectTrigger className="h-7 w-[100px] text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="3M">3 Months</SelectItem>
+                  <SelectItem value="6M">6 Months</SelectItem>
+                  <SelectItem value="1Y">1 Year</SelectItem>
+                  <SelectItem value="3Y">3 Years</SelectItem>
+                  <SelectItem value="5Y">5 Years</SelectItem>
+                  <SelectItem value="YTD">YTD</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="p-6 space-y-5">

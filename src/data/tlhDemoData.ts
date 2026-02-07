@@ -51,6 +51,7 @@ export interface TLHDashboardMetrics {
   shortTermTaxRate: number;
   longTermTaxRate: number;
   monthlyHarvested: { month: string; value: number }[];
+  monthlyHarvestedHistory?: { month: string; value: number }[];
   shortTermLosses: { description: string; amount: number; scanType: string }[];
   longTermLosses: { description: string; amount: number; scanType: string }[];
   shortTermLossTotal: number;
@@ -481,6 +482,40 @@ export const tlhOpportunitiesByRegion: Record<string, TLHOpportunityDemo[]> = {
   CA: caOpportunities,
 };
 
+function generateMonthlyHistory(
+  currentYearData: { month: string; value: number }[]
+): { month: string; value: number }[] {
+  const currentYear = new Date().getFullYear();
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const yearScales = [0.40, 0.55, 0.70, 0.85];
+  const yearEndValue = currentYearData[11]?.value || currentYearData[currentYearData.length - 1]?.value || 0;
+
+  const history: { month: string; value: number }[] = [];
+
+  for (let y = 0; y < 4; y++) {
+    const year = currentYear - 4 + y;
+    const scale = yearScales[y];
+    const yearMax = yearEndValue * scale;
+
+    for (let m = 0; m < 12; m++) {
+      const ratio = yearEndValue > 0 ? currentYearData[m].value / yearEndValue : 0;
+      history.push({
+        month: `${monthNames[m]} ${year}`,
+        value: Math.round(ratio * yearMax),
+      });
+    }
+  }
+
+  for (let m = 0; m < 12; m++) {
+    history.push({
+      month: `${monthNames[m]} ${currentYear}`,
+      value: currentYearData[m].value,
+    });
+  }
+
+  return history;
+}
+
 export const getTLHDashboardMetrics = (jurisdiction: string): TLHDashboardMetrics => {
   const metricsMap: Record<string, TLHDashboardMetrics> = {
     ZA: {
@@ -759,7 +794,11 @@ export const getTLHDashboardMetrics = (jurisdiction: string): TLHDashboardMetric
     },
   };
 
-  return metricsMap[jurisdiction] || metricsMap.ZA;
+  const base = metricsMap[jurisdiction] || metricsMap.ZA;
+  return {
+    ...base,
+    monthlyHarvestedHistory: generateMonthlyHistory(base.monthlyHarvested),
+  };
 };
 
 const clientMetricsData: Record<string, TLHDashboardMetrics> = {
@@ -1116,7 +1155,10 @@ const clientMetricsData: Record<string, TLHDashboardMetrics> = {
 export const getClientTLHMetrics = (clientName: string, jurisdiction: string): TLHDashboardMetrics => {
   const clientData = clientMetricsData[clientName];
   if (clientData) {
-    return clientData;
+    return {
+      ...clientData,
+      monthlyHarvestedHistory: generateMonthlyHistory(clientData.monthlyHarvested),
+    };
   }
   return getTLHDashboardMetrics(jurisdiction);
 };
