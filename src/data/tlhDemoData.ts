@@ -489,7 +489,7 @@ export const getTLHDashboardMetrics = (jurisdiction: string): TLHDashboardMetric
       gainsDeferral: 5240,
       shortToLongReclassification: 2850,
       lossHarvesting: 6548,
-      trackingError: 0.032,
+      trackingError: 0.028,
       trackingErrorTarget: 0.05,
       holdingsInModel: 72,
       holdingsSubstitutes: 18,
@@ -733,35 +733,7 @@ export const getTLHDashboardMetrics = (jurisdiction: string): TLHDashboardMetric
   return metricsMap[jurisdiction] || metricsMap.ZA;
 };
 
-// --- Per-Client TLH Metrics ---
-
-export interface TLHClientMetrics extends TLHDashboardMetrics {
-  trackingErrorTimeline: { date: string; value: number }[];
-}
-
-function generateTimeline(finalValue: number, seed: number): { date: string; value: number }[] {
-  const points: { date: string; value: number }[] = [];
-  const startDate = new Date(2025, 0, 15); // Jan 15, 2025
-  const numPoints = 30;
-  const startValue = 0.002 + (seed % 5) * 0.001; // 0.2% - 0.7% starting range
-
-  for (let i = 0; i < numPoints; i++) {
-    const d = new Date(startDate);
-    d.setDate(d.getDate() + Math.round((i / (numPoints - 1)) * 365));
-    const progress = i / (numPoints - 1);
-    // Eased curve with small deterministic noise
-    const eased = progress * progress * 0.6 + progress * 0.4;
-    const noise = Math.sin(i * seed * 0.7) * 0.001;
-    const value = startValue + (finalValue - startValue) * eased + noise;
-    points.push({
-      date: d.toISOString().split("T")[0],
-      value: Math.max(0.001, parseFloat(value.toFixed(4))),
-    });
-  }
-  return points;
-}
-
-const clientMetricsData: Record<string, Omit<TLHClientMetrics, 'trackingErrorTimeline'>> = {
+const clientMetricsData: Record<string, TLHDashboardMetrics> = {
   "John Smith": {
     totalHarvested: 51040, estimatedTaxSavings: 23539, gainsDeferral: 20033,
     shortToLongReclassification: 3506, lossHarvesting: 45345, trackingError: 0.0132,
@@ -1004,28 +976,10 @@ const clientMetricsData: Record<string, Omit<TLHClientMetrics, 'trackingErrorTim
   },
 };
 
-// Simple string hash for deterministic seed
-function hashString(str: string): number {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = ((hash << 5) - hash) + str.charCodeAt(i);
-    hash |= 0;
-  }
-  return Math.abs(hash);
-}
-
-export const getClientTLHMetrics = (clientName: string, jurisdiction: string): TLHClientMetrics => {
+export const getClientTLHMetrics = (clientName: string, jurisdiction: string): TLHDashboardMetrics => {
   const clientData = clientMetricsData[clientName];
   if (clientData) {
-    return {
-      ...clientData,
-      trackingErrorTimeline: generateTimeline(clientData.trackingError, hashString(clientName)),
-    };
+    return clientData;
   }
-  // Fallback to jurisdiction-level data
-  const base = getTLHDashboardMetrics(jurisdiction);
-  return {
-    ...base,
-    trackingErrorTimeline: generateTimeline(base.trackingError, hashString(jurisdiction)),
-  };
+  return getTLHDashboardMetrics(jurisdiction);
 };
