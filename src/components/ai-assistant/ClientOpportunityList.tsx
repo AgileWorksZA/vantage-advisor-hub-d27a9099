@@ -19,9 +19,13 @@ interface ClientOpportunityListProps {
 const ClientOpportunityList = ({ clients, formatCurrency, opportunityType }: ClientOpportunityListProps) => {
   const navigate = useNavigate();
   const [tlhDashboardOpen, setTlhDashboardOpen] = useState(false);
+  const [selectedClientName, setSelectedClientName] = useState<string | undefined>();
+  const [selectedClientId, setSelectedClientId] = useState<string | undefined>();
 
   const handleClientClick = (client: EnrichedOpportunityClient) => {
     if (opportunityType === "tax-loss-harvesting") {
+      setSelectedClientName(client.name);
+      setSelectedClientId(client.dbClientId || client.id);
       setTlhDashboardOpen(true);
       return;
     }
@@ -86,6 +90,8 @@ const ClientOpportunityList = ({ clients, formatCurrency, opportunityType }: Cli
       <TLHDashboard
         open={tlhDashboardOpen}
         onOpenChange={setTlhDashboardOpen}
+        clientName={selectedClientName}
+        clientId={selectedClientId}
       />
     </>
   );
