@@ -1,60 +1,71 @@
 
 
-# Step-Change Chart for Tax Losses Harvested
+# Gradual Tax Loss Harvesting Curves
 
 ## Overview
 
-Replace the smooth area chart for "Tax Losses Harvested" with a step-change (staircase) line chart matching the reference image. The reference shows sharp horizontal plateaus with sudden vertical jumps -- representing discrete harvesting events rather than a smooth accumulation curve. Each client will have a unique step pattern aligned with their portfolio size and harvesting activity.
+Replace the instant step-change jumps in the "Tax Losses Harvested" chart with gradual ramps that show losses being harvested over realistic multi-month periods. Instead of a value jumping from 0 to 15,200 in a single month, the value will ramp up incrementally over 2-4 months per harvesting period. This creates a more realistic visualization of how tax-loss harvesting activity actually unfolds -- positions are sold across multiple trading sessions over weeks or months, not all at once.
 
 ## Changes Required
 
 ### 1. Chart Configuration (`src/components/tax-loss-harvesting/TLHDashboard.tsx`)
 
-Update the ECharts series configuration on lines 143-162:
-- Remove `smooth: true`
-- Add `step: 'end'` to create the staircase pattern (horizontal lines that jump vertically at data points)
-- Remove the area fill gradient to match the reference image (which shows a plain green line with no fill)
-- Keep tooltip, grid, axis styling unchanged
+- Remove `step: 'end'` from the ECharts series configuration (line 147) to allow a regular connected line chart
+- Add `smooth: 0.3` for a slight smoothing effect (not fully smooth, just enough to avoid harsh angles)
+- This creates visible ramps/slopes on the chart where harvesting activity occurs, with flat plateaus in between
 
 ### 2. Monthly Harvested Data (`src/data/tlhDemoData.ts`)
 
-Replace all `monthlyHarvested` arrays (for all 12 per-client records and 5 jurisdiction records) with step-change data patterns. Instead of smooth incremental growth, the data will show:
-- Periods of flat values (same value repeated across multiple months -- no harvesting activity)
-- Sudden jumps representing discrete TLH trade executions
-- Each client gets a unique pattern based on their profile:
+Replace all 17 `monthlyHarvested` arrays (12 clients + 5 jurisdictions) with gradual ramp patterns. Each harvesting event now spans 2-4 months of incremental increases before leveling off.
 
-**Pattern design by client archetype:**
+**Pattern examples:**
 
-| Client | Balance | Pattern Description | Steps |
-|--------|---------|-------------------|-------|
-| John Smith | 1.25M | 3 medium harvests spread across year | Flat-jump-flat-jump-flat-jump |
-| Mary Jones | 892K | 2 larger harvests, one early, one late | Jump-flat-jump-flat |
-| Peter Williams | 1.52M | 4 smaller frequent harvests | Jump-flat-jump-flat-jump-flat-jump |
-| Sarah Brown | 654K | 1 large harvest mid-year, 1 small late | Flat-flat-jump-flat-jump |
-| David Miller | 2.1M | 5 harvests, largest portfolio = most active | Many small jumps throughout |
-| Emma Davis | 446K | 2 small harvests | Flat-jump-flat-jump-flat |
-| Michael Wilson | 1.89M | 3 harvests clustered in Q2-Q3 | Flat-flat-jump-jump-jump-flat |
-| Lisa Anderson | 780K | 2 medium harvests | Jump-flat-flat-jump-flat |
-| James Taylor | 1.34M | 3 evenly-spaced harvests | Jump-flat-jump-flat-jump |
-| Jennifer Thomas | 560K | 1 large harvest plus 1 small | Flat-jump-flat-flat-jump |
-| Robert Jackson | 320K | 2 small harvests | Flat-jump-flat-jump |
-| Amanda White | 280K | 1 single harvest event | Flat-flat-jump-flat-flat |
+Instead of:
+```
+Jan: 0, Feb: 0, Mar: 15200, Apr: 15200, May: 15200 ...
+```
 
-Each array will have more data points (12 months, Jan-Dec) with repeated values creating visible plateaus between jumps. The final value in each array must match the client's `totalHarvested` value.
+Now:
+```
+Jan: 0, Feb: 0, Mar: 4000, Apr: 9500, May: 15200, Jun: 15200 ...
+```
 
-The 5 jurisdiction-level metric records (ZA, AU, GB, US, CA) will also get step-change patterns appropriate for aggregate portfolio activity.
+The ramp-up speed varies by client profile:
+- **Large portfolios** (David Miller, Peter Williams): More gradual ramps over 3-4 months per event (larger positions take longer to unwind)
+- **Medium portfolios** (John Smith, Michael Wilson, James Taylor): 2-3 month ramps
+- **Small portfolios** (Amanda White, Robert Jackson): Shorter 1-2 month ramps (smaller positions harvest faster)
+
+**Per-client ramp designs:**
+
+| Client | Total Harvested | Ramp Pattern |
+|--------|----------------|--------------|
+| John Smith | 51,040 | 3 harvesting periods: ramp Mar-Apr, ramp Jul-Aug, ramp Oct-Nov |
+| Mary Jones | 38,200 | 2 harvesting periods: ramp Feb-Apr, ramp Sep-Nov |
+| Peter Williams | 62,800 | 4 harvesting periods: ramp Jan-Feb, Apr-May, Jul-Aug, Oct-Nov |
+| Sarah Brown | 24,100 | 2 harvesting periods: ramp May-Jul, ramp Nov-Dec |
+| David Miller | 78,500 | 5 gradual ramps spread across the year |
+| Emma Davis | 19,800 | 2 harvesting periods: ramp Apr-May, ramp Aug-Sep |
+| Michael Wilson | 55,200 | 3 harvesting periods clustered Q2-Q3 with gradual ramps |
+| Lisa Anderson | 31,600 | 2 harvesting periods: ramp Jan-Mar, ramp Aug-Sep |
+| James Taylor | 42,900 | 3 evenly-spaced ramps: Feb-Mar, Jun-Jul, Oct-Nov |
+| Jennifer Thomas | 21,400 | 2 harvesting periods: ramp Mar-May, ramp Nov-Dec |
+| Robert Jackson | 12,800 | 2 short ramps: Apr, Aug-Sep |
+| Amanda White | 9,600 | 1 ramp: Jun-Jul |
+
+The 5 jurisdiction records (ZA, AU, GB, US, CA) will also get gradual ramp patterns matching aggregate activity.
+
+All final values continue to match each client's `totalHarvested` for data consistency.
 
 ## File Changes Summary
 
 | File | Action | Description |
 |------|--------|-------------|
-| `src/components/tax-loss-harvesting/TLHDashboard.tsx` | Modify | Change chart from `smooth: true` to `step: 'end'`; remove area gradient fill |
-| `src/data/tlhDemoData.ts` | Modify | Replace all 17 `monthlyHarvested` arrays with step-change data patterns unique to each client/jurisdiction |
+| `src/components/tax-loss-harvesting/TLHDashboard.tsx` | Modify | Remove `step: 'end'`, add slight `smooth: 0.3` to series config |
+| `src/data/tlhDemoData.ts` | Modify | Replace all 17 `monthlyHarvested` arrays with gradual ramp patterns |
 
 ## Technical Notes
 
-- ECharts `step: 'end'` draws a horizontal line from each point, then jumps vertically to the next -- exactly matching the reference image's staircase pattern
-- Removing `areaStyle` entirely gives the clean green line without fill, matching the reference
-- All final values in `monthlyHarvested` arrays will continue to equal the respective `totalHarvested` to maintain data consistency
-- The x-axis will expand to show all 12 months for more granular step visualization
-
+- Removing `step: 'end'` reverts to a standard line chart where the line connects data points directly, creating visible slopes during ramp periods
+- Using `smooth: 0.3` (partial smoothing) gives the ramps a slight curve without making the chart look fully smoothed -- the plateaus remain clearly flat
+- The `symbol: 'none'` setting is kept to maintain a clean line without dot markers
+- No changes to tooltips, axis formatting, or grid layout
