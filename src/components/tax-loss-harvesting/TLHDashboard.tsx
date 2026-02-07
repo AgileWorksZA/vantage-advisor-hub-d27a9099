@@ -180,7 +180,7 @@ export const TLHDashboard = ({ open, onOpenChange, clientName, clientId }: TLHDa
                   </div>
                   <p className="text-sm text-muted-foreground">{metrics.accountNumber}</p>
                 </div>
-                <div className="text-right">
+                <div className="text-right pr-6">
                   <div className="text-sm text-muted-foreground">Account Balance</div>
                   <div className="text-lg font-semibold text-foreground">{formatCurrency(metrics.accountBalance)}</div>
                   <div className="text-xs text-muted-foreground">
