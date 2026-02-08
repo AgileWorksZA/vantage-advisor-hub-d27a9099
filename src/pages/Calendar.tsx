@@ -1,4 +1,5 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
+import { useRegion } from "@/contexts/RegionContext";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
@@ -140,8 +141,26 @@ const CalendarPage = () => {
     allDay: false,
   });
 
-  const { events, loading: eventsLoading, createEvent, updateEvent, deleteEvent, refetch } = useCalendarEvents(viewDate, viewMode);
+  const { events: rawEvents, loading: eventsLoading, createEvent, updateEvent, deleteEvent, refetch } = useCalendarEvents(viewDate, viewMode);
   const { clients } = useClients();
+  const { selectedAdvisors, regionalData } = useRegion();
+
+  // Map selected advisor initials to full names
+  const selectedAdvisorNames = useMemo(() => {
+    return regionalData.advisors
+      .filter(a => selectedAdvisors.includes(a.initials))
+      .map(a => a.name);
+  }, [selectedAdvisors, regionalData.advisors]);
+
+  // Filter events by selected advisors
+  const events = useMemo(() => {
+    return rawEvents.filter(event => {
+      // Events without a client (personal/team) are always visible
+      if (!event.clientId) return true;
+      // Events linked to a client must match a selected advisor
+      return event.clientAdvisor ? selectedAdvisorNames.includes(event.clientAdvisor) : false;
+    });
+  }, [rawEvents, selectedAdvisorNames]);
   
   // Meeting recordings for the selected event
   const {

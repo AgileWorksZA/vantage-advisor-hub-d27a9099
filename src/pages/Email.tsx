@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
+import { useRegion } from "@/contexts/RegionContext";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
@@ -104,7 +105,25 @@ const EmailPage = () => {
     }
   }, [settingsLoading, emailSettings?.fetch_mode, searchParams]);
 
-  const { emails, loading: emailsLoading, isFetching, folderCounts, refetch, triggerFetch, moveToFolder, markAsRead } = useEmails(activeFolder || "Task Pool");
+  const { emails: rawEmails, loading: emailsLoading, isFetching, folderCounts, refetch, triggerFetch, moveToFolder, markAsRead } = useEmails(activeFolder || "Task Pool");
+  const { selectedAdvisors, regionalData } = useRegion();
+
+  // Map selected advisor initials to full names
+  const selectedAdvisorNames = useMemo(() => {
+    return regionalData.advisors
+      .filter(a => selectedAdvisors.includes(a.initials))
+      .map(a => a.name);
+  }, [selectedAdvisors, regionalData.advisors]);
+
+  // Filter emails by selected advisors
+  const emails = useMemo(() => {
+    return rawEmails.filter(email => {
+      // Emails not matched to any client remain visible
+      if (email.clients.length === 0) return true;
+      // Emails matched to a client must match a selected advisor
+      return email.clientAdvisor ? selectedAdvisorNames.includes(email.clientAdvisor) : false;
+    });
+  }, [rawEmails, selectedAdvisorNames]);
 
   const handleEmailClick = (email: EmailListItem) => {
     // Navigate to the full-page email view

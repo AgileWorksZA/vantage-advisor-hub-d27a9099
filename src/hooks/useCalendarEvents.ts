@@ -20,6 +20,7 @@ export interface CalendarEvent {
   userId: string;
   clientId: string | null;
   clientName?: string;
+  clientAdvisor?: string;
   title: string;
   description: string | null;
   eventType: CalendarEventType;
@@ -102,7 +103,7 @@ export const useCalendarEvents = (viewDate: Date = new Date(), viewMode: "month"
         .from("calendar_events")
         .select(`
           *,
-          clients!calendar_events_client_id_fkey(first_name, surname)
+          clients!calendar_events_client_id_fkey(first_name, surname, advisor)
         `)
         .eq("user_id", user.id)
         .eq("is_deleted", false)
@@ -119,6 +120,7 @@ export const useCalendarEvents = (viewDate: Date = new Date(), viewMode: "month"
         clientName: event.clients 
           ? `${event.clients.first_name} ${event.clients.surname}`
           : undefined,
+        clientAdvisor: event.clients?.advisor || undefined,
         title: event.title,
         description: event.description,
         eventType: event.event_type as CalendarEventType,
