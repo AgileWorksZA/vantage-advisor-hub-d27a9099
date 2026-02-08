@@ -1,120 +1,95 @@
 
 
-# Sticky Client Ribbon with Condensed Spacing
+# Condensed Top Row and Expandable Info Bar
 
 ## Overview
 
-Make the client ribbon (back button row + info bar + tab navigation) a fixed/sticky section that stays pinned at the top while tab content scrolls beneath it. Condense the ribbon's vertical spacing so its bottom edge aligns with the bottom of the "Clients" nav item in the left sidebar.
-
-## Current Layout
-
-```text
-+--------+----------------------------------------------------------+
-| Sidebar| AppHeader (h-14, fixed)                                   |
-|        +----------------------------------------------------------+
-|        | <main> (scrollable)                                       |
-| Dash   |   ClientRibbon (row1 + row2)  <-- scrolls away            |
-| Clients|   TabsList                    <-- scrolls away            |
-|        |   TabsContent                                             |
-|        |                                                           |
-+--------+----------------------------------------------------------+
-```
-
-## Proposed Layout
-
-```text
-+--------+----------------------------------------------------------+
-| Sidebar| AppHeader (h-14, fixed)                                   |
-|        +----------------------------------------------------------+
-|        | ClientRibbon (row1 + row2) -- STICKY, shrink-0            |
-| Dash   | TabsList                   -- STICKY, shrink-0            |
-| Clients+----------------------------------------------------------+
-|        | <main> (scrollable)                                       |
-|        |   TabsContent only                                        |
-|        |                                                           |
-+--------+----------------------------------------------------------+
-```
-
-The ribbon bottom (including tab bar) aligns with the bottom of "Clients" in the left nav.
+Two changes to the client ribbon:
+1. **Halve the vertical height** of the top row (back button + title + action buttons) by reducing padding and font size
+2. **Make the info bar (middle section) expandable** -- collapsed shows the current avatar/name/badges/ID row; expanded reveals additional details (Physical Address, Cellphone, Email, Category, Tax Number) matching the third reference image
 
 ## Changes
 
-### 1. Condense ClientRibbon vertical spacing
+### File: `src/components/client-detail/ClientRibbon.tsx`
 
-**File: `src/components/client-detail/ClientRibbon.tsx`**
+**1. Condense Row 1 (top section)**
 
-- Outer wrapper: change `mb-6` to `mb-0` (no bottom margin, the parent handles spacing)
-- Row 1 (back + title): change `mb-3` to `mb-1.5` (tighter gap between rows)
-- Row 1 padding: add `px-6 pt-3` for horizontal padding (moved from parent `<main>`)
-- Info bar: change `py-4 px-5` to `py-2.5 px-5` (reduce vertical padding)
-- Avatar: reduce from `w-14 h-14` to `w-10 h-10` and text from `text-lg` to `text-sm` (more compact)
-- Status dot: scale proportionally smaller
-- Info gap: reduce `gap-5` to `gap-3` between avatar and info text
-- Line spacing: reduce `gap-1.5` to `gap-0.5` between the two info lines
-- Info bar border-radius: keep `rounded-lg` but apply `mx-6` for horizontal inset
+Current Row 1 uses `mb-1.5 px-6 pt-2.5` and `text-xl`. Changes:
+- Reduce `pt-2.5` to `pt-1`
+- Reduce `mb-1.5` to `mb-1`
+- Shrink title from `text-xl` to `text-base`
+- Use `size="sm"` on all action buttons (Select, dropdown triggers) for a tighter fit
 
-### 2. Restructure ClientDetail.tsx layout
+This halves the vertical footprint of Row 1 from roughly 48px to approximately 24-28px.
 
-**File: `src/pages/ClientDetail.tsx`**
+**2. Make Row 2 (info bar) expandable with a chevron toggle**
 
-Move the `Tabs` component to wrap a wider area. The `ClientRibbon` and `TabsList` sit in a non-scrolling `shrink-0` section between the AppHeader and the scrollable main. Only the `TabsContent` goes inside the scrollable `<main>`.
+Add state `isExpanded` (default false). Wrap the info bar in a `Collapsible` from Radix. Add a small chevron button to the right edge of the bar that toggles expansion.
 
-Current structure (simplified):
-```tsx
-<main className="flex-1 p-6 overflow-auto">
-  <ClientRibbon ... />
-  <Tabs ...>
-    <TabsList ... />
-    <TabsContent ... />
-  </Tabs>
-</main>
+**Collapsed state** (current appearance):
+- Avatar + name + advisor + badges on line 1
+- ID number + phone + email on line 2
+- Small chevron icon on the far right, pointing down
+
+**Expanded state** (adds a new section below):
+- A thin divider line
+- Two-column grid showing:
+  - **Left column**: "Physical Address" label + full address (parsed from `client.residential_address` JSON: street_nr, street, suburb, city, code, province, country)
+  - **Right column**: "Cellphone" label + `client.cell_number` and `client.work_number` (with copy icons), "Email" label + `client.email` (with copy icon)
+  - **Bottom row**: "Category" label + `client.client_type`, "Tax Number" label + `client.tax_number`
+- Chevron rotates to point up
+
+**Data mapping for expanded section:**
+
+| Field | Source | Notes |
+|---|---|---|
+| Physical Address | `client.residential_address` (JSON) | Parse street_nr, street, suburb, city, code, province, country. Show "No address on file" if null |
+| Cellphone | `client.cell_number` | Show with copy button. Also show `client.work_number` below if available |
+| Email | `client.email` or `client.work_email` | Show with copy button |
+| Category | `client.client_type` | e.g. "individual", "family" |
+| Tax Number | `client.tax_number` | Show as-is, or "-" if null |
+
+**New imports needed:**
+- `useState` from React
+- `ChevronUp` from lucide-react (already have `ChevronDown`)
+- `Copy` from lucide-react (for copy-to-clipboard buttons)
+- `Collapsible`, `CollapsibleContent`, `CollapsibleTrigger` from `@/components/ui/collapsible`
+
+**Copy button behavior:** Each copy icon copies the adjacent value to clipboard using `navigator.clipboard.writeText()` and shows a brief toast notification.
+
+## Visual Layout
+
+**Collapsed (default):**
+```text
+[<- Back]  Manage individual (Owner) - Name         [Report v] [Entity v] [...]
++--------------------------------------------------------------------------+
+| (MJ) Person Surname, I (Name) | A: Advisor | [Client] [Active]       [v]|
+|      # 1234567890  Phone +2712345  Mail email@co.za                      |
++--------------------------------------------------------------------------+
 ```
 
-New structure:
-```tsx
-<Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-  {/* Sticky ribbon + tabs header */}
-  <div className="shrink-0 bg-background border-b border-border">
-    <ClientRibbon ... />
-    <TabsList className="... px-6" />
-  </div>
-
-  {/* Scrollable tab content */}
-  <main className="flex-1 p-6 overflow-auto">
-    <TabsContent ... />
-  </main>
-</Tabs>
+**Expanded:**
+```text
+[<- Back]  Manage individual (Owner) - Name         [Report v] [Entity v] [...]
++--------------------------------------------------------------------------+
+| (MJ) Person Surname, I (Name) | A: Advisor | [Client] [Active]       [^]|
+|      # 1234567890  Phone +2712345  Mail email@co.za                      |
+|--------------------------------------------------------------------------|
+| Physical Address                        Cellphone                        |
+| 123 Main St                             +27744581082  [copy]             |
+| Suburb City Province                    +27744581080  [copy]             |
+| Country                                                                  |
+|                                         Email                            |
+| Category          Tax Number            trishar@efgroup.co.za  [copy]    |
+| individual        9876543210                                             |
++--------------------------------------------------------------------------+
 ```
-
-This keeps the `Tabs` context wrapper around both `TabsList` and `TabsContent` while placing them in separate scroll regions.
-
-### 3. Spacing calculations for sidebar alignment
-
-The left sidebar "Clients" button bottom edge is approximately:
-- Sidebar top padding: 16px
-- Command Center button + margin: 40px + 16px = 56px
-- "Dash" button: ~44px
-- "Clients" button: ~44px
-- Total from viewport top: ~160px
-
-The ribbon section needs to fit within:
-- AppHeader height: 56px (h-14)
-- Remaining budget for ribbon: ~104px
-
-Approximate breakdown of condensed ribbon:
-- Row 1 (back + title): ~36px (py-1.5 + text)  
-- Gap between rows: 6px (mb-1.5)
-- Info bar: ~44px (py-2.5 + compact avatar)  
-- Gap to tabs: 0
-- Tab strip: ~40px
-- Total: ~126px
-
-This brings the tab strip bottom close to the sidebar "Clients" bottom. Fine-tuning via padding values will achieve exact alignment.
 
 ## Files Summary
 
 | File | Action |
 |------|--------|
-| `src/components/client-detail/ClientRibbon.tsx` | Modify -- condense spacing, reduce avatar size, remove outer margin |
-| `src/pages/ClientDetail.tsx` | Modify -- restructure layout so ribbon + tab strip are sticky, only tab content scrolls |
+| `src/components/client-detail/ClientRibbon.tsx` | Modify -- condense Row 1 spacing, add expandable section to Row 2 with address/contact/tax details |
+
+No new files needed. All changes are within the existing ClientRibbon component.
 
