@@ -1,15 +1,24 @@
 
 
-# Reduce Whitespace in Outstanding Documents Table
+# Condense Advisor Table and Rename Rating Column
 
 ## Overview
-The "Outstanding documents" card's table rows still use the default table cell padding (`p-4` / `h-12`), which is noticeably more spacious than the tightened rows in the other cards. This change will reduce that padding to match the condensed style applied elsewhere on the page.
+Apply the same reduced whitespace treatment to the "Current Advisor and Accounts" table as was done for the Outstanding Documents table, and rename "Rating" to "Risk Rating".
 
-## Change (single file: `src/components/client-detail/ClientSummaryTab.tsx`)
+## Changes (single file: `src/components/client-detail/ClientSummaryTab.tsx`)
 
-### Table header and cell padding
-- `TableHead`: Add `className="text-xs h-8 px-3"` to reduce header height from the default `h-12` and tighten horizontal padding
-- `TableCell`: Add `className="text-sm py-1.5 px-3"` to reduce vertical padding from the default `p-4` to `py-1.5` and horizontal to `px-3`
+### 1. Table header padding (lines 210-213)
+- Add `h-8 px-3` to each `TableHead` to match the condensed style used in Outstanding Documents
+- Rename "Rating" to "Risk Rating"
 
-These changes apply only to the Outstanding Documents table (the bottom card in the right column). The Advisor table already has its own sizing and is unaffected.
+### 2. Table cell padding (lines 219-227)
+- Add `py-1.5 px-3` to each `TableCell` to reduce row height
+
+### 3. Demo data label (line 38)
+- Update the `advisorData` array: change the property name display from `"Rating"` header to show `"Risk Rating"` -- the header change handles this, no data change needed
+
+### Summary of specific edits
+- `TableHead` elements: add `className="text-xs h-8 px-3"` (from `"text-xs"`)
+- `TableHead` for Rating: text changed from `"Rating"` to `"Risk Rating"`
+- `TableCell` elements: add `py-1.5 px-3` to existing className (from `"text-sm"` to `"text-sm py-1.5 px-3"`)
 
