@@ -1,46 +1,38 @@
 
-# Constrain Mobile View to Phone-Sized Container
+
+# Remove Avatar Icon from General Details Card
 
 ## Overview
-Instead of the mobile splash screen and app filling the entire desktop browser window, they will be displayed inside a phone-shaped container centered on the screen, mimicking an iPhone 17 Pro form factor (393 x 852 pixels). The desktop background behind the phone will show a subtle dark gradient.
+Remove the circular avatar/initials icon (the teal circle showing e.g. "KF") from the "General details" card header on the Client Summary tab. This frees up vertical space in the card.
 
-## What You Will See
-- A phone-shaped frame (rounded corners, subtle border/shadow) centered on the desktop screen
-- The splash screen and all mobile tabs render inside this frame at realistic phone dimensions
-- The surrounding area shows a neutral dark background
-- The "Web" button still switches back to the full desktop CRM
+## Change
 
-## Technical Details
+### `src/components/client-detail/ClientSummaryTab.tsx`
+- Remove the `Avatar` and `AvatarFallback` components from inside the General Details `CardHeader`
+- Remove the wrapping `div` with `flex items-start justify-between` since it is no longer needed to position the avatar opposite the title
+- Keep the `CardTitle` as-is
+- Remove the now-unused `Avatar` and `AvatarFallback` imports (if not used elsewhere in the file)
 
-### Dimensions
-- **Width**: 393px (iPhone 17 Pro logical width)
-- **Height**: 852px (iPhone 17 Pro logical height)
-- Phone frame has rounded corners (40px radius), a subtle border, and shadow to give a device-like appearance
-
-### Changes
-
-#### 1. `src/App.tsx`
-Wrap the mobile splash and mobile app in a new phone-frame container div:
-
+**Before:**
 ```text
-When mode === "mobile":
-  Render a full-screen dark backdrop div (fixed inset-0)
-    Inside it, center a phone-frame div:
-      - w-[393px] h-[852px]
-      - rounded-[40px], overflow-hidden
-      - ring/shadow for device outline effect
-    Inside the phone-frame, render either MobileSplashScreen or MobileApp
+<CardHeader>
+  <div className="flex items-start justify-between">
+    <CardTitle>General details</CardTitle>
+    <Avatar>           <-- remove
+      <AvatarFallback> <-- remove
+        {initials}
+      </AvatarFallback>
+    </Avatar>
+  </div>
+</CardHeader>
 ```
 
-#### 2. `src/components/mobile/MobileSplashScreen.tsx`
-- Change `fixed inset-0` to relative positioning so it fills the phone container instead of the viewport
-- Use `w-full h-full` instead of `fixed inset-0`
-- The "powered by Vantage" section changes from `absolute bottom-12` to a flex-based layout within the container
+**After:**
+```text
+<CardHeader>
+  <CardTitle>General details</CardTitle>
+</CardHeader>
+```
 
-#### 3. `src/components/mobile/MobileApp.tsx`
-- Change `fixed inset-0` to relative positioning (`w-full h-full`) so it fills the phone container
-- The header and bottom nav remain sticky within the phone frame
-- Content scrolls within the phone-sized area
+This is a single-file, single-location change. No other files or components are affected.
 
-### No Other Files Affected
-The individual tab components (MobileTodayTab, MobileClientsTab, etc.) don't use fixed positioning -- they render inside the MobileApp's scrollable main area, so they automatically adapt to the constrained size.
