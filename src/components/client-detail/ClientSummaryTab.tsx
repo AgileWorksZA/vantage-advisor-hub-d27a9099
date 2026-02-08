@@ -139,16 +139,16 @@ const ClientSummaryTab = ({ client, clientId, onShowMoreActivity }: ClientSummar
   const birthday = formatBirthday(client.date_of_birth);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
       {/* Left Column */}
-      <div className="space-y-6">
+      <div className="space-y-4">
         {/* General Details */}
         <Card>
-          <CardHeader className="pb-4">
+          <CardHeader className="pb-2">
             <CardTitle className="text-lg">General details</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
+            <div className="space-y-1">
               {[
                 { label: "Name", value: displayName },
                 { label: "Title", value: client.title || "-" },
@@ -162,7 +162,7 @@ const ClientSummaryTab = ({ client, clientId, onShowMoreActivity }: ClientSummar
                 { label: "Language", value: client.language || "English" },
                 { label: "Tax number", value: client.tax_number || "-" },
               ].map((item) => (
-                <div key={item.label} className="flex justify-between items-center py-1 border-b border-border/50 last:border-0">
+                <div key={item.label} className="flex justify-between items-center py-0.5 border-b border-border/50 last:border-0">
                   <span className="text-sm text-muted-foreground">{item.label}</span>
                   <span className="text-sm font-medium">{item.value}</span>
                 </div>
@@ -173,11 +173,11 @@ const ClientSummaryTab = ({ client, clientId, onShowMoreActivity }: ClientSummar
 
         {/* Contact Details */}
         <Card>
-          <CardHeader className="pb-4">
+          <CardHeader className="pb-2">
             <CardTitle className="text-lg">Contact details</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
+            <div className="space-y-1">
               {[
                 { label: "Work number", value: client.work_number || "-" },
                 { label: "Work extension", value: client.work_extension || "-" },
@@ -186,7 +186,7 @@ const ClientSummaryTab = ({ client, clientId, onShowMoreActivity }: ClientSummar
                 { label: "Cell number", value: client.cell_number || "-" },
                 { label: "Email", value: client.email || "-" },
               ].map((item) => (
-                <div key={item.label} className="flex justify-between items-center py-1 border-b border-border/50 last:border-0">
+                <div key={item.label} className="flex justify-between items-center py-0.5 border-b border-border/50 last:border-0">
                   <span className="text-sm text-muted-foreground">{item.label}</span>
                   <span className="text-sm font-medium">{item.value}</span>
                 </div>
@@ -197,10 +197,10 @@ const ClientSummaryTab = ({ client, clientId, onShowMoreActivity }: ClientSummar
       </div>
 
       {/* Right Column */}
-      <div className="space-y-6">
+      <div className="space-y-4">
         {/* Current Advisor and Accounts */}
         <Card>
-          <CardHeader className="pb-4">
+          <CardHeader className="pb-2">
             <CardTitle className="text-lg">Current Advisor and Accounts</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
@@ -234,7 +234,7 @@ const ClientSummaryTab = ({ client, clientId, onShowMoreActivity }: ClientSummar
 
         {/* Recent Activity */}
         <Card>
-          <CardHeader className="pb-4">
+          <CardHeader className="pb-2">
             <CardTitle className="text-lg">Recent Activity</CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
@@ -265,7 +265,7 @@ const ClientSummaryTab = ({ client, clientId, onShowMoreActivity }: ClientSummar
             </div>
             
             {/* Show more link */}
-            <div className="pt-2 border-t mt-2">
+            <div className="pt-1 border-t mt-1">
               <Button 
                 variant="link" 
                 className="p-0 h-auto text-[hsl(180,70%,45%)] hover:text-[hsl(180,70%,35%)]"
@@ -279,7 +279,7 @@ const ClientSummaryTab = ({ client, clientId, onShowMoreActivity }: ClientSummar
 
         {/* Outstanding Documents */}
         <Card>
-          <CardHeader className="pb-4">
+          <CardHeader className="pb-2">
             <CardTitle className="text-lg">Outstanding documents</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
