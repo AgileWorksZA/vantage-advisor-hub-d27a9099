@@ -9,11 +9,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useRegion } from "@/contexts/RegionContext";
+import { usePageContext } from "@/contexts/PageContext";
 import { useNavigationWarning } from "@/hooks/useNavigationWarning";
 import { NavigationWarningDialog } from "@/components/layout/NavigationWarningDialog";
 
 export const AdvisorFilter = () => {
   const { regionalData, selectedAdvisors, setSelectedAdvisors } = useRegion();
+  const { currentAdvisorInitials } = usePageContext();
   const { isLandingPage, parentLandingPage, parentLandingLabel } = useNavigationWarning();
   const navigate = useNavigate();
   const advisors = regionalData.advisors;
@@ -27,10 +29,15 @@ export const AdvisorFilter = () => {
 
   const applyOrWarn = (newAdvisors: string[]) => {
     if (isLandingPage) {
+      // On a landing page: always safe
       setSelectedAdvisors(newAdvisors);
-    } else {
+    } else if (currentAdvisorInitials && !newAdvisors.includes(currentAdvisorInitials)) {
+      // On a sub-page AND the entity's advisor is being removed: warn
       pendingAdvisorsRef.current = newAdvisors;
       setShowWarning(true);
+    } else {
+      // On a sub-page but entity's advisor is NOT affected: safe
+      setSelectedAdvisors(newAdvisors);
     }
   };
 

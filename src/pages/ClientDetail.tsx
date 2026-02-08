@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
+import { useRegion } from "@/contexts/RegionContext";
+import { usePageContext } from "@/contexts/PageContext";
 import { Button } from "@/components/ui/button";
 import { 
   LayoutDashboard, 
@@ -54,6 +56,8 @@ const ClientDetail = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("summary");
+  const { regionalData } = useRegion();
+  const { setCurrentAdvisorInitials } = usePageContext();
 
   // Fetch client data from Supabase
   const { client, loading: clientLoading, error, updateClient, refetch } = useClientDetail(clientId);
@@ -76,6 +80,19 @@ const ClientDetail = () => {
   ];
   
   const clientName = client ? getDisplayName(client) : "Loading...";
+
+  // Set the page context with the client's advisor initials
+  useEffect(() => {
+    if (client?.advisor) {
+      const advisorEntry = regionalData.advisors.find(
+        (a) => a.name === client.advisor
+      );
+      setCurrentAdvisorInitials(advisorEntry?.initials ?? null);
+    } else {
+      setCurrentAdvisorInitials(null);
+    }
+    return () => setCurrentAdvisorInitials(null);
+  }, [client?.advisor, regionalData.advisors, setCurrentAdvisorInitials]);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(

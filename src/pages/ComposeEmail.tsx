@@ -44,6 +44,8 @@ import { useCommunicationCampaigns, CommunicationChannel } from "@/hooks/useComm
 import { useClientDocuments } from "@/hooks/useClientDocuments";
 import { useToast } from "@/hooks/use-toast";
 import { toast } from "sonner";
+import { useRegion } from "@/contexts/RegionContext";
+import { usePageContext } from "@/contexts/PageContext";
 import GlobalAIChat from "@/components/ai-assistant/GlobalAIChat";
 
 const sidebarItems = [
@@ -70,6 +72,8 @@ const ComposeEmail = () => {
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
+  const { regionalData } = useRegion();
+  const { setCurrentAdvisorInitials } = usePageContext();
 
   // Mode detection from URL params
   const mode = searchParams.get("mode") as "reply" | "forward" | null;
@@ -146,6 +150,12 @@ const ComposeEmail = () => {
       }
     }
   }, [originalEmail, originalClients, mode]);
+
+  // Set the page context - compose doesn't have a specific advisor tied to it
+  useEffect(() => {
+    setCurrentAdvisorInitials(null);
+    return () => setCurrentAdvisorInitials(null);
+  }, [setCurrentAdvisorInitials]);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
