@@ -13,510 +13,208 @@ interface Client {
   cell_number: string | null;
   title: string | null;
   preferred_name: string | null;
+  country_of_issue: string | null;
+  advisor: string | null;
 }
 
-// Email thread templates for financial advisers
-const emailThreads = [
-  {
-    category: 'portfolio_update',
-    threads: [
-      {
-        subject: 'Your Q4 2024 Portfolio Performance Summary',
-        messages: [
-          {
-            direction: 'Outbound',
-            hasAttachment: true,
-            bodyHtml: (client: Client) => `
-              <div style="font-family: Arial, sans-serif; max-width: 600px;">
-                <p>Dear ${client.title || ''} ${client.surname},</p>
-                <p>Please find attached your quarterly portfolio performance summary for Q4 2024.</p>
-                <p><strong>Key Highlights:</strong></p>
-                <ul>
-                  <li>Portfolio Value: R${(Math.random() * 3000000 + 500000).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",")} (+${(Math.random() * 8 + 2).toFixed(1)}% this quarter)</li>
-                  <li>Year-to-date Return: ${(Math.random() * 10 + 8).toFixed(1)}%</li>
-                  <li>Asset Allocation: On target</li>
-                </ul>
-                <p>I'd be happy to schedule a call to discuss these results in more detail.</p>
-                <p>Kind regards,<br><strong>Johan Botha</strong><br>Financial Adviser | Vantage Financial Services<br>Tel: +27 21 555 1234</p>
-              </div>
-            `,
-            bodyPreview: (client: Client) => `Dear ${client.title || ''} ${client.surname}, Please find attached your quarterly portfolio performance summary for Q4 2024...`,
-          },
-          {
-            direction: 'Inbound',
-            hasAttachment: false,
-            bodyHtml: (client: Client) => `
-              <div style="font-family: Arial, sans-serif;">
-                <p>Thank you for sending this through.</p>
-                <p>I'm pleased with the performance. Can we schedule a call next week to discuss rebalancing options?</p>
-                <p>Regards,<br>${client.first_name}</p>
-              </div>
-            `,
-            bodyPreview: () => `Thank you for sending this through. I'm pleased with the performance. Can we schedule a call next week...`,
-            subjectPrefix: 'RE: ',
-          },
-          {
-            direction: 'Outbound',
-            hasAttachment: false,
-            bodyHtml: (client: Client) => `
-              <div style="font-family: Arial, sans-serif;">
-                <p>Dear ${client.title || ''} ${client.surname},</p>
-                <p>Absolutely! I have availability on Tuesday at 10:00 or Thursday at 14:00. Please let me know which works best for you.</p>
-                <p>I'll prepare some rebalancing scenarios for us to review.</p>
-                <p>Kind regards,<br>Johan</p>
-              </div>
-            `,
-            bodyPreview: () => `Absolutely! I have availability on Tuesday at 10:00 or Thursday at 14:00...`,
-            subjectPrefix: 'RE: ',
-          },
-        ],
-      },
-      {
-        subject: 'Monthly Investment Update - January 2025',
-        messages: [
-          {
-            direction: 'Outbound',
-            hasAttachment: true,
-            bodyHtml: (client: Client) => `
-              <div style="font-family: Arial, sans-serif; max-width: 600px;">
-                <p>Dear ${client.title || ''} ${client.surname},</p>
-                <p>I hope this email finds you well. Please find attached your monthly investment update for January 2025.</p>
-                <p>The markets showed strong performance this month, with your portfolio benefiting from the positive momentum in both local and global equities.</p>
-                <p>Please don't hesitate to reach out if you have any questions.</p>
-                <p>Warm regards,<br><strong>Sarah Mostert</strong><br>Financial Adviser | Vantage Financial Services</p>
-              </div>
-            `,
-            bodyPreview: (client: Client) => `Dear ${client.title || ''} ${client.surname}, I hope this email finds you well. Please find attached your monthly investment update...`,
-          },
-        ],
-      },
+// ─── Jurisdiction-specific email templates ─────────────────────────────────────
+
+interface JurisdictionConfig {
+  country: string;
+  currency: string;
+  advisors: string[];
+  firmName: string;
+  subjects: { subject: string; category: string }[];
+}
+
+const jurisdictionConfigs: Record<string, JurisdictionConfig> = {
+  'South Africa': {
+    country: 'South Africa',
+    currency: 'R',
+    advisors: ['Johan Botha', 'Sarah Mostert', 'Pieter Naudé', 'Linda van Wyk', 'David Greenberg'],
+    firmName: 'Vantage Financial Services',
+    subjects: [
+      { subject: 'Updated FICA Documents Required', category: 'compliance' },
+      { subject: 'Your Q4 Portfolio Performance Summary', category: 'portfolio' },
+      { subject: 'RA Top-Up Opportunity Before Tax Year End', category: 'investment' },
+      { subject: 'Tax Certificate for 2024 Tax Year', category: 'tax' },
+      { subject: 'Reminder: Annual Financial Review Meeting', category: 'review' },
+      { subject: 'Important: Changes to Your Retirement Annuity', category: 'policy' },
+      { subject: 'Confirmation: Premium Adjustment Processed', category: 'confirmation' },
+      { subject: 'Your Claim Reference #CL2024-7892 Status', category: 'claims' },
+      { subject: 'Monthly Investment Update - January 2025', category: 'portfolio' },
+      { subject: 'Welcome to Vantage Financial Services', category: 'onboarding' },
+      { subject: 'Offshore Investment Options for Your Consideration', category: 'investment' },
+      { subject: 'Action Required: Review Your Investment Goals', category: 'review' },
+      { subject: 'TFSA Contribution Limit Update for 2025', category: 'tax' },
+      { subject: 'Thank You for Your Recent Meeting', category: 'general' },
+      { subject: 'Documents Received - Claim in Progress', category: 'claims' },
+      { subject: 'Questions About My Investment', category: 'inquiry' },
+      { subject: 'Urgent - Please Call Me', category: 'urgent' },
+      { subject: 'Living Annuity Withdrawal Rate Review', category: 'policy' },
+      { subject: 'JSE Market Update and Portfolio Impact', category: 'portfolio' },
+      { subject: 'Section 11F Certificate Now Available', category: 'tax' },
     ],
   },
-  {
-    category: 'document_request',
-    threads: [
-      {
-        subject: 'Updated FICA Documents Required',
-        messages: [
-          {
-            direction: 'Outbound',
-            hasAttachment: false,
-            bodyHtml: (client: Client) => `
-              <div style="font-family: Arial, sans-serif; max-width: 600px;">
-                <p>Dear ${client.title || ''} ${client.surname},</p>
-                <p>As part of our ongoing compliance obligations, we need to update your FICA documentation.</p>
-                <p><strong>Documents Required:</strong></p>
-                <ul>
-                  <li>Certified copy of ID document (not older than 3 months)</li>
-                  <li>Proof of residence (utility bill or bank statement, not older than 3 months)</li>
-                </ul>
-                <p>Please submit these at your earliest convenience. You can email them directly to me or upload them through our secure client portal.</p>
-                <p>Kind regards,<br><strong>Pieter Naudé</strong><br>Financial Adviser | Vantage Financial Services</p>
-              </div>
-            `,
-            bodyPreview: () => `As part of our ongoing compliance obligations, we need to update your FICA documentation...`,
-          },
-          {
-            direction: 'Inbound',
-            hasAttachment: true,
-            bodyHtml: () => `
-              <div style="font-family: Arial, sans-serif;">
-                <p>Hi Pieter,</p>
-                <p>Please find attached my updated ID and a recent bank statement.</p>
-                <p>Let me know if you need anything else.</p>
-                <p>Thanks</p>
-              </div>
-            `,
-            bodyPreview: () => `Please find attached my updated ID and a recent bank statement. Let me know if you need anything else.`,
-            subjectPrefix: 'RE: ',
-          },
-          {
-            direction: 'Outbound',
-            hasAttachment: false,
-            bodyHtml: (client: Client) => `
-              <div style="font-family: Arial, sans-serif;">
-                <p>Dear ${client.title || ''} ${client.surname},</p>
-                <p>Thank you for sending these through so quickly. I've updated your records - you're now compliant until 2027.</p>
-                <p>Best regards,<br>Pieter</p>
-              </div>
-            `,
-            bodyPreview: () => `Thank you for sending these through so quickly. I've updated your records - you're now compliant until 2027.`,
-            subjectPrefix: 'RE: ',
-          },
-        ],
-      },
-      {
-        subject: 'Tax Certificate for 2024 Tax Year',
-        messages: [
-          {
-            direction: 'Outbound',
-            hasAttachment: true,
-            bodyHtml: (client: Client) => `
-              <div style="font-family: Arial, sans-serif; max-width: 600px;">
-                <p>Dear ${client.title || ''} ${client.surname},</p>
-                <p>Your tax certificate for the 2024 tax year is now available. Please find it attached to this email.</p>
-                <p>This document reflects all income and capital gains from your investment portfolio for the period 1 March 2023 to 29 February 2024.</p>
-                <p>Please forward this to your tax practitioner for inclusion in your annual tax return.</p>
-                <p>Kind regards,<br><strong>Linda van Wyk</strong><br>Financial Adviser | Vantage Financial Services</p>
-              </div>
-            `,
-            bodyPreview: (client: Client) => `Dear ${client.title || ''} ${client.surname}, Your tax certificate for the 2024 tax year is now available...`,
-          },
-        ],
-      },
+  'Australia': {
+    country: 'Australia',
+    currency: 'A$',
+    advisors: ['James Mitchell', 'Emma Thompson', 'Liam O\'Brien', 'Sophie Chen', 'Ryan Patel'],
+    firmName: 'Vantage Financial Australia',
+    subjects: [
+      { subject: 'TFN Declaration Update Required', category: 'compliance' },
+      { subject: 'Your Superannuation Performance Review', category: 'portfolio' },
+      { subject: 'Super Contribution Strategy Before EOFY', category: 'investment' },
+      { subject: 'ATO Tax Summary for FY2024', category: 'tax' },
+      { subject: 'Reminder: Annual Financial Review Meeting', category: 'review' },
+      { subject: 'Changes to Superannuation Guarantee Rate', category: 'policy' },
+      { subject: 'Confirmation: Super Salary Sacrifice Processed', category: 'confirmation' },
+      { subject: 'TPD Claim Status Update', category: 'claims' },
+      { subject: 'Monthly Market Update - January 2025', category: 'portfolio' },
+      { subject: 'Welcome to Vantage Financial Australia', category: 'onboarding' },
+      { subject: 'Franking Credits and Your Portfolio', category: 'investment' },
+      { subject: 'Action Required: Review Your SMSF Strategy', category: 'review' },
+      { subject: 'Concessional Contributions Cap Update 2025', category: 'tax' },
+      { subject: 'Thank You for Your Recent Meeting', category: 'general' },
+      { subject: 'Insurance Claim Documents Received', category: 'claims' },
+      { subject: 'Questions About My Super Balance', category: 'inquiry' },
+      { subject: 'Urgent: Please Call Regarding Your Account', category: 'urgent' },
+      { subject: 'Transition to Retirement Strategy Review', category: 'policy' },
+      { subject: 'ASX Market Update and Portfolio Impact', category: 'portfolio' },
+      { subject: 'Div 293 Tax Assessment Notification', category: 'tax' },
     ],
   },
-  {
-    category: 'annual_review',
-    threads: [
-      {
-        subject: 'Reminder: Annual Financial Review Meeting',
-        messages: [
-          {
-            direction: 'Outbound',
-            hasAttachment: false,
-            bodyHtml: (client: Client) => `
-              <div style="font-family: Arial, sans-serif; max-width: 600px;">
-                <p>Dear ${client.title || ''} ${client.surname},</p>
-                <p>It's that time of year again! I'd like to schedule your annual financial review.</p>
-                <p>During this meeting, we'll:</p>
-                <ul>
-                  <li>Review your current portfolio performance</li>
-                  <li>Assess any changes to your financial goals</li>
-                  <li>Discuss market outlook and potential adjustments</li>
-                  <li>Update your risk profile if necessary</li>
-                </ul>
-                <p>Please let me know your availability over the next two weeks, and I'll arrange a suitable time.</p>
-                <p>Kind regards,<br><strong>David Greenberg</strong><br>Financial Adviser | Vantage Financial Services</p>
-              </div>
-            `,
-            bodyPreview: () => `It's that time of year again! I'd like to schedule your annual financial review...`,
-          },
-          {
-            direction: 'Inbound',
-            hasAttachment: false,
-            bodyHtml: () => `
-              <div style="font-family: Arial, sans-serif;">
-                <p>Hi David,</p>
-                <p>Thank you for the reminder. I'm available next Wednesday afternoon or Friday morning. Either works for me.</p>
-                <p>Looking forward to it.</p>
-                <p>Regards</p>
-              </div>
-            `,
-            bodyPreview: () => `Thank you for the reminder. I'm available next Wednesday afternoon or Friday morning...`,
-            subjectPrefix: 'RE: ',
-          },
-          {
-            direction: 'Outbound',
-            hasAttachment: true,
-            bodyHtml: (client: Client) => `
-              <div style="font-family: Arial, sans-serif;">
-                <p>Dear ${client.title || ''} ${client.surname},</p>
-                <p>Perfect! Let's meet on Wednesday at 14:00 at our offices. I've attached a meeting invite for your calendar.</p>
-                <p>I'll have your updated financial plan ready for discussion.</p>
-                <p>See you then!</p>
-                <p>Best regards,<br>David</p>
-              </div>
-            `,
-            bodyPreview: () => `Perfect! Let's meet on Wednesday at 14:00 at our offices. I've attached a meeting invite...`,
-            subjectPrefix: 'RE: ',
-          },
-        ],
-      },
-      {
-        subject: 'Action Required: Review your investment goals',
-        messages: [
-          {
-            direction: 'Outbound',
-            hasAttachment: true,
-            bodyHtml: (client: Client) => `
-              <div style="font-family: Arial, sans-serif; max-width: 600px;">
-                <p>Dear ${client.title || ''} ${client.surname},</p>
-                <p>As part of our annual review process, I've prepared an updated analysis of your investment goals and current portfolio positioning.</p>
-                <p>Please review the attached document and let me know if your circumstances or objectives have changed since we last spoke.</p>
-                <p>It's important that your investment strategy remains aligned with your life goals.</p>
-                <p>Kind regards,<br><strong>Sarah Mostert</strong><br>Financial Adviser | Vantage Financial Services</p>
-              </div>
-            `,
-            bodyPreview: () => `As part of our annual review process, I've prepared an updated analysis of your investment goals...`,
-          },
-        ],
-      },
+  'Canada': {
+    country: 'Canada',
+    currency: 'C$',
+    advisors: ['Pierre Tremblay', 'Marie Leclerc', 'David Wilson', 'Sarah MacDonald', 'Jean-Luc Beaumont'],
+    firmName: 'Vantage Financial Canada',
+    subjects: [
+      { subject: 'SIN Verification Update Required', category: 'compliance' },
+      { subject: 'Your RRSP Portfolio Performance Review', category: 'portfolio' },
+      { subject: 'RRSP Contribution Room - Maximize Before Deadline', category: 'investment' },
+      { subject: 'T4 and T5 Tax Slips for 2024', category: 'tax' },
+      { subject: 'Reminder: Annual Financial Planning Review', category: 'review' },
+      { subject: 'Changes to TFSA Contribution Limits 2025', category: 'policy' },
+      { subject: 'Confirmation: RRSP Contribution Processed', category: 'confirmation' },
+      { subject: 'Disability Claim Status Update', category: 'claims' },
+      { subject: 'Monthly Investment Update - January 2025', category: 'portfolio' },
+      { subject: 'Welcome to Vantage Financial Canada', category: 'onboarding' },
+      { subject: 'RESP Strategy for Education Savings', category: 'investment' },
+      { subject: 'Action Required: Review Your Retirement Goals', category: 'review' },
+      { subject: 'FHSA Contribution Strategy for 2025', category: 'tax' },
+      { subject: 'Thank You for Your Recent Meeting', category: 'general' },
+      { subject: 'Insurance Claim Documentation Received', category: 'claims' },
+      { subject: 'Questions About My RRSP Withdrawals', category: 'inquiry' },
+      { subject: 'Urgent: Please Call About Your Account', category: 'urgent' },
+      { subject: 'RRIF Minimum Withdrawal Review', category: 'policy' },
+      { subject: 'TSX Market Update and Portfolio Impact', category: 'portfolio' },
+      { subject: 'Capital Gains Inclusion Rate Changes', category: 'tax' },
     ],
   },
-  {
-    category: 'policy_changes',
-    threads: [
-      {
-        subject: 'Important: Changes to your retirement annuity',
-        messages: [
-          {
-            direction: 'Outbound',
-            hasAttachment: true,
-            bodyHtml: (client: Client) => `
-              <div style="font-family: Arial, sans-serif; max-width: 600px;">
-                <p>Dear ${client.title || ''} ${client.surname},</p>
-                <p>I'm writing to inform you of some regulatory changes that will affect your retirement annuity from 1 March 2025.</p>
-                <p>Key changes include:</p>
-                <ul>
-                  <li>Updated contribution limits</li>
-                  <li>New withdrawal rules at retirement</li>
-                  <li>Enhanced tax benefits for additional contributions</li>
-                </ul>
-                <p>Please review the attached summary document. I recommend we schedule a brief call to discuss how these changes might benefit your retirement planning.</p>
-                <p>Kind regards,<br><strong>Johan Botha</strong><br>Financial Adviser | Vantage Financial Services</p>
-              </div>
-            `,
-            bodyPreview: () => `I'm writing to inform you of some regulatory changes that will affect your retirement annuity from 1 March 2025...`,
-          },
-        ],
-      },
-      {
-        subject: 'Confirmation: Premium adjustment processed',
-        messages: [
-          {
-            direction: 'Outbound',
-            hasAttachment: false,
-            bodyHtml: (client: Client) => `
-              <div style="font-family: Arial, sans-serif; max-width: 600px;">
-                <p>Dear ${client.title || ''} ${client.surname},</p>
-                <p>This is to confirm that your premium adjustment has been successfully processed.</p>
-                <p><strong>Details:</strong></p>
-                <ul>
-                  <li>Policy Number: POL-${Math.random().toString(36).substring(2, 10).toUpperCase()}</li>
-                  <li>New Premium: R${(Math.random() * 5000 + 1000).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",")} per month</li>
-                  <li>Effective Date: 1 February 2025</li>
-                </ul>
-                <p>Your updated debit order will reflect from the next collection date.</p>
-                <p>Kind regards,<br><strong>Linda van Wyk</strong><br>Financial Adviser | Vantage Financial Services</p>
-              </div>
-            `,
-            bodyPreview: () => `This is to confirm that your premium adjustment has been successfully processed...`,
-          },
-          {
-            direction: 'Inbound',
-            hasAttachment: false,
-            bodyHtml: () => `
-              <div style="font-family: Arial, sans-serif;">
-                <p>Thank you for the confirmation. Much appreciated!</p>
-              </div>
-            `,
-            bodyPreview: () => `Thank you for the confirmation. Much appreciated!`,
-            subjectPrefix: 'RE: ',
-          },
-        ],
-      },
+  'United Kingdom': {
+    country: 'United Kingdom',
+    currency: '£',
+    advisors: ['William Smith', 'Charlotte Brown', 'Oliver Davies', 'Jessica Taylor', 'Henry Wilson'],
+    firmName: 'Vantage Financial UK',
+    subjects: [
+      { subject: 'NI Number Verification Required', category: 'compliance' },
+      { subject: 'Your ISA Portfolio Performance Summary', category: 'portfolio' },
+      { subject: 'ISA Top-Up Before End of Tax Year', category: 'investment' },
+      { subject: 'HMRC Tax Summary for 2023/24', category: 'tax' },
+      { subject: 'Reminder: Annual Financial Review Meeting', category: 'review' },
+      { subject: 'Changes to Pension Annual Allowance', category: 'policy' },
+      { subject: 'Confirmation: ISA Transfer Completed', category: 'confirmation' },
+      { subject: 'Life Insurance Claim Status Update', category: 'claims' },
+      { subject: 'Monthly Market Review - January 2025', category: 'portfolio' },
+      { subject: 'Welcome to Vantage Financial UK', category: 'onboarding' },
+      { subject: 'SIPP Contribution Strategy Review', category: 'investment' },
+      { subject: 'Action Required: Review Your Pension Plans', category: 'review' },
+      { subject: 'Lifetime ISA Withdrawal Rules Update', category: 'tax' },
+      { subject: 'Thank You for Your Recent Meeting', category: 'general' },
+      { subject: 'Protection Claim Documents Received', category: 'claims' },
+      { subject: 'Questions About My Pension Drawdown', category: 'inquiry' },
+      { subject: 'Urgent: Please Call About Your Account', category: 'urgent' },
+      { subject: 'Flexi-Access Drawdown Strategy Review', category: 'policy' },
+      { subject: 'FTSE Market Update and Portfolio Impact', category: 'portfolio' },
+      { subject: 'Dividend Allowance Changes for 2025/26', category: 'tax' },
     ],
   },
-  {
-    category: 'claims',
-    threads: [
-      {
-        subject: 'Your claim reference #CL2024-7892 status update',
-        messages: [
-          {
-            direction: 'Outbound',
-            hasAttachment: false,
-            bodyHtml: (client: Client) => `
-              <div style="font-family: Arial, sans-serif; max-width: 600px;">
-                <p>Dear ${client.title || ''} ${client.surname},</p>
-                <p>I wanted to update you on the status of your claim (Reference: CL2024-7892).</p>
-                <p><strong>Current Status:</strong> Under Review</p>
-                <p>The claims assessor has received all the required documentation and is currently processing your claim. We expect a decision within the next 5-7 business days.</p>
-                <p>I'll keep you updated on any developments. Please don't hesitate to contact me if you have any questions.</p>
-                <p>Kind regards,<br><strong>Pieter Naudé</strong><br>Financial Adviser | Vantage Financial Services</p>
-              </div>
-            `,
-            bodyPreview: () => `I wanted to update you on the status of your claim (Reference: CL2024-7892). Current Status: Under Review...`,
-          },
-          {
-            direction: 'Inbound',
-            hasAttachment: false,
-            bodyHtml: () => `
-              <div style="font-family: Arial, sans-serif;">
-                <p>Thanks for the update Pieter. Please let me know as soon as you hear anything.</p>
-              </div>
-            `,
-            bodyPreview: () => `Thanks for the update Pieter. Please let me know as soon as you hear anything.`,
-            subjectPrefix: 'RE: ',
-          },
-        ],
-      },
-      {
-        subject: 'Documents received - claim in progress',
-        messages: [
-          {
-            direction: 'Outbound',
-            hasAttachment: false,
-            bodyHtml: (client: Client) => `
-              <div style="font-family: Arial, sans-serif; max-width: 600px;">
-                <p>Dear ${client.title || ''} ${client.surname},</p>
-                <p>This is to confirm that we have received all the required documents for your claim submission.</p>
-                <p>Your claim is now being processed by the insurer's claims department. The typical turnaround time is 10-15 business days from receipt of all documentation.</p>
-                <p>I will follow up with them and keep you informed of progress.</p>
-                <p>Kind regards,<br><strong>David Greenberg</strong><br>Financial Adviser | Vantage Financial Services</p>
-              </div>
-            `,
-            bodyPreview: () => `This is to confirm that we have received all the required documents for your claim submission...`,
-          },
-        ],
-      },
+  'United States': {
+    country: 'United States',
+    currency: '$',
+    advisors: ['Michael Johnson', 'Emily Davis', 'Robert Martinez', 'Jennifer Williams', 'Christopher Lee'],
+    firmName: 'Vantage Financial US',
+    subjects: [
+      { subject: 'SSN Verification Update Required', category: 'compliance' },
+      { subject: 'Your 401(k) Performance Review', category: 'portfolio' },
+      { subject: '401(k) Rollover Options and Strategy', category: 'investment' },
+      { subject: 'Form 1099 and W-2 Tax Documents for 2024', category: 'tax' },
+      { subject: 'Reminder: Annual Financial Review Meeting', category: 'review' },
+      { subject: 'Changes to IRA Contribution Limits 2025', category: 'policy' },
+      { subject: 'Confirmation: Roth Conversion Processed', category: 'confirmation' },
+      { subject: 'Long-Term Disability Claim Update', category: 'claims' },
+      { subject: 'Monthly Investment Update - January 2025', category: 'portfolio' },
+      { subject: 'Welcome to Vantage Financial US', category: 'onboarding' },
+      { subject: 'Roth IRA vs Traditional IRA Analysis', category: 'investment' },
+      { subject: 'Action Required: Review Your Estate Plan', category: 'review' },
+      { subject: 'HSA Contribution Strategy for 2025', category: 'tax' },
+      { subject: 'Thank You for Your Recent Meeting', category: 'general' },
+      { subject: 'Insurance Claim Documentation Received', category: 'claims' },
+      { subject: 'Questions About My 401(k) Allocation', category: 'inquiry' },
+      { subject: 'Urgent: Please Call About Your Account', category: 'urgent' },
+      { subject: 'Required Minimum Distribution Review', category: 'policy' },
+      { subject: 'S&P 500 Market Update and Portfolio Impact', category: 'portfolio' },
+      { subject: 'Capital Gains Tax Planning for 2025', category: 'tax' },
     ],
   },
-  {
-    category: 'general',
-    threads: [
-      {
-        subject: 'Thank you for your recent meeting',
-        messages: [
-          {
-            direction: 'Outbound',
-            hasAttachment: false,
-            bodyHtml: (client: Client) => `
-              <div style="font-family: Arial, sans-serif; max-width: 600px;">
-                <p>Dear ${client.title || ''} ${client.surname},</p>
-                <p>Thank you for taking the time to meet with me yesterday. It was great to catch up and discuss your financial plans.</p>
-                <p>As discussed, I will:</p>
-                <ul>
-                  <li>Send through the updated investment proposal by end of week</li>
-                  <li>Research offshore investment options for your consideration</li>
-                  <li>Schedule a follow-up call for next month</li>
-                </ul>
-                <p>Please don't hesitate to reach out if you have any questions in the meantime.</p>
-                <p>Warm regards,<br><strong>Sarah Mostert</strong><br>Financial Adviser | Vantage Financial Services</p>
-              </div>
-            `,
-            bodyPreview: () => `Thank you for taking the time to meet with me yesterday. It was great to catch up and discuss your financial plans...`,
-          },
-          {
-            direction: 'Inbound',
-            hasAttachment: false,
-            bodyHtml: () => `
-              <div style="font-family: Arial, sans-serif;">
-                <p>Thank you Sarah! It was a productive meeting. I look forward to receiving the proposal.</p>
-                <p>Best</p>
-              </div>
-            `,
-            bodyPreview: () => `Thank you Sarah! It was a productive meeting. I look forward to receiving the proposal.`,
-            subjectPrefix: 'RE: ',
-          },
-        ],
-      },
-      {
-        subject: 'Welcome to Vantage Financial Services',
-        messages: [
-          {
-            direction: 'Outbound',
-            hasAttachment: true,
-            bodyHtml: (client: Client) => `
-              <div style="font-family: Arial, sans-serif; max-width: 600px;">
-                <p>Dear ${client.title || ''} ${client.surname},</p>
-                <p>Welcome to Vantage Financial Services! I'm delighted to have you as a client.</p>
-                <p>Please find attached:</p>
-                <ul>
-                  <li>Our client welcome pack</li>
-                  <li>Your personalized financial needs analysis</li>
-                  <li>Important regulatory disclosures</li>
-                </ul>
-                <p>I look forward to working with you to achieve your financial goals.</p>
-                <p>Warm regards,<br><strong>Johan Botha</strong><br>Financial Adviser | Vantage Financial Services</p>
-              </div>
-            `,
-            bodyPreview: (client: Client) => `Dear ${client.title || ''} ${client.surname}, Welcome to Vantage Financial Services! I'm delighted to have you as a client...`,
-          },
-        ],
-      },
-    ],
-  },
-  {
-    category: 'client_inquiry',
-    threads: [
-      {
-        subject: 'Questions about my investment',
-        messages: [
-          {
-            direction: 'Inbound',
-            hasAttachment: false,
-            bodyHtml: () => `
-              <div style="font-family: Arial, sans-serif;">
-                <p>Hi,</p>
-                <p>I've been reviewing my latest statement and have a few questions:</p>
-                <ol>
-                  <li>Why did the value drop last month?</li>
-                  <li>Should I be concerned about the current market volatility?</li>
-                  <li>Is now a good time to increase my contributions?</li>
-                </ol>
-                <p>Please call me when you get a chance.</p>
-                <p>Thanks</p>
-              </div>
-            `,
-            bodyPreview: () => `I've been reviewing my latest statement and have a few questions: Why did the value drop last month?...`,
-          },
-          {
-            direction: 'Outbound',
-            hasAttachment: true,
-            bodyHtml: (client: Client) => `
-              <div style="font-family: Arial, sans-serif; max-width: 600px;">
-                <p>Dear ${client.title || ''} ${client.surname},</p>
-                <p>Thank you for reaching out with your questions. Let me address each one:</p>
-                <ol>
-                  <li><strong>Value fluctuation:</strong> The slight decrease was due to normal market movements. Your portfolio is well-diversified and designed for long-term growth.</li>
-                  <li><strong>Market volatility:</strong> While volatility can be unsettling, it's a normal part of investing. Historically, markets have always recovered from downturns.</li>
-                  <li><strong>Contributions:</strong> Actually, market dips can be a good time to invest more, as you're buying assets at lower prices. I've attached an analysis.</li>
-                </ol>
-                <p>Would you like to schedule a call to discuss further?</p>
-                <p>Kind regards,<br><strong>Pieter Naudé</strong><br>Financial Adviser | Vantage Financial Services</p>
-              </div>
-            `,
-            bodyPreview: () => `Thank you for reaching out with your questions. Let me address each one...`,
-            subjectPrefix: 'RE: ',
-          },
-        ],
-      },
-      {
-        subject: 'Urgent - Please call me',
-        messages: [
-          {
-            direction: 'Inbound',
-            hasAttachment: false,
-            bodyHtml: () => `
-              <div style="font-family: Arial, sans-serif;">
-                <p>Hi,</p>
-                <p>I need to discuss something urgently regarding my policy. Please call me on my cell as soon as possible.</p>
-                <p>Thanks</p>
-              </div>
-            `,
-            bodyPreview: () => `I need to discuss something urgently regarding my policy. Please call me on my cell as soon as possible.`,
-          },
-          {
-            direction: 'Outbound',
-            hasAttachment: false,
-            bodyHtml: (client: Client) => `
-              <div style="font-family: Arial, sans-serif;">
-                <p>Dear ${client.title || ''} ${client.surname},</p>
-                <p>I tried calling but couldn't reach you. I'll try again in 30 minutes.</p>
-                <p>Alternatively, please let me know a good time to call.</p>
-                <p>Regards,<br>Linda</p>
-              </div>
-            `,
-            bodyPreview: () => `I tried calling but couldn't reach you. I'll try again in 30 minutes...`,
-            subjectPrefix: 'RE: ',
-          },
-          {
-            direction: 'Inbound',
-            hasAttachment: false,
-            bodyHtml: () => `
-              <div style="font-family: Arial, sans-serif;">
-                <p>Sorry I missed your call. I'm available now or anytime after 14:00 today.</p>
-              </div>
-            `,
-            bodyPreview: () => `Sorry I missed your call. I'm available now or anytime after 14:00 today.`,
-            subjectPrefix: 'RE: ',
-          },
-        ],
-      },
-    ],
-  },
+};
+
+// Generate email body based on category and direction
+function generateEmailBody(
+  config: JurisdictionConfig,
+  client: Client,
+  subject: string,
+  category: string,
+  direction: string,
+  advisorName: string
+): { bodyHtml: string; bodyPreview: string } {
+  const clientName = `${client.title || ''} ${client.surname}`.trim();
+  const firstName = client.first_name;
+  const value = `${config.currency}${(Math.random() * 500000 + 50000).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`;
+
+  if (direction === 'Inbound') {
+    const bodies = [
+      { html: `<p>Hi,</p><p>I have some questions about ${subject.toLowerCase()}. Could we schedule a call to discuss?</p><p>Thanks,<br>${firstName}</p>`, preview: `I have some questions about ${subject.toLowerCase()}. Could we schedule a call...` },
+      { html: `<p>Good morning,</p><p>Thank you for the update. I've reviewed the documents and everything looks good.</p><p>Best regards,<br>${firstName}</p>`, preview: `Thank you for the update. I've reviewed the documents and everything looks good.` },
+      { html: `<p>Hi,</p><p>Please find attached the requested documents. Let me know if you need anything else.</p><p>Kind regards,<br>${firstName}</p>`, preview: `Please find attached the requested documents. Let me know if you need anything else.` },
+      { html: `<p>Hello,</p><p>I'd like to discuss my current investment strategy. Are you available this week?</p><p>Thanks,<br>${firstName}</p>`, preview: `I'd like to discuss my current investment strategy. Are you available this week?` },
+      { html: `<p>Hi,</p><p>I noticed a discrepancy in my latest statement. Could you please look into it?</p><p>Regards,<br>${firstName}</p>`, preview: `I noticed a discrepancy in my latest statement. Could you please look into it?` },
+    ];
+    const body = bodies[Math.floor(Math.random() * bodies.length)];
+    return { bodyHtml: `<div style="font-family: Arial, sans-serif;">${body.html}</div>`, bodyPreview: body.preview };
+  }
+
+  // Outbound
+  const bodies = [
+    { html: `<p>Dear ${clientName},</p><p>Please find attached the latest information regarding ${subject.toLowerCase()}.</p><p>Your current portfolio value stands at ${value}, reflecting strong performance over the period.</p><p>Please don't hesitate to reach out if you have any questions.</p><p>Kind regards,<br><strong>${advisorName}</strong><br>Financial Adviser | ${config.firmName}</p>`, preview: `Dear ${clientName}, Please find attached the latest information regarding ${subject.toLowerCase()}...` },
+    { html: `<p>Dear ${clientName},</p><p>I'm writing to follow up on our recent discussion about your financial planning.</p><p>I've prepared some recommendations which I believe will help optimise your portfolio. I'd like to schedule a meeting to review these with you.</p><p>Warm regards,<br><strong>${advisorName}</strong><br>Financial Adviser | ${config.firmName}</p>`, preview: `Dear ${clientName}, I'm writing to follow up on our recent discussion about your financial planning...` },
+    { html: `<p>Dear ${clientName},</p><p>This is to confirm that your request has been processed successfully.</p><p>The changes will take effect within 3-5 business days. You will receive a confirmation once complete.</p><p>Best regards,<br><strong>${advisorName}</strong><br>Financial Adviser | ${config.firmName}</p>`, preview: `Dear ${clientName}, This is to confirm that your request has been processed successfully...` },
+    { html: `<p>Dear ${clientName},</p><p>Thank you for meeting with me. As discussed, I've prepared the following action items:</p><ul><li>Review current asset allocation</li><li>Update beneficiary nominations</li><li>Schedule next quarterly review</li></ul><p>Kind regards,<br><strong>${advisorName}</strong><br>Financial Adviser | ${config.firmName}</p>`, preview: `Dear ${clientName}, Thank you for meeting with me. As discussed, I've prepared the following action items...` },
+  ];
+  const body = bodies[Math.floor(Math.random() * bodies.length)];
+  return { bodyHtml: `<div style="font-family: Arial, sans-serif; max-width: 600px;">${body.html}</div>`, bodyPreview: body.preview };
+}
+
+// Folder distribution config
+const folderConfigs: { folder: string; direction: string; count: number }[] = [
+  { folder: 'Inbox', direction: 'Inbound', count: 18 },
+  { folder: 'Task Pool', direction: 'Inbound', count: 15 },
+  { folder: 'Sent', direction: 'Outbound', count: 18 },
+  { folder: 'Draft', direction: 'Outbound', count: 15 },
+  { folder: 'Queue', direction: 'Outbound', count: 15 },
+  { folder: 'Failed', direction: 'Outbound', count: 15 },
+  { folder: 'Archived', direction: 'Mixed', count: 18 },
 ];
 
 // WhatsApp conversation templates
@@ -527,16 +225,16 @@ const whatsappConversations = [
       { direction: 'inbound', content: 'Hi, I saw the market dropped yesterday. Should I be worried about my portfolio?' },
       { direction: 'outbound', content: 'Good morning! 👋 No need to worry - these fluctuations are normal. Your portfolio is well-diversified. Would you like me to send you a quick summary?' },
       { direction: 'inbound', content: 'Yes please, that would help put my mind at ease' },
-      { direction: 'outbound', content: 'Here\'s your current position. Your long-term performance remains solid at 12.3% p.a. 📈', mediaUrl: 'Portfolio_Summary_Jan2025.pdf' },
+      { direction: 'outbound', content: 'Here\'s your current position. Your long-term performance remains solid at 12.3% p.a. 📈' },
       { direction: 'inbound', content: 'Thank you so much! That\'s reassuring 👍' },
     ],
   },
   {
     topic: 'document_request',
     messages: [
-      { direction: 'outbound', content: 'Good day! 📋 This is a friendly reminder that your FICA documents expire next month. Could you please send updated proof of address?' },
+      { direction: 'outbound', content: 'Good day! 📋 This is a friendly reminder that your compliance documents expire next month. Could you please send updated proof of address?' },
       { direction: 'inbound', content: 'Thanks for the reminder. I\'ll get that to you this week.' },
-      { direction: 'inbound', content: 'Here\'s my latest municipal account', mediaUrl: 'Utility_Bill_Jan2025.pdf' },
+      { direction: 'inbound', content: 'Here\'s my latest utility bill' },
       { direction: 'outbound', content: 'Received, thank you! ✅ I\'ll update your records. You\'re all set until 2027.' },
     ],
   },
@@ -561,10 +259,10 @@ const whatsappConversations = [
   {
     topic: 'investment_advice',
     messages: [
-      { direction: 'inbound', content: 'I got a bonus this month. Should I put it into my RA or save it separately?' },
+      { direction: 'inbound', content: 'I got a bonus this month. Should I put it into my retirement fund or save it separately?' },
       { direction: 'outbound', content: 'Congratulations on the bonus! 🎉 Great question. How much are you thinking of investing?' },
-      { direction: 'inbound', content: 'About R50,000' },
-      { direction: 'outbound', content: 'With R50k, I\'d suggest putting R33k into your RA (to maximize your tax benefit) and the rest into a TFSA for flexible access. Want me to prepare a formal proposal?' },
+      { direction: 'inbound', content: 'About 50,000' },
+      { direction: 'outbound', content: 'I\'d suggest splitting it - part into your retirement fund for tax benefits and the rest into a tax-free account for flexible access. Want me to prepare a formal proposal?' },
       { direction: 'inbound', content: 'Yes please, that sounds like good advice!' },
       { direction: 'outbound', content: 'Perfect! I\'ll email you a detailed proposal by end of day. 📧' },
     ],
@@ -599,7 +297,7 @@ const smsMessages = [
   {
     topic: 'payment_confirmation',
     messages: [
-      { direction: 'outbound', content: 'Your premium payment of R3,500 has been received. Thank you! - Vantage Financial' },
+      { direction: 'outbound', content: 'Your premium payment has been received. Thank you! - Vantage Financial' },
     ],
   },
   {
@@ -613,7 +311,7 @@ const smsMessages = [
     topic: 'urgent_callback',
     messages: [
       { direction: 'inbound', content: 'Please call me when you can. Need to discuss my policy.' },
-      { direction: 'outbound', content: 'Will call you in 10 minutes. - Johan' },
+      { direction: 'outbound', content: 'Will call you in 10 minutes.' },
     ],
   },
   {
@@ -626,13 +324,13 @@ const smsMessages = [
 
 // Push notification templates
 const pushNotifications = [
-  { content: 'Market update: JSE All Share up 2.3% today. Your portfolio value increased by R12,450.' },
+  { content: 'Market update: Your portfolio value increased today.' },
   { content: 'Your tax certificate is ready to download in your client portal.' },
   { content: 'Reminder: Annual review meeting tomorrow at 14:00.' },
-  { content: 'Premium payment of R3,500 received. Thank you!' },
+  { content: 'Premium payment received. Thank you!' },
   { content: 'Happy Birthday from the Vantage team! 🎂' },
-  { content: 'New statement available: View your January 2025 portfolio summary.' },
-  { content: 'FICA reminder: Your documents expire in 30 days. Please update.' },
+  { content: 'New statement available: View your latest portfolio summary.' },
+  { content: 'Compliance reminder: Your documents expire in 30 days. Please update.' },
   { content: 'Market alert: Significant movement detected. No action required.' },
   { content: 'Thank you for attending today\'s meeting. Summary emailed.' },
   { content: 'Your claim has been approved! Payment processing.' },
@@ -642,17 +340,15 @@ const pushNotifications = [
 const randomPastDate = (daysAgo: number): Date => {
   const date = new Date();
   date.setDate(date.getDate() - Math.floor(Math.random() * daysAgo));
-  date.setHours(Math.floor(Math.random() * 10) + 8); // 8 AM - 6 PM
+  date.setHours(Math.floor(Math.random() * 10) + 8);
   date.setMinutes(Math.floor(Math.random() * 60));
   return date;
 };
 
-// Helper to add minutes to date
 const addMinutes = (date: Date, minutes: number): Date => {
   return new Date(date.getTime() + minutes * 60000);
 };
 
-// Generate unique external ID
 const generateExternalId = (): string => {
   return `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 };
@@ -686,23 +382,22 @@ Deno.serve(async (req) => {
     }
 
     const userId = user.id;
-    const adviserEmail = user.email || 'adviser@vantage.co.za';
+    const adviserEmail = user.email || 'adviser@vantage.co';
 
     console.log(`Seeding demo communications for user: ${userId}`);
 
-    // Fetch existing clients for this user
-    const { data: clients, error: clientsError } = await supabase
+    // Fetch ALL clients grouped by country_of_issue
+    const { data: allClients, error: clientsError } = await supabase
       .from('clients')
-      .select('id, first_name, surname, email, cell_number, title, preferred_name')
+      .select('id, first_name, surname, email, cell_number, title, preferred_name, country_of_issue, advisor')
       .eq('user_id', userId)
-      .not('email', 'is', null)
-      .limit(10);
+      .not('email', 'is', null);
 
     if (clientsError) {
       throw new Error(`Failed to fetch clients: ${clientsError.message}`);
     }
 
-    if (!clients || clients.length === 0) {
+    if (!allClients || allClients.length === 0) {
       console.log('No clients found. Please seed clients first.');
       return new Response(
         JSON.stringify({ success: false, message: 'No clients found. Please run seed-demo-clients first.' }),
@@ -710,12 +405,21 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`Found ${clients.length} clients for seeding communications`);
+    // Group clients by jurisdiction
+    const clientsByJurisdiction: Record<string, Client[]> = {};
+    for (const client of allClients) {
+      const country = client.country_of_issue || 'South Africa';
+      if (!clientsByJurisdiction[country]) {
+        clientsByJurisdiction[country] = [];
+      }
+      clientsByJurisdiction[country].push(client);
+    }
+
+    console.log(`Found clients across ${Object.keys(clientsByJurisdiction).length} jurisdictions:`,
+      Object.entries(clientsByJurisdiction).map(([k, v]) => `${k}: ${v.length}`).join(', '));
 
     // Clear existing demo data
     console.log('Clearing existing communications data...');
-    
-    // Clear attachments first (due to foreign key constraints)
     await supabase.from('email_attachments').delete().eq('user_id', userId);
     await supabase.from('direct_message_attachments').delete().eq('user_id', userId);
     await supabase.from('emails').delete().eq('user_id', userId);
@@ -726,258 +430,229 @@ Deno.serve(async (req) => {
     const directMessagesToInsert: any[] = [];
     const communicationsToInsert: any[] = [];
 
-    // Generate data for each client
-    for (const client of clients) {
-      const clientName = `${client.first_name} ${client.surname}`;
-      const clientEmail = client.email || `${client.first_name.toLowerCase()}.${client.surname.toLowerCase()}@email.com`;
-      const clientPhone = client.cell_number || '+27 82 000 0000';
+    // Generate emails for each jurisdiction
+    for (const [country, clients] of Object.entries(clientsByJurisdiction)) {
+      const config = jurisdictionConfigs[country];
+      if (!config) {
+        console.log(`No config for jurisdiction: ${country}, skipping`);
+        continue;
+      }
 
-      // Generate EMAIL THREADS (3-4 threads per client)
-      const numThreads = Math.floor(Math.random() * 2) + 3;
-      const usedCategories = new Set<number>();
-      
-      for (let t = 0; t < numThreads; t++) {
-        // Pick unique category for each thread
-        let categoryIndex: number;
-        do {
-          categoryIndex = Math.floor(Math.random() * emailThreads.length);
-        } while (usedCategories.has(categoryIndex) && usedCategories.size < emailThreads.length);
-        usedCategories.add(categoryIndex);
+      console.log(`Generating emails for ${country} (${clients.length} clients)`);
 
-        const category = emailThreads[categoryIndex];
-        const threadTemplate = category.threads[Math.floor(Math.random() * category.threads.length)];
-        
-        let baseDate = randomPastDate(60);
-        const isRead = Math.random() > 0.3; // 70% read
+      // For each folder, generate 15-20 emails
+      for (const folderConfig of folderConfigs) {
+        const emailCount = folderConfig.count;
 
-        for (let m = 0; m < threadTemplate.messages.length; m++) {
-          const msg = threadTemplate.messages[m];
-          const subject = (msg.subjectPrefix || '') + threadTemplate.subject;
-          const sentAt = addMinutes(baseDate, m * (Math.floor(Math.random() * 120) + 30)); // 30-150 min between replies
-          
+        for (let i = 0; i < emailCount; i++) {
+          // Pick a random client from this jurisdiction
+          const client = clients[i % clients.length];
+          const clientEmail = client.email || `${client.first_name.toLowerCase()}.${client.surname.toLowerCase()}@email.com`;
+
+          // Pick a subject
+          const subjectEntry = config.subjects[i % config.subjects.length];
+          const advisorName = config.advisors[i % config.advisors.length];
+
+          // Determine direction
+          let direction: string;
+          if (folderConfig.direction === 'Mixed') {
+            direction = Math.random() > 0.5 ? 'Inbound' : 'Outbound';
+          } else {
+            direction = folderConfig.direction;
+          }
+
+          // Generate date spread over past 6 months (approx 180 days)
+          const sentAt = randomPastDate(180);
+          const isRead = folderConfig.folder === 'Sent' || folderConfig.folder === 'Archived' || Math.random() > 0.3;
+          const hasAttachment = ['portfolio', 'tax', 'review', 'onboarding'].includes(subjectEntry.category) && Math.random() > 0.4;
+
+          const { bodyHtml, bodyPreview } = generateEmailBody(config, client, subjectEntry.subject, subjectEntry.category, direction, advisorName);
+
+          // Add reply prefix for some emails
+          let subject = subjectEntry.subject;
+          if (Math.random() > 0.6 && folderConfig.folder !== 'Draft') {
+            subject = 'RE: ' + subject;
+          }
+
           const email = {
             user_id: userId,
             client_id: client.id,
-            folder: msg.direction === 'Inbound' ? 'Inbox' : 'Sent',
-            direction: msg.direction,
-            from_address: msg.direction === 'Inbound' ? clientEmail : adviserEmail,
-            to_addresses: msg.direction === 'Inbound' ? [adviserEmail] : [clientEmail],
+            folder: folderConfig.folder,
+            direction,
+            from_address: direction === 'Inbound' ? clientEmail : adviserEmail,
+            to_addresses: direction === 'Inbound' ? [adviserEmail] : [clientEmail],
             cc_addresses: [],
             subject,
-            body_preview: typeof msg.bodyPreview === 'function' ? msg.bodyPreview(client) : msg.bodyPreview,
-            body_html: typeof msg.bodyHtml === 'function' ? msg.bodyHtml(client) : msg.bodyHtml,
-            has_attachments: msg.hasAttachment || false,
+            body_preview: bodyPreview,
+            body_html: bodyHtml,
+            has_attachments: hasAttachment,
             sent_at: sentAt.toISOString(),
-            received_at: msg.direction === 'Inbound' ? sentAt.toISOString() : null,
-            is_read: isRead || m < threadTemplate.messages.length - 1, // Older messages are read
-            status: 'Delivered',
+            received_at: direction === 'Inbound' ? sentAt.toISOString() : null,
+            is_read: isRead,
+            status: folderConfig.folder === 'Failed' ? 'Failed' : folderConfig.folder === 'Queue' ? 'Queued' : folderConfig.folder === 'Draft' ? 'Draft' : 'Delivered',
             external_id: generateExternalId(),
           };
 
           emailsToInsert.push(email);
 
-          // Also add to communications log
-          communicationsToInsert.push({
-            user_id: userId,
-            client_id: client.id,
-            channel: 'Email',
-            direction: msg.direction,
-            from_identifier: email.from_address,
-            to_identifier: msg.direction === 'Inbound' ? adviserEmail : clientEmail,
-            subject,
-            content: email.body_preview,
-            sent_at: sentAt.toISOString(),
-            status: 'Sent',
-          });
-        }
-      }
-
-      // Generate WHATSAPP CONVERSATIONS (2-4 per client)
-      const numWhatsappConvos = Math.floor(Math.random() * 3) + 2;
-      const usedWhatsappTopics = new Set<number>();
-
-      for (let w = 0; w < numWhatsappConvos; w++) {
-        let topicIndex: number;
-        do {
-          topicIndex = Math.floor(Math.random() * whatsappConversations.length);
-        } while (usedWhatsappTopics.has(topicIndex) && usedWhatsappTopics.size < whatsappConversations.length);
-        usedWhatsappTopics.add(topicIndex);
-
-        const convo = whatsappConversations[topicIndex];
-        let baseDate = randomPastDate(45);
-
-        for (let m = 0; m < convo.messages.length; m++) {
-          const msg = convo.messages[m];
-          const sentAt = addMinutes(baseDate, m * (Math.floor(Math.random() * 15) + 2)); // 2-17 min between messages
-          
-          // Status distribution: older = read, newer = mix
-          let status: string;
-          if (m < convo.messages.length - 2) {
-            status = 'read';
-          } else {
-            const rand = Math.random();
-            status = rand < 0.6 ? 'read' : rand < 0.9 ? 'delivered' : 'sent';
+          // Also add to communications log (skip drafts)
+          if (folderConfig.folder !== 'Draft') {
+            communicationsToInsert.push({
+              user_id: userId,
+              client_id: client.id,
+              channel: 'Email',
+              direction,
+              from_identifier: email.from_address,
+              to_identifier: direction === 'Inbound' ? adviserEmail : clientEmail,
+              subject,
+              content: bodyPreview,
+              sent_at: sentAt.toISOString(),
+              status: 'Sent',
+            });
           }
-
-          directMessagesToInsert.push({
-            user_id: userId,
-            client_id: client.id,
-            channel: 'whatsapp',
-            direction: msg.direction,
-            content: msg.content,
-            media_url: msg.mediaUrl || null,
-            status,
-            sent_at: sentAt.toISOString(),
-            external_id: generateExternalId(),
-          });
-
-          // Also add to communications log
-          communicationsToInsert.push({
-            user_id: userId,
-            client_id: client.id,
-            channel: 'WhatsApp',
-            direction: msg.direction === 'inbound' ? 'Inbound' : 'Outbound',
-            from_identifier: msg.direction === 'inbound' ? clientPhone : adviserEmail,
-            to_identifier: msg.direction === 'inbound' ? adviserEmail : clientPhone,
-            subject: null,
-            content: msg.content,
-            sent_at: sentAt.toISOString(),
-            status: 'Sent',
-          });
         }
       }
 
-      // Generate SMS MESSAGES (1-3 exchanges per client)
-      const numSmsConvos = Math.floor(Math.random() * 3) + 1;
-      const usedSmsTopics = new Set<number>();
+      // Generate WhatsApp, SMS, Push for a subset of clients (up to 10 per jurisdiction)
+      const msgClients = clients.slice(0, Math.min(10, clients.length));
 
-      for (let s = 0; s < numSmsConvos; s++) {
-        let topicIndex: number;
-        do {
-          topicIndex = Math.floor(Math.random() * smsMessages.length);
-        } while (usedSmsTopics.has(topicIndex) && usedSmsTopics.size < smsMessages.length);
-        usedSmsTopics.add(topicIndex);
+      for (const client of msgClients) {
+        const clientPhone = client.cell_number || '+1 555 000 0000';
 
-        const convo = smsMessages[topicIndex];
-        let baseDate = randomPastDate(30);
+        // WhatsApp (2-3 convos per client)
+        const numWhatsapp = Math.floor(Math.random() * 2) + 2;
+        const usedWA = new Set<number>();
+        for (let w = 0; w < numWhatsapp; w++) {
+          let idx: number;
+          do { idx = Math.floor(Math.random() * whatsappConversations.length); } while (usedWA.has(idx) && usedWA.size < whatsappConversations.length);
+          usedWA.add(idx);
 
-        for (let m = 0; m < convo.messages.length; m++) {
-          const msg = convo.messages[m];
-          const sentAt = addMinutes(baseDate, m * (Math.floor(Math.random() * 30) + 5));
+          const convo = whatsappConversations[idx];
+          let baseDate = randomPastDate(45);
 
-          const status = Math.random() < 0.7 ? 'delivered' : 'sent';
+          for (let m = 0; m < convo.messages.length; m++) {
+            const msg = convo.messages[m];
+            const sentAt = addMinutes(baseDate, m * (Math.floor(Math.random() * 15) + 2));
+            let status: string;
+            if (m < convo.messages.length - 2) { status = 'read'; }
+            else { const r = Math.random(); status = r < 0.6 ? 'read' : r < 0.9 ? 'delivered' : 'sent'; }
+
+            directMessagesToInsert.push({
+              user_id: userId, client_id: client.id, channel: 'whatsapp', direction: msg.direction,
+              content: msg.content, media_url: null, status, sent_at: sentAt.toISOString(), external_id: generateExternalId(),
+            });
+            communicationsToInsert.push({
+              user_id: userId, client_id: client.id, channel: 'WhatsApp',
+              direction: msg.direction === 'inbound' ? 'Inbound' : 'Outbound',
+              from_identifier: msg.direction === 'inbound' ? clientPhone : adviserEmail,
+              to_identifier: msg.direction === 'inbound' ? adviserEmail : clientPhone,
+              subject: null, content: msg.content, sent_at: sentAt.toISOString(), status: 'Sent',
+            });
+          }
+        }
+
+        // SMS (1-2 convos per client)
+        const numSms = Math.floor(Math.random() * 2) + 1;
+        const usedSMS = new Set<number>();
+        for (let s = 0; s < numSms; s++) {
+          let idx: number;
+          do { idx = Math.floor(Math.random() * smsMessages.length); } while (usedSMS.has(idx) && usedSMS.size < smsMessages.length);
+          usedSMS.add(idx);
+
+          const convo = smsMessages[idx];
+          let baseDate = randomPastDate(30);
+
+          for (let m = 0; m < convo.messages.length; m++) {
+            const msg = convo.messages[m];
+            const sentAt = addMinutes(baseDate, m * (Math.floor(Math.random() * 30) + 5));
+            const status = Math.random() < 0.7 ? 'delivered' : 'sent';
+
+            directMessagesToInsert.push({
+              user_id: userId, client_id: client.id, channel: 'sms', direction: msg.direction,
+              content: msg.content, media_url: null, status, sent_at: sentAt.toISOString(), external_id: generateExternalId(),
+            });
+            communicationsToInsert.push({
+              user_id: userId, client_id: client.id, channel: 'SMS',
+              direction: msg.direction === 'inbound' ? 'Inbound' : 'Outbound',
+              from_identifier: msg.direction === 'inbound' ? clientPhone : 'Vantage',
+              to_identifier: msg.direction === 'inbound' ? 'Vantage' : clientPhone,
+              subject: null, content: msg.content, sent_at: sentAt.toISOString(), status: 'Sent',
+            });
+          }
+        }
+
+        // Push (3-5 per client)
+        const numPush = Math.floor(Math.random() * 3) + 3;
+        const usedPush = new Set<number>();
+        for (let p = 0; p < numPush; p++) {
+          let idx: number;
+          do { idx = Math.floor(Math.random() * pushNotifications.length); } while (usedPush.has(idx) && usedPush.size < pushNotifications.length);
+          usedPush.add(idx);
+
+          const push = pushNotifications[idx];
+          const sentAt = randomPastDate(30);
+          const status = Math.random() < 0.8 ? 'read' : 'delivered';
+          const clientName = `${client.first_name} ${client.surname}`;
 
           directMessagesToInsert.push({
-            user_id: userId,
-            client_id: client.id,
-            channel: 'sms',
-            direction: msg.direction,
-            content: msg.content,
-            media_url: null,
-            status,
-            sent_at: sentAt.toISOString(),
-            external_id: generateExternalId(),
+            user_id: userId, client_id: client.id, channel: 'push', direction: 'outbound',
+            content: push.content, media_url: null, status, sent_at: sentAt.toISOString(), external_id: generateExternalId(),
           });
-
           communicationsToInsert.push({
-            user_id: userId,
-            client_id: client.id,
-            channel: 'SMS',
-            direction: msg.direction === 'inbound' ? 'Inbound' : 'Outbound',
-            from_identifier: msg.direction === 'inbound' ? clientPhone : 'Vantage',
-            to_identifier: msg.direction === 'inbound' ? 'Vantage' : clientPhone,
-            subject: null,
-            content: msg.content,
-            sent_at: sentAt.toISOString(),
-            status: 'Sent',
+            user_id: userId, client_id: client.id, channel: 'Push', direction: 'Outbound',
+            from_identifier: 'System', to_identifier: clientName,
+            subject: null, content: push.content, sent_at: sentAt.toISOString(), status: 'Sent',
           });
         }
-      }
-
-      // Generate PUSH NOTIFICATIONS (3-6 per client)
-      const numPush = Math.floor(Math.random() * 4) + 3;
-      const usedPushIndices = new Set<number>();
-
-      for (let p = 0; p < numPush; p++) {
-        let pushIndex: number;
-        do {
-          pushIndex = Math.floor(Math.random() * pushNotifications.length);
-        } while (usedPushIndices.has(pushIndex) && usedPushIndices.size < pushNotifications.length);
-        usedPushIndices.add(pushIndex);
-
-        const push = pushNotifications[pushIndex];
-        const sentAt = randomPastDate(30);
-        const status = Math.random() < 0.8 ? 'read' : 'delivered';
-
-        directMessagesToInsert.push({
-          user_id: userId,
-          client_id: client.id,
-          channel: 'push',
-          direction: 'outbound',
-          content: push.content,
-          media_url: null,
-          status,
-          sent_at: sentAt.toISOString(),
-          external_id: generateExternalId(),
-        });
-
-        communicationsToInsert.push({
-          user_id: userId,
-          client_id: client.id,
-          channel: 'Push',
-          direction: 'Outbound',
-          from_identifier: 'System',
-          to_identifier: clientName,
-          subject: null,
-          content: push.content,
-          sent_at: sentAt.toISOString(),
-          status: 'Sent',
-        });
       }
     }
 
-    // Insert all data
+    // Insert all data in batches
     console.log(`Inserting ${emailsToInsert.length} emails...`);
-    const { data: insertedEmails, error: emailsError } = await supabase
-      .from('emails')
-      .insert(emailsToInsert)
-      .select('id, subject, has_attachments');
-    
-    if (emailsError) {
-      console.error('Error inserting emails:', emailsError);
-      throw emailsError;
+
+    // Insert emails in batches of 200 (Supabase limit)
+    const emailBatchSize = 200;
+    const allInsertedEmails: any[] = [];
+    for (let i = 0; i < emailsToInsert.length; i += emailBatchSize) {
+      const batch = emailsToInsert.slice(i, i + emailBatchSize);
+      const { data: inserted, error: emailsError } = await supabase
+        .from('emails')
+        .insert(batch)
+        .select('id, subject, has_attachments');
+      
+      if (emailsError) {
+        console.error(`Error inserting email batch ${i}:`, emailsError);
+        throw emailsError;
+      }
+      if (inserted) allInsertedEmails.push(...inserted);
     }
 
-    // Create attachments for emails that have has_attachments = true
+    // Create attachments
     const attachmentMap: Record<string, { fileName: string; filePath: string; fileSize: number }> = {
-      'Portfolio': { fileName: 'Portfolio_Report_Q4_2024.pdf', filePath: '/downloads/Portfolio_Report_Q4_2024.pdf', fileSize: 245000 },
-      'Tax Certificate': { fileName: 'Tax_Certificate_2024.pdf', filePath: '/downloads/Tax_Certificate_2024.pdf', fileSize: 89000 },
+      'Portfolio': { fileName: 'Portfolio_Report.pdf', filePath: '/downloads/Portfolio_Report.pdf', fileSize: 245000 },
+      'Tax': { fileName: 'Tax_Certificate.pdf', filePath: '/downloads/Tax_Certificate.pdf', fileSize: 89000 },
       'FICA': { fileName: 'FICA_Documents.pdf', filePath: '/downloads/FICA_Documents.pdf', fileSize: 156000 },
-      'Financial Plan': { fileName: 'Financial_Plan_2025.pdf', filePath: '/downloads/Financial_Plan_2025.pdf', fileSize: 320000 },
-      'Policy': { fileName: 'Policy_Schedule.pdf', filePath: '/downloads/Policy_Schedule.pdf', fileSize: 178000 },
-      'Statement': { fileName: 'Statement_Jan_2025.pdf', filePath: '/downloads/Statement_Jan_2025.pdf', fileSize: 95000 },
-      'investment goals': { fileName: 'Investment_Goals_Analysis.pdf', filePath: '/downloads/Financial_Plan_2025.pdf', fileSize: 210000 },
-      'retirement annuity': { fileName: 'Regulatory_Changes_Summary.pdf', filePath: '/downloads/Policy_Schedule.pdf', fileSize: 145000 },
+      'Review': { fileName: 'Financial_Review.pdf', filePath: '/downloads/Financial_Review.pdf', fileSize: 320000 },
+      'Welcome': { fileName: 'Welcome_Pack.pdf', filePath: '/downloads/Welcome_Pack.pdf', fileSize: 178000 },
+      'Statement': { fileName: 'Statement.pdf', filePath: '/downloads/Statement.pdf', fileSize: 95000 },
+      'Performance': { fileName: 'Performance_Report.pdf', filePath: '/downloads/Performance_Report.pdf', fileSize: 210000 },
+      'Super': { fileName: 'Superannuation_Report.pdf', filePath: '/downloads/Super_Report.pdf', fileSize: 180000 },
+      'RRSP': { fileName: 'RRSP_Statement.pdf', filePath: '/downloads/RRSP_Statement.pdf', fileSize: 140000 },
+      'ISA': { fileName: 'ISA_Summary.pdf', filePath: '/downloads/ISA_Summary.pdf', fileSize: 125000 },
+      '401': { fileName: '401k_Statement.pdf', filePath: '/downloads/401k_Statement.pdf', fileSize: 160000 },
     };
 
     const emailAttachmentsToInsert: any[] = [];
-    
-    if (insertedEmails) {
-      for (const email of insertedEmails) {
-        if (email.has_attachments && email.subject) {
-          // Find matching attachment based on subject keywords
-          for (const [keyword, attachment] of Object.entries(attachmentMap)) {
-            if (email.subject.toLowerCase().includes(keyword.toLowerCase())) {
-              emailAttachmentsToInsert.push({
-                email_id: email.id,
-                user_id: userId,
-                file_name: attachment.fileName,
-                file_path: attachment.filePath,
-                file_size: attachment.fileSize,
-                content_type: 'application/pdf',
-              });
-              break; // Only one attachment per email
-            }
+    for (const email of allInsertedEmails) {
+      if (email.has_attachments && email.subject) {
+        for (const [keyword, attachment] of Object.entries(attachmentMap)) {
+          if (email.subject.toLowerCase().includes(keyword.toLowerCase())) {
+            emailAttachmentsToInsert.push({
+              email_id: email.id, user_id: userId,
+              file_name: attachment.fileName, file_path: attachment.filePath,
+              file_size: attachment.fileSize, content_type: 'application/pdf',
+            });
+            break;
           }
         }
       }
@@ -985,25 +660,33 @@ Deno.serve(async (req) => {
 
     if (emailAttachmentsToInsert.length > 0) {
       console.log(`Inserting ${emailAttachmentsToInsert.length} email attachments...`);
-      const { error: attachError } = await supabase.from('email_attachments').insert(emailAttachmentsToInsert);
-      if (attachError) {
-        console.error('Error inserting email attachments:', attachError);
-        // Don't throw - continue with other data
+      for (let i = 0; i < emailAttachmentsToInsert.length; i += emailBatchSize) {
+        const batch = emailAttachmentsToInsert.slice(i, i + emailBatchSize);
+        const { error: attachError } = await supabase.from('email_attachments').insert(batch);
+        if (attachError) console.error('Error inserting email attachments batch:', attachError);
       }
     }
 
     console.log(`Inserting ${directMessagesToInsert.length} direct messages...`);
-    const { error: dmError } = await supabase.from('direct_messages').insert(directMessagesToInsert);
-    if (dmError) {
-      console.error('Error inserting direct messages:', dmError);
-      throw dmError;
+    for (let i = 0; i < directMessagesToInsert.length; i += emailBatchSize) {
+      const batch = directMessagesToInsert.slice(i, i + emailBatchSize);
+      const { error: dmError } = await supabase.from('direct_messages').insert(batch);
+      if (dmError) { console.error('Error inserting DMs batch:', dmError); throw dmError; }
     }
 
     console.log(`Inserting ${communicationsToInsert.length} communications log entries...`);
-    const { error: commError } = await supabase.from('communications').insert(communicationsToInsert);
-    if (commError) {
-      console.error('Error inserting communications:', commError);
-      throw commError;
+    for (let i = 0; i < communicationsToInsert.length; i += emailBatchSize) {
+      const batch = communicationsToInsert.slice(i, i + emailBatchSize);
+      const { error: commError } = await supabase.from('communications').insert(batch);
+      if (commError) { console.error('Error inserting comms batch:', commError); throw commError; }
+    }
+
+    // Count emails per jurisdiction
+    const emailsByJurisdiction: Record<string, number> = {};
+    for (const email of emailsToInsert) {
+      const client = allClients.find(c => c.id === email.client_id);
+      const country = client?.country_of_issue || 'Unknown';
+      emailsByJurisdiction[country] = (emailsByJurisdiction[country] || 0) + 1;
     }
 
     const summary = {
@@ -1014,11 +697,12 @@ Deno.serve(async (req) => {
         emailAttachments: emailAttachmentsToInsert.length,
         directMessages: directMessagesToInsert.length,
         communications: communicationsToInsert.length,
-        clientsProcessed: clients.length,
+        jurisdictions: Object.keys(clientsByJurisdiction).length,
+        emailsByJurisdiction,
       },
     };
 
-    console.log('Seeding complete:', summary);
+    console.log('Seeding complete:', JSON.stringify(summary));
 
     return new Response(
       JSON.stringify(summary),
