@@ -1,100 +1,48 @@
 
+# Fix Client Search Autocomplete and Add Advisor/Jurisdiction Filtering
 
-# Web/Mobile Mode Toggle with Mobile App Experience
+## Problem
+The client search autocomplete dropdown (used in the top bar and email compose To/CC/BCC fields) is currently broken and does not filter results by the selected advisors or jurisdiction. Every search shows ALL clients from the database regardless of which advisors are selected in the top bar filter or which jurisdiction is active.
 
-## Overview
-Add a Web/Mobile toggle to the User Menu (below the email display), which switches between the current desktop web CRM and a dedicated mobile advisor companion app experience. When "Mobile" is selected, a branded loading screen appears for 3 seconds, then transitions to a mobile-optimized interface with key advisor tools.
+## Root Cause
+The `ClientAutocompleteDropdown` and `InlineClientSearch` components both call `useClients()` directly, which fetches all clients from the database without any region or advisor filtering. The Clients page applies filtering separately using `useRegion()` context, but the autocomplete components never received this logic.
 
-## What You Will See
+## Solution
+Add advisor-based filtering to the `ClientAutocompleteDropdown` component so that only clients belonging to the currently selected advisors (within the active jurisdiction) appear in search results. This single change will propagate to all places the dropdown is used: the global header search bar, the email compose To/CC/BCC fields, and the ComposeToField component.
 
-### 1. User Menu Toggle
-- A segmented "Web | Mobile" toggle appears below `demo@vantage.co.za` in the user menu popover
-- "Web" is selected by default, showing the current CRM interface
-- Tapping "Mobile" triggers the transition
+## Changes
 
-### 2. Loading Screen (3 seconds)
-- Full-screen branded splash with a gradient background (teal-to-dark-blue, matching Vantage brand)
-- **"AdvisorFirst"** displayed as a styled logo -- bold, modern typography with an accent gradient on "First" to echo the Vantage visual identity
-- Tagline: **"Your Advice Companion (TM)"** in lighter text below
-- **"powered by Vantage"** in smaller text at the bottom with the Vantage logo
-- An animated loading indicator (pulsing ring or progress bar)
+### 1. `src/components/clients/ClientAutocompleteDropdown.tsx`
+- Import `useRegion` from `RegionContext`
+- Derive the list of selected advisor full names from `regionalData.advisors` and `selectedAdvisors`
+- Add a filter step in the `filteredClients` memo that excludes clients whose `advisor` field does not match any selected advisor name
+- This ensures every instance of `ClientAutocompleteDropdown` (header, To, CC, BCC) automatically respects the global filter
 
-### 3. Mobile App Interface
-A phone-style layout rendered within the browser, featuring:
-
-- **Bottom Tab Navigation** with 5 tabs: Today, Clients, Tasks, Insights, AI
-- **Today Tab (Home)**: Shows today's appointments from the calendar, quick stats (tasks due, upcoming meetings), and recent activity
-- **Clients Tab**: Scrollable list of clients with search, tap to view a mobile-friendly client profile card
-- **Tasks Tab**: Task list with priority badges, status indicators, tap to view/update
-- **Insights Tab**: Key practice metrics in card format (AUM, open tasks, compliance alerts)
-- **AI Tab**: Full-screen chat interface reusing the existing GlobalAIChat logic
-- **Top header bar** with AdvisorFirst branding, notification bell, and a "back to web" button
-
-All data comes from the same hooks (useCalendarEvents, useTasks, useClients, etc.) so everything syncs with the web CRM.
+### 2. `src/components/email/InlineClientSearch.tsx`
+- Import `useRegion` from `RegionContext`
+- Derive selected advisor names the same way
+- Add a filter step in the `filteredClients` memo to exclude clients not assigned to a selected advisor
+- This ensures the "Link Client" popover in email compose also respects the filter
 
 ## Technical Details
 
-### New Files to Create
+### Filtering Logic (applied in both components)
+```text
+1. Get regionalData.advisors and selectedAdvisors from useRegion()
+2. Map selectedAdvisors (initials) to full names via regionalData.advisors
+3. In the filter:
+   - If selectedAdvisorNames has entries, exclude clients where
+     client.advisor is missing OR not in selectedAdvisorNames
+   - This matches the exact pattern used on the Clients page (lines 276-282)
+```
 
-| File | Purpose |
-|------|---------|
-| `src/contexts/AppModeContext.tsx` | Context provider storing "web" or "mobile" mode, persisted in localStorage |
-| `src/components/mobile/MobileSplashScreen.tsx` | 3-second branded loading screen with AdvisorFirst logo and animation |
-| `src/components/mobile/MobileApp.tsx` | Main mobile shell with bottom tab navigation and header |
-| `src/components/mobile/MobileTodayTab.tsx` | Today's appointments, quick stats, and activity feed |
-| `src/components/mobile/MobileClientsTab.tsx` | Searchable client list with mobile profile cards |
-| `src/components/mobile/MobileTasksTab.tsx` | Task list with tap-to-update functionality |
-| `src/components/mobile/MobileInsightsTab.tsx` | Key metrics cards (AUM, tasks, compliance) |
-| `src/components/mobile/MobileAITab.tsx` | Full-screen AI chat interface |
-| `src/components/mobile/MobileClientProfile.tsx` | Individual client detail card for mobile |
+### Scope of Impact
+- **Global header search bar** (AppHeader) -- uses ClientAutocompleteDropdown
+- **Email Compose "To" field** (ComposeEmail) -- uses ClientAutocompleteDropdown
+- **Email Compose "CC" field** (ComposeEmail) -- uses ClientAutocompleteDropdown
+- **Email Compose "BCC" field** (ComposeEmail) -- uses ClientAutocompleteDropdown
+- **ComposeToField component** (ComposeMessageDialog) -- uses ClientAutocompleteDropdown
+- **InlineClientSearch** (email client linking popover) -- uses useClients directly
 
-### Files to Modify
-
-| File | Change |
-|------|--------|
-| `src/components/dashboard/UserMenu.tsx` | Add Web/Mobile segmented toggle below email |
-| `src/App.tsx` | Wrap routes with AppModeContext; conditionally render MobileApp or web routes |
-
-### Architecture
-
-The AppModeContext will provide:
-- `mode`: "web" or "mobile"
-- `setMode(mode)`: switches mode and persists to localStorage
-- `showSplash`: boolean to control splash screen visibility
-
-When mode switches to "mobile":
-1. `showSplash` is set to `true`
-2. MobileSplashScreen renders for 3 seconds
-3. After timeout, `showSplash` becomes `false`, MobileApp renders
-4. MobileApp uses the same data hooks as the web CRM
-
-When mode switches back to "web":
-1. Normal web routes render immediately (no splash needed)
-
-### Mobile UI Specifications
-
-**Bottom Navigation Bar:**
-- 5 tabs: Calendar (today icon), Users (clients), CheckSquare (tasks), BarChart (insights), Sparkles (AI)
-- Active tab highlighted with teal accent color
-- Fixed at bottom, 56px height
-
-**Mobile Header:**
-- "AdvisorFirst" text logo on the left
-- Notification bell and "Web" switch button on the right
-- 48px height, sticky top
-
-**Cards and Lists:**
-- Full-width cards with rounded corners and subtle shadows
-- Pull-to-refresh pattern on list views
-- Tap interactions instead of hover states
-
-### Data Sync
-All mobile views use the existing hooks:
-- `useCalendarEvents` for appointments
-- `useTasks` / `useTasksEnhanced` for task management
-- `useClients` for client profiles
-- `useRegion` for regional data and insights
-- The AI chat reuses the same `GlobalAIChat` message handling
-
-Any changes made in mobile mode (task updates, notes) will appear in the web CRM on the next view, and vice versa.
-
+### No API/Database Changes Required
+The filtering is done client-side using the existing `advisor` field on `ClientListItem`, matching the pattern already established on the Clients page.
