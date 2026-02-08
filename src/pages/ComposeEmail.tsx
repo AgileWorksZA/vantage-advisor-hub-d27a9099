@@ -426,7 +426,7 @@ const ComposeEmail = () => {
           userName={userName}
           userEmail={userEmail}
           onSignOut={handleSignOut}
-          onAccountSettings={() => navigate("/practice")}
+          onAccountSettings={() => navigate("/account-settings")}
         />
 
         {/* Content */}

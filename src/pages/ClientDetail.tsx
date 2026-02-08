@@ -193,7 +193,7 @@ const ClientDetail = () => {
           userName={userName}
           userEmail={userEmail}
           onSignOut={handleSignOut}
-          onAccountSettings={() => navigate("/practice")}
+          onAccountSettings={() => navigate("/account-settings")}
         />
 
         {/* Client Detail Content */}

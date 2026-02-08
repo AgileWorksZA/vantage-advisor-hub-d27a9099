@@ -7,6 +7,16 @@ export interface UserSettings {
   user_id: string;
   email_signature: string | null;
   default_from_primary_adviser: boolean;
+  timezone: string | null;
+  display_name: string | null;
+  notification_email: boolean;
+  notification_task_reminders: boolean;
+  notification_calendar_reminders: boolean;
+  notification_client_updates: boolean;
+  notification_compliance_alerts: boolean;
+  date_format: string | null;
+  time_format: string | null;
+  default_calendar_view: string | null;
   created_at: string;
   updated_at: string;
 }

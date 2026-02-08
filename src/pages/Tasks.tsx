@@ -162,7 +162,7 @@ const Tasks = () => {
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <AppHeader searchPlaceholder="Search tasks..." userName={userName} userEmail={userEmail} onSignOut={handleSignOut} onAccountSettings={() => navigate("/practice")} />
+        <AppHeader searchPlaceholder="Search tasks..." userName={userName} userEmail={userEmail} onSignOut={handleSignOut} onAccountSettings={() => navigate("/account-settings")} />
 
         <div className="flex items-center justify-between px-6 py-3 border-b bg-background">
           <div className="flex items-center gap-2">

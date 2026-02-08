@@ -223,7 +223,7 @@ const EmailPage = () => {
           userName={userName}
           userEmail={userEmail}
           onSignOut={handleSignOut}
-          onAccountSettings={() => navigate("/practice")}
+          onAccountSettings={() => navigate("/account-settings")}
         />
 
         {/* Header with Channel Tabs - OUTSIDE main, consistent position */}

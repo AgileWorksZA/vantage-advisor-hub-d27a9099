@@ -161,7 +161,7 @@ const Practice = () => {
           userName={userName}
           userEmail={userEmail}
           onSignOut={handleSignOut}
-          onAccountSettings={() => {}}
+          onAccountSettings={() => navigate("/account-settings")}
         />
 
         {/* Content - Scrollable */}
