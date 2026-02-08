@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import DOMPurify from "dompurify";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,6 +34,8 @@ import {
 } from "@/components/email/ClientAvatarBadge";
 import { InlineClientSearch } from "@/components/email/InlineClientSearch";
 import { TaskSearchDialog } from "@/components/email/TaskSearchDialog";
+import { ClientAutocompleteDropdown } from "@/components/clients/ClientAutocompleteDropdown";
+import { useClients, ClientListItem } from "@/hooks/useClients";
 import { AttachmentLinkDialog, AttachmentItem } from "@/components/email/AttachmentLinkDialog";
 import { EmailQuotedContent, generateQuotedHtml } from "@/components/email/EmailQuotedContent";
 import { useUserSettings } from "@/hooks/useUserSettings";
@@ -63,6 +65,7 @@ interface RecipientBadge {
   id: string;
   email: string;
   name?: string;
+  clientId?: string;
 }
 
 const ComposeEmail = () => {
@@ -95,6 +98,12 @@ const ComposeEmail = () => {
   const [newRecipient, setNewRecipient] = useState("");
   const [newCc, setNewCc] = useState("");
   const [newBcc, setNewBcc] = useState("");
+  const [showToDropdown, setShowToDropdown] = useState(false);
+  const [showCcDropdown, setShowCcDropdown] = useState(false);
+  const [showBccDropdown, setShowBccDropdown] = useState(false);
+  const toContainerRef = useRef<HTMLDivElement>(null);
+  const ccContainerRef = useRef<HTMLDivElement>(null);
+  const bccContainerRef = useRef<HTMLDivElement>(null);
   const [linkedClients, setLinkedClients] = useState<LinkedClient[]>([]);
   
   // Task linking state
@@ -182,35 +191,46 @@ const ComposeEmail = () => {
     navigate("/auth");
   };
 
-  const handleAddRecipient = (email: string, type: "to" | "cc" | "bcc") => {
-    if (!email.trim() || !email.includes("@")) return;
-    const badge: RecipientBadge = { id: email, email: email.trim() };
+  const handleAddClientRecipient = (client: ClientListItem, type: "to" | "cc" | "bcc") => {
+    if (!client.email) {
+      toast({ title: "This client has no email address on file", variant: "destructive" });
+      return;
+    }
+    const badge: RecipientBadge = {
+      id: client.id,
+      email: client.email,
+      name: client.client,
+      clientId: client.id,
+    };
 
     if (type === "to") {
-      if (!recipients.find((r) => r.email === email)) {
+      if (!recipients.find((r) => r.id === client.id)) {
         setRecipients([...recipients, badge]);
       }
       setNewRecipient("");
+      setShowToDropdown(false);
     } else if (type === "cc") {
-      if (!ccRecipients.find((r) => r.email === email)) {
+      if (!ccRecipients.find((r) => r.id === client.id)) {
         setCcRecipients([...ccRecipients, badge]);
       }
       setNewCc("");
+      setShowCcDropdown(false);
     } else {
-      if (!bccRecipients.find((r) => r.email === email)) {
+      if (!bccRecipients.find((r) => r.id === client.id)) {
         setBccRecipients([...bccRecipients, badge]);
       }
       setNewBcc("");
+      setShowBccDropdown(false);
     }
   };
 
-  const handleRemoveRecipient = (email: string, type: "to" | "cc" | "bcc") => {
+  const handleRemoveRecipient = (id: string, type: "to" | "cc" | "bcc") => {
     if (type === "to") {
-      setRecipients(recipients.filter((r) => r.email !== email));
+      setRecipients(recipients.filter((r) => r.id !== id));
     } else if (type === "cc") {
-      setCcRecipients(ccRecipients.filter((r) => r.email !== email));
+      setCcRecipients(ccRecipients.filter((r) => r.id !== id));
     } else {
-      setBccRecipients(bccRecipients.filter((r) => r.email !== email));
+      setBccRecipients(bccRecipients.filter((r) => r.id !== id));
     }
   };
 
@@ -474,35 +494,46 @@ const ComposeEmail = () => {
               <div className="flex items-start gap-3">
                 <Label className="w-16 text-sm text-muted-foreground pt-2">To*</Label>
                 <div className="flex-1 space-y-2">
-                  <div className="flex flex-wrap items-center gap-2 min-h-[36px] p-2 bg-background border border-input rounded-md">
-                    {recipients.map((r) => (
-                      <div
-                        key={r.email}
-                        className="inline-flex items-center gap-1.5 bg-muted px-2 py-1 rounded text-sm"
-                      >
-                        {r.email}
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveRecipient(r.email, "to")}
-                          className="text-muted-foreground hover:text-foreground"
+                  <div className="relative" ref={toContainerRef}>
+                    <div className="flex flex-wrap items-center gap-2 min-h-[36px] p-2 bg-background border border-input rounded-md">
+                      {recipients.map((r) => (
+                        <div
+                          key={r.id}
+                          className="inline-flex items-center gap-1.5 bg-muted px-2 py-1 rounded text-sm"
                         >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    ))}
-                    <input
-                      type="email"
-                      value={newRecipient}
-                      onChange={(e) => setNewRecipient(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === ",") {
-                          e.preventDefault();
-                          handleAddRecipient(newRecipient, "to");
-                        }
-                      }}
-                      placeholder="Add recipient..."
-                      className="flex-1 min-w-[150px] bg-transparent outline-none text-sm"
-                    />
+                          <span className="font-medium">{r.name || r.email}</span>
+                          {r.name && <span className="text-muted-foreground">({r.email})</span>}
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveRecipient(r.id, "to")}
+                            className="text-muted-foreground hover:text-foreground"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                      <input
+                        type="text"
+                        value={newRecipient}
+                        onChange={(e) => {
+                          setNewRecipient(e.target.value);
+                          setShowToDropdown(e.target.value.length >= 2);
+                        }}
+                        onFocus={() => newRecipient.length >= 2 && setShowToDropdown(true)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Escape") setShowToDropdown(false);
+                        }}
+                        placeholder="Search clients..."
+                        className="flex-1 min-w-[150px] bg-transparent outline-none text-sm"
+                      />
+                    </div>
+                    {showToDropdown && (
+                      <ClientAutocompleteDropdown
+                        query={newRecipient}
+                        onSelect={(client) => handleAddClientRecipient(client, "to")}
+                        excludeIds={recipients.map((r) => r.id)}
+                      />
+                    )}
                   </div>
                   <div className="flex gap-2">
                     {!showBcc && (
@@ -532,35 +563,46 @@ const ComposeEmail = () => {
                 <div className="flex items-start gap-3">
                   <Label className="w-16 text-sm text-muted-foreground pt-2">CC</Label>
                   <div className="flex-1">
-                    <div className="flex flex-wrap items-center gap-2 min-h-[36px] p-2 bg-background border border-input rounded-md">
-                      {ccRecipients.map((r) => (
-                        <div
-                          key={r.email}
-                          className="inline-flex items-center gap-1.5 bg-muted px-2 py-1 rounded text-sm"
-                        >
-                          {r.email}
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveRecipient(r.email, "cc")}
-                            className="text-muted-foreground hover:text-foreground"
+                    <div className="relative" ref={ccContainerRef}>
+                      <div className="flex flex-wrap items-center gap-2 min-h-[36px] p-2 bg-background border border-input rounded-md">
+                        {ccRecipients.map((r) => (
+                          <div
+                            key={r.id}
+                            className="inline-flex items-center gap-1.5 bg-muted px-2 py-1 rounded text-sm"
                           >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      ))}
-                      <input
-                        type="email"
-                        value={newCc}
-                        onChange={(e) => setNewCc(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === ",") {
-                            e.preventDefault();
-                            handleAddRecipient(newCc, "cc");
-                          }
-                        }}
-                        placeholder="Add CC..."
-                        className="flex-1 min-w-[150px] bg-transparent outline-none text-sm"
-                      />
+                            <span className="font-medium">{r.name || r.email}</span>
+                            {r.name && <span className="text-muted-foreground">({r.email})</span>}
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveRecipient(r.id, "cc")}
+                              className="text-muted-foreground hover:text-foreground"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ))}
+                        <input
+                          type="text"
+                          value={newCc}
+                          onChange={(e) => {
+                            setNewCc(e.target.value);
+                            setShowCcDropdown(e.target.value.length >= 2);
+                          }}
+                          onFocus={() => newCc.length >= 2 && setShowCcDropdown(true)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Escape") setShowCcDropdown(false);
+                          }}
+                          placeholder="Search clients..."
+                          className="flex-1 min-w-[150px] bg-transparent outline-none text-sm"
+                        />
+                      </div>
+                      {showCcDropdown && (
+                        <ClientAutocompleteDropdown
+                          query={newCc}
+                          onSelect={(client) => handleAddClientRecipient(client, "cc")}
+                          excludeIds={[...recipients, ...ccRecipients].map((r) => r.id)}
+                        />
+                      )}
                     </div>
                   </div>
                 </div>
@@ -571,35 +613,46 @@ const ComposeEmail = () => {
                 <div className="flex items-start gap-3">
                   <Label className="w-16 text-sm text-muted-foreground pt-2">BCC</Label>
                   <div className="flex-1">
-                    <div className="flex flex-wrap items-center gap-2 min-h-[36px] p-2 bg-background border border-input rounded-md">
-                      {bccRecipients.map((r) => (
-                        <div
-                          key={r.email}
-                          className="inline-flex items-center gap-1.5 bg-muted px-2 py-1 rounded text-sm"
-                        >
-                          {r.email}
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveRecipient(r.email, "bcc")}
-                            className="text-muted-foreground hover:text-foreground"
+                    <div className="relative" ref={bccContainerRef}>
+                      <div className="flex flex-wrap items-center gap-2 min-h-[36px] p-2 bg-background border border-input rounded-md">
+                        {bccRecipients.map((r) => (
+                          <div
+                            key={r.id}
+                            className="inline-flex items-center gap-1.5 bg-muted px-2 py-1 rounded text-sm"
                           >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      ))}
-                      <input
-                        type="email"
-                        value={newBcc}
-                        onChange={(e) => setNewBcc(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === ",") {
-                            e.preventDefault();
-                            handleAddRecipient(newBcc, "bcc");
-                          }
-                        }}
-                        placeholder="Add BCC..."
-                        className="flex-1 min-w-[150px] bg-transparent outline-none text-sm"
-                      />
+                            <span className="font-medium">{r.name || r.email}</span>
+                            {r.name && <span className="text-muted-foreground">({r.email})</span>}
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveRecipient(r.id, "bcc")}
+                              className="text-muted-foreground hover:text-foreground"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ))}
+                        <input
+                          type="text"
+                          value={newBcc}
+                          onChange={(e) => {
+                            setNewBcc(e.target.value);
+                            setShowBccDropdown(e.target.value.length >= 2);
+                          }}
+                          onFocus={() => newBcc.length >= 2 && setShowBccDropdown(true)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Escape") setShowBccDropdown(false);
+                          }}
+                          placeholder="Search clients..."
+                          className="flex-1 min-w-[150px] bg-transparent outline-none text-sm"
+                        />
+                      </div>
+                      {showBccDropdown && (
+                        <ClientAutocompleteDropdown
+                          query={newBcc}
+                          onSelect={(client) => handleAddClientRecipient(client, "bcc")}
+                          excludeIds={[...recipients, ...ccRecipients, ...bccRecipients].map((r) => r.id)}
+                        />
+                      )}
                     </div>
                   </div>
                 </div>
