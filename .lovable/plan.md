@@ -1,48 +1,122 @@
 
 
-# Partially Revert AI Button -- Remove Outer Glow Only, Keep 3D Effect
+# Quote and New Business Wizards on the 360 View Tab
 
-## Problem
+## Overview
 
-The last change removed all visual effects from the AI orb, making it completely flat. The user wants to keep the 3D depth (inner light, central glow, text shadow) but remove only the outer faded glow rings and the `orb-glow` box-shadow.
+Split the combined "+ Quote + New business" link on the On-Platform Investment Products header into two separate inline links ("+ Quote" and "+ New business"), and create full-screen wizard dialogs for each that present jurisdiction-specific product selections matching the provided reference images.
 
-## What to restore
+## Changes
 
-**File: `src/components/ai-assistant/AIOrb.tsx`**
+### 1. Add jurisdiction-specific Quote/New Business product lists to regional data
 
-Bring back these three elements that were removed in the last edit:
+**File: `src/data/regional360ViewData.ts`**
 
-1. **Inner light layer** -- `<div className="absolute inset-2 rounded-full bg-gradient-to-t from-transparent to-white/30" />` -- this gives the orb a lit-from-above 3D look
-2. **Central glow layer** -- `<div className="absolute inset-4 rounded-full bg-white/20 blur-sm" />` -- adds depth to the center
-3. **Text drop-shadow** -- restore `drop-shadow-lg` on the "AI" text span for legibility and depth
+Add a new exported map of quote/new-business products per jurisdiction. The ZA products match the reference images exactly. Other jurisdictions use locale-appropriate product types:
 
-## What stays removed (not restored)
+| Jurisdiction | Products |
+|---|---|
+| ZA | Tax Free Plan, Pension Preservation Fund, Living Annuity, Provident Preservation Fund, Investment Plan, Retirement Annuity Fund |
+| AU | Superannuation Fund, Self-Managed Super Fund (SMSF), Retirement Income Stream, Investment Account, Insurance Bond |
+| CA | RRSP, TFSA, RRIF, Non-Registered Account, RESP, Locked-In Retirement Account |
+| GB | SIPP, Stocks and Shares ISA, General Investment Account, Junior ISA, Lifetime ISA, Offshore Bond |
+| US | 401(k) Rollover, Traditional IRA, Roth IRA, Brokerage Account, 529 Education Plan, SEP IRA |
 
-- The three outer hover-animated glow ring divs (ping, pulse, spin-slow)
-- The three static glow ring divs shown when chat is open
-- The `orb-glow` class on the core orb div
-- The `.orb-glow` CSS class in `src/index.css`
+Export a helper: `getQuoteProducts(jurisdiction: string): string[]`
 
-## Resulting structure
+### 2. Create the Quote Wizard Dialog
 
-```text
-<div class="relative w-24 h-24 group">
-  <div class="absolute inset-4 rounded-full bg-gradient-to-br ... cursor-pointer" onClick>
-    <div class="absolute inset-2 ... to-white/30" />        <-- inner light (restored)
-    <div class="absolute inset-4 ... bg-white/20 blur-sm" /> <-- central glow (restored)
-    <div class="absolute inset-0 flex items-center justify-center">
-      <span class="text-white font-bold text-lg drop-shadow-lg">AI</span>  <-- shadow restored
-    </div>
-  </div>
-  {isProcessing && <ParticleField />}
+**New file: `src/components/client-detail/QuoteWizardDialog.tsx`**
+
+A full-width dialog (max-w-6xl) with a two-panel layout:
+
+**Left panel (approx 75% width):**
+- Header: "QUOTE" in bold, followed by a teal top border accent
+- Subheader: "SELECT YOUR DESIRED PRODUCTS"
+- Collapsible "Product Selection" accordion (default open) containing radio buttons for each jurisdiction-specific product
+
+**Right sidebar (approx 25% width):**
+- Header: "QUOTE" centered
+- Wizard step tracker with three sections:
+  - **Capture** (with steps: Select product, How would you like to invest, Recurring withdrawal, Financial adviser)
+  - **Review and Sign**
+  - **Submitted**
+- Current step highlighted with a teal checkmark icon; other steps shown as empty circles
+- Bottom action buttons: "Cancel" (teal outline), "Save and close" (teal fill), and "Next" (teal fill, full width)
+
+**Props:** `open`, `onOpenChange`, `jurisdiction` (string)
+
+The dialog is UI-only for now -- no backend persistence. Clicking "Cancel" or "Save and close" closes the dialog.
+
+### 3. Create the New Business Wizard Dialog
+
+**New file: `src/components/client-detail/NewBusinessWizardDialog.tsx`**
+
+Nearly identical to the Quote wizard but with these differences:
+
+- Header: "NEW BUSINESS -" instead of "QUOTE"
+- Sidebar header: "NEW BUSINESS"
+- **Capture** section has additional steps: Product Selection, Create your investor profile, How would you like to invest, Recurring withdrawal, How would you like to pay, Financial adviser (6 steps vs 4)
+- Bottom buttons: "Cancel", "Save and Exit" (instead of "Save and close"), "Next"
+
+**Props:** `open`, `onOpenChange`, `jurisdiction` (string)
+
+Same product radio list from the jurisdiction config, same UI-only behavior.
+
+### 4. Update the 360 View Tab header
+
+**File: `src/components/client-detail/Client360ViewTab.tsx`**
+
+**Current (line 78-80):**
+```
+<Button variant="link">+ Quote + New business</Button>
+```
+
+**New:**
+```
+<div className="flex items-center gap-2">
+  <Button variant="link" onClick={() => setShowQuoteWizard(true)}>+ Quote</Button>
+  <span className="text-muted-foreground">|</span>
+  <Button variant="link" onClick={() => setShowNewBusinessWizard(true)}>+ New business</Button>
 </div>
 ```
 
-## Files
+Add state variables `showQuoteWizard` and `showNewBusinessWizard`, and render both dialog components at the bottom of the component, passing the client's jurisdiction derived from `mapNationalityToJurisdiction(client?.nationality)`.
+
+## Visual Design (matching reference images)
+
+The wizard dialogs follow the exact layout from the uploaded screenshots:
+
+```text
++------------------------------------------------------------------+----------+
+| QUOTE (or NEW BUSINESS -)                                        | QUOTE    |
+| ─────────────────────────────── (teal border)                    |          |
+| SELECT YOUR DESIRED PRODUCTS                                     | Capture  |
+|                                                                  |  * Step1 |
+| +-------------------------------------------------------------+ |  o Step2 |
+| | Product Selection                                   [chevron]| |  o Step3 |
+| |-------------------------------------------------------------| |  o Step4 |
+| |  o Tax Free Plan                                             | |          |
+| |  o Pension Preservation Fund                                 | | Review.. |
+| |  o Living Annuity                                            | | Submit.. |
+| |  o Provident Preservation Fund                               | |          |
+| |  o Investment Plan                                           | | [Cancel] |
+| |  o Retirement Annuity Fund                                   | | [Save]   |
+| +-------------------------------------------------------------+ | [Next]   |
++------------------------------------------------------------------+----------+
+```
+
+- Teal accent color: `hsl(180, 70%, 45%)` (consistent with existing app theme)
+- Radio buttons use standard Radix RadioGroup
+- Collapsible section uses the existing Collapsible component
+- Buttons match the teal gradient style from the screenshots
+
+## Files Summary
 
 | File | Action |
 |------|--------|
-| `src/components/ai-assistant/AIOrb.tsx` | Modify -- restore inner light, central glow, and text drop-shadow |
-
-No changes needed to `src/index.css` -- the `.orb-glow` class stays removed.
+| `src/data/regional360ViewData.ts` | Modify -- add `getQuoteProducts()` helper with jurisdiction product maps |
+| `src/components/client-detail/QuoteWizardDialog.tsx` | Create -- Quote wizard dialog component |
+| `src/components/client-detail/NewBusinessWizardDialog.tsx` | Create -- New Business wizard dialog component |
+| `src/components/client-detail/Client360ViewTab.tsx` | Modify -- split link into two buttons, add dialog state and rendering |
 
