@@ -43,6 +43,7 @@ import { useRegion } from "@/contexts/RegionContext";
 import { COMMON_TIMEZONES, getActiveTimezone, getTimezoneAbbreviation } from "@/lib/timezone-utils";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
+import { checkPasswordLeaked } from "@/lib/password-security";
 import GlobalAIChat from "@/components/ai-assistant/GlobalAIChat";
 
 const sidebarItems = [
@@ -171,6 +172,14 @@ const AccountSettings = () => {
 
     setIsUpdatingPassword(true);
     try {
+      // Check if the password has been found in a data breach
+      const isLeaked = await checkPasswordLeaked(newPassword);
+      if (isLeaked) {
+        setPasswordError("This password has been found in a known data breach. Please choose a different password to keep your account secure.");
+        setIsUpdatingPassword(false);
+        return;
+      }
+
       const { error } = await supabase.auth.updateUser({ password: newPassword });
       if (error) throw error;
       toast({ title: "Password updated successfully" });
@@ -377,11 +386,16 @@ const AccountSettings = () => {
                     )}
                     <Button onClick={handlePasswordUpdate} disabled={isUpdatingPassword || !newPassword}>
                       {isUpdatingPassword ? (
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Checking security...
+                        </>
                       ) : (
-                        <Shield className="w-4 h-4 mr-2" />
+                        <>
+                          <Shield className="w-4 h-4 mr-2" />
+                          Update Password
+                        </>
                       )}
-                      Update Password
                     </Button>
                   </CardContent>
                 </Card>

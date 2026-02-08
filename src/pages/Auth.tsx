@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { checkPasswordLeaked } from "@/lib/password-security";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -127,6 +128,17 @@ const Auth = () => {
     
     try {
       if (isSignUp) {
+        // Check if the password has been found in a data breach
+        const isLeaked = await checkPasswordLeaked(password);
+        if (isLeaked) {
+          setErrors((prev) => ({
+            ...prev,
+            password: "This password has been found in a known data breach. Please choose a different password to keep your account secure.",
+          }));
+          setLoading(false);
+          return;
+        }
+
         const { error } = await supabase.auth.signUp({
           email: email.trim(),
           password,
