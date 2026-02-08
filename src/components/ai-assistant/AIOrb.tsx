@@ -17,10 +17,14 @@ const AIOrb = ({ isProcessing, isChatOpen, onClick }: AIOrbProps) => {
           !isChatOpen && "group-hover:scale-110"
         )}
         onClick={onClick}
-      >
+>
+        {/* Inner light - 3D lit-from-above effect */}
+        <div className="absolute inset-2 rounded-full bg-gradient-to-t from-transparent to-white/30" />
+        {/* Central glow - depth */}
+        <div className="absolute inset-4 rounded-full bg-white/20 blur-sm" />
         {/* AI Text */}
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-white font-bold text-lg">AI</span>
+          <span className="text-white font-bold text-lg drop-shadow-lg">AI</span>
         </div>
       </div>
 
