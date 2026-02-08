@@ -1,122 +1,95 @@
 
 
-# Quote and New Business Wizards on the 360 View Tab
+# Enhanced Client Ribbon
 
 ## Overview
 
-Split the combined "+ Quote + New business" link on the On-Platform Investment Products header into two separate inline links ("+ Quote" and "+ New business"), and create full-screen wizard dialogs for each that present jurisdiction-specific product selections matching the provided reference images.
+Replace the current plain text header ("Manage individual (Owner) - Jackson, Susan Marie") with a rich, information-dense client ribbon that displays key client details at a glance, matching the provided reference design. The three action buttons (Personal financial report, Manage related entity, More options) are preserved.
 
-## Changes
+## Current State
 
-### 1. Add jurisdiction-specific Quote/New Business product lists to regional data
+The ribbon currently shows:
+- Back button + "Manage individual (Owner) - {clientName}" as plain text
+- Three action buttons on the right
 
-**File: `src/data/regional360ViewData.ts`**
+## Enhanced Ribbon Design
 
-Add a new exported map of quote/new-business products per jurisdiction. The ZA products match the reference images exactly. Other jurisdictions use locale-appropriate product types:
+The new ribbon will display two rows on a light teal gradient background:
 
-| Jurisdiction | Products |
-|---|---|
-| ZA | Tax Free Plan, Pension Preservation Fund, Living Annuity, Provident Preservation Fund, Investment Plan, Retirement Annuity Fund |
-| AU | Superannuation Fund, Self-Managed Super Fund (SMSF), Retirement Income Stream, Investment Account, Insurance Bond |
-| CA | RRSP, TFSA, RRIF, Non-Registered Account, RESP, Locked-In Retirement Account |
-| GB | SIPP, Stocks and Shares ISA, General Investment Account, Junior ISA, Lifetime ISA, Offshore Bond |
-| US | 401(k) Rollover, Traditional IRA, Roth IRA, Brokerage Account, 529 Education Plan, SEP IRA |
+**Row 1 (top):** Back button + "Manage individual (Owner) - {clientName}" (preserved from current) + action buttons on the right
 
-Export a helper: `getQuoteProducts(jurisdiction: string): string[]`
+**Row 2 (info bar):**
+- Large circular avatar with initials (e.g., "EW")
+- Person icon + formatted name: "Surname, I (FirstName)" (e.g., "Wegner, E (Emile)")
+- Pipe separator + "A: {advisor name}" (from client.advisor field)
+- Profile type badge: "Client" / "Lead" / "Prospect" (from client.profile_type)
+- Profile state badge: "Onboarding in progress" / "Active" etc. (from client.profile_state, color-coded)
+- Green dot + ID/Passport number (from client.id_number or client.passport_number)
+- Phone icon + phone number (from client.cell_number or client.work_number)
+- Email icon + email (from client.email)
 
-### 2. Create the Quote Wizard Dialog
+All values are pulled from the existing client record already fetched by useClientDetail.
 
-**New file: `src/components/client-detail/QuoteWizardDialog.tsx`**
+## Data Mapping
 
-A full-width dialog (max-w-6xl) with a two-panel layout:
+| Ribbon Element | Client Field | Fallback |
+|---|---|---|
+| Avatar initials | client.initials or first letter of first_name + surname | "?" |
+| Display name | "{surname}, {initial} ({preferred_name or first_name})" | -- |
+| Advisor | client.advisor | "Unassigned" |
+| Profile type badge | client.profile_type ("Client", "Lead", "Prospect") | -- |
+| Status badge | client.profile_state ("Active", "Onboarding in progress", etc.) | -- |
+| ID number | client.id_number | client.passport_number, or hidden if neither |
+| Phone | client.cell_number | client.work_number, or hidden if neither |
+| Email | client.email | client.work_email, or hidden if neither |
 
-**Left panel (approx 75% width):**
-- Header: "QUOTE" in bold, followed by a teal top border accent
-- Subheader: "SELECT YOUR DESIRED PRODUCTS"
-- Collapsible "Product Selection" accordion (default open) containing radio buttons for each jurisdiction-specific product
+## Badge Color Coding
 
-**Right sidebar (approx 25% width):**
-- Header: "QUOTE" centered
-- Wizard step tracker with three sections:
-  - **Capture** (with steps: Select product, How would you like to invest, Recurring withdrawal, Financial adviser)
-  - **Review and Sign**
-  - **Submitted**
-- Current step highlighted with a teal checkmark icon; other steps shown as empty circles
-- Bottom action buttons: "Cancel" (teal outline), "Save and close" (teal fill), and "Next" (teal fill, full width)
+- **Profile type**: "Client" = teal outline, "Prospect" = amber outline, "Lead" = blue outline
+- **Profile state**: "Active" = green background, "Onboarding in progress" = amber/yellow background, other = gray
 
-**Props:** `open`, `onOpenChange`, `jurisdiction` (string)
+## Technical Changes
 
-The dialog is UI-only for now -- no backend persistence. Clicking "Cancel" or "Save and close" closes the dialog.
+### File: `src/pages/ClientDetail.tsx`
 
-### 3. Create the New Business Wizard Dialog
+**Modify the Page Header section (lines 200-273):**
 
-**New file: `src/components/client-detail/NewBusinessWizardDialog.tsx`**
+Replace the current simple header with a two-part ribbon:
 
-Nearly identical to the Quote wizard but with these differences:
+1. **Top row**: Keep the Back button and title text, plus the three action buttons on the right (Personal financial report Select, Manage related entity dropdown, More options dropdown) -- these are unchanged.
 
-- Header: "NEW BUSINESS -" instead of "QUOTE"
-- Sidebar header: "NEW BUSINESS"
-- **Capture** section has additional steps: Product Selection, Create your investor profile, How would you like to invest, Recurring withdrawal, How would you like to pay, Financial adviser (6 steps vs 4)
-- Bottom buttons: "Cancel", "Save and Exit" (instead of "Save and close"), "Next"
+2. **New info bar row below**: A full-width container with a subtle teal gradient background (`bg-gradient-to-r from-teal-50 to-cyan-50 dark:from-teal-950/20 dark:to-cyan-950/20`) containing:
+   - A `w-14 h-14` circular avatar with the client's initials
+   - A green online-status dot on the avatar
+   - Client name formatted as "Surname, I (PreferredName)" with a person icon
+   - Pipe-separated advisor field
+   - Two small Badge components for profile_type and profile_state
+   - Contact details (ID, phone, email) each with their respective Lucide icons
 
-**Props:** `open`, `onOpenChange`, `jurisdiction` (string)
+**New imports needed:**
+- `UserRound, Phone, Mail, Hash` from lucide-react
+- `Badge` from `@/components/ui/badge`
+- `getInitials` from `@/types/client`
 
-Same product radio list from the jurisdiction config, same UI-only behavior.
+No new files are created. No new components are needed -- the ribbon is built inline in ClientDetail.tsx using existing UI primitives (Avatar, Badge, icons).
 
-### 4. Update the 360 View Tab header
-
-**File: `src/components/client-detail/Client360ViewTab.tsx`**
-
-**Current (line 78-80):**
-```
-<Button variant="link">+ Quote + New business</Button>
-```
-
-**New:**
-```
-<div className="flex items-center gap-2">
-  <Button variant="link" onClick={() => setShowQuoteWizard(true)}>+ Quote</Button>
-  <span className="text-muted-foreground">|</span>
-  <Button variant="link" onClick={() => setShowNewBusinessWizard(true)}>+ New business</Button>
-</div>
-```
-
-Add state variables `showQuoteWizard` and `showNewBusinessWizard`, and render both dialog components at the bottom of the component, passing the client's jurisdiction derived from `mapNationalityToJurisdiction(client?.nationality)`.
-
-## Visual Design (matching reference images)
-
-The wizard dialogs follow the exact layout from the uploaded screenshots:
+## Visual Layout
 
 ```text
-+------------------------------------------------------------------+----------+
-| QUOTE (or NEW BUSINESS -)                                        | QUOTE    |
-| ─────────────────────────────── (teal border)                    |          |
-| SELECT YOUR DESIRED PRODUCTS                                     | Capture  |
-|                                                                  |  * Step1 |
-| +-------------------------------------------------------------+ |  o Step2 |
-| | Product Selection                                   [chevron]| |  o Step3 |
-| |-------------------------------------------------------------| |  o Step4 |
-| |  o Tax Free Plan                                             | |          |
-| |  o Pension Preservation Fund                                 | | Review.. |
-| |  o Living Annuity                                            | | Submit.. |
-| |  o Provident Preservation Fund                               | |          |
-| |  o Investment Plan                                           | | [Cancel] |
-| |  o Retirement Annuity Fund                                   | | [Save]   |
-| +-------------------------------------------------------------+ | [Next]   |
-+------------------------------------------------------------------+----------+
++-------------------------------------------------------------------------+
+| [<- Back]  Manage individual (Owner) - Surname, FirstName (Preferred)   |
+|                                    [Report v] [Manage entity v] [...]   |
++-------------------------------------------------------------------------+
+| [Gradient teal background]                                              |
+|  +----+  Person-icon  Surname, I (Name) | A: Advisor | [Client] [Active]|
+|  | EW |  ID-icon 8108255051081  Phone-icon +27744581082  Mail tris@..   |
+|  +----+                                                                 |
++-------------------------------------------------------------------------+
 ```
-
-- Teal accent color: `hsl(180, 70%, 45%)` (consistent with existing app theme)
-- Radio buttons use standard Radix RadioGroup
-- Collapsible section uses the existing Collapsible component
-- Buttons match the teal gradient style from the screenshots
 
 ## Files Summary
 
 | File | Action |
-|------|--------|
-| `src/data/regional360ViewData.ts` | Modify -- add `getQuoteProducts()` helper with jurisdiction product maps |
-| `src/components/client-detail/QuoteWizardDialog.tsx` | Create -- Quote wizard dialog component |
-| `src/components/client-detail/NewBusinessWizardDialog.tsx` | Create -- New Business wizard dialog component |
-| `src/components/client-detail/Client360ViewTab.tsx` | Modify -- split link into two buttons, add dialog state and rendering |
+|---|---|
+| `src/pages/ClientDetail.tsx` | Modify -- add enhanced info bar below the existing header row |
 
