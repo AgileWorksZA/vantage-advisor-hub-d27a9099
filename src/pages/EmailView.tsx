@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
@@ -40,6 +40,8 @@ import { useEmailDetail, LinkedClient } from "@/hooks/useEmailDetail";
 import { useEmailTasks } from "@/hooks/useEmailTasks";
 import { useClientDocuments } from "@/hooks/useClientDocuments";
 import { useToast } from "@/hooks/use-toast";
+import { useRegion } from "@/contexts/RegionContext";
+import { usePageContext } from "@/contexts/PageContext";
 import GlobalAIChat from "@/components/ai-assistant/GlobalAIChat";
 
 const sidebarItems = [
@@ -59,6 +61,8 @@ const EmailView = () => {
   const { toast } = useToast();
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const { regionalData } = useRegion();
+  const { setCurrentAdvisorInitials } = usePageContext();
 
   // Email data
   const { email, attachments, linkedClients, loading } = useEmailDetail(id || null);
@@ -109,6 +113,19 @@ const EmailView = () => {
       setEditableClients(linkedClients);
     }
   }, [linkedClients, editableClients.length]);
+
+  // Set the page context with the primary linked client's advisor initials
+  useEffect(() => {
+    const primaryClient = linkedClients[0];
+    if (primaryClient) {
+      // linkedClients come from useEmailDetail - check if they have advisor info
+      // For now, set null as email clients may not carry advisor info directly
+      setCurrentAdvisorInitials(null);
+    } else {
+      setCurrentAdvisorInitials(null);
+    }
+    return () => setCurrentAdvisorInitials(null);
+  }, [linkedClients, regionalData.advisors, setCurrentAdvisorInitials]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
