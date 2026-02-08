@@ -1,87 +1,91 @@
 
-# Restore ID Numbers, Enforce Advisor-Jurisdiction Filtering, and Scale to 20 Clients Per Advisor
+# Align Tasks, Calendar, and Messages to Advisor/Jurisdiction Filters
 
-## Overview
+## Current State
 
-Three interconnected changes:
+After verifying the database and all screen implementations:
 
-1. **Restore the identity number on the ribbon** -- all non-ZA clients are missing `id_number` in the database. The UI code is correct; the data is the gap.
-2. **Enforce advisor-jurisdiction linkage** -- 4 orphan advisors (48 clients) exist outside the regional advisor definitions. Their clients are invisible. Reassign them to the 5 main ZA advisors.
-3. **Scale to 20 clients per advisor** -- add ~300 new clients via a programmatic generator in the seed function, each with full profile data and a unique identification number.
+- **Data is solid**: 553 active clients across 25 advisors (5 per jurisdiction, 20+ each), all with ID numbers, emails, and phone numbers populated.
+- **Dashboard**: Already aligned -- uses `filteredRegionalData` from RegionContext for all widgets.
+- **Clients**: Already aligned -- filters by `selectedAdvisorNames` from RegionContext (lines 278-282).
+- **Calendar**: NOT aligned -- `useCalendarEvents` only filters by `user_id`, ignores advisor/jurisdiction.
+- **Email/Messages**: NOT aligned -- `useEmails` fetches all emails regardless of advisor/jurisdiction.
+- **Tasks**: NOT aligned -- `useTasksEnhanced` fetches all 500 tasks regardless of advisor/jurisdiction. Tasks are linked to clients via `client_id`, and those clients have advisors, but no filtering is applied.
+- **1 client** (Jennifer Kim, US/Jennifer Williams) is missing an `id_number` -- needs a fix in the seed function or a direct database update.
 
-## Detailed Changes
+## Changes Required
 
-### 1. Seed Function Overhaul (`supabase/functions/seed-demo-clients/index.ts`)
+### 1. Fix missing ID number for Jennifer Kim (database)
 
-**a) Add unique `id_number` to every existing demo client entry**
+Run a direct SQL update to set `id_number` for the single remaining client missing it.
 
-Currently, only ZA clients have `id_number` set. Update every non-ZA client in the `demoClients` array to include a jurisdiction-appropriate ID:
+### 2. Add advisor/jurisdiction filtering to Tasks page
 
-| Jurisdiction | Format | Example |
-|---|---|---|
-| ZA | 13-digit SA ID (YYMMDDGSSSCAZ) | `8203155078085` |
-| AU | 9-digit Tax File Number | `123456782` |
-| CA | 9-digit SIN (XXX-XXX-XXX style stored as digits) | `123456789` |
-| GB | National Insurance Number (XX 99 99 99 X) | `AB123456C` |
-| US | 9-digit SSN (XXX-XX-XXXX style) | `123456789` |
+**File: `src/pages/Tasks.tsx`**
 
-Each ID will be unique across the entire database to satisfy the existing unique index on `LOWER(id_number)`.
+- Import `useRegion` and `useClients`
+- Get `selectedAdvisors` and `regionalData` from RegionContext
+- Map selected advisor initials to full names
+- Filter the `tasks` array client-side: for each task with a `client_id`, check if that client's advisor is in the selected advisors list
+- Tasks without a `client_id` (practice tasks) will remain visible regardless of filter
 
-**b) Add a programmatic client generator**
+**File: `src/hooks/useTasksEnhanced.ts`**
 
-After the static `demoClients` array, add a function `generateAdditionalClients()` that creates extra clients to reach 20 per advisor. For each jurisdiction, it will:
+- Extend the Supabase query to also fetch the client's `advisor` field via the join
+- Add `client_advisor` to the `EnhancedTask` interface so the page can filter on it
 
-- Use jurisdiction-appropriate first and last name pools (culturally consistent)
-- Generate unique emails, phone numbers, occupations, employers
-- Assign a unique `id_number` in the correct format
-- Distribute evenly across the 5 advisors in that jurisdiction
-- Set profile_state to "Active", profile_type to "Client"
+### 3. Add advisor/jurisdiction filtering to Calendar page
 
-Target counts after generation:
+**File: `src/pages/Calendar.tsx`**
 
-| Jurisdiction | Advisors | Current per advisor | Target | New clients needed |
-|---|---|---|---|---|
-| ZA | 5 (JB, SM, PN, LV, DG) | 7 + ~10 redistributed orphans = ~17 | 20 | ~15 |
-| AU | 5 (JM, ST, MO, EA, TM) | 5-7 | 20 | ~70 |
-| CA | 5 (PT, MB, JM, SG, RS) | 5-7 | 20 | ~70 |
-| GB | 5 (WS, EJ, TW, VB, JT) | 6-7 | 20 | ~65 |
-| US | 5 (MJ, JW, RB, MG, WD) | 6-7 | 20 | ~65 |
-| **Total** | | | | **~285** |
+- Import `useRegion`
+- Get `selectedAdvisors` and `regionalData` from RegionContext
+- Map selected advisor initials to full names
+- Filter `events` client-side: for events with a `clientId`, look up the client's advisor; for events without a client (personal/team), keep them visible
 
-**c) Reassign orphan advisor clients**
+**File: `src/hooks/useCalendarEvents.ts`**
 
-Add logic to the seed function to update clients assigned to "Christo van Zyl", "Dale Harding", "Emile Wegner", and "Ihan Nel" -- reassigning them to the 5 main ZA advisors (round-robin). Also reassign the 6 clients with `advisor IS NULL`.
+- Extend the Supabase query to also fetch the client's `advisor` field
+- Add `clientAdvisor` to the `CalendarEvent` interface
 
-**d) Backfill `id_number` for existing clients missing it**
+### 4. Add advisor/jurisdiction filtering to Email page
 
-Extend the update logic to also set `id_number` on any existing client where it is null, generating a unique jurisdiction-appropriate number based on their `country_of_issue` or `advisor` mapping.
+**File: `src/pages/Email.tsx`**
 
-### 2. No UI Code Changes Needed
+- Import `useRegion`
+- Get `selectedAdvisors` and `regionalData` from RegionContext
+- Map selected advisor initials to full names
+- Filter emails client-side by matching the sender's email against the client database, then checking if that client's advisor is in the selected list
+- Emails not matched to any client remain visible
 
-The ribbon and expanded section already handle all fields correctly:
+**File: `src/hooks/useEmails.ts`**
 
-- **`ClientRibbon.tsx`** lines 208-213: conditionally renders `# {idNumber}` when `client.id_number || client.passport_number` is truthy
-- **`ClientRibbonExpandedDetails.tsx`**: shows address, phone (with copy), email (with copy), category, tax number
-- **`Clients.tsx`** lines 278-282: already filters clients by `selectedAdvisorNames` from the region context
-- **`AdvisorFilter.tsx`**: already reads from `regionalData.advisors` which is jurisdiction-specific
-- **`RegionContext.tsx`**: resets advisors when region changes (line 68)
+- Extend client matching to also include the advisor field
+- Return advisor information in `EmailListItem` so the page can filter
 
-### 3. Deployment Steps
+### 5. Ensure RegionSelector and AdvisorFilter are connected on all pages
 
-1. Update the seed function code
-2. Deploy the `seed-demo-clients` edge function
-3. Invoke the function to populate the database
-4. Verify all 500+ clients have `id_number` populated and correct advisor assignments
+Currently the `AppHeader` renders the `RegionSelector` and `AdvisorFilter` on every page. The `RegionSelector` receives `selectedRegion` and `onRegionChange` as props but the Calendar, Tasks, and Email pages don't pass them through -- they rely on defaults. However, since `AdvisorFilter` reads directly from `useRegion()` context, and `RegionSelector` also has access via context, the header components are already globally connected.
+
+No changes needed to the header components -- they already work through the context.
 
 ## Files Summary
 
 | File | Action |
 |------|--------|
-| `supabase/functions/seed-demo-clients/index.ts` | Major update -- add id_numbers to all existing entries, add programmatic client generator, add orphan advisor reassignment logic, add id_number backfill for existing records |
+| `src/hooks/useTasksEnhanced.ts` | Add `client_advisor` to query join and interface |
+| `src/pages/Tasks.tsx` | Import `useRegion`, filter tasks by selected advisors |
+| `src/hooks/useCalendarEvents.ts` | Add `clientAdvisor` to query join and interface |
+| `src/pages/Calendar.tsx` | Import `useRegion`, filter events by selected advisors |
+| `src/hooks/useEmails.ts` | Add advisor info to client matching |
+| `src/pages/Email.tsx` | Import `useRegion`, filter emails by selected advisors |
+| Database | Fix 1 missing `id_number` for Jennifer Kim |
 
-## Technical Notes
+## Expected Result
 
-- The unique index `LOWER(id_number)` on the clients table means all generated IDs must be globally unique
-- The `clients_preferred_contact_check` constraint only allows 'Phone' or 'Email' -- the existing `mapPreferredContact` helper already handles this
-- Generated clients will use `calculateDOB(age)` for date_of_birth consistency
-- The generator will use deterministic patterns (e.g., advisor index + client index) to avoid ID collisions
+After implementation, switching the jurisdiction selector (e.g., from ZA to AU) or toggling advisors in the filter will instantly update:
+- **Dashboard** -- already works
+- **Clients** -- already works
+- **Tasks** -- will show only tasks linked to clients of the selected advisors
+- **Calendar** -- will show only events linked to clients of the selected advisors (plus personal/team events)
+- **Messages** -- will show only emails matched to clients of the selected advisors (plus unmatched emails)
