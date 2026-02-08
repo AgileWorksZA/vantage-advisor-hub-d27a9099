@@ -1,0 +1,224 @@
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  ArrowLeft,
+  ChevronDown,
+  MoreHorizontal,
+  UserRound,
+  Phone,
+  Mail,
+  Hash,
+} from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Client, getDisplayName, getInitials } from "@/types/client";
+
+interface RelatedEntity {
+  id: string;
+  name: string;
+  type: string;
+}
+
+interface ClientRibbonProps {
+  client: Client;
+  clientName: string;
+  relatedEntities: RelatedEntity[];
+}
+
+const getProfileTypeBadgeClass = (profileType: string) => {
+  switch (profileType?.toLowerCase()) {
+    case "client":
+      return "border-[hsl(180,70%,45%)] text-[hsl(180,70%,45%)] bg-transparent";
+    case "prospect":
+      return "border-amber-500 text-amber-600 bg-transparent";
+    case "lead":
+      return "border-blue-500 text-blue-600 bg-transparent";
+    default:
+      return "border-muted-foreground text-muted-foreground bg-transparent";
+  }
+};
+
+const getProfileStateBadgeClass = (profileState: string) => {
+  switch (profileState?.toLowerCase()) {
+    case "active":
+      return "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800";
+    case "onboarding in progress":
+    case "onboarding":
+      return "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800";
+    default:
+      return "bg-muted text-muted-foreground border-border";
+  }
+};
+
+const formatRibbonName = (client: Client): string => {
+  const initial = client.initials || client.first_name?.[0] || "";
+  const displayName = client.preferred_name || client.first_name;
+  return `${client.surname}, ${initial} (${displayName})`;
+};
+
+const ClientRibbon = ({ client, clientName, relatedEntities }: ClientRibbonProps) => {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  const initials = getInitials(client);
+  const idNumber = client.id_number || client.passport_number;
+  const phoneNumber = client.cell_number || client.work_number;
+  const email = client.email || client.work_email;
+  const advisor = client.advisor || "Unassigned";
+
+  return (
+    <div className="mb-6">
+      {/* Row 1: Back button, title, action buttons */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              const from = searchParams.get("from");
+              if (from === "dashboard") {
+                navigate("/dashboard");
+              } else {
+                navigate("/clients");
+              }
+            }}
+            className="gap-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back
+          </Button>
+          <h1 className="text-xl font-semibold">
+            Manage individual (Owner) - {clientName}
+          </h1>
+        </div>
+        <div className="flex items-center gap-2">
+          <Select defaultValue="personal-financial">
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Select report" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="personal-financial">Personal financial report</SelectItem>
+              <SelectItem value="investment-summary">Investment summary</SelectItem>
+              <SelectItem value="risk-profile">Risk profile</SelectItem>
+            </SelectContent>
+          </Select>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                Manage related entity
+                <ChevronDown className="w-4 h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-64">
+              {relatedEntities.length === 0 ? (
+                <DropdownMenuItem disabled>No related entities</DropdownMenuItem>
+              ) : (
+                relatedEntities.map((entity) => (
+                  <DropdownMenuItem
+                    key={entity.id}
+                    onClick={() => navigate(`/clients/${entity.id}`)}
+                  >
+                    <div className="flex flex-col">
+                      <span className="font-medium">{entity.name}</span>
+                      <span className="text-xs text-muted-foreground">{entity.type}</span>
+                    </div>
+                  </DropdownMenuItem>
+                ))
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon">
+                <MoreHorizontal className="w-4 h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem>Export client data</DropdownMenuItem>
+              <DropdownMenuItem>Print profile</DropdownMenuItem>
+              <DropdownMenuItem>Archive client</DropdownMenuItem>
+              <DropdownMenuItem className="text-destructive">Delete client</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+
+      {/* Row 2: Enhanced info bar */}
+      <div className="rounded-lg border border-border bg-gradient-to-r from-teal-50 to-cyan-50 dark:from-teal-950/20 dark:to-cyan-950/20 px-5 py-4">
+        <div className="flex items-center gap-5">
+          {/* Avatar */}
+          <div className="relative shrink-0">
+            <div className="w-14 h-14 rounded-full bg-[hsl(180,25%,25%)] flex items-center justify-center text-white text-lg font-semibold">
+              {initials}
+            </div>
+            <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-background" />
+          </div>
+
+          {/* Info columns */}
+          <div className="flex flex-col gap-1.5 min-w-0">
+            {/* Top line: name, advisor, badges */}
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-1.5 text-sm font-medium">
+                <UserRound className="w-4 h-4 text-muted-foreground shrink-0" />
+                <span>{formatRibbonName(client)}</span>
+              </div>
+              <span className="text-muted-foreground">|</span>
+              <span className="text-sm text-muted-foreground">
+                A: <span className="font-medium text-foreground">{advisor}</span>
+              </span>
+              <span className="text-muted-foreground">|</span>
+              <Badge
+                variant="outline"
+                className={getProfileTypeBadgeClass(client.profile_type)}
+              >
+                {client.profile_type}
+              </Badge>
+              <Badge
+                variant="outline"
+                className={getProfileStateBadgeClass(client.profile_state)}
+              >
+                {client.profile_state}
+              </Badge>
+            </div>
+
+            {/* Bottom line: ID, phone, email */}
+            <div className="flex items-center gap-4 flex-wrap text-sm text-muted-foreground">
+              {idNumber && (
+                <div className="flex items-center gap-1.5">
+                  <Hash className="w-3.5 h-3.5 shrink-0" />
+                  <span>{idNumber}</span>
+                </div>
+              )}
+              {phoneNumber && (
+                <div className="flex items-center gap-1.5">
+                  <Phone className="w-3.5 h-3.5 shrink-0" />
+                  <span>{phoneNumber}</span>
+                </div>
+              )}
+              {email && (
+                <div className="flex items-center gap-1.5">
+                  <Mail className="w-3.5 h-3.5 shrink-0" />
+                  <span>{email}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ClientRibbon;
