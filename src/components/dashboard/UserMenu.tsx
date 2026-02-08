@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Settings, LogOut, Moon, Sun, Sparkles } from "lucide-react";
+import { Settings, LogOut, Moon, Sun, Sparkles, Monitor, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -9,6 +9,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
+import { useAppMode } from "@/contexts/AppModeContext";
 
 const AI_CHAT_STORAGE_KEY = "vantage-ai-chat-enabled";
 
@@ -22,6 +23,7 @@ interface UserMenuProps {
 export function UserMenu({ userName, userEmail, onSignOut, onAccountSettings }: UserMenuProps) {
   const [open, setOpen] = useState(false);
   const { theme, setTheme, resolvedTheme } = useTheme();
+  const { mode, setMode } = useAppMode();
   const [mounted, setMounted] = useState(false);
   const [aiChatEnabled, setAiChatEnabled] = useState(() => {
     const stored = localStorage.getItem(AI_CHAT_STORAGE_KEY);
@@ -87,6 +89,33 @@ export function UserMenu({ userName, userEmail, onSignOut, onAccountSettings }: 
           {userEmail && (
             <span className="text-xs text-purple-500">{userEmail}</span>
           )}
+          {/* Web / Mobile Toggle */}
+          <div className="flex mt-3 bg-muted rounded-full p-0.5">
+            <button
+              onClick={() => { setMode("web"); setOpen(false); }}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all",
+                mode === "web"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <Monitor className="h-3 w-3" />
+              Web
+            </button>
+            <button
+              onClick={() => { setMode("mobile"); setOpen(false); }}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all",
+                mode === "mobile"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <Smartphone className="h-3 w-3" />
+              Mobile
+            </button>
+          </div>
         </div>
 
         {/* Menu Items */}
