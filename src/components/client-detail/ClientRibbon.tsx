@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   ArrowLeft,
   ChevronDown,
+  ChevronUp,
   MoreHorizontal,
   UserRound,
   Phone,
@@ -23,7 +25,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { Client, getDisplayName, getInitials } from "@/types/client";
+import ClientRibbonExpandedDetails from "./ClientRibbonExpandedDetails";
 
 interface RelatedEntity {
   id: string;
@@ -71,6 +79,7 @@ const formatRibbonName = (client: Client): string => {
 const ClientRibbon = ({ client, clientName, relatedEntities }: ClientRibbonProps) => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const initials = getInitials(client);
   const idNumber = client.id_number || client.passport_number;
@@ -80,9 +89,9 @@ const ClientRibbon = ({ client, clientName, relatedEntities }: ClientRibbonProps
 
   return (
     <div>
-      {/* Row 1: Back button, title, action buttons */}
-      <div className="flex items-center justify-between mb-1.5 px-6 pt-2.5">
-        <div className="flex items-center gap-4">
+      {/* Row 1: Back button, title, action buttons — condensed */}
+      <div className="flex items-center justify-between mb-1 px-6 pt-1">
+        <div className="flex items-center gap-3">
           <Button
             variant="outline"
             size="sm"
@@ -94,18 +103,18 @@ const ClientRibbon = ({ client, clientName, relatedEntities }: ClientRibbonProps
                 navigate("/clients");
               }
             }}
-            className="gap-2"
+            className="gap-1.5 h-7 px-2.5 text-xs"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft className="w-3.5 h-3.5" />
             Back
           </Button>
-          <h1 className="text-xl font-semibold">
+          <h1 className="text-base font-semibold">
             Manage individual (Owner) - {clientName}
           </h1>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <Select defaultValue="personal-financial">
-            <SelectTrigger className="w-[200px]">
+            <SelectTrigger className="w-[180px] h-7 text-xs">
               <SelectValue placeholder="Select report" />
             </SelectTrigger>
             <SelectContent>
@@ -116,9 +125,9 @@ const ClientRibbon = ({ client, clientName, relatedEntities }: ClientRibbonProps
           </Select>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="gap-2">
+              <Button variant="outline" size="sm" className="gap-1.5 h-7 text-xs">
                 Manage related entity
-                <ChevronDown className="w-4 h-4" />
+                <ChevronDown className="w-3.5 h-3.5" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-64">
@@ -141,8 +150,8 @@ const ClientRibbon = ({ client, clientName, relatedEntities }: ClientRibbonProps
           </DropdownMenu>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon">
-                <MoreHorizontal className="w-4 h-4" />
+              <Button variant="outline" size="icon" className="h-7 w-7">
+                <MoreHorizontal className="w-3.5 h-3.5" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -155,68 +164,86 @@ const ClientRibbon = ({ client, clientName, relatedEntities }: ClientRibbonProps
         </div>
       </div>
 
-      {/* Row 2: Enhanced info bar */}
-      <div className="rounded-lg border border-border bg-gradient-to-r from-teal-50 to-cyan-50 dark:from-teal-950/20 dark:to-cyan-950/20 px-5 py-2.5 mx-6">
-        <div className="flex items-center gap-3">
-          {/* Avatar */}
-          <div className="relative shrink-0">
-            <div className="w-10 h-10 rounded-full bg-[hsl(180,25%,25%)] flex items-center justify-center text-white text-sm font-semibold">
-              {initials}
-            </div>
-            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-background" />
-          </div>
-
-          {/* Info columns */}
-          <div className="flex flex-col gap-0.5 min-w-0">
-            {/* Top line: name, advisor, badges */}
-            <div className="flex items-center gap-3 flex-wrap">
-              <div className="flex items-center gap-1.5 text-sm font-medium">
-                <UserRound className="w-4 h-4 text-muted-foreground shrink-0" />
-                <span>{formatRibbonName(client)}</span>
+      {/* Row 2: Expandable info bar */}
+      <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
+        <div className="rounded-lg border border-border bg-gradient-to-r from-teal-50 to-cyan-50 dark:from-teal-950/20 dark:to-cyan-950/20 px-5 py-2 mx-6">
+          <div className="flex items-center gap-3">
+            {/* Avatar */}
+            <div className="relative shrink-0">
+              <div className="w-10 h-10 rounded-full bg-[hsl(180,25%,25%)] flex items-center justify-center text-white text-sm font-semibold">
+                {initials}
               </div>
-              <span className="text-muted-foreground">|</span>
-              <span className="text-sm text-muted-foreground">
-                A: <span className="font-medium text-foreground">{advisor}</span>
-              </span>
-              <span className="text-muted-foreground">|</span>
-              <Badge
-                variant="outline"
-                className={getProfileTypeBadgeClass(client.profile_type)}
-              >
-                {client.profile_type}
-              </Badge>
-              <Badge
-                variant="outline"
-                className={getProfileStateBadgeClass(client.profile_state)}
-              >
-                {client.profile_state}
-              </Badge>
+              <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-background" />
             </div>
 
-            {/* Bottom line: ID, phone, email */}
-            <div className="flex items-center gap-4 flex-wrap text-sm text-muted-foreground">
-              {idNumber && (
-                <div className="flex items-center gap-1.5">
-                  <Hash className="w-3.5 h-3.5 shrink-0" />
-                  <span>{idNumber}</span>
+            {/* Info columns */}
+            <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+              {/* Top line: name, advisor, badges */}
+              <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex items-center gap-1.5 text-sm font-medium">
+                  <UserRound className="w-4 h-4 text-muted-foreground shrink-0" />
+                  <span>{formatRibbonName(client)}</span>
                 </div>
-              )}
-              {phoneNumber && (
-                <div className="flex items-center gap-1.5">
-                  <Phone className="w-3.5 h-3.5 shrink-0" />
-                  <span>{phoneNumber}</span>
-                </div>
-              )}
-              {email && (
-                <div className="flex items-center gap-1.5">
-                  <Mail className="w-3.5 h-3.5 shrink-0" />
-                  <span>{email}</span>
-                </div>
-              )}
+                <span className="text-muted-foreground">|</span>
+                <span className="text-sm text-muted-foreground">
+                  A: <span className="font-medium text-foreground">{advisor}</span>
+                </span>
+                <span className="text-muted-foreground">|</span>
+                <Badge
+                  variant="outline"
+                  className={getProfileTypeBadgeClass(client.profile_type)}
+                >
+                  {client.profile_type}
+                </Badge>
+                <Badge
+                  variant="outline"
+                  className={getProfileStateBadgeClass(client.profile_state)}
+                >
+                  {client.profile_state}
+                </Badge>
+              </div>
+
+              {/* Bottom line: ID, phone, email */}
+              <div className="flex items-center gap-4 flex-wrap text-sm text-muted-foreground">
+                {idNumber && (
+                  <div className="flex items-center gap-1.5">
+                    <Hash className="w-3.5 h-3.5 shrink-0" />
+                    <span>{idNumber}</span>
+                  </div>
+                )}
+                {phoneNumber && (
+                  <div className="flex items-center gap-1.5">
+                    <Phone className="w-3.5 h-3.5 shrink-0" />
+                    <span>{phoneNumber}</span>
+                  </div>
+                )}
+                {email && (
+                  <div className="flex items-center gap-1.5">
+                    <Mail className="w-3.5 h-3.5 shrink-0" />
+                    <span>{email}</span>
+                  </div>
+                )}
+              </div>
             </div>
+
+            {/* Expand/Collapse toggle */}
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0">
+                {isExpanded ? (
+                  <ChevronUp className="w-4 h-4" />
+                ) : (
+                  <ChevronDown className="w-4 h-4" />
+                )}
+              </Button>
+            </CollapsibleTrigger>
           </div>
+
+          {/* Expanded details */}
+          <CollapsibleContent>
+            <ClientRibbonExpandedDetails client={client} />
+          </CollapsibleContent>
         </div>
-      </div>
+      </Collapsible>
     </div>
   );
 };
