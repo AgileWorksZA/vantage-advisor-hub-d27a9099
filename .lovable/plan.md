@@ -1,95 +1,55 @@
 
 
-# Condensed Top Row and Expandable Info Bar
+# Populate Contact Data for All Clients Across All Jurisdictions
 
 ## Overview
 
-Two changes to the client ribbon:
-1. **Halve the vertical height** of the top row (back button + title + action buttons) by reducing padding and font size
-2. **Make the info bar (middle section) expandable** -- collapsed shows the current avatar/name/badges/ID row; expanded reveals additional details (Physical Address, Cellphone, Email, Category, Tax Number) matching the third reference image
+93 clients across all jurisdictions (ZA, AU, CA, GB, US) are missing contact information (cell_number, email, work_number, occupation, tax_number, initials, etc.). These clients were originally inserted before the seed function was enriched with contact details. The UI (ribbon and expanded section) already correctly displays these fields when data exists -- the only gap is the data itself.
+
+## Root Cause
+
+The `seed-demo-clients` edge function's update logic (line 356) currently only checks for clients where `!ec.email`. This condition was not broad enough to catch all clients missing data, particularly when some had partial data or the update hadn't been triggered.
 
 ## Changes
 
-### File: `src/components/client-detail/ClientRibbon.tsx`
+### 1. Update the seed function's update condition
 
-**1. Condense Row 1 (top section)**
+**File: `supabase/functions/seed-demo-clients/index.ts`**
 
-Current Row 1 uses `mb-1.5 px-6 pt-2.5` and `text-xl`. Changes:
-- Reduce `pt-2.5` to `pt-1`
-- Reduce `mb-1.5` to `mb-1`
-- Shrink title from `text-xl` to `text-base`
-- Use `size="sm"` on all action buttons (Select, dropdown triggers) for a tighter fit
-
-This halves the vertical footprint of Row 1 from roughly 48px to approximately 24-28px.
-
-**2. Make Row 2 (info bar) expandable with a chevron toggle**
-
-Add state `isExpanded` (default false). Wrap the info bar in a `Collapsible` from Radix. Add a small chevron button to the right edge of the bar that toggles expansion.
-
-**Collapsed state** (current appearance):
-- Avatar + name + advisor + badges on line 1
-- ID number + phone + email on line 2
-- Small chevron icon on the far right, pointing down
-
-**Expanded state** (adds a new section below):
-- A thin divider line
-- Two-column grid showing:
-  - **Left column**: "Physical Address" label + full address (parsed from `client.residential_address` JSON: street_nr, street, suburb, city, code, province, country)
-  - **Right column**: "Cellphone" label + `client.cell_number` and `client.work_number` (with copy icons), "Email" label + `client.email` (with copy icon)
-  - **Bottom row**: "Category" label + `client.client_type`, "Tax Number" label + `client.tax_number`
-- Chevron rotates to point up
-
-**Data mapping for expanded section:**
-
-| Field | Source | Notes |
-|---|---|---|
-| Physical Address | `client.residential_address` (JSON) | Parse street_nr, street, suburb, city, code, province, country. Show "No address on file" if null |
-| Cellphone | `client.cell_number` | Show with copy button. Also show `client.work_number` below if available |
-| Email | `client.email` or `client.work_email` | Show with copy button |
-| Category | `client.client_type` | e.g. "individual", "family" |
-| Tax Number | `client.tax_number` | Show as-is, or "-" if null |
-
-**New imports needed:**
-- `useState` from React
-- `ChevronUp` from lucide-react (already have `ChevronDown`)
-- `Copy` from lucide-react (for copy-to-clipboard buttons)
-- `Collapsible`, `CollapsibleContent`, `CollapsibleTrigger` from `@/components/ui/collapsible`
-
-**Copy button behavior:** Each copy icon copies the adjacent value to clipboard using `navigator.clipboard.writeText()` and shows a brief toast notification.
-
-## Visual Layout
-
-**Collapsed (default):**
-```text
-[<- Back]  Manage individual (Owner) - Name         [Report v] [Entity v] [...]
-+--------------------------------------------------------------------------+
-| (MJ) Person Surname, I (Name) | A: Advisor | [Client] [Active]       [v]|
-|      # 1234567890  Phone +2712345  Mail email@co.za                      |
-+--------------------------------------------------------------------------+
+Change the update filter from:
+```ts
+const clientsToUpdate = (existingClients || []).filter(ec => !ec.email)
+```
+to:
+```ts
+const clientsToUpdate = (existingClients || []).filter(ec => !ec.email || !ec.cell_number)
 ```
 
-**Expanded:**
-```text
-[<- Back]  Manage individual (Owner) - Name         [Report v] [Entity v] [...]
-+--------------------------------------------------------------------------+
-| (MJ) Person Surname, I (Name) | A: Advisor | [Client] [Active]       [^]|
-|      # 1234567890  Phone +2712345  Mail email@co.za                      |
-|--------------------------------------------------------------------------|
-| Physical Address                        Cellphone                        |
-| 123 Main St                             +27744581082  [copy]             |
-| Suburb City Province                    +27744581080  [copy]             |
-| Country                                                                  |
-|                                         Email                            |
-| Category          Tax Number            trishar@efgroup.co.za  [copy]    |
-| individual        9876543210                                             |
-+--------------------------------------------------------------------------+
-```
+This ensures any client missing either email or cell_number will be matched against the demo data array and updated with the full set of contact fields.
+
+### 2. Deploy and run the seed function
+
+After updating the code, deploy the edge function and invoke it. This will:
+- Match all 93 clients missing data against the `demoClients` array by name
+- Update each matched client with: email, cell_number, work_number, home_number, preferred_contact, gender, title, initials, id_number, occupation, employer, industry, tax_number, country_of_issue, and tax_resident_country
+
+### 3. No UI changes needed
+
+The existing components already handle all the data correctly:
+
+- **ClientRibbon.tsx** (collapsed view) -- shows ID number, phone, and email inline with icons
+- **ClientRibbonExpandedDetails.tsx** (expanded view) -- shows Physical Address, Cellphone (with copy), Work number (with copy), Email (with copy), Category, and Tax Number
+
+Both components gracefully handle null values by hiding the field or showing a dash.
 
 ## Files Summary
 
 | File | Action |
 |------|--------|
-| `src/components/client-detail/ClientRibbon.tsx` | Modify -- condense Row 1 spacing, add expandable section to Row 2 with address/contact/tax details |
+| `supabase/functions/seed-demo-clients/index.ts` | Modify -- broaden update condition from `!ec.email` to `!ec.email or !ec.cell_number` |
+| Edge function deployment | Deploy and invoke `seed-demo-clients` to populate missing data |
 
-No new files needed. All changes are within the existing ClientRibbon component.
+## Expected Result
+
+After running the updated seed function, all 211 clients will have populated contact details visible in both the collapsed ribbon (ID, phone, email) and the expanded section (address, cellphone, work number, email, category, tax number).
 
