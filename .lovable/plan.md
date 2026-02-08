@@ -1,55 +1,87 @@
 
-
-# Populate Contact Data for All Clients Across All Jurisdictions
+# Restore ID Numbers, Enforce Advisor-Jurisdiction Filtering, and Scale to 20 Clients Per Advisor
 
 ## Overview
 
-93 clients across all jurisdictions (ZA, AU, CA, GB, US) are missing contact information (cell_number, email, work_number, occupation, tax_number, initials, etc.). These clients were originally inserted before the seed function was enriched with contact details. The UI (ribbon and expanded section) already correctly displays these fields when data exists -- the only gap is the data itself.
+Three interconnected changes:
 
-## Root Cause
+1. **Restore the identity number on the ribbon** -- all non-ZA clients are missing `id_number` in the database. The UI code is correct; the data is the gap.
+2. **Enforce advisor-jurisdiction linkage** -- 4 orphan advisors (48 clients) exist outside the regional advisor definitions. Their clients are invisible. Reassign them to the 5 main ZA advisors.
+3. **Scale to 20 clients per advisor** -- add ~300 new clients via a programmatic generator in the seed function, each with full profile data and a unique identification number.
 
-The `seed-demo-clients` edge function's update logic (line 356) currently only checks for clients where `!ec.email`. This condition was not broad enough to catch all clients missing data, particularly when some had partial data or the update hadn't been triggered.
+## Detailed Changes
 
-## Changes
+### 1. Seed Function Overhaul (`supabase/functions/seed-demo-clients/index.ts`)
 
-### 1. Update the seed function's update condition
+**a) Add unique `id_number` to every existing demo client entry**
 
-**File: `supabase/functions/seed-demo-clients/index.ts`**
+Currently, only ZA clients have `id_number` set. Update every non-ZA client in the `demoClients` array to include a jurisdiction-appropriate ID:
 
-Change the update filter from:
-```ts
-const clientsToUpdate = (existingClients || []).filter(ec => !ec.email)
-```
-to:
-```ts
-const clientsToUpdate = (existingClients || []).filter(ec => !ec.email || !ec.cell_number)
-```
+| Jurisdiction | Format | Example |
+|---|---|---|
+| ZA | 13-digit SA ID (YYMMDDGSSSCAZ) | `8203155078085` |
+| AU | 9-digit Tax File Number | `123456782` |
+| CA | 9-digit SIN (XXX-XXX-XXX style stored as digits) | `123456789` |
+| GB | National Insurance Number (XX 99 99 99 X) | `AB123456C` |
+| US | 9-digit SSN (XXX-XX-XXXX style) | `123456789` |
 
-This ensures any client missing either email or cell_number will be matched against the demo data array and updated with the full set of contact fields.
+Each ID will be unique across the entire database to satisfy the existing unique index on `LOWER(id_number)`.
 
-### 2. Deploy and run the seed function
+**b) Add a programmatic client generator**
 
-After updating the code, deploy the edge function and invoke it. This will:
-- Match all 93 clients missing data against the `demoClients` array by name
-- Update each matched client with: email, cell_number, work_number, home_number, preferred_contact, gender, title, initials, id_number, occupation, employer, industry, tax_number, country_of_issue, and tax_resident_country
+After the static `demoClients` array, add a function `generateAdditionalClients()` that creates extra clients to reach 20 per advisor. For each jurisdiction, it will:
 
-### 3. No UI changes needed
+- Use jurisdiction-appropriate first and last name pools (culturally consistent)
+- Generate unique emails, phone numbers, occupations, employers
+- Assign a unique `id_number` in the correct format
+- Distribute evenly across the 5 advisors in that jurisdiction
+- Set profile_state to "Active", profile_type to "Client"
 
-The existing components already handle all the data correctly:
+Target counts after generation:
 
-- **ClientRibbon.tsx** (collapsed view) -- shows ID number, phone, and email inline with icons
-- **ClientRibbonExpandedDetails.tsx** (expanded view) -- shows Physical Address, Cellphone (with copy), Work number (with copy), Email (with copy), Category, and Tax Number
+| Jurisdiction | Advisors | Current per advisor | Target | New clients needed |
+|---|---|---|---|---|
+| ZA | 5 (JB, SM, PN, LV, DG) | 7 + ~10 redistributed orphans = ~17 | 20 | ~15 |
+| AU | 5 (JM, ST, MO, EA, TM) | 5-7 | 20 | ~70 |
+| CA | 5 (PT, MB, JM, SG, RS) | 5-7 | 20 | ~70 |
+| GB | 5 (WS, EJ, TW, VB, JT) | 6-7 | 20 | ~65 |
+| US | 5 (MJ, JW, RB, MG, WD) | 6-7 | 20 | ~65 |
+| **Total** | | | | **~285** |
 
-Both components gracefully handle null values by hiding the field or showing a dash.
+**c) Reassign orphan advisor clients**
+
+Add logic to the seed function to update clients assigned to "Christo van Zyl", "Dale Harding", "Emile Wegner", and "Ihan Nel" -- reassigning them to the 5 main ZA advisors (round-robin). Also reassign the 6 clients with `advisor IS NULL`.
+
+**d) Backfill `id_number` for existing clients missing it**
+
+Extend the update logic to also set `id_number` on any existing client where it is null, generating a unique jurisdiction-appropriate number based on their `country_of_issue` or `advisor` mapping.
+
+### 2. No UI Code Changes Needed
+
+The ribbon and expanded section already handle all fields correctly:
+
+- **`ClientRibbon.tsx`** lines 208-213: conditionally renders `# {idNumber}` when `client.id_number || client.passport_number` is truthy
+- **`ClientRibbonExpandedDetails.tsx`**: shows address, phone (with copy), email (with copy), category, tax number
+- **`Clients.tsx`** lines 278-282: already filters clients by `selectedAdvisorNames` from the region context
+- **`AdvisorFilter.tsx`**: already reads from `regionalData.advisors` which is jurisdiction-specific
+- **`RegionContext.tsx`**: resets advisors when region changes (line 68)
+
+### 3. Deployment Steps
+
+1. Update the seed function code
+2. Deploy the `seed-demo-clients` edge function
+3. Invoke the function to populate the database
+4. Verify all 500+ clients have `id_number` populated and correct advisor assignments
 
 ## Files Summary
 
 | File | Action |
 |------|--------|
-| `supabase/functions/seed-demo-clients/index.ts` | Modify -- broaden update condition from `!ec.email` to `!ec.email or !ec.cell_number` |
-| Edge function deployment | Deploy and invoke `seed-demo-clients` to populate missing data |
+| `supabase/functions/seed-demo-clients/index.ts` | Major update -- add id_numbers to all existing entries, add programmatic client generator, add orphan advisor reassignment logic, add id_number backfill for existing records |
 
-## Expected Result
+## Technical Notes
 
-After running the updated seed function, all 211 clients will have populated contact details visible in both the collapsed ribbon (ID, phone, email) and the expanded section (address, cellphone, work number, email, category, tax number).
-
+- The unique index `LOWER(id_number)` on the clients table means all generated IDs must be globally unique
+- The `clients_preferred_contact_check` constraint only allows 'Phone' or 'Email' -- the existing `mapPreferredContact` helper already handles this
+- Generated clients will use `calculateDOB(age)` for date_of_birth consistency
+- The generator will use deterministic patterns (e.g., advisor index + client index) to avoid ID collisions
