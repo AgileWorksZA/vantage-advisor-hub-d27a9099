@@ -1,18 +1,14 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Users, Filter, X, UserPlus } from "lucide-react";
+import { Users, Filter, X } from "lucide-react";
 import { ClientFilterDialog, FilterCondition } from "./ClientFilterDialog";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { ClientAutocompleteDropdown } from "@/components/clients/ClientAutocompleteDropdown";
+import { ClientListItem } from "@/hooks/useClients";
+import { toast } from "sonner";
 
-interface ClientListItem {
+interface ClientListItemLocal {
   id: string;
   name: string;
   email: string;
@@ -22,10 +18,10 @@ interface ComposeToFieldProps {
   recipientFilter: { conditions: FilterCondition[] };
   onFilterChange: (filter: { conditions: FilterCondition[] }) => void;
   recipientCount: number;
-  // NEW: Direct client selection
+  // Direct client selection
   selectedClientIds?: string[];
   onSelectedClientIdsChange?: (ids: string[]) => void;
-  allClients?: ClientListItem[];
+  allClients?: ClientListItemLocal[];
 }
 
 export const ComposeToField = ({
@@ -37,8 +33,9 @@ export const ComposeToField = ({
   allClients = [],
 }: ComposeToFieldProps) => {
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [clientPopoverOpen, setClientPopoverOpen] = useState(false);
   const [clientSearch, setClientSearch] = useState("");
+  const [showDropdown, setShowDropdown] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const hasFilters = recipientFilter.conditions.length > 0;
   const hasDirectClients = selectedClientIds.length > 0;
@@ -51,29 +48,33 @@ export const ComposeToField = ({
     onSelectedClientIdsChange?.(selectedClientIds.filter((id) => id !== clientId));
   };
 
-  const handleAddClient = (clientId: string) => {
-    if (!selectedClientIds.includes(clientId)) {
-      onSelectedClientIdsChange?.([...selectedClientIds, clientId]);
+  const handleClientSelect = (client: ClientListItem) => {
+    if (!client.email) {
+      toast.error("This client has no email address on file");
+      return;
     }
-    setClientPopoverOpen(false);
+    if (!selectedClientIds.includes(client.id)) {
+      onSelectedClientIdsChange?.([...selectedClientIds, client.id]);
+    }
     setClientSearch("");
+    setShowDropdown(false);
   };
 
-  // Filter clients for the popover
-  const filteredClients = allClients.filter((client) => {
-    if (selectedClientIds.includes(client.id)) return false;
-    if (!clientSearch) return true;
-    const search = clientSearch.toLowerCase();
-    return (
-      client.name.toLowerCase().includes(search) ||
-      client.email.toLowerCase().includes(search)
-    );
-  });
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Get selected client details
   const selectedClients = selectedClientIds
     .map((id) => allClients.find((c) => c.id === id))
-    .filter(Boolean) as ClientListItem[];
+    .filter(Boolean) as ClientListItemLocal[];
 
   return (
     <div className="space-y-2">
@@ -93,45 +94,32 @@ export const ComposeToField = ({
           </Badge>
         ))}
 
-        {/* Add client popover */}
-        {onSelectedClientIdsChange && allClients.length > 0 && (
-          <Popover open={clientPopoverOpen} onOpenChange={setClientPopoverOpen}>
-            <PopoverTrigger asChild>
-              <Button type="button" variant="outline" size="sm" className="gap-1 h-7">
-                <UserPlus className="w-3 h-3" />
-                Add
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-64 p-2" align="start">
-              <Input
-                placeholder="Search clients..."
-                value={clientSearch}
-                onChange={(e) => setClientSearch(e.target.value)}
-                className="mb-2"
+        {/* Inline client search with autocomplete */}
+        {onSelectedClientIdsChange && (
+          <div className="relative" ref={containerRef}>
+            <input
+              type="text"
+              value={clientSearch}
+              onChange={(e) => {
+                setClientSearch(e.target.value);
+                setShowDropdown(e.target.value.length >= 2);
+              }}
+              onFocus={() => clientSearch.length >= 2 && setShowDropdown(true)}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") setShowDropdown(false);
+              }}
+              placeholder="Search clients..."
+              className="h-7 px-2 text-sm bg-transparent border border-input rounded-md outline-none focus:ring-1 focus:ring-ring min-w-[160px]"
+            />
+            {showDropdown && (
+              <ClientAutocompleteDropdown
+                query={clientSearch}
+                onSelect={handleClientSelect}
+                excludeIds={selectedClientIds}
+                className="w-72"
               />
-              <ScrollArea className="h-48">
-                {filteredClients.length > 0 ? (
-                  <div className="space-y-1">
-                    {filteredClients.slice(0, 20).map((client) => (
-                      <button
-                        key={client.id}
-                        type="button"
-                        onClick={() => handleAddClient(client.id)}
-                        className="w-full text-left p-2 rounded hover:bg-muted text-sm"
-                      >
-                        <div className="font-medium">{client.name}</div>
-                        <div className="text-xs text-muted-foreground">{client.email}</div>
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground text-center py-4">
-                    No clients found
-                  </p>
-                )}
-              </ScrollArea>
-            </PopoverContent>
-          </Popover>
+            )}
+          </div>
         )}
 
         {/* Filter button */}
@@ -176,7 +164,7 @@ export const ComposeToField = ({
         )}
 
         {/* Empty state */}
-        {!hasFilters && !hasDirectClients && (
+        {!hasFilters && !hasDirectClients && !clientSearch && (
           <span className="text-sm text-muted-foreground">
             No recipients selected
           </span>
