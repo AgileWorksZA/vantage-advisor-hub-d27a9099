@@ -511,42 +511,44 @@ function generatePhone(jurisdiction: string, seq: number): string {
   }
 }
 
-function generateAdditionalClients(): DemoClient[] {
+function generateAdditionalClients(
+  existingDbNames: Set<string>,
+  existingDbIds: Set<string>,
+  dbCountsByAdvisor: Record<string, number>,
+  targetPerAdvisor: number = 24,
+): DemoClient[] {
   const additionalClients: DemoClient[] = []
-  // Global sequence counter to ensure unique IDs across all jurisdictions
-  let globalSeq = 500
+  // Start sequence high to avoid collisions with previous seeds
+  let globalSeq = 2000
 
-  // Collect all static demo client names for dedup
+  // Collect all known names for dedup: static + DB
   const usedNamesGlobal = new Set<string>()
   demoClients.forEach(dc => {
     usedNamesGlobal.add(`${dc.first_name}|${dc.surname}`.toLowerCase())
   })
+  existingDbNames.forEach(name => usedNamesGlobal.add(name))
 
   for (const [jurisdiction, advisors] of Object.entries(advisorsByJurisdiction)) {
     const pool = namePools[jurisdiction]
     if (!pool) continue
 
-    // Count existing static clients per advisor
-    const existingCounts: Record<string, number> = {}
-    advisors.forEach(a => { existingCounts[a] = 0 })
-    demoClients.forEach(dc => {
-      if (existingCounts[dc.advisor] !== undefined) {
-        existingCounts[dc.advisor]++
-      }
-    })
-
     // Global name index for this jurisdiction - increments across all advisors
     let nameIdx = 0
+    const totalPoolSize = pool.firstNames.length * pool.lastNames.length
 
-    // Generate to reach 20 per advisor
+    // Generate to reach target per advisor using ACTUAL DB counts
     for (let advIdx = 0; advIdx < advisors.length; advIdx++) {
       const advisor = advisors[advIdx]
-      const existing = existingCounts[advisor] || 0
-      const needed = Math.max(0, 20 - existing)
+      const actualCount = dbCountsByAdvisor[advisor] || 0
+      const needed = Math.max(0, targetPerAdvisor - actualCount)
+
+      if (needed === 0) {
+        continue // don't advance nameIdx unnecessarily
+      }
 
       let generated = 0
       let attempts = 0
-      const maxAttempts = needed * 10 // safety valve
+      const maxAttempts = totalPoolSize // try every combo in the pool if needed
 
       while (generated < needed && attempts < maxAttempts) {
         attempts++
@@ -560,9 +562,20 @@ function generateAdditionalClients(): DemoClient[] {
         }
         usedNamesGlobal.add(nameKey)
 
-        globalSeq++
+        // Find a globalSeq that produces a non-colliding id_number
+        let idNumber: string
+        do {
+          globalSeq++
+          idNumber = generateIdForJurisdiction(jurisdiction, globalSeq, 40, fnEntry.gender)
+        } while (existingDbIds.has(idNumber.toLowerCase()))
+        existingDbIds.add(idNumber.toLowerCase())
+
         const occ = pool.occupations[(advIdx + generated) % pool.occupations.length]
         const age = 28 + ((advIdx * 7 + generated * 3) % 45)
+        // Re-generate with correct age
+        const finalIdNumber = generateIdForJurisdiction(jurisdiction, globalSeq, age, fnEntry.gender)
+        existingDbIds.add(finalIdNumber.toLowerCase())
+
         const email = `${fnEntry.name.toLowerCase().replace(/[^a-z]/g, '')}.${lastName.toLowerCase().replace(/[^a-z]/g, '')}${globalSeq}@email.com`
         const initials = `${fnEntry.name[0]}${lastName[0]}`
 
@@ -583,7 +596,7 @@ function generateAdditionalClients(): DemoClient[] {
           occupation: occ.occupation,
           employer: occ.employer,
           industry: occ.industry,
-          id_number: generateIdForJurisdiction(jurisdiction, globalSeq, age, fnEntry.gender),
+          id_number: finalIdNumber,
           tax_number: `GEN${String(globalSeq).padStart(8, '0')}`,
           country_of_issue: pool.country_of_issue,
           tax_resident_country: pool.tax_resident_country,
@@ -592,6 +605,7 @@ function generateAdditionalClients(): DemoClient[] {
         })
         generated++
       }
+      console.log(`${advisor}: actual=${actualCount}, needed=${needed}, generated=${generated}`)
     }
   }
 
@@ -638,26 +652,31 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Generate the full client list (static + generated)
-    const generatedClients = generateAdditionalClients()
-    const allDemoClients = [...demoClients, ...generatedClients]
-    console.log(`Total demo clients defined: ${allDemoClients.length} (${demoClients.length} static + ${generatedClients.length} generated)`)
-
-    // Get existing clients
-    const { data: existingClients, error: existingError } = await supabase
-      .from('clients')
-      .select('id, first_name, surname, email, cell_number, id_number, advisor, country_of_issue')
-      .eq('user_id', user.id)
-
-    if (existingError) {
-      console.error('Error fetching existing clients:', existingError)
-      return new Response(
-        JSON.stringify({ error: 'Failed to check existing clients' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+    // Get existing clients (handle >1000 with pagination)
+    let existingClients: Array<{id: string, first_name: string, surname: string, email: string | null, cell_number: string | null, id_number: string | null, advisor: string | null, country_of_issue: string | null, created_at: string}> = []
+    let page = 0
+    const pageSize = 1000
+    while (true) {
+      const { data: batch, error: batchError } = await supabase
+        .from('clients')
+        .select('id, first_name, surname, email, cell_number, id_number, advisor, country_of_issue, created_at')
+        .eq('user_id', user.id)
+        .range(page * pageSize, (page + 1) * pageSize - 1)
+        .order('created_at', { ascending: true })
+      
+      if (batchError) {
+        console.error('Error fetching existing clients:', batchError)
+        return new Response(
+          JSON.stringify({ error: 'Failed to check existing clients' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+      existingClients = existingClients.concat(batch || [])
+      if (!batch || batch.length < pageSize) break
+      page++
     }
 
-    console.log(`User has ${existingClients?.length || 0} existing clients`)
+    console.log(`User has ${existingClients.length} existing clients`)
 
     // Calculate date of birth from age
     const calculateDOB = (age: number | null): string | null => {
@@ -679,8 +698,91 @@ Deno.serve(async (req) => {
 
     // Create a Set of existing names for fast lookup (case-insensitive)
     const existingNames = new Set(
-      (existingClients || []).map(c => `${c.first_name}|${c.surname}`.toLowerCase())
+      existingClients.map(c => `${c.first_name}|${c.surname}`.toLowerCase())
     )
+
+    // ==================== COMPUTE PER-ADVISOR DB COUNTS ====================
+    const TARGET_PER_ADVISOR = 24
+    const dbCountsByAdvisor: Record<string, number> = {}
+    for (const advisors of Object.values(advisorsByJurisdiction)) {
+      advisors.forEach(a => { dbCountsByAdvisor[a] = 0 })
+    }
+    existingClients.forEach(c => {
+      if (c.advisor && dbCountsByAdvisor[c.advisor] !== undefined) {
+        dbCountsByAdvisor[c.advisor]++
+      }
+    })
+    console.log('Per-advisor DB counts:', JSON.stringify(dbCountsByAdvisor))
+
+    // ==================== STEP 0: Trim advisors with >TARGET clients ====================
+    let trimmedCount = 0
+    for (const [advisor, count] of Object.entries(dbCountsByAdvisor)) {
+      if (count > TARGET_PER_ADVISOR) {
+        const excess = count - TARGET_PER_ADVISOR
+        // Get the newest excess clients for this advisor (keep oldest)
+        const advisorClients = existingClients
+          .filter(c => c.advisor === advisor)
+          .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+        
+        const toDelete = advisorClients.slice(TARGET_PER_ADVISOR).map(c => c.id)
+        if (toDelete.length > 0) {
+          console.log(`Trimming ${toDelete.length} excess clients from ${advisor}`)
+          
+          // Delete child records first (all dependent tables)
+          const childTables = [
+            'task_clients', 'client_notes', 'client_products', 'client_relationships',
+            'client_contacts', 'client_assets', 'client_income', 'client_expenses',
+            'client_liabilities', 'client_goals', 'calendar_events', 'advice_workflows',
+            'client_communications', 'client_documents', 'client_compliance_items',
+            'project_opportunities', 'commissions', 'financial_planning_workflows',
+            'portfolios', 'portfolio_holdings', 'tlh_opportunities', 'tlh_trade_history',
+          ]
+          
+          for (const table of childTables) {
+            const { error: childErr } = await supabase
+              .from(table)
+              .delete()
+              .in('client_id', toDelete)
+            if (childErr && !childErr.message?.includes('does not exist')) {
+              console.error(`Error deleting from ${table}:`, childErr.message)
+            }
+          }
+          
+          // Delete the excess clients
+          const { error: delErr } = await supabase
+            .from('clients')
+            .delete()
+            .in('id', toDelete)
+          
+          if (delErr) {
+            console.error(`Error trimming ${advisor}:`, delErr)
+          } else {
+            trimmedCount += toDelete.length
+            dbCountsByAdvisor[advisor] = TARGET_PER_ADVISOR
+            // Remove trimmed names from existingNames so new ones can be inserted if needed
+            toDelete.forEach(id => {
+              const client = existingClients.find(c => c.id === id)
+              if (client) {
+                existingNames.delete(`${client.first_name}|${client.surname}`.toLowerCase())
+              }
+            })
+          }
+        }
+      }
+    }
+    if (trimmedCount > 0) {
+      console.log(`Trimmed ${trimmedCount} excess clients total`)
+    }
+
+    // Build set of existing id_numbers for collision avoidance
+    const existingIdNumbers = new Set(
+      existingClients.filter(c => c.id_number).map(c => c.id_number!.toLowerCase())
+    )
+
+    // Generate additional clients based on ACTUAL DB counts
+    const generatedClients = generateAdditionalClients(existingNames, existingIdNumbers, dbCountsByAdvisor, TARGET_PER_ADVISOR)
+    const allDemoClients = [...demoClients, ...generatedClients]
+    console.log(`Total demo clients defined: ${allDemoClients.length} (${demoClients.length} static + ${generatedClients.length} generated)`)
 
     // ==================== STEP 1: Reassign orphan advisor clients ====================
     const orphanClients = (existingClients || []).filter(ec =>
@@ -818,8 +920,8 @@ Deno.serve(async (req) => {
     if (clientsToInsert.length > 0) {
       console.log(`Inserting ${clientsToInsert.length} new clients`)
 
-      // Insert in batches of 50 to avoid timeouts
-      const batchSize = 50
+      // Insert in small batches of 10 to minimize impact of individual id_number collisions
+      const batchSize = 10
       for (let i = 0; i < clientsToInsert.length; i += batchSize) {
         const batch = clientsToInsert.slice(i, i + batchSize)
         const { data: insertedClients, error: insertError } = await supabase
@@ -828,37 +930,56 @@ Deno.serve(async (req) => {
           .select('id')
 
         if (insertError) {
-          console.error(`Error inserting batch ${i / batchSize + 1}:`, insertError)
-          // Continue with next batch instead of failing entirely
+          console.error(`Error inserting batch ${Math.floor(i / batchSize) + 1}:`, insertError)
+          // Fall back to individual inserts for this batch
+          for (const client of batch) {
+            const { data: singleInsert, error: singleError } = await supabase
+              .from('clients')
+              .insert(client)
+              .select('id')
+            if (singleError) {
+              console.error(`Error inserting ${client.first_name} ${client.surname}: ${singleError.message}`)
+            } else {
+              insertedCount += 1
+            }
+          }
           continue
         }
         
         insertedCount += insertedClients?.length || 0
-        console.log(`Inserted batch ${i / batchSize + 1}: ${insertedClients?.length || 0} clients`)
+        console.log(`Inserted batch ${Math.floor(i / batchSize) + 1}: ${insertedClients?.length || 0} clients`)
       }
     }
 
     // If nothing to do
-    if (clientsToInsert.length === 0 && updatedCount === 0 && reassignedCount === 0) {
+    if (clientsToInsert.length === 0 && updatedCount === 0 && reassignedCount === 0 && trimmedCount === 0) {
       return new Response(
         JSON.stringify({ 
           message: 'All demo clients already exist with full data', 
           seeded: false, 
-          existingCount: existingClients?.length || 0 
+          existingCount: existingClients.length
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
+
+    // Re-count final total
+    const { count: finalCount } = await supabase
+      .from('clients')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
 
     return new Response(
       JSON.stringify({ 
         message: 'Demo clients seeded/updated successfully', 
         seeded: true, 
         insertedCount,
+        trimmedCount,
         updatedCount,
         reassignedCount,
         idBackfillCount,
-        existingCount: existingClients?.length || 0,
+        previousCount: existingClients.length,
+        finalCount: finalCount || 0,
         totalDemoClients: allDemoClients.length,
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
