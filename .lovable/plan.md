@@ -1,69 +1,69 @@
 
-# Deduplicate Client Names Across All Advisors
 
-## Problem
-The `generateAdditionalClients()` function in the seed edge function uses small name pools (16 first names x 16 last names per jurisdiction) and cycles through them identically for each of the 5 advisors. This produces the same name (e.g., "Lindiwe Wessels") assigned to every advisor, each with a unique ID number -- resulting in 266 excess duplicate-name records (553 total clients, only 287 unique names).
+# Scale Client Records to 600 Total
 
-## Solution (Two Steps)
+## Overview
+Increase the total client count from 287 to 600 across all 25 advisors and 5 jurisdictions, targeting 24 clients per advisor (120 per jurisdiction). This requires a single-line change in the seed function, redeployment, and triggering the seed in both environments.
 
-### Step 1: Fix the Seed Function
-Modify `generateAdditionalClients()` in `supabase/functions/seed-demo-clients/index.ts` to ensure each generated client has a unique first+last name combination. Instead of cycling through the same pool indices for each advisor, use a global index that increments across advisors within a jurisdiction so that no two advisors share a name.
+## Current vs Target Distribution
 
-Additionally, expand the name pools slightly per jurisdiction (adding a few more first names or last names) to ensure there are enough unique combinations (5 advisors x ~13 clients each = ~65 unique combos needed per jurisdiction).
+```text
+Jurisdiction | Current | Target | Additional Needed
+-------------|---------|--------|------------------
+ZA           |     101 |    120 |               ~19
+AU           |      48 |    120 |               ~72
+CA           |      45 |    120 |               ~75
+GB           |      47 |    120 |               ~73
+US           |      46 |    120 |               ~74
+-------------|---------|--------|------------------
+Total        |     287 |    600 |              ~313
+```
 
-### Step 2: Delete Duplicate Data (Both Environments)
-For each group of clients sharing the same `first_name + surname`, keep only the first record (the one with the lowest `created_at`) and delete the rest. This will be done by:
+Each advisor will have exactly 24 clients (a mix of static + generated records).
 
-1. Deleting duplicates in **Test** using a data operation
-2. Providing guidance for the user to run the same cleanup on **Live** (production) via the Cloud View, or handling it through the seed function's dedup logic
+## Implementation Steps
 
-The dedup approach:
-- For each `(first_name, surname)` group with `COUNT > 1`, keep the record with `MIN(created_at)` and delete the others
-- This preserves the original record and removes the ~266 excess entries
-- After cleanup, the unique constraint on `id_number` stays intact (each remaining record has its own unique ID)
+### Step 1: Update the per-advisor target in the seed function
+In `supabase/functions/seed-demo-clients/index.ts`, change the target from 20 to 24 on the line:
+```text
+const needed = Math.max(0, 20 - existing)
+```
+becomes:
+```text
+const needed = Math.max(0, 24 - existing)
+```
 
-### Step 3: Prevent Future Duplicates
-Add a `UNIQUE` constraint on `LOWER(first_name) || '|' || LOWER(surname)` per user, or add dedup logic in the seed function's insert step to skip names already used. The seed function approach is preferred since the same name could legitimately exist for different users.
+This is safe because the name pools already support 480 unique combinations per jurisdiction (24 first names x 20 last names), far exceeding the ~120 names needed per jurisdiction.
+
+### Step 2: Deploy and trigger seeding in Test
+- Deploy the updated edge function
+- Call the seed function to populate the additional ~313 clients in the Test database
+- Verify the final count reaches 600
+
+### Step 3: Seed Production (Live)
+- Publish the updated function to Live
+- The seed function will automatically run when any user visits the Dashboard, adding the missing clients
+- Alternatively, the function can be triggered directly against the Live environment
 
 ## Technical Details
 
-### Files to Modify
-- `supabase/functions/seed-demo-clients/index.ts`
-  - Expand name pools to have enough unique combinations
-  - Change the index calculation in `generateAdditionalClients()` to use a jurisdiction-wide counter instead of per-advisor cycling
-  - Add dedup check in Step 3 (insert) to match on `first_name + surname` (already partially exists via `existingNames` Set)
+### File to Modify
+- `supabase/functions/seed-demo-clients/index.ts` -- line 545: change target from `20` to `24`
 
-### Database Operations
-- Delete duplicate records in Test (keep oldest per name group)
-- User will need to run the same delete on Live via Cloud View, or we re-run the seed function after cleaning
+### How It Works
+The existing seed logic already handles this gracefully:
+1. It counts how many clients each advisor currently has
+2. It generates only the difference (e.g., if Johan Botha has 19, it generates 5 more)
+3. It uses a global name dedup Set to avoid duplicate name combinations
+4. It skips names that already exist in the database via the `existingNames` Set
+5. New clients get unique ID numbers via the jurisdiction-specific ID generators
 
-### Data Cleanup Query
-```text
--- Identifies and deletes duplicates, keeping the earliest record per name
-DELETE FROM clients
-WHERE id NOT IN (
-  SELECT DISTINCT ON (LOWER(first_name), LOWER(surname), user_id)
-    id
-  FROM clients
-  ORDER BY LOWER(first_name), LOWER(surname), user_id, created_at ASC
-);
-```
-
-### Seed Function Name Pool Fix
-Each jurisdiction will get enough unique names to cover all advisors without reuse. The index formula changes from:
-```text
--- Before (same index per advisor):
-pool.firstNames[(advIdx * 20 + i) % pool.firstNames.length]
-
--- After (unique across all advisors):
-pool.firstNames[globalNameIndex % pool.firstNames.length]
-// where globalNameIndex increments globally and uses a dedup set
-```
-
-A `usedNames` Set will track `first_name|surname` combinations already assigned, skipping any collisions.
+### No Database Migration Needed
+No schema changes are required. The seed function simply inserts additional rows into the existing `clients` table using the same structure and constraints already in place.
 
 ### Expected Outcome
-- ~287 unique client records remain (down from 553)
-- Each client name appears exactly once across all advisors
-- Future seed runs will not recreate duplicates
+- 600 total client records (up from 287)
+- 120 clients per jurisdiction, 24 per advisor
+- All new clients have unique names and ID numbers
 - Applied to both Test and Live environments
+
