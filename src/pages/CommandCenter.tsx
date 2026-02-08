@@ -108,7 +108,7 @@ const CommandCenter = () => {
           userName={userName}
           userEmail={userEmail}
           onSignOut={handleSignOut}
-          onAccountSettings={() => navigate("/practice")}
+          onAccountSettings={() => navigate("/account-settings")}
         />
 
         {/* Main Workspace - Scrollable */}

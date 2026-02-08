@@ -34,6 +34,7 @@ export interface CalendarEvent {
   status: CalendarEventStatus;
   color: string | null;
   attendees: any[];
+  timezone: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -52,6 +53,7 @@ export interface CreateCalendarEventInput {
   clientId?: string;
   color?: string;
   attendees?: any[];
+  timezone?: string;
 }
 
 export interface UpdateCalendarEventInput extends Partial<CreateCalendarEventInput> {
@@ -134,6 +136,7 @@ export const useCalendarEvents = (viewDate: Date = new Date(), viewMode: "month"
         status: event.status as CalendarEventStatus,
         color: event.color,
         attendees: event.attendees || [],
+        timezone: event.timezone || null,
         createdAt: new Date(event.created_at),
         updatedAt: new Date(event.updated_at),
       }));
@@ -177,6 +180,7 @@ export const useCalendarEvents = (viewDate: Date = new Date(), viewMode: "month"
           client_id: input.clientId || null,
           color: input.color || null,
           attendees: input.attendees || [],
+          timezone: input.timezone || null,
           created_by: user.id,
         })
         .select()
@@ -204,6 +208,7 @@ export const useCalendarEvents = (viewDate: Date = new Date(), viewMode: "month"
         status: data.status as CalendarEventStatus,
         color: data.color,
         attendees: Array.isArray(data.attendees) ? data.attendees : [],
+        timezone: data.timezone || null,
         createdAt: new Date(data.created_at),
         updatedAt: new Date(data.updated_at),
       };
@@ -232,6 +237,7 @@ export const useCalendarEvents = (viewDate: Date = new Date(), viewMode: "month"
       if (input.color !== undefined) updateData.color = input.color;
       if (input.attendees !== undefined) updateData.attendees = input.attendees;
       if (input.status !== undefined) updateData.status = input.status;
+      if ((input as any).timezone !== undefined) updateData.timezone = (input as any).timezone;
 
       const { error: updateError } = await supabase
         .from("calendar_events")

@@ -48,6 +48,7 @@ import {
   Trash2,
   Edit,
   X,
+  Globe,
 } from "lucide-react";
 import commandCenterIcon from "@/assets/command-center-icon.png";
 import vantageLogo from "@/assets/vantage-logo.png";
@@ -79,6 +80,8 @@ import { MeetingRecorder } from "@/components/calendar/MeetingRecorder";
 import { TranscriptionPanel } from "@/components/calendar/TranscriptionPanel";
 import { ActionItemsList } from "@/components/calendar/ActionItemsList";
 import { cn } from "@/lib/utils";
+import { useUserSettings } from "@/hooks/useUserSettings";
+import { COMMON_TIMEZONES, getActiveTimezone, getTimezoneAbbreviation } from "@/lib/timezone-utils";
 import GlobalAIChat from "@/components/ai-assistant/GlobalAIChat";
 
 const sidebarItems = [
@@ -143,7 +146,10 @@ const CalendarPage = () => {
 
   const { events: rawEvents, loading: eventsLoading, createEvent, updateEvent, deleteEvent, refetch } = useCalendarEvents(viewDate, viewMode);
   const { clients } = useClients();
-  const { selectedAdvisors, regionalData } = useRegion();
+  const { selectedAdvisors, regionalData, selectedRegion } = useRegion();
+  const { settings: userSettings } = useUserSettings();
+  const activeTimezone = getActiveTimezone(userSettings?.timezone, selectedRegion);
+  const timezoneAbbr = getTimezoneAbbreviation(activeTimezone);
 
   // Map selected advisor initials to full names
   const selectedAdvisorNames = useMemo(() => {
@@ -367,7 +373,7 @@ const CalendarPage = () => {
           userName={userName}
           userEmail={userEmail}
           onSignOut={handleSignOut}
-          onAccountSettings={() => navigate("/practice")}
+          onAccountSettings={() => navigate("/account-settings")}
         />
 
         {/* Calendar Content - Scrollable */}
@@ -522,7 +528,12 @@ const CalendarPage = () => {
                     : format(viewDate, "MMMM yyyy")}
                 </h2>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
+                {/* Timezone indicator */}
+                <div className="flex items-center gap-1.5 text-sm text-muted-foreground bg-muted/50 px-2.5 py-1 rounded-md">
+                  <Globe className="w-3.5 h-3.5" />
+                  <span>{timezoneAbbr}</span>
+                </div>
                 <Button
                   variant={viewMode === "day" ? "default" : "outline"}
                   size="sm"
@@ -689,7 +700,7 @@ const CalendarPage = () => {
                     <p className="text-sm text-muted-foreground">
                       {selectedEvent.allDay
                         ? "All day"
-                        : `${format(selectedEvent.startTime, "h:mm a")} - ${format(selectedEvent.endTime, "h:mm a")}`}
+                        : `${format(selectedEvent.startTime, "h:mm a")} - ${format(selectedEvent.endTime, "h:mm a")} ${getTimezoneAbbreviation(selectedEvent.timezone || activeTimezone)}`}
                     </p>
                   </div>
                 </div>
@@ -863,6 +874,25 @@ const CalendarPage = () => {
                   }}
                 />
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Timezone</Label>
+              <Select
+                value={newEvent.timezone || activeTimezone}
+                onValueChange={(value) => setNewEvent((prev) => ({ ...prev, timezone: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {COMMON_TIMEZONES.map((tz) => (
+                    <SelectItem key={tz.value} value={tz.value}>
+                      {tz.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">

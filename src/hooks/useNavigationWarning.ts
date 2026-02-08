@@ -9,6 +9,7 @@ const LANDING_PAGES = [
   "/tasks",
   "/insights",
   "/practice",
+  "/account-settings",
 ];
 
 interface SubPageMapping {

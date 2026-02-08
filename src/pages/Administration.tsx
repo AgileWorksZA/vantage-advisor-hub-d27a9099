@@ -161,7 +161,7 @@ const Administration = () => {
           userName={userName}
           userEmail={userEmail}
           onSignOut={handleSignOut}
-          onAccountSettings={() => {}}
+          onAccountSettings={() => navigate("/account-settings")}
         />
 
         {/* Content - With Admin Layout */}

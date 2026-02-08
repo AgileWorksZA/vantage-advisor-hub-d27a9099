@@ -584,6 +584,7 @@ export type Database = {
           reminder_minutes: number | null
           start_time: string
           status: Database["public"]["Enums"]["calendar_event_status"]
+          timezone: string | null
           title: string
           updated_at: string
           user_id: string
@@ -607,6 +608,7 @@ export type Database = {
           reminder_minutes?: number | null
           start_time: string
           status?: Database["public"]["Enums"]["calendar_event_status"]
+          timezone?: string | null
           title: string
           updated_at?: string
           user_id: string
@@ -630,6 +632,7 @@ export type Database = {
           reminder_minutes?: number | null
           start_time?: string
           status?: Database["public"]["Enums"]["calendar_event_status"]
+          timezone?: string | null
           title?: string
           updated_at?: string
           user_id?: string
@@ -3973,25 +3976,55 @@ export type Database = {
       user_settings: {
         Row: {
           created_at: string
+          date_format: string | null
+          default_calendar_view: string | null
           default_from_primary_adviser: boolean
+          display_name: string | null
           email_signature: string | null
           id: string
+          notification_calendar_reminders: boolean | null
+          notification_client_updates: boolean | null
+          notification_compliance_alerts: boolean | null
+          notification_email: boolean | null
+          notification_task_reminders: boolean | null
+          time_format: string | null
+          timezone: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
+          date_format?: string | null
+          default_calendar_view?: string | null
           default_from_primary_adviser?: boolean
+          display_name?: string | null
           email_signature?: string | null
           id?: string
+          notification_calendar_reminders?: boolean | null
+          notification_client_updates?: boolean | null
+          notification_compliance_alerts?: boolean | null
+          notification_email?: boolean | null
+          notification_task_reminders?: boolean | null
+          time_format?: string | null
+          timezone?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
+          date_format?: string | null
+          default_calendar_view?: string | null
           default_from_primary_adviser?: boolean
+          display_name?: string | null
           email_signature?: string | null
           id?: string
+          notification_calendar_reminders?: boolean | null
+          notification_client_updates?: boolean | null
+          notification_compliance_alerts?: boolean | null
+          notification_email?: boolean | null
+          notification_task_reminders?: boolean | null
+          time_format?: string | null
+          timezone?: string | null
           updated_at?: string
           user_id?: string
         }

@@ -131,7 +131,7 @@ const Portfolio = () => {
           userName={userName}
           userEmail={userEmail}
           onSignOut={handleSignOut}
-          onAccountSettings={() => navigate("/practice")}
+          onAccountSettings={() => navigate("/account-settings")}
         />
 
         {/* Portfolio Content - Scrollable */}

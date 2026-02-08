@@ -29,6 +29,7 @@ import AIAssistant from "./pages/AIAssistant";
 import Portfolio from "./pages/Portfolio";
 import ComposeEmail from "./pages/ComposeEmail";
 import Administration from "./pages/Administration";
+import AccountSettings from "./pages/AccountSettings";
 
 const queryClient = new QueryClient();
 
@@ -60,6 +61,7 @@ const App = () => (
               <Route path="/administration" element={<Administration />} />
               <Route path="/administration/:section" element={<Administration />} />
               <Route path="/administration/:section/:tab" element={<Administration />} />
+              <Route path="/account-settings" element={<AccountSettings />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/signup-confirmation" element={<SignupConfirmation />} />
               <Route path="/terms-of-use" element={<TermsOfUse />} />

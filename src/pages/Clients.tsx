@@ -361,7 +361,7 @@ const Clients = () => {
           userName={userName}
           userEmail={userEmail}
           onSignOut={handleSignOut}
-          onAccountSettings={() => navigate("/practice")}
+          onAccountSettings={() => navigate("/account-settings")}
           searchValue={searchQuery}
           onSearchChange={setSearchQuery}
         />
