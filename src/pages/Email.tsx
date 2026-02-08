@@ -105,25 +105,28 @@ const EmailPage = () => {
     }
   }, [settingsLoading, emailSettings?.fetch_mode, searchParams]);
 
-  const { emails: rawEmails, loading: emailsLoading, isFetching, folderCounts, refetch, triggerFetch, moveToFolder, markAsRead } = useEmails(activeFolder || "Task Pool");
-  const { selectedAdvisors, regionalData } = useRegion();
+  const { emails: rawEmails, loading: emailsLoading, isFetching, folderCounts, refetch, triggerFetch, moveToFolder, markAsRead } = useEmails(activeFolder);
+  const { selectedRegion } = useRegion();
 
-  // Map selected advisor initials to full names
-  const selectedAdvisorNames = useMemo(() => {
-    return regionalData.advisors
-      .filter(a => selectedAdvisors.includes(a.initials))
-      .map(a => a.name);
-  }, [selectedAdvisors, regionalData.advisors]);
+  // Map region code to country name for jurisdiction filtering
+  const regionToCountry: Record<string, string> = {
+    ZA: "South Africa",
+    AU: "Australia",
+    CA: "Canada",
+    GB: "United Kingdom",
+    US: "United States",
+  };
 
-  // Filter emails by selected advisors
+  // Filter emails by jurisdiction (country_of_issue), not by advisor
   const emails = useMemo(() => {
+    const selectedCountry = regionToCountry[selectedRegion];
     return rawEmails.filter(email => {
       // Emails not matched to any client remain visible
-      if (email.clients.length === 0) return true;
-      // Emails matched to a client must match a selected advisor
-      return email.clientAdvisor ? selectedAdvisorNames.includes(email.clientAdvisor) : false;
+      if (!email.clientCountry) return true;
+      // Emails matched to a client must match the selected jurisdiction
+      return email.clientCountry === selectedCountry;
     });
-  }, [rawEmails, selectedAdvisorNames]);
+  }, [rawEmails, selectedRegion]);
 
   const handleEmailClick = (email: EmailListItem) => {
     // Navigate to the full-page email view

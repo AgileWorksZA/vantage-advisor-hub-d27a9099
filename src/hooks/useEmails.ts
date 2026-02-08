@@ -39,6 +39,7 @@ export interface EmailListItem {
   receivedOn: string;
   clients: MatchedClient[];
   clientAdvisor?: string;
+  clientCountry?: string;
   hasAttachment: boolean;
   isRead: boolean;
   folder: Email["folder"];
@@ -65,6 +66,7 @@ interface ClientRecord {
   email: string | null;
   work_email: string | null;
   advisor: string | null;
+  country_of_issue: string | null;
 }
 
 // Match sender email against clients database
@@ -85,7 +87,7 @@ const matchClientsForEmail = (fromAddress: string, clients: ClientRecord[]): Mat
     }));
 };
 
-export const useEmails = (folder?: Email["folder"]) => {
+export const useEmails = (folder?: Email["folder"] | null) => {
   const [emails, setEmails] = useState<EmailListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
@@ -98,7 +100,7 @@ export const useEmails = (folder?: Email["folder"]) => {
     try {
       const { data } = await supabase
         .from("clients")
-        .select("id, first_name, surname, preferred_name, email, work_email, advisor");
+        .select("id, first_name, surname, preferred_name, email, work_email, advisor, country_of_issue");
       
       setAllClients((data as ClientRecord[]) || []);
     } catch (err) {
@@ -107,6 +109,12 @@ export const useEmails = (folder?: Email["folder"]) => {
   }, []);
 
   const fetchEmails = useCallback(async (showFetchingSpinner = false) => {
+    // Skip fetch if folder is not yet determined
+    if (folder === null || folder === undefined) {
+      setLoading(true);
+      return;
+    }
+
     if (showFetchingSpinner) {
       setIsFetching(true);
     } else {
@@ -126,9 +134,7 @@ export const useEmails = (folder?: Email["folder"]) => {
         .eq("is_deleted", false)
         .order("received_at", { ascending: false });
 
-      if (folder) {
-        query = query.eq("folder", folder);
-      }
+      query = query.eq("folder", folder);
 
       const { data, error: fetchError } = await query;
 
@@ -137,16 +143,31 @@ export const useEmails = (folder?: Email["folder"]) => {
       // Get latest clients for matching
       const { data: clientsData } = await supabase
         .from("clients")
-        .select("id, first_name, surname, preferred_name, email, work_email, advisor");
+        .select("id, first_name, surname, preferred_name, email, work_email, advisor, country_of_issue");
       
       const clientsList = (clientsData as ClientRecord[]) || [];
 
       const transformedEmails: EmailListItem[] = (data || []).map((email: any) => {
-        const matchedClients = matchClientsForEmail(email.from_address, clientsList);
-        // Get the advisor from the first matched client
-        const firstMatchedClient = matchedClients.length > 0
-          ? clientsList.find(c => c.id === matchedClients[0].id)
-          : null;
+        // Try matching by from_address first
+        let matchedClients = matchClientsForEmail(email.from_address, clientsList);
+        let resolvedClient: ClientRecord | null = null;
+
+        // If no match by from_address, try matching by client_id (for outbound emails)
+        if (matchedClients.length === 0 && email.client_id) {
+          const clientById = clientsList.find(c => c.id === email.client_id);
+          if (clientById) {
+            matchedClients = [{
+              id: clientById.id,
+              name: `${clientById.surname}, ${clientById.first_name?.charAt(0) || ""} (${clientById.preferred_name || clientById.first_name})`,
+            }];
+            resolvedClient = clientById;
+          }
+        }
+
+        // Get the first matched client record
+        if (!resolvedClient && matchedClients.length > 0) {
+          resolvedClient = clientsList.find(c => c.id === matchedClients[0].id) || null;
+        }
         
         return {
           id: email.id,
@@ -154,7 +175,8 @@ export const useEmails = (folder?: Email["folder"]) => {
           subject: email.subject || "(No Subject)",
           receivedOn: formatDate(email.received_at || email.created_at),
           clients: matchedClients,
-          clientAdvisor: firstMatchedClient?.advisor || undefined,
+          clientAdvisor: resolvedClient?.advisor || undefined,
+          clientCountry: resolvedClient?.country_of_issue || undefined,
           hasAttachment: email.has_attachments,
           isRead: email.is_read,
           folder: email.folder,
