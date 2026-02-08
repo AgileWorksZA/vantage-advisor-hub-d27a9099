@@ -314,6 +314,16 @@ Deno.serve(async (req) => {
       return `${birthYear}-06-15`
     }
 
+    // Map preferred_contact values to allowed check constraint values
+    const mapPreferredContact = (val: string): string => {
+      const mapping: Record<string, string> = {
+        'Cell': 'Phone',
+        'Home': 'Phone',
+        'Mobile': 'Phone',
+      }
+      return mapping[val] || val
+    }
+
     // Filter demo clients to only include those not already in database
     const clientsToInsert = demoClients
       .filter(client => {
@@ -336,7 +346,7 @@ Deno.serve(async (req) => {
         cell_number: client.cell_number,
         work_number: client.work_number,
         home_number: client.home_number,
-        preferred_contact: client.preferred_contact,
+        preferred_contact: mapPreferredContact(client.preferred_contact),
         // Identity info
         gender: client.gender,
         title: client.title || null,
@@ -353,7 +363,7 @@ Deno.serve(async (req) => {
       }))
 
     // Find existing clients that need updating (missing contact info)
-    const clientsToUpdate = (existingClients || []).filter(ec => !ec.email)
+    const clientsToUpdate = (existingClients || []).filter(ec => !ec.email || !ec.cell_number)
     let updatedCount = 0
 
     if (clientsToUpdate.length > 0) {
@@ -373,7 +383,7 @@ Deno.serve(async (req) => {
               cell_number: demoClient.cell_number,
               work_number: demoClient.work_number,
               home_number: demoClient.home_number,
-              preferred_contact: demoClient.preferred_contact,
+              preferred_contact: mapPreferredContact(demoClient.preferred_contact),
               gender: demoClient.gender,
               title: demoClient.title || null,
               initials: demoClient.initials,
