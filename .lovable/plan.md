@@ -1,106 +1,95 @@
 
+# Fix Document Loading Error, Seed Documents, and Link to Emails and Tasks
 
-# Fix Empty Inbox on Load and Seed Jurisdiction-Based Demo Emails
+## Root Cause
 
-## Overview
+The "Failed to load documents" error occurs because the `useClientDocuments` hook tries to join `documents` with `workflows` using a foreign key hint `documents_workflow_id_fkey`, but **no such foreign key constraint exists** on the `documents` table. The `documents.workflow_id` column exists but has no FK to `workflows`.
 
-Two changes:
+Additionally:
+- The `documents` table is **completely empty** (0 rows)
+- The `document_types` table is **completely empty** (0 rows)
+- The `task_documents` junction table is **empty** (0 rows)
+- The `email_attachments` table has 100 rows but no link back to the `documents` table
 
-1. **Fix the empty inbox bug** -- a race condition causes the Inbox to appear empty on initial navigation. The hook starts fetching "Task Pool" (empty) before settings load, then the stale result briefly overwrites the Inbox data.
-2. **Seed comprehensive jurisdiction-based emails** -- create 15-20 emails per folder for each of the 5 jurisdictions, linked to real client email addresses. Emails should filter by jurisdiction (not advisor), so toggling advisors does not change visible emails, but switching jurisdiction does.
+## Changes Required
 
----
+### 1. Database Migration -- Add Missing FK and Link Column
 
-## Part 1: Fix Empty Inbox on Initial Load
+**Add the missing foreign key** from `documents.workflow_id` to `workflows.id`:
 
-**Root Cause**: When the user navigates to `/email`, `activeFolder` is initialized as `null`. The hook `useEmails(activeFolder || "Task Pool")` immediately fetches Task Pool emails (which is typically empty). When email settings finish loading a moment later, `activeFolder` is set to `"Inbox"`, triggering a second fetch. But the first fetch's empty result can flash or, due to the `allClients.length` dependency cycling, overwrite the Inbox results.
+```text
+ALTER TABLE documents
+  ADD CONSTRAINT documents_workflow_id_fkey
+  FOREIGN KEY (workflow_id) REFERENCES workflows(id)
+  ON DELETE SET NULL;
+```
 
-**Fix (2 files)**:
+**Add `document_id` column to `email_attachments`** so attachments can be linked to client documents:
 
-**`src/hooks/useEmails.ts`**
-- Make the `folder` parameter accept `null | undefined`
-- When `folder` is null/undefined, skip the fetch entirely (return empty state, loading = true)
-- This prevents the stale "Task Pool" fetch from racing against the real folder fetch
+```text
+ALTER TABLE email_attachments
+  ADD COLUMN document_id UUID REFERENCES documents(id) ON DELETE SET NULL;
+```
 
-**`src/pages/Email.tsx`**
-- Change `useEmails(activeFolder || "Task Pool")` to `useEmails(activeFolder)`, passing `null` when the folder hasn't been determined yet
-- The hook will simply wait until `activeFolder` is set by the settings effect
+### 2. Seed Function Overhaul (`supabase/functions/seed-demo-communications/index.ts`)
 
----
+Extend the existing seed function to also populate:
 
-## Part 2: Change Email Filtering from Advisor to Jurisdiction
+**a) `document_types` table** -- Seed ~20 commonly-used document types from the existing `DOCUMENT_TYPES` list, organized into three categories:
 
-**Current behavior**: Emails are filtered by selected advisors (matched via client's advisor field). Toggling an advisor in the filter hides/shows emails for that advisor's clients.
+| Category | Example Types |
+|----------|--------------|
+| Client | Record of advice, Client pack, Planning document, Application form, Letter of authority, Will |
+| FICA | Proof of ID, Proof of address, Proof of bank, Source of Funds, Self certification, Sanction list |
+| Product | Policy form, Fee form, Beneficiary change, Fund switch or rebalance, Tax certificate, Quote |
 
-**New behavior**: Emails are filtered by the selected jurisdiction only. Toggling advisors should have no effect on which emails are visible. Switching from ZA to AU should show only emails linked to Australian clients.
+**b) `documents` table** -- For each client across all jurisdictions, seed 4-8 documents:
+- 2-3 Client documents (e.g., Record of advice, Client pack)
+- 2-3 FICA documents (e.g., Proof of ID, Proof of address)
+- 1-2 Product documents linked to a product name
 
-**Changes (2 files)**:
+Each document will have:
+- Appropriate `status` (Complete, Pending, Expired -- weighted distribution)
+- `created_at` spread over the past 12 months
+- `expiry_date` for FICA documents (some already expired to show "Expired" status)
+- Jurisdiction-appropriate naming
+- `file_path` pointing to placeholder paths (no actual files stored in DB)
 
-**`src/hooks/useEmails.ts`**
-- Add `country_of_issue` to the `ClientRecord` interface and the Supabase query
-- Add `clientCountry` to `EmailListItem` to expose the matched client's jurisdiction
-- Enhance client matching to also resolve by `client_id` (not just `from_address`), so outbound emails (where `from_address` is the advisor) are also matched to their linked client
+**c) Link `email_attachments` to `documents`** -- For emails that have attachments, create a corresponding `documents` row for the client and set the `document_id` on the email attachment. This enables the "Classify & Save" workflow from the Email View to store attachments as proper client documents.
 
-**`src/pages/Email.tsx`**
-- Replace the advisor-based filter with a jurisdiction-based filter
-- Add a region-to-country mapping: `{ ZA: "South Africa", AU: "Australia", CA: "Canada", GB: "United Kingdom", US: "United States" }`
-- Filter logic: for each email, if it has a matched client country, show only if the country matches the selected jurisdiction; if unmatched, show always
+**d) Seed `task_documents`** -- For a subset of tasks that have a `client_id`, link 1-2 relevant documents from that client's document set via the `task_documents` junction table. This populates the task-document relationship.
 
----
+### 3. No Hook Changes Needed
 
-## Part 3: Overhaul the Seed Function for Jurisdiction-Based Emails
+The `useClientDocuments.ts` hook's query will work correctly once the FK constraint is in place:
 
-**Current state**: The `seed-demo-communications` function only fetches 10 clients and creates emails in Inbox and Sent folders only. All 57 emails are ZA-centric.
+```text
+documents -> document_types (via documents_document_type_id_fkey) -- already exists
+documents -> products (via documents_product_id_fkey) -- already exists
+documents -> workflows (via documents_workflow_id_fkey) -- ADDING this FK
+```
 
-**New approach**: Create 15-20 emails per folder for each jurisdiction, using real client email addresses from the database, spread across the past 6 months.
+The `ClientDocumentsTab.tsx` UI code is already correct -- it groups documents by Client, FICA, and Product categories and renders them in accordions.
 
-**File: `supabase/functions/seed-demo-communications/index.ts`**
+### 4. Expected Data Volume
 
-Major changes:
-
-1. **Fetch clients per jurisdiction** -- query all clients grouped by `country_of_issue` instead of `.limit(10)`, selecting a representative set (~15-20) per jurisdiction
-
-2. **Create jurisdiction-appropriate email templates** -- localize email content per jurisdiction:
-   - ZA: "FICA Documents", "RA top-up", advisor names like "Johan Botha", currency "R"
-   - AU: "TFN update", "Super contribution", advisor "James Mitchell", currency "A$"
-   - CA: "RRSP contribution", "SIN update", advisor "Pierre Tremblay", currency "C$"
-   - GB: "ISA top-up", "NI number update", advisor "William Smith", currency "GBP"
-   - US: "401(k) rollover", "SSN update", advisor "Michael Johnson", currency "$"
-
-3. **Distribute across all 7 folders** with 15-20 emails per folder per jurisdiction:
-
-   | Folder | Direction | Count per jurisdiction |
-   |--------|-----------|----------------------|
-   | Inbox | Inbound | 15-20 |
-   | Task Pool | Inbound | 15-20 |
-   | Sent | Outbound | 15-20 |
-   | Draft | Outbound | 15-20 |
-   | Queue | Outbound | 15-20 |
-   | Failed | Outbound | 15-20 |
-   | Archived | Mixed | 15-20 |
-
-   Total: ~105-140 emails per jurisdiction, ~525-700 total
-
-4. **Date spread**: Emails dated randomly across the past 6 months (approximately August 2025 to February 2026)
-
-5. **Link to real client data**: Use actual client email addresses as `from_address` (inbound) or in `to_addresses` (outbound), and set `client_id` to the client's UUID for direct matching
-
-6. **Maintain existing WhatsApp/SMS/Push seeding** -- keep the direct messaging and push notification seeding logic unchanged
-
----
+| Table | Current | After Seed |
+|-------|---------|------------|
+| document_types | 0 | ~20 |
+| documents | 0 | ~2,500-3,500 (5-7 per client x 553 clients) |
+| task_documents | 0 | ~200-300 (subset of 500 tasks) |
+| email_attachments | 100 | 100 (updated with document_id links) |
 
 ## Files Summary
 
 | File | Action |
 |------|--------|
-| `src/hooks/useEmails.ts` | Accept null folder (skip fetch); add country_of_issue to client matching; match by client_id for outbound emails |
-| `src/pages/Email.tsx` | Pass null folder until determined; filter by jurisdiction instead of advisor |
-| `supabase/functions/seed-demo-communications/index.ts` | Overhaul to create jurisdiction-specific emails across all 7 folders with 15-20 per folder |
+| Database migration | Add FK `documents_workflow_id_fkey`, add `document_id` column to `email_attachments` |
+| `supabase/functions/seed-demo-communications/index.ts` | Add document_types seeding, documents seeding per client, task_documents linking, email_attachment document linking |
 
 ## Deployment Steps
 
-1. Update the hook and page code
+1. Run the database migration (add FK + column)
 2. Update and deploy the seed function
-3. Invoke the seed function to populate the database
-4. Verify emails appear per folder and change when jurisdiction is switched
-
+3. Invoke the seed function to populate documents, document_types, and task_documents
+4. Verify the Client Documents tab loads without errors and shows categorized documents
