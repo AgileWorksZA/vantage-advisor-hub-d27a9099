@@ -57,7 +57,7 @@ const Index = () => {
               Book a demo
             </Button>
             <Button variant="hero" size="sm" asChild>
-              <a href="/auth">Adviser Login</a>
+              <a href="/auth">Advisor Login</a>
             </Button>
           </div>
         </div>
