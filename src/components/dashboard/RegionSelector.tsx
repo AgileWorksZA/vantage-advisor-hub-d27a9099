@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -7,6 +8,9 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { useRegion } from "@/contexts/RegionContext";
+import { useNavigationWarning } from "@/hooks/useNavigationWarning";
+import { NavigationWarningDialog } from "@/components/layout/NavigationWarningDialog";
 
 export interface Region {
   code: string;
@@ -36,54 +40,85 @@ const FlagIcon = ({ code, height = 18 }: { code: string; height?: number }) => {
   );
 };
 
-interface RegionSelectorProps {
-  selectedRegion: string;
-  onRegionChange: (regionCode: string) => void;
-}
+export function RegionSelector() {
+  const { selectedRegion, setSelectedRegion } = useRegion();
+  const { isLandingPage, parentLandingPage, parentLandingLabel } = useNavigationWarning();
+  const navigate = useNavigate();
 
-export function RegionSelector({ selectedRegion, onRegionChange }: RegionSelectorProps) {
   const [open, setOpen] = useState(false);
-  
+  const [showWarning, setShowWarning] = useState(false);
+  const [pendingRegion, setPendingRegion] = useState<string | null>(null);
+
   const currentRegion = regions.find(r => r.code === selectedRegion) || regions[0];
 
   const handleSelect = (regionCode: string) => {
-    onRegionChange(regionCode);
+    if (regionCode === selectedRegion) {
+      setOpen(false);
+      return;
+    }
+
     setOpen(false);
+
+    if (isLandingPage) {
+      setSelectedRegion(regionCode);
+    } else {
+      setPendingRegion(regionCode);
+      setShowWarning(true);
+    }
+  };
+
+  const handleWarningConfirm = () => {
+    if (pendingRegion) {
+      setSelectedRegion(pendingRegion);
+      navigate(parentLandingPage);
+    }
+    setPendingRegion(null);
+    setShowWarning(false);
   };
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-9 w-9 rounded-full hover:bg-muted/50 transition-colors flex items-center justify-center"
-          title={currentRegion.name}
-        >
-          <FlagIcon code={currentRegion.flagCode} height={18} />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-56 p-2 bg-popover border border-border shadow-lg" align="end">
-        <div className="space-y-1">
-          {regions.map((region) => (
-            <button
-              key={region.code}
-              onClick={() => handleSelect(region.code)}
-              className={cn(
-                "w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors",
-                "hover:bg-muted/50",
-                selectedRegion === region.code && "bg-muted"
-              )}
-            >
-              <FlagIcon code={region.flagCode} height={18} />
-              <span className="flex-1 text-left">{region.name}</span>
-              {selectedRegion === region.code && (
-                <Check className="h-4 w-4 text-primary" />
-              )}
-            </button>
-          ))}
-        </div>
-      </PopoverContent>
-    </Popover>
+    <>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 rounded-full hover:bg-muted/50 transition-colors flex items-center justify-center"
+            title={currentRegion.name}
+          >
+            <FlagIcon code={currentRegion.flagCode} height={18} />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-56 p-2 bg-popover border border-border shadow-lg" align="end">
+          <div className="space-y-1">
+            {regions.map((region) => (
+              <button
+                key={region.code}
+                onClick={() => handleSelect(region.code)}
+                className={cn(
+                  "w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors",
+                  "hover:bg-muted/50",
+                  selectedRegion === region.code && "bg-muted"
+                )}
+              >
+                <FlagIcon code={region.flagCode} height={18} />
+                <span className="flex-1 text-left">{region.name}</span>
+                {selectedRegion === region.code && (
+                  <Check className="h-4 w-4 text-primary" />
+                )}
+              </button>
+            ))}
+          </div>
+        </PopoverContent>
+      </Popover>
+
+      <NavigationWarningDialog
+        open={showWarning}
+        onOpenChange={setShowWarning}
+        onConfirm={handleWarningConfirm}
+        changeType="jurisdiction"
+        landingPageLabel={parentLandingLabel}
+      />
+    </>
   );
 }

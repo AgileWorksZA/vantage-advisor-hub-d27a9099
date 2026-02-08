@@ -215,8 +215,6 @@ const Dashboard = () => {
           userEmail={userEmail}
           onSignOut={handleSignOut}
           onAccountSettings={() => navigate("/practice")}
-          selectedRegion={selectedRegion}
-          onRegionChange={setSelectedRegion}
         />
 
         {/* Dashboard Content - Scrollable */}
