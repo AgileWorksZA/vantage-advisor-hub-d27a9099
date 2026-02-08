@@ -12,13 +12,19 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Pencil, Trash2, MoreVertical, ChevronDown, ChevronUp } from "lucide-react";
 import { useClientDetail } from "@/hooks/useClientDetail";
-import { generateClient360Data, formatTotal } from "@/data/regional360ViewData";
+import { generateClient360Data, formatTotal, mapNationalityToJurisdiction } from "@/data/regional360ViewData";
+import QuoteWizardDialog from "./QuoteWizardDialog";
+import NewBusinessWizardDialog from "./NewBusinessWizardDialog";
 
 const Client360ViewTab = () => {
   const { clientId } = useParams<{ clientId: string }>();
   const { client } = useClientDetail(clientId || "");
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [showAllOnPlatform, setShowAllOnPlatform] = useState(false);
+  const [showQuoteWizard, setShowQuoteWizard] = useState(false);
+  const [showNewBusinessWizard, setShowNewBusinessWizard] = useState(false);
+
+  const jurisdiction = mapNationalityToJurisdiction(client?.nationality || null);
   
   const VISIBLE_ROWS_LIMIT = 5;
 
@@ -75,9 +81,11 @@ const Client360ViewTab = () => {
               On-Platform Investment Products{" "}
               <span className="text-muted-foreground font-normal">| {formatTotal(onPlatformTotal, currencySymbol)}</span>
             </CardTitle>
-            <Button variant="link" className="text-[hsl(180,70%,45%)] p-0 h-auto font-normal">
-              + Quote + New business
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="link" className="text-[hsl(180,70%,45%)] p-0 h-auto font-normal" onClick={() => setShowQuoteWizard(true)}>+ Quote</Button>
+              <span className="text-muted-foreground">|</span>
+              <Button variant="link" className="text-[hsl(180,70%,45%)] p-0 h-auto font-normal" onClick={() => setShowNewBusinessWizard(true)}>+ New business</Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="p-0">
@@ -503,6 +511,17 @@ const Client360ViewTab = () => {
           </Table>
         </CardContent>
       </Card>
+      {/* Wizard Dialogs */}
+      <QuoteWizardDialog
+        open={showQuoteWizard}
+        onOpenChange={setShowQuoteWizard}
+        jurisdiction={jurisdiction}
+      />
+      <NewBusinessWizardDialog
+        open={showNewBusinessWizard}
+        onOpenChange={setShowNewBusinessWizard}
+        jurisdiction={jurisdiction}
+      />
     </div>
   );
 };
