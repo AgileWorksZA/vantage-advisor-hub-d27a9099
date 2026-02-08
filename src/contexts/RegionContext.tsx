@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useMemo, ReactNode } from "react";
+import { createContext, useContext, useState, useMemo, ReactNode } from "react";
 import { getRegionalData, getFilteredRegionalData, getRegionalOpportunities, RegionalData } from "@/data/regionalData";
 import { ClientOpportunity } from "@/components/ai-assistant/OpportunityCard";
 
@@ -18,7 +18,7 @@ interface RegionContextType {
 const RegionContext = createContext<RegionContextType | undefined>(undefined);
 
 const STORAGE_KEY = "vantage-selected-region";
-const ADVISORS_STORAGE_KEY = "vantage-selected-advisors";
+const ADVISORS_MAP_STORAGE_KEY = "vantage-advisor-selections";
 
 const currencyMap: Record<string, { code: string; symbol: string; locale: string }> = {
   ZA: { code: "ZAR", symbol: "R", locale: "en-ZA" },
@@ -28,6 +28,35 @@ const currencyMap: Record<string, { code: string; symbol: string; locale: string
   US: { code: "USD", symbol: "$", locale: "en-US" },
 };
 
+function loadAdvisorMap(): Record<string, string[]> {
+  if (typeof window === "undefined") return {};
+  try {
+    const stored = localStorage.getItem(ADVISORS_MAP_STORAGE_KEY);
+    if (stored) return JSON.parse(stored);
+  } catch {
+    // ignore
+  }
+  return {};
+}
+
+function saveAdvisorMap(map: Record<string, string[]>) {
+  localStorage.setItem(ADVISORS_MAP_STORAGE_KEY, JSON.stringify(map));
+}
+
+function getAdvisorsForRegion(region: string, map: Record<string, string[]>): string[] {
+  const regionData = getRegionalData(region);
+  const allInitials = regionData.advisors.map((a) => a.initials);
+
+  if (map[region]) {
+    // Validate stored advisors exist in this region
+    const valid = map[region].filter((i) => allInitials.includes(i));
+    if (valid.length > 0) return valid;
+  }
+
+  // Default to all advisors
+  return allInitials;
+}
+
 export function RegionProvider({ children }: { children: ReactNode }) {
   const [selectedRegion, setSelectedRegionState] = useState<string>(() => {
     if (typeof window !== "undefined") {
@@ -36,43 +65,38 @@ export function RegionProvider({ children }: { children: ReactNode }) {
     return "ZA";
   });
 
+  // Load the full advisor map once on init
+  const [advisorMap, setAdvisorMapState] = useState<Record<string, string[]>>(() => loadAdvisorMap());
+
+  // Derive selected advisors from the map for the current region
+  const [selectedAdvisors, setSelectedAdvisorsState] = useState<string[]>(() =>
+    getAdvisorsForRegion(selectedRegion, loadAdvisorMap())
+  );
+
   // Get the base regional data (unfiltered) for the selected region
   const regionalData = useMemo(() => getRegionalData(selectedRegion), [selectedRegion]);
 
-  // Initialize selected advisors from localStorage or default to all advisors
-  const [selectedAdvisors, setSelectedAdvisorsState] = useState<string[]>(() => {
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem(ADVISORS_STORAGE_KEY);
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          // Validate that stored advisors exist in current region
-          const currentAdvisors = getRegionalData(selectedRegion).advisors.map(a => a.initials);
-          const validAdvisors = parsed.filter((a: string) => currentAdvisors.includes(a));
-          if (validAdvisors.length > 0) {
-            return validAdvisors;
-          }
-        } catch {
-          // Invalid stored data, use default
-        }
-      }
-    }
-    // Default to all advisors
-    return getRegionalData(selectedRegion).advisors.map(a => a.initials);
-  });
+  const setSelectedRegion = (newRegion: string) => {
+    // Save current advisor selection for the old region
+    const updatedMap = { ...advisorMap, [selectedRegion]: selectedAdvisors };
+    setAdvisorMapState(updatedMap);
+    saveAdvisorMap(updatedMap);
 
-  const setSelectedRegion = (region: string) => {
-    setSelectedRegionState(region);
-    localStorage.setItem(STORAGE_KEY, region);
-    // Reset advisors to all when region changes
-    const newAdvisors = getRegionalData(region).advisors.map(a => a.initials);
-    setSelectedAdvisorsState(newAdvisors);
-    localStorage.setItem(ADVISORS_STORAGE_KEY, JSON.stringify(newAdvisors));
+    // Switch region
+    setSelectedRegionState(newRegion);
+    localStorage.setItem(STORAGE_KEY, newRegion);
+
+    // Restore advisors for the new region
+    const restoredAdvisors = getAdvisorsForRegion(newRegion, updatedMap);
+    setSelectedAdvisorsState(restoredAdvisors);
   };
 
   const setSelectedAdvisors = (advisors: string[]) => {
     setSelectedAdvisorsState(advisors);
-    localStorage.setItem(ADVISORS_STORAGE_KEY, JSON.stringify(advisors));
+    // Persist immediately for the current region
+    const updatedMap = { ...advisorMap, [selectedRegion]: advisors };
+    setAdvisorMapState(updatedMap);
+    saveAdvisorMap(updatedMap);
   };
 
   // Get filtered regional data based on selected advisors

@@ -11,8 +11,6 @@ interface AppHeaderProps {
   userEmail?: string;
   onSignOut: () => void;
   onAccountSettings?: () => void;
-  selectedRegion?: string;
-  onRegionChange?: (region: string) => void;
   searchValue?: string;
   onSearchChange?: (value: string) => void;
 }
@@ -23,8 +21,6 @@ export function AppHeader({
   userEmail,
   onSignOut,
   onAccountSettings,
-  selectedRegion = "ZA",
-  onRegionChange,
   searchValue,
   onSearchChange,
 }: AppHeaderProps) {
@@ -42,10 +38,7 @@ export function AppHeader({
       <div className="flex items-center gap-4">
         <AdvisorFilter />
         <NotificationDropdown />
-        <RegionSelector
-          selectedRegion={selectedRegion}
-          onRegionChange={onRegionChange || (() => {})}
-        />
+        <RegionSelector />
         <UserMenu
           userName={userName}
           userEmail={userEmail}
