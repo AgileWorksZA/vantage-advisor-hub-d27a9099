@@ -1,6 +1,6 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+
 import {
   Table,
   TableBody,
@@ -145,14 +145,7 @@ const ClientSummaryTab = ({ client, clientId, onShowMoreActivity }: ClientSummar
         {/* General Details */}
         <Card>
           <CardHeader className="pb-4">
-            <div className="flex items-start justify-between">
-              <CardTitle className="text-lg">General details</CardTitle>
-              <Avatar className="h-16 w-16">
-                <AvatarFallback className="bg-[hsl(180,70%,45%)] text-white text-xl">
-                  {initials}
-                </AvatarFallback>
-              </Avatar>
-            </div>
+            <CardTitle className="text-lg">General details</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
