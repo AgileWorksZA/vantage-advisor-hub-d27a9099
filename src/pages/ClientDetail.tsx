@@ -56,7 +56,7 @@ const ClientDetail = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("summary");
-  const { regionalData } = useRegion();
+  const { regionalData, selectedAdvisors } = useRegion();
   const { setCurrentAdvisorInitials } = usePageContext();
 
   // Fetch client data from Supabase
@@ -80,6 +80,15 @@ const ClientDetail = () => {
   ];
   
   const clientName = client ? getDisplayName(client) : "Loading...";
+
+  // Check if client's advisor is in the current selection
+  const clientAdvisorInitials = client?.advisor
+    ? regionalData.advisors.find((a) => a.name === client.advisor)?.initials
+    : null;
+
+  const isAdvisorSelected = clientAdvisorInitials
+    ? selectedAdvisors.includes(clientAdvisorInitials)
+    : true; // If no advisor assigned, allow access
 
   // Set the page context with the client's advisor initials
   useEffect(() => {
@@ -133,6 +142,32 @@ const ClientDetail = () => {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center space-y-4">
           <p className="text-lg text-muted-foreground">{error || "Client not found"}</p>
+          <Button onClick={() => navigate("/clients")}>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Clients
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Access restriction check - show message if advisor not selected
+  if (!isAdvisorSelected) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-6 max-w-md px-6">
+          <div className="mx-auto w-16 h-16 rounded-full bg-muted flex items-center justify-center">
+            <Users className="w-8 h-8 text-muted-foreground" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-xl font-semibold">Access Restricted</h2>
+            <p className="text-muted-foreground">
+              This client is assigned to <span className="font-medium text-foreground">{client.advisor}</span>, who is not currently selected in your advisor filter.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              To view this client, add the advisor to your selection or navigate to a different client.
+            </p>
+          </div>
           <Button onClick={() => navigate("/clients")}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Clients
