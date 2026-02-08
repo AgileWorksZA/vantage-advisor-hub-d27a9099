@@ -115,7 +115,7 @@ const GlobalAIChat = ({ currentPage }: GlobalAIChatProps) => {
   return (
     <>
       {/* Backdrop blur overlay */}
-      {isChatOpen && (
+      {isExpanded && (
         <div
           className={cn(
             "fixed inset-0 z-40 transition-all duration-300",
