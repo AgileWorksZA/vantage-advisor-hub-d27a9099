@@ -1,95 +1,120 @@
 
 
-# Enhanced Client Ribbon
+# Sticky Client Ribbon with Condensed Spacing
 
 ## Overview
 
-Replace the current plain text header ("Manage individual (Owner) - Jackson, Susan Marie") with a rich, information-dense client ribbon that displays key client details at a glance, matching the provided reference design. The three action buttons (Personal financial report, Manage related entity, More options) are preserved.
+Make the client ribbon (back button row + info bar + tab navigation) a fixed/sticky section that stays pinned at the top while tab content scrolls beneath it. Condense the ribbon's vertical spacing so its bottom edge aligns with the bottom of the "Clients" nav item in the left sidebar.
 
-## Current State
-
-The ribbon currently shows:
-- Back button + "Manage individual (Owner) - {clientName}" as plain text
-- Three action buttons on the right
-
-## Enhanced Ribbon Design
-
-The new ribbon will display two rows on a light teal gradient background:
-
-**Row 1 (top):** Back button + "Manage individual (Owner) - {clientName}" (preserved from current) + action buttons on the right
-
-**Row 2 (info bar):**
-- Large circular avatar with initials (e.g., "EW")
-- Person icon + formatted name: "Surname, I (FirstName)" (e.g., "Wegner, E (Emile)")
-- Pipe separator + "A: {advisor name}" (from client.advisor field)
-- Profile type badge: "Client" / "Lead" / "Prospect" (from client.profile_type)
-- Profile state badge: "Onboarding in progress" / "Active" etc. (from client.profile_state, color-coded)
-- Green dot + ID/Passport number (from client.id_number or client.passport_number)
-- Phone icon + phone number (from client.cell_number or client.work_number)
-- Email icon + email (from client.email)
-
-All values are pulled from the existing client record already fetched by useClientDetail.
-
-## Data Mapping
-
-| Ribbon Element | Client Field | Fallback |
-|---|---|---|
-| Avatar initials | client.initials or first letter of first_name + surname | "?" |
-| Display name | "{surname}, {initial} ({preferred_name or first_name})" | -- |
-| Advisor | client.advisor | "Unassigned" |
-| Profile type badge | client.profile_type ("Client", "Lead", "Prospect") | -- |
-| Status badge | client.profile_state ("Active", "Onboarding in progress", etc.) | -- |
-| ID number | client.id_number | client.passport_number, or hidden if neither |
-| Phone | client.cell_number | client.work_number, or hidden if neither |
-| Email | client.email | client.work_email, or hidden if neither |
-
-## Badge Color Coding
-
-- **Profile type**: "Client" = teal outline, "Prospect" = amber outline, "Lead" = blue outline
-- **Profile state**: "Active" = green background, "Onboarding in progress" = amber/yellow background, other = gray
-
-## Technical Changes
-
-### File: `src/pages/ClientDetail.tsx`
-
-**Modify the Page Header section (lines 200-273):**
-
-Replace the current simple header with a two-part ribbon:
-
-1. **Top row**: Keep the Back button and title text, plus the three action buttons on the right (Personal financial report Select, Manage related entity dropdown, More options dropdown) -- these are unchanged.
-
-2. **New info bar row below**: A full-width container with a subtle teal gradient background (`bg-gradient-to-r from-teal-50 to-cyan-50 dark:from-teal-950/20 dark:to-cyan-950/20`) containing:
-   - A `w-14 h-14` circular avatar with the client's initials
-   - A green online-status dot on the avatar
-   - Client name formatted as "Surname, I (PreferredName)" with a person icon
-   - Pipe-separated advisor field
-   - Two small Badge components for profile_type and profile_state
-   - Contact details (ID, phone, email) each with their respective Lucide icons
-
-**New imports needed:**
-- `UserRound, Phone, Mail, Hash` from lucide-react
-- `Badge` from `@/components/ui/badge`
-- `getInitials` from `@/types/client`
-
-No new files are created. No new components are needed -- the ribbon is built inline in ClientDetail.tsx using existing UI primitives (Avatar, Badge, icons).
-
-## Visual Layout
+## Current Layout
 
 ```text
-+-------------------------------------------------------------------------+
-| [<- Back]  Manage individual (Owner) - Surname, FirstName (Preferred)   |
-|                                    [Report v] [Manage entity v] [...]   |
-+-------------------------------------------------------------------------+
-| [Gradient teal background]                                              |
-|  +----+  Person-icon  Surname, I (Name) | A: Advisor | [Client] [Active]|
-|  | EW |  ID-icon 8108255051081  Phone-icon +27744581082  Mail tris@..   |
-|  +----+                                                                 |
-+-------------------------------------------------------------------------+
++--------+----------------------------------------------------------+
+| Sidebar| AppHeader (h-14, fixed)                                   |
+|        +----------------------------------------------------------+
+|        | <main> (scrollable)                                       |
+| Dash   |   ClientRibbon (row1 + row2)  <-- scrolls away            |
+| Clients|   TabsList                    <-- scrolls away            |
+|        |   TabsContent                                             |
+|        |                                                           |
++--------+----------------------------------------------------------+
 ```
+
+## Proposed Layout
+
+```text
++--------+----------------------------------------------------------+
+| Sidebar| AppHeader (h-14, fixed)                                   |
+|        +----------------------------------------------------------+
+|        | ClientRibbon (row1 + row2) -- STICKY, shrink-0            |
+| Dash   | TabsList                   -- STICKY, shrink-0            |
+| Clients+----------------------------------------------------------+
+|        | <main> (scrollable)                                       |
+|        |   TabsContent only                                        |
+|        |                                                           |
++--------+----------------------------------------------------------+
+```
+
+The ribbon bottom (including tab bar) aligns with the bottom of "Clients" in the left nav.
+
+## Changes
+
+### 1. Condense ClientRibbon vertical spacing
+
+**File: `src/components/client-detail/ClientRibbon.tsx`**
+
+- Outer wrapper: change `mb-6` to `mb-0` (no bottom margin, the parent handles spacing)
+- Row 1 (back + title): change `mb-3` to `mb-1.5` (tighter gap between rows)
+- Row 1 padding: add `px-6 pt-3` for horizontal padding (moved from parent `<main>`)
+- Info bar: change `py-4 px-5` to `py-2.5 px-5` (reduce vertical padding)
+- Avatar: reduce from `w-14 h-14` to `w-10 h-10` and text from `text-lg` to `text-sm` (more compact)
+- Status dot: scale proportionally smaller
+- Info gap: reduce `gap-5` to `gap-3` between avatar and info text
+- Line spacing: reduce `gap-1.5` to `gap-0.5` between the two info lines
+- Info bar border-radius: keep `rounded-lg` but apply `mx-6` for horizontal inset
+
+### 2. Restructure ClientDetail.tsx layout
+
+**File: `src/pages/ClientDetail.tsx`**
+
+Move the `Tabs` component to wrap a wider area. The `ClientRibbon` and `TabsList` sit in a non-scrolling `shrink-0` section between the AppHeader and the scrollable main. Only the `TabsContent` goes inside the scrollable `<main>`.
+
+Current structure (simplified):
+```tsx
+<main className="flex-1 p-6 overflow-auto">
+  <ClientRibbon ... />
+  <Tabs ...>
+    <TabsList ... />
+    <TabsContent ... />
+  </Tabs>
+</main>
+```
+
+New structure:
+```tsx
+<Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
+  {/* Sticky ribbon + tabs header */}
+  <div className="shrink-0 bg-background border-b border-border">
+    <ClientRibbon ... />
+    <TabsList className="... px-6" />
+  </div>
+
+  {/* Scrollable tab content */}
+  <main className="flex-1 p-6 overflow-auto">
+    <TabsContent ... />
+  </main>
+</Tabs>
+```
+
+This keeps the `Tabs` context wrapper around both `TabsList` and `TabsContent` while placing them in separate scroll regions.
+
+### 3. Spacing calculations for sidebar alignment
+
+The left sidebar "Clients" button bottom edge is approximately:
+- Sidebar top padding: 16px
+- Command Center button + margin: 40px + 16px = 56px
+- "Dash" button: ~44px
+- "Clients" button: ~44px
+- Total from viewport top: ~160px
+
+The ribbon section needs to fit within:
+- AppHeader height: 56px (h-14)
+- Remaining budget for ribbon: ~104px
+
+Approximate breakdown of condensed ribbon:
+- Row 1 (back + title): ~36px (py-1.5 + text)  
+- Gap between rows: 6px (mb-1.5)
+- Info bar: ~44px (py-2.5 + compact avatar)  
+- Gap to tabs: 0
+- Tab strip: ~40px
+- Total: ~126px
+
+This brings the tab strip bottom close to the sidebar "Clients" bottom. Fine-tuning via padding values will achieve exact alignment.
 
 ## Files Summary
 
 | File | Action |
-|---|---|
-| `src/pages/ClientDetail.tsx` | Modify -- add enhanced info bar below the existing header row |
+|------|--------|
+| `src/components/client-detail/ClientRibbon.tsx` | Modify -- condense spacing, reduce avatar size, remove outer margin |
+| `src/pages/ClientDetail.tsx` | Modify -- restructure layout so ribbon + tab strip are sticky, only tab content scrolls |
 
