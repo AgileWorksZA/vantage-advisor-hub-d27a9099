@@ -1,79 +1,154 @@
 
 
-# Enable Leaked Password Protection via HaveIBeenPwned k-Anonymity API
+# Redesign AI Chatbot to Match Reference Design
 
-## Problem
+## Overview
 
-The security scan flagged "Leaked Password Protection" as an error-level finding. Currently, passwords are validated for strength (length, complexity) but are not checked against known data breach databases. This means users could set passwords that have been compromised in previous breaches, including the demo account (`demo@vantage.co.za`).
+Redesign the global AI chatbot (currently a dark glassmorphism sidebar panel triggered by an orb) to match the Lovable CustomerHub chatbot design. The new design features:
 
-## Solution
+- A **simple circular chat bubble button** (dark circle with speech bubble icon) in the bottom-right corner
+- A **popup chat widget** (not a full-height sidebar) that appears above the button
+- A **blurred backdrop** overlay on the background when the chat is expanded
+- **Light/dark mode** support using the app's theme system
+- A **"Docs" link** in the header that opens a Vantage help page
+- **Two display modes**: compact popup and expanded/maximised view
+- **Message timestamps** on each message
+- **Avatar icons** next to assistant messages
+- **Suggested prompts** displayed as pill buttons below messages
 
-Implement **client-side leaked password checking** using the [HaveIBeenPwned Pwned Passwords API](https://haveibeenpwned.com/API/v3#PwnedPasswords) with **k-Anonymity**, which ensures the actual password never leaves the browser.
+---
 
-### How k-Anonymity Works
+## Design Analysis (from reference images)
 
-1. Hash the password with SHA-1 using the browser's built-in Web Crypto API
-2. Send only the **first 5 characters** of the hash to the HIBP API
-3. HIBP returns all hash suffixes that match that prefix
-4. The client checks locally if the full hash appears in the response
-5. If found, warn the user their password has appeared in a known data breach
+### Trigger Button
+- Simple dark circle (~48-56px), no gradient orb
+- Contains a white speech/chat bubble icon (like `MessageCircle` from Lucide)
+- No particles, no "AI" text, no 3D effects
 
-This is privacy-preserving -- the full password hash (and certainly the password itself) is never transmitted.
+### Chat Widget (Compact Mode)
+- Appears as a floating card/popup anchored to the bottom-right
+- Approximate size: ~400px wide, ~550px tall
+- Rounded corners with subtle border and shadow
+- **Header**: Logo/avatar + "Vantage AI Assistant" + "Powered by Vantage AI" subtitle + Docs link (external icon) + expand button + close (X) button
+- **Messages area**: Scrollable with assistant and user bubbles
+  - Assistant messages: left-aligned, light gray background (light mode) / dark bg (dark mode), with small Vantage logo avatar
+  - User messages: right-aligned, dark/black background with white text
+  - Each message shows a timestamp (e.g., "3:58 PM")
+- **Suggested prompts**: Displayed as bordered pill buttons below the last message (not centered/wrapped, but in a vertical list or horizontal row)
+- **Input area**: Bottom bar with text input and send button (circular dark button with paper plane icon)
 
-### Where the Check Runs
+### Chat Widget (Expanded Mode)
+- Expands to a larger centered overlay (modal-like, ~700px wide, ~80vh tall)
+- Background is blurred
+- Same layout, just bigger
 
-The leaked password check will be applied in **all three places** where users set passwords:
+### Background Blur
+- When the chat is open (either mode), the page behind gets a subtle blur overlay
 
-1. **Sign Up page** (`Signup.tsx`) -- before creating an account
-2. **Sign In page** (`Auth.tsx`) -- before signing in with email (optional warning, non-blocking for login)
-3. **Account Settings** (`AccountSettings.tsx`) -- before changing password
-
-For **sign up and password change**, a leaked password will **block submission** with a clear error message. For **sign in**, the check is skipped (users must be able to log in with existing passwords to then change them).
+### Dark Mode
+- Header and background adapt to dark theme
+- Message bubbles use appropriate contrast
+- Input field uses dark background
+- Borders become subtle white/gray
 
 ---
 
 ## Changes
 
-### 1. New Utility: `src/lib/password-security.ts`
+### 1. Replace `AIOrb.tsx` with a simple chat bubble button
 
-A shared utility module with two functions:
+**File: `src/components/ai-assistant/AIOrb.tsx`**
 
-**`checkPasswordLeaked(password: string): Promise<boolean>`**
-- Converts the password to a SHA-1 hash using `crypto.subtle.digest('SHA-1', ...)`
-- Extracts the first 5 characters (prefix) and remaining characters (suffix)
-- Calls `https://api.pwnedpasswords.com/range/{prefix}`
-- Parses the response and checks if the suffix appears in the results
-- Returns `true` if the password has been found in breaches, `false` otherwise
-- Gracefully handles network errors (returns `false` if the API is unreachable, so users are not blocked by API downtime)
+Complete redesign:
+- Replace the gradient orb with a clean circular button (~14 wide/height in Tailwind, i.e., 56px)
+- Dark background (`bg-foreground` for theme support) with white `MessageCircle` icon
+- Subtle shadow for depth
+- Hover scale effect
+- No particles, no "AI" text
+- `ParticleField` import removed (component can stay but won't be used)
 
-**`formatBreachCount(count: number): string`**
-- Formats the breach count for display (e.g., "found in 1,234 data breaches")
+### 2. Redesign `ChatPanel.tsx` as a popup widget with two modes
 
-### 2. Sign Up Page (`src/pages/Signup.tsx`)
+**File: `src/components/ai-assistant/ChatPanel.tsx`**
 
-- Import `checkPasswordLeaked` from the new utility
-- After Zod validation passes, and before calling `supabase.auth.signUp`, run the leaked password check
-- If the password is leaked, set a form error on the password field: "This password has appeared in a data breach and should not be used. Please choose a different password."
-- The sign up is **blocked** until the user picks a non-leaked password
-- Show a brief loading state ("Checking password security...") during the API call
+Major redesign:
 
-### 3. Auth / Sign In Page (`src/pages/Auth.tsx`)
+**Layout:**
+- Change from full-height right sidebar to a floating popup card
+- Compact mode: positioned `fixed bottom-24 right-6`, width ~400px, max-height ~550px
+- Expanded mode: centered on screen, width ~700px, height ~80vh
+- Rounded-2xl corners, shadow-2xl, proper border
 
-- For **sign in**: Do **not** check for leaked passwords (users must be able to log in with existing credentials to change them)
-- For the **sign up flow** within Auth.tsx (the `isSignUp` branch): Apply the same leaked password check as the dedicated Sign Up page
-- If leaked, set the password error and block submission
+**Header:**
+- Left: Vantage logo (small, from `src/assets/vantage-logo.png`) + "Vantage AI Assistant" title + "Powered by Vantage AI" subtitle
+- Right: "Docs" link (ExternalLink icon + text, opens `/help` or a designated help URL), expand/collapse toggle button (Maximize2/Minimize2 icons), close button (X)
 
-### 4. Account Settings -- Password Change (`src/pages/AccountSettings.tsx`)
+**Messages:**
+- Each assistant message gets a small Vantage logo avatar to the left
+- Each message shows a timestamp (formatted as "h:mm a" using date-fns)
+- User messages: `bg-foreground text-background` (adapts to theme -- dark bubble in light mode, light bubble in dark mode)
+- Assistant messages: `bg-muted` with `text-foreground` (adapts to theme)
+- Typing indicator keeps the bouncing dots style
 
-- Import `checkPasswordLeaked`
-- In `handlePasswordUpdate`, after Zod validation and password match check, run the leaked password check on the new password
-- If leaked, set `passwordError` to the breach warning message and abort the update
-- The password change is **blocked** until the user picks a non-leaked password
-- Show loading state on the button ("Checking security...") during the check
+**Suggested prompts:**
+- Displayed below messages as bordered pill buttons
+- Always visible (not just when messages are empty)
+- In compact mode: vertical stack; in expanded mode: horizontal row
 
-### 5. Update Security Finding
+**Input area:**
+- Clean input field with rounded corners and border
+- Send button: circular, dark themed (`bg-foreground text-background`)
+- Placeholder: "Ask me anything about Vantage..."
 
-- After implementing, delete the `clients_sensitive_data` finding (or update it to remove the leaked password protection mention, since it's now handled in code)
+**Theme support:**
+- Use semantic Tailwind classes (`bg-background`, `bg-foreground`, `text-foreground`, `bg-muted`, `border-border`) instead of hardcoded dark colors
+- This automatically adapts to light/dark mode
+
+### 3. Update `GlobalAIChat.tsx` for backdrop blur and state management
+
+**File: `src/components/ai-assistant/GlobalAIChat.tsx`**
+
+- Add `isExpanded` state (boolean) for compact vs expanded mode
+- Pass `isExpanded` and `onToggleExpand` to ChatPanel
+- When `isChatOpen` is true, render a full-screen backdrop overlay with `backdrop-blur-sm bg-black/20` (light mode) / `bg-black/40` (dark mode)
+- Backdrop click closes the chat
+- Move the chat button position logic here (bottom-6 right-6, same as now)
+
+### 4. Add a Vantage Help/Docs page
+
+**File: `src/pages/Help.tsx`** (new)
+
+A simple help page for Vantage users with:
+- Standard page header (consistent with other legal pages like Disclaimer, Terms)
+- Sections covering:
+  - Getting Started
+  - Dashboard overview
+  - Client Management
+  - Portfolio Management
+  - Communication tools
+  - Calendar and Tasks
+  - AI Assistant usage
+  - Account Settings
+  - Contact Support link
+- The "Docs" link in the chatbot header will navigate to `/help`
+
+### 5. Register the Help route
+
+**File: `src/App.tsx`**
+
+- Import Help page
+- Add `<Route path="/help" element={<Help />} />`
+
+### 6. Add message timestamps
+
+**File: `src/components/ai-assistant/GlobalAIChat.tsx`**
+
+- Extend the `Message` interface to include `timestamp: Date`
+- Set `timestamp: new Date()` when creating user and assistant messages
+
+**File: `src/components/ai-assistant/ChatPanel.tsx`**
+
+- Format and display timestamp below each message bubble using `format(message.timestamp, "h:mm a")` from date-fns
 
 ---
 
@@ -81,44 +156,59 @@ A shared utility module with two functions:
 
 | File | Action |
 |------|--------|
-| `src/lib/password-security.ts` | **New** -- shared HIBP k-Anonymity password checking utility |
-| `src/pages/Signup.tsx` | Add leaked password check before sign up submission |
-| `src/pages/Auth.tsx` | Add leaked password check for the sign-up flow only |
-| `src/pages/AccountSettings.tsx` | Add leaked password check before password change |
-
-No database changes needed. No new dependencies (uses built-in Web Crypto API and `fetch`).
+| `src/components/ai-assistant/AIOrb.tsx` | Redesign as simple chat bubble button |
+| `src/components/ai-assistant/ChatPanel.tsx` | Full redesign as popup widget with compact/expanded modes, theme support, Docs link, timestamps, avatars |
+| `src/components/ai-assistant/GlobalAIChat.tsx` | Add expanded state, backdrop blur overlay, timestamp support |
+| `src/pages/Help.tsx` | **New** -- Vantage help/docs page |
+| `src/App.tsx` | Add `/help` route |
 
 ---
 
 ## Technical Details
 
-### HIBP API Call
+### Theme-Aware Color Mapping
 
+| Element | Light Mode | Dark Mode |
+|---------|-----------|-----------|
+| Chat widget background | `bg-background` (white) | `bg-background` (dark) |
+| Widget border | `border-border` | `border-border` |
+| User message bubble | `bg-foreground text-background` (black on white text) | `bg-foreground text-background` (light on dark text) |
+| Assistant message bubble | `bg-muted text-foreground` (gray) | `bg-muted text-foreground` |
+| Input field | `bg-background border-border` | `bg-muted border-border` |
+| Send button | `bg-foreground text-background` | `bg-foreground text-background` |
+| Header text | `text-foreground` | `text-foreground` |
+| Subtitle text | `text-muted-foreground` | `text-muted-foreground` |
+
+### Chat Widget Positioning
+
+Compact mode:
 ```text
-URL: https://api.pwnedpasswords.com/range/{first5HashChars}
-Method: GET
-Headers: { "Add-Padding": "true" }  // Adds padding to prevent response-length analysis
-Response: Plain text, one hash suffix per line in format "SUFFIX:COUNT"
+fixed bottom-24 right-6
+w-[400px] max-h-[550px]
+rounded-2xl shadow-2xl
 ```
 
-### SHA-1 Hashing (Web Crypto API)
-
+Expanded mode:
 ```text
-const encoder = new TextEncoder();
-const data = encoder.encode(password);
-const hashBuffer = await crypto.subtle.digest('SHA-1', data);
-const hashArray = Array.from(new Uint8Array(hashBuffer));
-const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
-const prefix = hashHex.slice(0, 5);
-const suffix = hashHex.slice(5);
+fixed inset-0 flex items-center justify-center
+inner card: w-[700px] h-[80vh] max-w-[90vw]
+rounded-2xl shadow-2xl
 ```
 
-### Error Message
+### Backdrop Blur
 
-When a password is found in breaches:
-> "This password has been found in a known data breach. Please choose a different password to keep your account secure."
+```text
+fixed inset-0 z-40
+bg-black/20 backdrop-blur-sm (light)
+dark:bg-black/40 dark:backdrop-blur-sm
+transition-opacity duration-300
+```
 
-### Graceful Degradation
+### Docs Link Behavior
 
-If the HIBP API is unreachable (network error, timeout, etc.), the check will **silently pass** -- we do not block users from setting passwords just because an external API is down. The check is a best-effort security enhancement.
+The "Docs" link in the chat header opens `/help` in a new tab using `window.open('/help', '_blank')`, keeping the chat open. The link displays as an icon + "Docs" text, styled as a subtle button.
+
+### Message Timestamp Format
+
+Using date-fns `format(timestamp, "h:mm a")` which produces output like "3:58 PM".
 
