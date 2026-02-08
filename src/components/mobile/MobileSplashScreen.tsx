@@ -18,7 +18,7 @@ const MobileSplashScreen = () => {
   }, []);
 
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-gradient-to-br from-[hsl(180,70%,30%)] via-[hsl(200,80%,25%)] to-[hsl(222,84%,10%)]">
+    <div className="relative w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-[hsl(180,70%,30%)] via-[hsl(200,80%,25%)] to-[hsl(222,84%,10%)]">
       {/* Logo area */}
       <div className="flex flex-col items-center gap-6 animate-in fade-in duration-700">
         {/* AdvisorFirst logo */}
@@ -56,7 +56,7 @@ const MobileSplashScreen = () => {
       </div>
 
       {/* Powered by Vantage */}
-      <div className="absolute bottom-12 flex flex-col items-center gap-2 animate-in fade-in duration-1000 delay-500">
+      <div className="mt-auto pb-12 flex flex-col items-center gap-2 animate-in fade-in duration-1000 delay-500">
         <span className="text-xs text-white/40 tracking-wider uppercase">powered by</span>
         <img src={vantageLogo} alt="Vantage" className="h-6 brightness-0 invert opacity-50" />
       </div>

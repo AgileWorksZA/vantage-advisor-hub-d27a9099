@@ -39,7 +39,7 @@ const MobileApp = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-[90] flex flex-col bg-background">
+    <div className="relative w-full h-full flex flex-col bg-background">
       {/* Header */}
       <header className="sticky top-0 z-10 flex items-center justify-between px-4 h-12 bg-background border-b border-border shrink-0">
         <div className="flex items-baseline gap-0">

@@ -40,12 +40,14 @@ const queryClient = new QueryClient();
 const AppContent = () => {
   const { mode, showSplash } = useAppMode();
 
-  if (mode === "mobile" && showSplash) {
-    return <MobileSplashScreen />;
-  }
-
   if (mode === "mobile") {
-    return <MobileApp />;
+    return (
+      <div className="fixed inset-0 z-[90] bg-slate-950 flex items-center justify-center">
+        <div className="w-[393px] h-[852px] rounded-[40px] overflow-hidden ring-[6px] ring-slate-800 shadow-2xl shadow-black/50 relative">
+          {showSplash ? <MobileSplashScreen /> : <MobileApp />}
+        </div>
+      </div>
+    );
   }
 
   return (
