@@ -438,6 +438,19 @@ export function generateClient360Data(clientId: string, nationality: string | nu
   };
 }
 
+// Jurisdiction-specific products for Quote and New Business wizards
+const quoteProductsByJurisdiction: Record<string, string[]> = {
+  ZA: ["Tax Free Plan", "Pension Preservation Fund", "Living Annuity", "Provident Preservation Fund", "Investment Plan", "Retirement Annuity Fund"],
+  AU: ["Superannuation Fund", "Self-Managed Super Fund (SMSF)", "Retirement Income Stream", "Investment Account", "Insurance Bond"],
+  CA: ["RRSP", "TFSA", "RRIF", "Non-Registered Account", "RESP", "Locked-In Retirement Account"],
+  GB: ["SIPP", "Stocks and Shares ISA", "General Investment Account", "Junior ISA", "Lifetime ISA", "Offshore Bond"],
+  US: ["401(k) Rollover", "Traditional IRA", "Roth IRA", "Brokerage Account", "529 Education Plan", "SEP IRA"],
+};
+
+export function getQuoteProducts(jurisdiction: string): string[] {
+  return quoteProductsByJurisdiction[jurisdiction] || quoteProductsByJurisdiction.ZA;
+}
+
 // Helper to format totals
 export function formatTotal(value: number, currencySymbol: string): string {
   return `${currencySymbol} ${value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
