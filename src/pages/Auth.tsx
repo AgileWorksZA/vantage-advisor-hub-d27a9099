@@ -305,9 +305,8 @@ const Auth = () => {
 
                 <Button
                   variant="outline"
-                  className="w-full flex items-center justify-center gap-3"
-                  onClick={handleMicrosoftLogin}
-                  disabled={loading}
+                  className="w-full flex items-center justify-center gap-3 opacity-60 cursor-not-allowed"
+                  disabled={true}
                 >
                   <svg className="w-5 h-5" viewBox="0 0 23 23">
                     <path fill="#f35325" d="M1 1h10v10H1z"/>
@@ -315,7 +314,8 @@ const Auth = () => {
                     <path fill="#05a6f0" d="M1 12h10v10H1z"/>
                     <path fill="#ffba08" d="M12 12h10v10H12z"/>
                   </svg>
-                  {loading ? "Signing in..." : "Continue with Microsoft"}
+                  Continue with Microsoft
+                  <span className="ml-1 text-[10px] uppercase tracking-wide text-muted-foreground font-semibold bg-muted px-1.5 py-0.5 rounded">Coming Soon</span>
                 </Button>
 
                 <Button
