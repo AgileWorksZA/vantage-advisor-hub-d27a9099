@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useClients, ClientListItem } from "@/hooks/useClients";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useRegion } from "@/contexts/RegionContext";
 
 interface ClientAutocompleteDropdownProps {
   query: string;
@@ -49,24 +50,36 @@ export const ClientAutocompleteDropdown = ({
   maxResults = 10,
 }: ClientAutocompleteDropdownProps) => {
   const { clients } = useClients();
+  const { selectedAdvisors, regionalData } = useRegion();
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const listRef = useRef<HTMLDivElement>(null);
 
-  // Filter clients based on query
+  // Derive selected advisor full names from initials
+  const selectedAdvisorNames = useMemo(() => {
+    return regionalData.advisors
+      .filter((a) => selectedAdvisors.includes(a.initials))
+      .map((a) => a.name);
+  }, [regionalData.advisors, selectedAdvisors]);
+
+  // Filter clients based on query and selected advisors
   const filteredClients = useMemo(() => {
     if (query.length < 2) return [];
     const search = query.toLowerCase();
     return clients
       .filter((client) => {
         if (excludeIds.includes(client.id)) return false;
+        // Advisor filter
+        if (selectedAdvisorNames.length > 0) {
+          if (!client.advisor || !selectedAdvisorNames.includes(client.advisor)) return false;
+        }
         return (
           client.client.toLowerCase().includes(search) ||
           client.identification.toLowerCase().includes(search) ||
           client.email.toLowerCase().includes(search)
         );
       })
-      .slice(0, maxResults + 1); // Fetch one extra to check if there are more
-  }, [clients, query, excludeIds, maxResults]);
+      .slice(0, maxResults + 1);
+  }, [clients, query, excludeIds, maxResults, selectedAdvisorNames]);
 
   const displayClients = filteredClients.slice(0, maxResults);
   const hasMore = filteredClients.length > maxResults;

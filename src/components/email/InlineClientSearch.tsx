@@ -10,6 +10,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useClients } from "@/hooks/useClients";
 import { LinkedClient } from "@/hooks/useEmailDetail";
+import { useRegion } from "@/contexts/RegionContext";
 
 interface InlineClientSearchProps {
   selectedClients: LinkedClient[];
@@ -25,6 +26,14 @@ export const InlineClientSearch = ({
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const { clients, loading } = useClients();
+  const { selectedAdvisors, regionalData } = useRegion();
+
+  // Derive selected advisor full names from initials
+  const selectedAdvisorNames = useMemo(() => {
+    return regionalData.advisors
+      .filter((a) => selectedAdvisors.includes(a.initials))
+      .map((a) => a.name);
+  }, [regionalData.advisors, selectedAdvisors]);
 
   // Parse client name "Surname, I (FirstName)" into components
   const parseClientName = (clientName: string): { firstName: string; surname: string } => {
@@ -44,6 +53,10 @@ export const InlineClientSearch = ({
 
     return clients.filter((client) => {
       if (excludeIds.has(client.id)) return false;
+      // Advisor filter
+      if (selectedAdvisorNames.length > 0) {
+        if (!client.advisor || !selectedAdvisorNames.includes(client.advisor)) return false;
+      }
 
       if (!searchQuery.trim()) return true;
 
@@ -58,7 +71,7 @@ export const InlineClientSearch = ({
         client.email?.toLowerCase().includes(query)
       );
     });
-  }, [clients, selectedClients, excludeClientIds, searchQuery]);
+  }, [clients, selectedClients, excludeClientIds, searchQuery, selectedAdvisorNames]);
 
   const handleSelectClient = (client: (typeof clients)[0]) => {
     // Parse client name which is in format "Surname, I (FirstName)"
