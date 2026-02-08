@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
@@ -13,27 +13,12 @@ import {
   LineChart, 
   Building2, 
   ArrowLeft,
-  ChevronDown,
-  MoreHorizontal
 } from "lucide-react";
 import commandCenterIcon from "@/assets/command-center-icon.png";
 import vantageLogo from "@/assets/vantage-logo.png";
 import { AppHeader } from "@/components/layout/AppHeader";
-import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import ClientRibbon from "@/components/client-detail/ClientRibbon";
 import ClientSummaryTab from "@/components/client-detail/ClientSummaryTab";
 import ClientDetailsTab from "@/components/client-detail/ClientDetailsTab";
 import ClientCRMTab from "@/components/client-detail/ClientCRMTab";
@@ -65,7 +50,6 @@ const sidebarItems = [
 const ClientDetail = () => {
   const navigate = useNavigate();
   const { clientId } = useParams<{ clientId: string }>();
-  const [searchParams] = useSearchParams();
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -197,80 +181,12 @@ const ClientDetail = () => {
 
         {/* Client Detail Content */}
         <main className="flex-1 p-6 overflow-auto">
-          {/* Page Header */}
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-4">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => {
-                  const from = searchParams.get('from');
-                  if (from === 'dashboard') {
-                    navigate("/dashboard");
-                  } else {
-                    navigate("/clients");
-                  }
-                }}
-                className="gap-2"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                Back
-              </Button>
-              <h1 className="text-xl font-semibold">
-                Manage individual (Owner) - {clientName}
-              </h1>
-            </div>
-            <div className="flex items-center gap-2">
-              <Select defaultValue="personal-financial">
-                <SelectTrigger className="w-[200px]">
-                  <SelectValue placeholder="Select report" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="personal-financial">Personal financial report</SelectItem>
-                  <SelectItem value="investment-summary">Investment summary</SelectItem>
-                  <SelectItem value="risk-profile">Risk profile</SelectItem>
-                </SelectContent>
-              </Select>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="gap-2">
-                    Manage related entity
-                    <ChevronDown className="w-4 h-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-64">
-                  {relatedEntities.length === 0 ? (
-                    <DropdownMenuItem disabled>No related entities</DropdownMenuItem>
-                  ) : (
-                    relatedEntities.map((entity) => (
-                      <DropdownMenuItem 
-                        key={entity.id}
-                        onClick={() => navigate(`/clients/${entity.id}`)}
-                      >
-                        <div className="flex flex-col">
-                          <span className="font-medium">{entity.name}</span>
-                          <span className="text-xs text-muted-foreground">{entity.type}</span>
-                        </div>
-                      </DropdownMenuItem>
-                    ))
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="icon">
-                    <MoreHorizontal className="w-4 h-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem>Export client data</DropdownMenuItem>
-                  <DropdownMenuItem>Print profile</DropdownMenuItem>
-                  <DropdownMenuItem>Archive client</DropdownMenuItem>
-                  <DropdownMenuItem className="text-destructive">Delete client</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
+          {/* Client Ribbon */}
+          <ClientRibbon
+            client={client}
+            clientName={clientName}
+            relatedEntities={relatedEntities}
+          />
 
           {/* Tab Navigation */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
