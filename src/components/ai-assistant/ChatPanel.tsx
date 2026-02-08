@@ -157,13 +157,14 @@ const ChatPanel = ({
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
           <Button
-            variant="ghost"
-            size="icon"
+            variant="outline"
+            size="sm"
             onClick={handleDocsClick}
-            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+            className="h-8 px-2.5 text-muted-foreground hover:text-foreground gap-1.5 text-xs"
             title="Help docs"
           >
-            <ExternalLink className="w-4 h-4" />
+            <ExternalLink className="w-3.5 h-3.5" />
+            Docs
           </Button>
           <Button
             variant="ghost"
