@@ -1,165 +1,79 @@
 
 
-# Calendar Timezones, Account Settings Page, and Password Change
+# Enable Leaked Password Protection via HaveIBeenPwned k-Anonymity API
 
-## Overview
+## Problem
 
-Three major additions:
+The security scan flagged "Leaked Password Protection" as an error-level finding. Currently, passwords are validated for strength (length, complexity) but are not checked against known data breach databases. This means users could set passwords that have been compromised in previous breaches, including the demo account (`demo@vantage.co.za`).
 
-1. **Timezone support for calendar events** -- Add a timezone field to events with per-jurisdiction defaults, and a user-configurable default timezone saved to their profile
-2. **Account Settings page** -- A new dedicated page (`/account-settings`) accessible from the user menu, containing profile management, password change, timezone preferences, notification settings, and display preferences
-3. **Password change** -- A secure password update section within Account Settings, allowing users to resolve the leaked password warning on the demo account
+## Solution
 
----
+Implement **client-side leaked password checking** using the [HaveIBeenPwned Pwned Passwords API](https://haveibeenpwned.com/API/v3#PwnedPasswords) with **k-Anonymity**, which ensures the actual password never leaves the browser.
 
-## Part 1: Database Migration
+### How k-Anonymity Works
 
-### 1a. Extend `user_settings` table
+1. Hash the password with SHA-1 using the browser's built-in Web Crypto API
+2. Send only the **first 5 characters** of the hash to the HIBP API
+3. HIBP returns all hash suffixes that match that prefix
+4. The client checks locally if the full hash appears in the response
+5. If found, warn the user their password has appeared in a known data breach
 
-Add new columns to store user preferences:
+This is privacy-preserving -- the full password hash (and certainly the password itself) is never transmitted.
 
-```text
-ALTER TABLE user_settings ADD COLUMN timezone TEXT DEFAULT NULL;
-ALTER TABLE user_settings ADD COLUMN display_name TEXT DEFAULT NULL;
-ALTER TABLE user_settings ADD COLUMN notification_email BOOLEAN DEFAULT TRUE;
-ALTER TABLE user_settings ADD COLUMN notification_task_reminders BOOLEAN DEFAULT TRUE;
-ALTER TABLE user_settings ADD COLUMN notification_calendar_reminders BOOLEAN DEFAULT TRUE;
-ALTER TABLE user_settings ADD COLUMN notification_client_updates BOOLEAN DEFAULT TRUE;
-ALTER TABLE user_settings ADD COLUMN notification_compliance_alerts BOOLEAN DEFAULT TRUE;
-ALTER TABLE user_settings ADD COLUMN date_format TEXT DEFAULT 'dd/MM/yyyy';
-ALTER TABLE user_settings ADD COLUMN time_format TEXT DEFAULT '24h';
-ALTER TABLE user_settings ADD COLUMN default_calendar_view TEXT DEFAULT 'month';
-```
+### Where the Check Runs
 
-### 1b. Add `timezone` column to `calendar_events`
+The leaked password check will be applied in **all three places** where users set passwords:
 
-```text
-ALTER TABLE calendar_events ADD COLUMN timezone TEXT DEFAULT NULL;
-```
+1. **Sign Up page** (`Signup.tsx`) -- before creating an account
+2. **Sign In page** (`Auth.tsx`) -- before signing in with email (optional warning, non-blocking for login)
+3. **Account Settings** (`AccountSettings.tsx`) -- before changing password
 
-This stores the timezone for each individual event (e.g., "Africa/Johannesburg"). When NULL, the event uses the user's default timezone.
-
-No new RLS policies needed -- existing policies on both tables already scope to `auth.uid() = user_id`.
+For **sign up and password change**, a leaked password will **block submission** with a clear error message. For **sign in**, the check is skipped (users must be able to log in with existing passwords to then change them).
 
 ---
 
-## Part 2: Default Timezone Per Jurisdiction
+## Changes
 
-Define a mapping of region codes to IANA timezone strings:
+### 1. New Utility: `src/lib/password-security.ts`
 
-| Region | Default Timezone |
-|--------|-----------------|
-| ZA | Africa/Johannesburg |
-| AU | Australia/Sydney |
-| CA | America/Toronto |
-| GB | Europe/London |
-| US | America/New_York |
+A shared utility module with two functions:
 
-**Logic**: The calendar will determine the active timezone in this priority order:
-1. User's saved timezone in `user_settings.timezone` (master record, set via Account Settings)
-2. If NULL, fall back to the jurisdiction's default from the mapping above
+**`checkPasswordLeaked(password: string): Promise<boolean>`**
+- Converts the password to a SHA-1 hash using `crypto.subtle.digest('SHA-1', ...)`
+- Extracts the first 5 characters (prefix) and remaining characters (suffix)
+- Calls `https://api.pwnedpasswords.com/range/{prefix}`
+- Parses the response and checks if the suffix appears in the results
+- Returns `true` if the password has been found in breaches, `false` otherwise
+- Gracefully handles network errors (returns `false` if the API is unreachable, so users are not blocked by API downtime)
 
----
+**`formatBreachCount(count: number): string`**
+- Formats the breach count for display (e.g., "found in 1,234 data breaches")
 
-## Part 3: Calendar Timezone Integration
+### 2. Sign Up Page (`src/pages/Signup.tsx`)
 
-### 3a. Display timezone indicator on calendar
+- Import `checkPasswordLeaked` from the new utility
+- After Zod validation passes, and before calling `supabase.auth.signUp`, run the leaked password check
+- If the password is leaked, set a form error on the password field: "This password has appeared in a data breach and should not be used. Please choose a different password."
+- The sign up is **blocked** until the user picks a non-leaked password
+- Show a brief loading state ("Checking password security...") during the API call
 
-**File: `src/pages/Calendar.tsx`**
+### 3. Auth / Sign In Page (`src/pages/Auth.tsx`)
 
-- Show the current timezone abbreviation (e.g., "SAST", "AEST", "EST") in the calendar header bar, next to the view mode buttons
-- Add a small globe icon with the timezone label
-- The displayed timezone is derived from the user's settings or the jurisdiction default
-- Read `useUserSettings()` to get `settings.timezone`, fall back to region default
+- For **sign in**: Do **not** check for leaked passwords (users must be able to log in with existing credentials to change them)
+- For the **sign up flow** within Auth.tsx (the `isSignUp` branch): Apply the same leaked password check as the dedicated Sign Up page
+- If leaked, set the password error and block submission
 
-### 3b. Event creation dialog -- timezone selector
+### 4. Account Settings -- Password Change (`src/pages/AccountSettings.tsx`)
 
-**File: `src/pages/Calendar.tsx`** (create event dialog)
+- Import `checkPasswordLeaked`
+- In `handlePasswordUpdate`, after Zod validation and password match check, run the leaked password check on the new password
+- If leaked, set `passwordError` to the breach warning message and abort the update
+- The password change is **blocked** until the user picks a non-leaked password
+- Show loading state on the button ("Checking security...") during the check
 
-- Add a timezone dropdown below the time fields in the "Create New Event" dialog
-- Pre-populated with the user's default timezone
-- User can override per-event (e.g., scheduling a meeting in a different timezone)
-- Common timezones listed: Africa/Johannesburg, Australia/Sydney, America/Toronto, Europe/London, America/New_York, plus Pacific/Auckland, Asia/Singapore, America/Los_Angeles, America/Chicago
+### 5. Update Security Finding
 
-### 3c. Event detail sheet -- show timezone
-
-**File: `src/pages/Calendar.tsx`** (event detail sheet)
-
-- Display the event's timezone alongside the time (e.g., "9:00 AM - 10:00 AM SAST")
-- If the event timezone differs from the user's default, show both for clarity
-
-### 3d. Hook updates
-
-**File: `src/hooks/useCalendarEvents.ts`**
-
-- Add `timezone` field to `CalendarEvent` interface
-- Include `timezone` in create/update operations
-- Map `timezone` from database response
-
----
-
-## Part 4: Account Settings Page
-
-### 4a. New page: `src/pages/AccountSettings.tsx`
-
-A dedicated page with tabs/sections:
-
-**Profile Section**
-- Display name (editable text field, saved to `user_settings.display_name`)
-- Email address (read-only, from auth)
-- Business name (from `profiles.business_name`)
-
-**Security Section**
-- Change Password form:
-  - Current password field (not required by Supabase `updateUser` but good UX practice -- we will verify by re-authenticating)
-  - New password field with validation (same rules as signup: min 8 chars, uppercase, lowercase, number)
-  - Confirm new password field
-  - "Update Password" button
-  - Uses `supabase.auth.updateUser({ password: newPassword })`
-  - Shows success/error toast
-
-**Timezone & Regional Section**
-- Default timezone selector (dropdown with common IANA timezones)
-- Date format preference (dd/MM/yyyy, MM/dd/yyyy, yyyy-MM-dd)
-- Time format preference (12h / 24h)
-- Default calendar view (Month / Week / Day)
-
-**Notification Preferences Section**
-- Email notifications toggle (master switch)
-- Task reminder notifications toggle
-- Calendar reminder notifications toggle
-- Client update notifications toggle
-- Compliance alert notifications toggle
-
-**Email Settings Section**
-- Email signature (existing field from `user_settings.email_signature`)
-- Default "From" as primary adviser toggle (existing field)
-
-### 4b. Route registration
-
-**File: `src/App.tsx`**
-
-Add route: `<Route path="/account-settings" element={<AccountSettings />} />`
-
-### 4c. Update navigation
-
-**File: All pages with `onAccountSettings`**
-
-Change `onAccountSettings={() => navigate("/practice")}` to `onAccountSettings={() => navigate("/account-settings")}` across all pages (Dashboard, Clients, Email, Calendar, Tasks, Insights, Portfolio, CommandCenter, ClientDetail, EmailView, ComposeEmail, Practice, Administration).
-
-### 4d. Update `useNavigationWarning.ts`
-
-Add `/account-settings` as a landing page (no warning needed when navigating to it).
-
----
-
-## Part 5: Update `useUserSettings` Hook
-
-**File: `src/hooks/useUserSettings.ts`**
-
-- Expand the `UserSettings` interface to include all new columns:
-  - `timezone`, `display_name`, `notification_email`, `notification_task_reminders`, `notification_calendar_reminders`, `notification_client_updates`, `notification_compliance_alerts`, `date_format`, `time_format`, `default_calendar_view`
-- The existing upsert mutation already handles partial updates, so no logic changes needed
+- After implementing, delete the `clients_sensitive_data` finding (or update it to remove the leaked password protection mention, since it's now handled in code)
 
 ---
 
@@ -167,67 +81,44 @@ Add `/account-settings` as a landing page (no warning needed when navigating to 
 
 | File | Action |
 |------|--------|
-| Database migration | Add columns to `user_settings` and `calendar_events` |
-| `src/pages/AccountSettings.tsx` | **New** -- full account settings page with profile, security, timezone, notifications |
-| `src/hooks/useUserSettings.ts` | Expand interface with new fields |
-| `src/hooks/useCalendarEvents.ts` | Add `timezone` to interfaces and CRUD operations |
-| `src/pages/Calendar.tsx` | Add timezone indicator in header, timezone selector in create dialog, timezone in event detail |
-| `src/App.tsx` | Add `/account-settings` route |
-| `src/hooks/useNavigationWarning.ts` | Add `/account-settings` as landing page |
-| `src/pages/Dashboard.tsx` | Change `onAccountSettings` to navigate to `/account-settings` |
-| `src/pages/Clients.tsx` | Change `onAccountSettings` navigation |
-| `src/pages/Email.tsx` | Change `onAccountSettings` navigation |
-| `src/pages/Calendar.tsx` | Change `onAccountSettings` navigation |
-| `src/pages/Tasks.tsx` | Change `onAccountSettings` navigation |
-| `src/pages/Insights.tsx` | Change `onAccountSettings` navigation |
-| `src/pages/Portfolio.tsx` | Change `onAccountSettings` navigation |
-| `src/pages/CommandCenter.tsx` | Change `onAccountSettings` navigation |
-| `src/pages/ClientDetail.tsx` | Change `onAccountSettings` navigation |
-| `src/pages/EmailView.tsx` | Change `onAccountSettings` navigation |
-| `src/pages/ComposeEmail.tsx` | Change `onAccountSettings` navigation |
-| `src/pages/Practice.tsx` | Change `onAccountSettings` navigation |
-| `src/pages/Administration.tsx` | Change `onAccountSettings` navigation |
+| `src/lib/password-security.ts` | **New** -- shared HIBP k-Anonymity password checking utility |
+| `src/pages/Signup.tsx` | Add leaked password check before sign up submission |
+| `src/pages/Auth.tsx` | Add leaked password check for the sign-up flow only |
+| `src/pages/AccountSettings.tsx` | Add leaked password check before password change |
+
+No database changes needed. No new dependencies (uses built-in Web Crypto API and `fetch`).
 
 ---
 
 ## Technical Details
 
-### Timezone Constants
+### HIBP API Call
 
 ```text
-REGION_DEFAULT_TIMEZONES = {
-  ZA: "Africa/Johannesburg",
-  AU: "Australia/Sydney",
-  CA: "America/Toronto",
-  GB: "Europe/London",
-  US: "America/New_York"
-}
-
-COMMON_TIMEZONES = [
-  "Africa/Johannesburg",
-  "Australia/Sydney",
-  "America/Toronto",
-  "Europe/London",
-  "America/New_York",
-  "America/Los_Angeles",
-  "America/Chicago",
-  "Pacific/Auckland",
-  "Asia/Singapore",
-  "Asia/Tokyo",
-  "Europe/Paris",
-  "Europe/Berlin"
-]
+URL: https://api.pwnedpasswords.com/range/{first5HashChars}
+Method: GET
+Headers: { "Add-Padding": "true" }  // Adds padding to prevent response-length analysis
+Response: Plain text, one hash suffix per line in format "SUFFIX:COUNT"
 ```
 
-### Password Change Flow
+### SHA-1 Hashing (Web Crypto API)
 
-1. User enters new password + confirmation
-2. Client-side validation (same zod schema as Auth page)
-3. Call `supabase.auth.updateUser({ password: newPassword })`
-4. On success: show toast, clear form
-5. On error: show error toast with message
+```text
+const encoder = new TextEncoder();
+const data = encoder.encode(password);
+const hashBuffer = await crypto.subtle.digest('SHA-1', data);
+const hashArray = Array.from(new Uint8Array(hashBuffer));
+const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+const prefix = hashHex.slice(0, 5);
+const suffix = hashHex.slice(5);
+```
 
-### Timezone Display Helper
+### Error Message
 
-A utility function `getTimezoneAbbreviation(ianaTimezone: string)` that returns the short label (e.g., "SAST", "AEST", "EST") using `Intl.DateTimeFormat` with `timeZoneName: "short"`.
+When a password is found in breaches:
+> "This password has been found in a known data breach. Please choose a different password to keep your account secure."
+
+### Graceful Degradation
+
+If the HIBP API is unreachable (network error, timeout, etc.), the check will **silently pass** -- we do not block users from setting passwords just because an external API is down. The check is a best-effort security enhancement.
 
