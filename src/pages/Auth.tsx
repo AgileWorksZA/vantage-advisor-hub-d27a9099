@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable/index";
 import { checkPasswordLeaked } from "@/lib/password-security";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -70,11 +71,36 @@ const Auth = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  const handleOAuthLogin = async (provider: "google" | "azure") => {
+  const handleGoogleLogin = async () => {
+    setLoading(true);
+    try {
+      const { error } = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+      });
+      
+      if (error) {
+        toast({
+          title: "Login failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Login failed",
+        description: error.message || "An unexpected error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMicrosoftLogin = async () => {
     setLoading(true);
     try {
       const { error } = await supabase.auth.signInWithOAuth({
-        provider,
+        provider: "azure",
         options: {
           redirectTo: `${window.location.origin}/`,
         },
@@ -228,7 +254,7 @@ const Auth = () => {
                 <Button
                   variant="outline"
                   className="w-full flex items-center justify-center gap-3"
-                  onClick={() => handleOAuthLogin("google")}
+                  onClick={handleGoogleLogin}
                   disabled={loading}
                 >
                   <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -255,7 +281,7 @@ const Auth = () => {
                 <Button
                   variant="outline"
                   className="w-full flex items-center justify-center gap-3"
-                  onClick={() => handleOAuthLogin("azure")}
+                  onClick={handleMicrosoftLogin}
                   disabled={loading}
                 >
                   <svg className="w-5 h-5" viewBox="0 0 23 23">
