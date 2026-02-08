@@ -1,22 +1,26 @@
 
-# Enhance Docs Button in AI Chat Header
+
+# Add "Coming Soon" to Microsoft Sign-In Button
 
 ## Change
 
-**File: `src/components/ai-assistant/ChatPanel.tsx`** -- Lines 159-167
+**File: `src/pages/Auth.tsx`**
 
-Update the Docs button from an icon-only ghost button to a styled button with both the ExternalLink icon and the text "Docs", matching the Lovable reference design (outlined button with icon + label).
+Update the "Continue with Microsoft" button to:
+- Append "Coming Soon" text in a muted badge/label next to the button text
+- Disable the button permanently (not just during loading)
+- Apply a reduced opacity style to visually indicate it's unavailable
 
 **Before:**
 ```tsx
 <Button
-  variant="ghost"
-  size="icon"
-  onClick={handleDocsClick}
-  className="h-8 w-8 text-muted-foreground hover:text-foreground"
-  title="Help docs"
+  variant="outline"
+  className="w-full flex items-center justify-center gap-3"
+  onClick={handleMicrosoftLogin}
+  disabled={loading}
 >
-  <ExternalLink className="w-4 h-4" />
+  ...
+  {loading ? "Signing in..." : "Continue with Microsoft"}
 </Button>
 ```
 
@@ -24,14 +28,18 @@ Update the Docs button from an icon-only ghost button to a styled button with bo
 ```tsx
 <Button
   variant="outline"
-  size="sm"
-  onClick={handleDocsClick}
-  className="h-8 px-2.5 text-muted-foreground hover:text-foreground gap-1.5 text-xs"
-  title="Help docs"
+  className="w-full flex items-center justify-center gap-3 opacity-60 cursor-not-allowed"
+  disabled={true}
 >
-  <ExternalLink className="w-3.5 h-3.5" />
-  Docs
+  <svg ...Microsoft icon... />
+  Continue with Microsoft
+  <span className="ml-1 text-[10px] uppercase tracking-wide text-muted-foreground font-semibold bg-muted px-1.5 py-0.5 rounded">Coming Soon</span>
 </Button>
 ```
 
-This changes the button from `ghost`/`icon` to `outline`/`sm` with text, giving it a visible border and the "Docs" label next to the icon -- matching the reference screenshot style.
+Key details:
+- `disabled={true}` replaces `disabled={loading}` so the button is always unclickable
+- `onClick` handler is removed since the button is permanently disabled
+- `opacity-60` and `cursor-not-allowed` provide clear visual indication
+- A small "Coming Soon" badge sits inline after the text, styled with muted background and small uppercase text
+
