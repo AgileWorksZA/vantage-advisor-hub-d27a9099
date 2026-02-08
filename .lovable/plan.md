@@ -1,24 +1,21 @@
 
 
-# Condense Advisor Table and Rename Rating Column
+# Reduce Top Padding on Card Headers
 
 ## Overview
-Apply the same reduced whitespace treatment to the "Current Advisor and Accounts" table as was done for the Outstanding Documents table, and rename "Rating" to "Risk Rating".
+Each card's `CardHeader` currently inherits `p-6` (24px) from the base component and only overrides the bottom with `pb-2` (8px). The top padding remains at 24px, creating a visual imbalance. This change reduces the top padding to match the bottom.
 
-## Changes (single file: `src/components/client-detail/ClientSummaryTab.tsx`)
+## Change (single file: `src/components/client-detail/ClientSummaryTab.tsx`)
 
-### 1. Table header padding (lines 210-213)
-- Add `h-8 px-3` to each `TableHead` to match the condensed style used in Outstanding Documents
-- Rename "Rating" to "Risk Rating"
+All five `CardHeader` instances will be updated from `pb-2` to `py-2`, which sets both top and bottom padding to 8px while keeping the default horizontal padding (`px-6`) from the base `p-6`.
 
-### 2. Table cell padding (lines 219-227)
-- Add `py-1.5 px-3` to each `TableCell` to reduce row height
+Affected cards:
+- General details (line 147)
+- Contact details (line 176)
+- Current Advisor and Accounts (line 203)
+- Recent Activity (line 237)
+- Outstanding documents (line 282)
 
-### 3. Demo data label (line 38)
-- Update the `advisorData` array: change the property name display from `"Rating"` header to show `"Risk Rating"` -- the header change handles this, no data change needed
-
-### Summary of specific edits
-- `TableHead` elements: add `className="text-xs h-8 px-3"` (from `"text-xs"`)
-- `TableHead` for Rating: text changed from `"Rating"` to `"Risk Rating"`
-- `TableCell` elements: add `py-1.5 px-3` to existing className (from `"text-sm"` to `"text-sm py-1.5 px-3"`)
+## Technical Detail
+The base `CardHeader` applies `p-6`. Tailwind Merge resolves `p-6 py-2` by keeping `px-6` from `p-6` and applying `py-2` for vertical padding, resulting in `padding: 0.5rem 1.5rem`.
 
