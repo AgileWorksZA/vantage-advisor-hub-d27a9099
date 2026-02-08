@@ -363,12 +363,16 @@ const namePools: Record<string, NamePool> = {
       { name: 'Pieter', gender: 'Male', title: 'Mr' }, { name: 'Thabo', gender: 'Male', title: 'Mr' },
       { name: 'Sipho', gender: 'Male', title: 'Mr' }, { name: 'Charl', gender: 'Male', title: 'Mr' },
       { name: 'Riaan', gender: 'Male', title: 'Mr' }, { name: 'Andries', gender: 'Male', title: 'Mr' },
+      { name: 'Hennie', gender: 'Male', title: 'Mr' }, { name: 'Bongani', gender: 'Male', title: 'Mr' },
+      { name: 'Fanie', gender: 'Male', title: 'Mr' }, { name: 'Tshepo', gender: 'Male', title: 'Mr' },
       { name: 'Marietjie', gender: 'Female', title: 'Mrs' }, { name: 'Annelie', gender: 'Female', title: 'Mrs' },
       { name: 'Nomsa', gender: 'Female', title: 'Mrs' }, { name: 'Lindiwe', gender: 'Female', title: 'Ms' },
       { name: 'Sonja', gender: 'Female', title: 'Ms' }, { name: 'Hannelie', gender: 'Female', title: 'Mrs' },
       { name: 'Christa', gender: 'Female', title: 'Mrs' }, { name: 'Marike', gender: 'Female', title: 'Ms' },
+      { name: 'Zanele', gender: 'Female', title: 'Ms' }, { name: 'Refilwe', gender: 'Female', title: 'Ms' },
+      { name: 'Elize', gender: 'Female', title: 'Mrs' }, { name: 'Pulane', gender: 'Female', title: 'Ms' },
     ],
-    lastNames: ['Vermeulen', 'Swanepoel', 'Erasmus', 'Cilliers', 'Fourie', 'Barnard', 'Booysen', 'Kruger', 'Nkosi', 'Dlamini', 'Ndlovu', 'Potgieter', 'Brink', 'Grobler', 'Wessels', 'Rautenbach'],
+    lastNames: ['Vermeulen', 'Swanepoel', 'Erasmus', 'Cilliers', 'Fourie', 'Barnard', 'Booysen', 'Kruger', 'Nkosi', 'Dlamini', 'Ndlovu', 'Potgieter', 'Brink', 'Grobler', 'Wessels', 'Rautenbach', 'Malan', 'Mokoena', 'Viljoen', 'Sithole'],
     nationality: 'South African', language: 'Afrikaans', country_of_issue: 'South Africa', tax_resident_country: 'South Africa',
     occupations: [
       { occupation: 'Chartered Accountant', employer: 'Deloitte SA', industry: 'Accounting' },
@@ -387,12 +391,16 @@ const namePools: Record<string, NamePool> = {
       { name: 'Ethan', gender: 'Male', title: 'Mr' }, { name: 'Lucas', gender: 'Male', title: 'Mr' },
       { name: 'Mason', gender: 'Male', title: 'Mr' }, { name: 'Jack', gender: 'Male', title: 'Mr' },
       { name: 'Hamish', gender: 'Male', title: 'Mr' }, { name: 'Angus', gender: 'Male', title: 'Mr' },
+      { name: 'Darcy', gender: 'Male', title: 'Mr' }, { name: 'Flynn', gender: 'Male', title: 'Mr' },
+      { name: 'Archie', gender: 'Male', title: 'Mr' }, { name: 'Callum', gender: 'Male', title: 'Mr' },
       { name: 'Chloe', gender: 'Female', title: 'Ms' }, { name: 'Mia', gender: 'Female', title: 'Ms' },
       { name: 'Isla', gender: 'Female', title: 'Mrs' }, { name: 'Grace', gender: 'Female', title: 'Mrs' },
       { name: 'Harper', gender: 'Female', title: 'Ms' }, { name: 'Zoe', gender: 'Female', title: 'Mrs' },
       { name: 'Ruby', gender: 'Female', title: 'Mrs' }, { name: 'Willow', gender: 'Female', title: 'Ms' },
+      { name: 'Matilda', gender: 'Female', title: 'Ms' }, { name: 'Piper', gender: 'Female', title: 'Ms' },
+      { name: 'Imogen', gender: 'Female', title: 'Mrs' }, { name: 'Sienna', gender: 'Female', title: 'Ms' },
     ],
-    lastNames: ['Harris', 'Robinson', 'Walker', 'Young', 'Hall', 'Allen', 'King', 'Wright', 'Lopez', 'Hill', 'Green', 'Adams', 'Baker', 'Clarke', 'Stewart', 'Murray'],
+    lastNames: ['Harris', 'Robinson', 'Walker', 'Young', 'Hall', 'Allen', 'King', 'Wright', 'Lopez', 'Hill', 'Green', 'Adams', 'Baker', 'Clarke', 'Stewart', 'Murray', 'Palmer', 'Bennett', 'Cox', 'Mills'],
     nationality: 'Australian', language: 'English', country_of_issue: 'Australia', tax_resident_country: 'Australia',
     occupations: [
       { occupation: 'Accountant', employer: 'EY Australia', industry: 'Accounting' },
@@ -411,12 +419,16 @@ const namePools: Record<string, NamePool> = {
       { name: 'Noah', gender: 'Male', title: 'Mr' }, { name: 'Guillaume', gender: 'Male', title: 'M.' },
       { name: 'Raj', gender: 'Male', title: 'Mr' }, { name: 'Owen', gender: 'Male', title: 'Mr' },
       { name: 'Sébastien', gender: 'Male', title: 'M.' }, { name: 'Connor', gender: 'Male', title: 'Mr' },
+      { name: 'Xavier', gender: 'Male', title: 'Mr' }, { name: 'Harpreet', gender: 'Male', title: 'Mr' },
+      { name: 'Mathieu', gender: 'Male', title: 'M.' }, { name: 'Declan', gender: 'Male', title: 'Mr' },
       { name: 'Olivia', gender: 'Female', title: 'Ms' }, { name: 'Chloé', gender: 'Female', title: 'Mme' },
       { name: 'Amara', gender: 'Female', title: 'Ms' }, { name: 'Geneviève', gender: 'Female', title: 'Mme' },
       { name: 'Meera', gender: 'Female', title: 'Ms' }, { name: 'Brigitte', gender: 'Female', title: 'Mme' },
       { name: 'Lindsay', gender: 'Female', title: 'Mrs' }, { name: 'Priyanka', gender: 'Female', title: 'Ms' },
+      { name: 'Émilie', gender: 'Female', title: 'Mme' }, { name: 'Nadia', gender: 'Female', title: 'Ms' },
+      { name: 'Jasmine', gender: 'Female', title: 'Ms' }, { name: 'Valérie', gender: 'Female', title: 'Mme' },
     ],
-    lastNames: ['Martin', 'Bernard', 'Dubois', 'Moreau', 'Lefebvre', 'Girard', 'Fortin', 'Gauthier', 'Li', 'Kumar', 'Nguyen', 'Morrison', 'Ross', 'Cameron', 'Henderson', 'Douglas'],
+    lastNames: ['Martin', 'Bernard', 'Dubois', 'Moreau', 'Lefebvre', 'Girard', 'Fortin', 'Gauthier', 'Li', 'Kumar', 'Nguyen', 'Morrison', 'Ross', 'Cameron', 'Henderson', 'Douglas', 'Pelletier', 'Sharma', 'Côté', 'Lavoie'],
     nationality: 'Canadian', language: 'English', country_of_issue: 'Canada', tax_resident_country: 'Canada',
     occupations: [
       { occupation: 'Software Developer', employer: 'Shopify', industry: 'Technology' },
@@ -435,12 +447,16 @@ const namePools: Record<string, NamePool> = {
       { name: 'Arthur', gender: 'Male', title: 'Mr' }, { name: 'Muhammad', gender: 'Male', title: 'Mr' },
       { name: 'Raj', gender: 'Male', title: 'Mr' }, { name: 'Liam', gender: 'Male', title: 'Mr' },
       { name: 'Callum', gender: 'Male', title: 'Mr' }, { name: 'Declan', gender: 'Male', title: 'Mr' },
+      { name: 'Sebastian', gender: 'Male', title: 'Mr' }, { name: 'Alistair', gender: 'Male', title: 'Mr' },
+      { name: 'Hamza', gender: 'Male', title: 'Mr' }, { name: 'Rupert', gender: 'Male', title: 'Mr' },
       { name: 'Amelia', gender: 'Female', title: 'Mrs' }, { name: 'Isla', gender: 'Female', title: 'Ms' },
       { name: 'Ava', gender: 'Female', title: 'Mrs' }, { name: 'Priya', gender: 'Female', title: 'Ms' },
       { name: 'Freya', gender: 'Female', title: 'Ms' }, { name: 'Florence', gender: 'Female', title: 'Mrs' },
       { name: 'Sienna', gender: 'Female', title: 'Mrs' }, { name: 'Fatima', gender: 'Female', title: 'Mrs' },
+      { name: 'Imogen', gender: 'Female', title: 'Ms' }, { name: 'Harriet', gender: 'Female', title: 'Mrs' },
+      { name: 'Poppy', gender: 'Female', title: 'Ms' }, { name: 'Anika', gender: 'Female', title: 'Ms' },
     ],
-    lastNames: ['Anderson', 'Clark', 'Wright', 'Hill', 'Turner', 'Collins', 'Morris', 'Ward', 'Cooper', 'Shah', 'Khan', 'Scott', 'Stewart', 'Marshall', 'Hughes', 'Russell'],
+    lastNames: ['Anderson', 'Clark', 'Wright', 'Hill', 'Turner', 'Collins', 'Morris', 'Ward', 'Cooper', 'Shah', 'Khan', 'Scott', 'Stewart', 'Marshall', 'Hughes', 'Russell', 'Patel', 'Ellis', 'Dixon', 'Gibson'],
     nationality: 'British', language: 'English', country_of_issue: 'United Kingdom', tax_resident_country: 'United Kingdom',
     occupations: [
       { occupation: 'Solicitor', employer: 'Clifford Chance', industry: 'Legal' },
@@ -459,12 +475,16 @@ const namePools: Record<string, NamePool> = {
       { name: 'Ethan', gender: 'Male', title: 'Mr' }, { name: 'Alexander', gender: 'Male', title: 'Mr' },
       { name: 'Diego', gender: 'Male', title: 'Mr' }, { name: 'Tyler', gender: 'Male', title: 'Mr' },
       { name: 'Kwame', gender: 'Male', title: 'Mr' }, { name: 'Ryan', gender: 'Male', title: 'Mr' },
+      { name: 'Marcus', gender: 'Male', title: 'Mr' }, { name: 'Javier', gender: 'Male', title: 'Mr' },
+      { name: 'Andre', gender: 'Male', title: 'Mr' }, { name: 'Caleb', gender: 'Male', title: 'Mr' },
       { name: 'Emily', gender: 'Female', title: 'Mrs' }, { name: 'Sophia', gender: 'Female', title: 'Ms' },
       { name: 'Ava', gender: 'Female', title: 'Ms' }, { name: 'Mia', gender: 'Female', title: 'Mrs' },
       { name: 'Luna', gender: 'Female', title: 'Ms' }, { name: 'Camila', gender: 'Female', title: 'Mrs' },
       { name: 'Aisha', gender: 'Female', title: 'Ms' }, { name: 'Hannah', gender: 'Female', title: 'Mrs' },
+      { name: 'Jasmine', gender: 'Female', title: 'Ms' }, { name: 'Aaliyah', gender: 'Female', title: 'Ms' },
+      { name: 'Savannah', gender: 'Female', title: 'Mrs' }, { name: 'Valentina', gender: 'Female', title: 'Ms' },
     ],
-    lastNames: ['Anderson', 'Thomas', 'Jackson', 'White', 'Harris', 'Martin', 'Garcia', 'Clark', 'Lewis', 'Walker', 'Hall', 'Young', 'Allen', 'King', 'Wright', 'Lopez'],
+    lastNames: ['Anderson', 'Thomas', 'Jackson', 'White', 'Harris', 'Martin', 'Garcia', 'Clark', 'Lewis', 'Walker', 'Hall', 'Young', 'Allen', 'King', 'Wright', 'Lopez', 'Scott', 'Adams', 'Nelson', 'Carter'],
     nationality: 'American', language: 'English', country_of_issue: 'United States', tax_resident_country: 'United States',
     occupations: [
       { occupation: 'Attorney', employer: 'Skadden', industry: 'Legal' },
@@ -496,6 +516,12 @@ function generateAdditionalClients(): DemoClient[] {
   // Global sequence counter to ensure unique IDs across all jurisdictions
   let globalSeq = 500
 
+  // Collect all static demo client names for dedup
+  const usedNamesGlobal = new Set<string>()
+  demoClients.forEach(dc => {
+    usedNamesGlobal.add(`${dc.first_name}|${dc.surname}`.toLowerCase())
+  })
+
   for (const [jurisdiction, advisors] of Object.entries(advisorsByJurisdiction)) {
     const pool = namePools[jurisdiction]
     if (!pool) continue
@@ -509,18 +535,34 @@ function generateAdditionalClients(): DemoClient[] {
       }
     })
 
+    // Global name index for this jurisdiction - increments across all advisors
+    let nameIdx = 0
+
     // Generate to reach 20 per advisor
     for (let advIdx = 0; advIdx < advisors.length; advIdx++) {
       const advisor = advisors[advIdx]
       const existing = existingCounts[advisor] || 0
       const needed = Math.max(0, 20 - existing)
 
-      for (let i = 0; i < needed; i++) {
+      let generated = 0
+      let attempts = 0
+      const maxAttempts = needed * 10 // safety valve
+
+      while (generated < needed && attempts < maxAttempts) {
+        attempts++
+        const fnEntry = pool.firstNames[nameIdx % pool.firstNames.length]
+        const lastName = pool.lastNames[Math.floor(nameIdx / pool.firstNames.length) % pool.lastNames.length]
+        nameIdx++
+
+        const nameKey = `${fnEntry.name}|${lastName}`.toLowerCase()
+        if (usedNamesGlobal.has(nameKey)) {
+          continue // skip duplicate name combo
+        }
+        usedNamesGlobal.add(nameKey)
+
         globalSeq++
-        const fnEntry = pool.firstNames[(advIdx * 20 + i) % pool.firstNames.length]
-        const lastName = pool.lastNames[(advIdx * 20 + i + 3) % pool.lastNames.length]
-        const occ = pool.occupations[(advIdx + i) % pool.occupations.length]
-        const age = 28 + ((advIdx * 7 + i * 3) % 45)
+        const occ = pool.occupations[(advIdx + generated) % pool.occupations.length]
+        const age = 28 + ((advIdx * 7 + generated * 3) % 45)
         const email = `${fnEntry.name.toLowerCase().replace(/[^a-z]/g, '')}.${lastName.toLowerCase().replace(/[^a-z]/g, '')}${globalSeq}@email.com`
         const initials = `${fnEntry.name[0]}${lastName[0]}`
 
@@ -536,7 +578,7 @@ function generateAdditionalClients(): DemoClient[] {
           title: fnEntry.title,
           email,
           cell_number: generatePhone(jurisdiction, globalSeq),
-          work_number: (i % 3 === 0) ? generatePhone(jurisdiction, globalSeq + 1000) : null,
+          work_number: (generated % 3 === 0) ? generatePhone(jurisdiction, globalSeq + 1000) : null,
           home_number: null,
           occupation: occ.occupation,
           employer: occ.employer,
@@ -545,9 +587,10 @@ function generateAdditionalClients(): DemoClient[] {
           tax_number: `GEN${String(globalSeq).padStart(8, '0')}`,
           country_of_issue: pool.country_of_issue,
           tax_resident_country: pool.tax_resident_country,
-          preferred_contact: (i % 2 === 0) ? 'Email' : 'Cell',
+          preferred_contact: (generated % 2 === 0) ? 'Email' : 'Cell',
           initials,
         })
+        generated++
       }
     }
   }
