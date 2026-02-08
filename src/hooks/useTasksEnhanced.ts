@@ -39,6 +39,7 @@ export interface EnhancedTask {
   is_deleted: boolean;
   // Joined data
   client_name?: string;
+  client_advisor?: string;
   assigned_to_name?: string;
   linked_clients?: Array<{ id: string; client_id: string; client_name: string; role: string }>;
 }
@@ -96,7 +97,7 @@ export const useTasksEnhanced = (filters?: TaskFilters) => {
         .from("tasks")
         .select(`
           *,
-          clients!tasks_client_id_fkey(first_name, surname)
+          clients!tasks_client_id_fkey(first_name, surname, advisor)
         `)
         .eq("is_deleted", false)
         .order("is_pinned", { ascending: false })
@@ -171,6 +172,7 @@ export const useTasksEnhanced = (filters?: TaskFilters) => {
         client_name: task.clients
           ? `${task.clients.first_name} ${task.clients.surname}`
           : null,
+        client_advisor: task.clients?.advisor || null,
         assigned_to_name: "Current User",
         linked_clients: linkedClientsMap[task.id] || [],
         notes: Array.isArray(task.notes) ? task.notes : [],

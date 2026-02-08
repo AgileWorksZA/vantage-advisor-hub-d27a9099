@@ -38,6 +38,7 @@ export interface EmailListItem {
   subject: string;
   receivedOn: string;
   clients: MatchedClient[];
+  clientAdvisor?: string;
   hasAttachment: boolean;
   isRead: boolean;
   folder: Email["folder"];
@@ -63,6 +64,7 @@ interface ClientRecord {
   preferred_name: string | null;
   email: string | null;
   work_email: string | null;
+  advisor: string | null;
 }
 
 // Match sender email against clients database
@@ -96,7 +98,7 @@ export const useEmails = (folder?: Email["folder"]) => {
     try {
       const { data } = await supabase
         .from("clients")
-        .select("id, first_name, surname, preferred_name, email, work_email");
+        .select("id, first_name, surname, preferred_name, email, work_email, advisor");
       
       setAllClients((data as ClientRecord[]) || []);
     } catch (err) {
@@ -135,20 +137,29 @@ export const useEmails = (folder?: Email["folder"]) => {
       // Get latest clients for matching
       const { data: clientsData } = await supabase
         .from("clients")
-        .select("id, first_name, surname, preferred_name, email, work_email");
+        .select("id, first_name, surname, preferred_name, email, work_email, advisor");
       
       const clientsList = (clientsData as ClientRecord[]) || [];
 
-      const transformedEmails: EmailListItem[] = (data || []).map((email: any) => ({
-        id: email.id,
-        from: email.from_address,
-        subject: email.subject || "(No Subject)",
-        receivedOn: formatDate(email.received_at || email.created_at),
-        clients: matchClientsForEmail(email.from_address, clientsList),
-        hasAttachment: email.has_attachments,
-        isRead: email.is_read,
-        folder: email.folder,
-      }));
+      const transformedEmails: EmailListItem[] = (data || []).map((email: any) => {
+        const matchedClients = matchClientsForEmail(email.from_address, clientsList);
+        // Get the advisor from the first matched client
+        const firstMatchedClient = matchedClients.length > 0
+          ? clientsList.find(c => c.id === matchedClients[0].id)
+          : null;
+        
+        return {
+          id: email.id,
+          from: email.from_address,
+          subject: email.subject || "(No Subject)",
+          receivedOn: formatDate(email.received_at || email.created_at),
+          clients: matchedClients,
+          clientAdvisor: firstMatchedClient?.advisor || undefined,
+          hasAttachment: email.has_attachments,
+          isRead: email.is_read,
+          folder: email.folder,
+        };
+      });
 
       setEmails(transformedEmails);
 

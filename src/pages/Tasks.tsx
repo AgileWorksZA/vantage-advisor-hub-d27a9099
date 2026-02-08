@@ -1,5 +1,6 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useRegion } from "@/contexts/RegionContext";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
@@ -53,7 +54,46 @@ const Tasks = () => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
 
-  const { tasks, stats, loading, createTask, updateTask, deleteTask, togglePin, addNote } = useTasksEnhanced(filters);
+  const { tasks: allTasks, stats: rawStats, loading, createTask, updateTask, deleteTask, togglePin, addNote } = useTasksEnhanced(filters);
+  const { selectedAdvisors, regionalData } = useRegion();
+
+  // Map selected advisor initials to full names for filtering
+  const selectedAdvisorNames = useMemo(() => {
+    return regionalData.advisors
+      .filter(a => selectedAdvisors.includes(a.initials))
+      .map(a => a.name);
+  }, [selectedAdvisors, regionalData.advisors]);
+
+  // Filter tasks by selected advisors
+  const tasks = useMemo(() => {
+    return allTasks.filter(task => {
+      // Tasks without a client (practice tasks) are always visible
+      if (!task.client_id) return true;
+      // Tasks with a client must match a selected advisor
+      return task.client_advisor ? selectedAdvisorNames.includes(task.client_advisor) : false;
+    });
+  }, [allTasks, selectedAdvisorNames]);
+
+  // Recalculate stats from filtered tasks
+  const stats = useMemo(() => {
+    const today = new Date().toISOString().split("T")[0];
+    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const s = {
+      totalOpen: tasks.filter(t => !["Completed", "Cancelled"].includes(t.status)).length,
+      dueToday: tasks.filter(t => t.due_date === today && !["Completed", "Cancelled"].includes(t.status)).length,
+      overdue: tasks.filter(t => t.due_date && t.due_date < today && !["Completed", "Cancelled"].includes(t.status)).length,
+      completedThisWeek: tasks.filter(t => t.status === "Completed" && t.completed_at && t.completed_at >= weekAgo).length,
+      byStatus: {} as Record<string, number>,
+      byType: {} as Record<string, number>,
+      byPriority: {} as Record<string, number>,
+    };
+    tasks.forEach(t => {
+      s.byStatus[t.status] = (s.byStatus[t.status] || 0) + 1;
+      s.byType[t.task_type] = (s.byType[t.task_type] || 0) + 1;
+      s.byPriority[t.priority] = (s.byPriority[t.priority] || 0) + 1;
+    });
+    return s;
+  }, [tasks]);
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
