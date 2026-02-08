@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
 import AIOrb from "./AIOrb";
 import ChatPanel from "./ChatPanel";
+import { cn } from "@/lib/utils";
 
 interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
+  timestamp: Date;
 }
 
 interface GlobalAIChatProps {
@@ -55,16 +57,17 @@ const GlobalAIChat = ({ currentPage }: GlobalAIChatProps) => {
     return stored !== "false";
   });
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
 
-  // Listen for toggle events from UserMenu
   useEffect(() => {
     const handler = (e: Event) => {
       const customEvent = e as CustomEvent<{ enabled: boolean }>;
       setEnabled(customEvent.detail.enabled);
       if (!customEvent.detail.enabled) {
         setIsChatOpen(false);
+        setIsExpanded(false);
       }
     };
     window.addEventListener("ai-chat-toggle", handler);
@@ -72,11 +75,16 @@ const GlobalAIChat = ({ currentPage }: GlobalAIChatProps) => {
   }, []);
 
   const handleOrbClick = useCallback(() => {
-    setIsChatOpen((prev) => !prev);
+    setIsChatOpen(true);
   }, []);
 
   const handleCloseChat = useCallback(() => {
     setIsChatOpen(false);
+    setIsExpanded(false);
+  }, []);
+
+  const handleToggleExpand = useCallback(() => {
+    setIsExpanded((prev) => !prev);
   }, []);
 
   const handleSendMessage = useCallback((content: string) => {
@@ -84,6 +92,7 @@ const GlobalAIChat = ({ currentPage }: GlobalAIChatProps) => {
       id: `user-${Date.now()}`,
       role: "user",
       content,
+      timestamp: new Date(),
     };
     setMessages((prev) => [...prev, userMessage]);
     setIsTyping(true);
@@ -94,6 +103,7 @@ const GlobalAIChat = ({ currentPage }: GlobalAIChatProps) => {
         id: `assistant-${Date.now()}`,
         role: "assistant",
         content: response,
+        timestamp: new Date(),
       };
       setMessages((prev) => [...prev, assistantMessage]);
       setIsTyping(false);
@@ -104,7 +114,18 @@ const GlobalAIChat = ({ currentPage }: GlobalAIChatProps) => {
 
   return (
     <>
-      {/* Fixed position orb */}
+      {/* Backdrop blur overlay */}
+      {isChatOpen && (
+        <div
+          className={cn(
+            "fixed inset-0 z-40 transition-all duration-300",
+            "bg-black/20 dark:bg-black/40 backdrop-blur-sm"
+          )}
+          onClick={handleCloseChat}
+        />
+      )}
+
+      {/* Chat trigger button */}
       <div className="fixed bottom-6 right-6 z-50">
         <AIOrb
           isProcessing={isTyping}
@@ -116,7 +137,9 @@ const GlobalAIChat = ({ currentPage }: GlobalAIChatProps) => {
       {/* Chat Panel */}
       <ChatPanel
         isOpen={isChatOpen}
+        isExpanded={isExpanded}
         onClose={handleCloseChat}
+        onToggleExpand={handleToggleExpand}
         onSendMessage={handleSendMessage}
         messages={messages}
         isTyping={isTyping}

@@ -52,6 +52,7 @@ interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
+  timestamp: Date;
 }
 
 const AIAssistant = () => {
@@ -543,6 +544,7 @@ const AIAssistant = () => {
       id: Date.now().toString(),
       role: "user",
       content,
+      timestamp: new Date(),
     };
     setMessages((prev) => [...prev, userMessage]);
     setIsTyping(true);
@@ -574,6 +576,7 @@ const AIAssistant = () => {
         id: (Date.now() + 1).toString(),
         role: "assistant",
         content: responses[responseKey],
+        timestamp: new Date(),
       };
       setMessages((prev) => [...prev, assistantMessage]);
       setIsTyping(false);
@@ -724,10 +727,13 @@ const AIAssistant = () => {
       {/* Chat Panel */}
       <ChatPanel
         isOpen={isChatOpen}
+        isExpanded={false}
         onClose={() => setIsChatOpen(false)}
+        onToggleExpand={() => {}}
         onSendMessage={handleSendMessage}
         messages={messages}
         isTyping={isTyping}
+        currentPage="ai-assistant"
       />
 
       {/* Dialogs */}
