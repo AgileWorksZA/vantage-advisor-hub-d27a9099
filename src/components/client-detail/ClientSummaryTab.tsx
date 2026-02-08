@@ -286,15 +286,15 @@ const ClientSummaryTab = ({ client, clientId, onShowMoreActivity }: ClientSummar
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-xs">Document</TableHead>
-                  <TableHead className="text-xs">Workflow</TableHead>
+                  <TableHead className="text-xs h-8 px-3">Document</TableHead>
+                  <TableHead className="text-xs h-8 px-3">Workflow</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {outstandingDocs.map((doc, index) => (
                   <TableRow key={index}>
-                    <TableCell className="text-sm">{doc.document}</TableCell>
-                    <TableCell className="text-sm">{doc.workflow}</TableCell>
+                    <TableCell className="text-sm py-1.5 px-3">{doc.document}</TableCell>
+                    <TableCell className="text-sm py-1.5 px-3">{doc.workflow}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
