@@ -1,5 +1,5 @@
+import { MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import ParticleField from "./ParticleField";
 
 interface AIOrbProps {
   isProcessing: boolean;
@@ -9,35 +9,21 @@ interface AIOrbProps {
 
 const AIOrb = ({ isProcessing, isChatOpen, onClick }: AIOrbProps) => {
   return (
-    <div className="relative w-24 h-24 group">
-      {/* Core orb - THIS is the click target */}
-      <div 
-        className={cn(
-          "absolute inset-4 rounded-full bg-gradient-to-br from-violet-600 via-purple-600 to-cyan-500 transition-all duration-300 cursor-pointer",
-          !isChatOpen && "group-hover:scale-110"
-        )}
-        onClick={onClick}
->
-        {/* Inner light - 3D lit-from-above effect */}
-        <div className="absolute inset-2 rounded-full bg-gradient-to-t from-transparent to-white/30" />
-        {/* Central glow - depth */}
-        <div className="absolute inset-4 rounded-full bg-white/20 blur-sm" />
-        {/* AI Text */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-white font-bold text-lg drop-shadow-lg">AI</span>
-        </div>
-      </div>
-
-      {/* Processing particles */}
-      {isProcessing && <ParticleField />}
-
-      {/* Hover instruction */}
-      {!isChatOpen && (
-        <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-white/60 text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
-          Click to chat
-        </div>
+    <button
+      onClick={onClick}
+      className={cn(
+        "w-14 h-14 rounded-full bg-foreground text-background flex items-center justify-center",
+        "shadow-lg hover:scale-105 active:scale-95 transition-all duration-200",
+        "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+        isChatOpen && "scale-0 opacity-0 pointer-events-none"
       )}
-    </div>
+      aria-label={isChatOpen ? "Close chat" : "Open chat"}
+    >
+      <MessageCircle className="w-6 h-6" />
+      {isProcessing && (
+        <span className="absolute top-0 right-0 w-3 h-3 bg-primary rounded-full animate-pulse" />
+      )}
+    </button>
   );
 };
 

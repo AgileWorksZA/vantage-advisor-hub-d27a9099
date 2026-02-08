@@ -30,6 +30,7 @@ import Portfolio from "./pages/Portfolio";
 import ComposeEmail from "./pages/ComposeEmail";
 import Administration from "./pages/Administration";
 import AccountSettings from "./pages/AccountSettings";
+import Help from "./pages/Help";
 
 const queryClient = new QueryClient();
 
@@ -68,6 +69,7 @@ const App = () => (
               <Route path="/privacy-notice" element={<PrivacyNotice />} />
               <Route path="/paia-manual" element={<PaiaManual />} />
               <Route path="/disclaimer" element={<Disclaimer />} />
+              <Route path="/help" element={<Help />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
