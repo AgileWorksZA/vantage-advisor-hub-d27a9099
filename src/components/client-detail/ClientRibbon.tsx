@@ -79,9 +79,9 @@ const ClientRibbon = ({ client, clientName, relatedEntities }: ClientRibbonProps
   const advisor = client.advisor || "Unassigned";
 
   return (
-    <div className="mb-6">
+    <div>
       {/* Row 1: Back button, title, action buttons */}
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-1.5 px-6 pt-2.5">
         <div className="flex items-center gap-4">
           <Button
             variant="outline"
@@ -156,18 +156,18 @@ const ClientRibbon = ({ client, clientName, relatedEntities }: ClientRibbonProps
       </div>
 
       {/* Row 2: Enhanced info bar */}
-      <div className="rounded-lg border border-border bg-gradient-to-r from-teal-50 to-cyan-50 dark:from-teal-950/20 dark:to-cyan-950/20 px-5 py-4">
-        <div className="flex items-center gap-5">
+      <div className="rounded-lg border border-border bg-gradient-to-r from-teal-50 to-cyan-50 dark:from-teal-950/20 dark:to-cyan-950/20 px-5 py-2.5 mx-6">
+        <div className="flex items-center gap-3">
           {/* Avatar */}
           <div className="relative shrink-0">
-            <div className="w-14 h-14 rounded-full bg-[hsl(180,25%,25%)] flex items-center justify-center text-white text-lg font-semibold">
+            <div className="w-10 h-10 rounded-full bg-[hsl(180,25%,25%)] flex items-center justify-center text-white text-sm font-semibold">
               {initials}
             </div>
-            <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-background" />
+            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-background" />
           </div>
 
           {/* Info columns */}
-          <div className="flex flex-col gap-1.5 min-w-0">
+          <div className="flex flex-col gap-0.5 min-w-0">
             {/* Top line: name, advisor, badges */}
             <div className="flex items-center gap-3 flex-wrap">
               <div className="flex items-center gap-1.5 text-sm font-medium">

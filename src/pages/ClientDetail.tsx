@@ -180,17 +180,15 @@ const ClientDetail = () => {
         />
 
         {/* Client Detail Content */}
-        <main className="flex-1 p-6 overflow-auto">
-          {/* Client Ribbon */}
-          <ClientRibbon
-            client={client}
-            clientName={clientName}
-            relatedEntities={relatedEntities}
-          />
-
-          {/* Tab Navigation */}
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="w-full justify-start h-auto p-0 bg-transparent border-b border-border rounded-none gap-0 flex-wrap">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
+          {/* Sticky ribbon + tabs header */}
+          <div className="shrink-0 bg-background border-b border-border">
+            <ClientRibbon
+              client={client}
+              clientName={clientName}
+              relatedEntities={relatedEntities}
+            />
+            <TabsList className="w-full justify-start h-auto p-0 bg-transparent rounded-none gap-0 flex-wrap px-6 mt-1">
               {[
                 { value: "summary", label: "Summary" },
                 { value: "360-view", label: "360 View" },
@@ -207,57 +205,58 @@ const ClientDetail = () => {
                 <TabsTrigger
                   key={tab.value}
                   value={tab.value}
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-[hsl(180,70%,45%)] data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-3 text-sm"
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-[hsl(180,70%,45%)] data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-2.5 text-sm"
                 >
                   {tab.label}
                 </TabsTrigger>
               ))}
             </TabsList>
+          </div>
 
-            <div className="mt-6">
-              <TabsContent value="summary" className="mt-0">
-                <ClientSummaryTab 
-                  client={client} 
-                  clientId={clientId!} 
-                  onShowMoreActivity={() => setActiveTab("recent-activity")}
-                />
-              </TabsContent>
-              <TabsContent value="360-view" className="mt-0">
-                <Client360ViewTab />
-              </TabsContent>
-              <TabsContent value="details" className="mt-0">
-                <ClientDetailsTab client={client} onUpdate={updateClient} />
-              </TabsContent>
-              <TabsContent value="crm" className="mt-0">
-                <ClientCRMTab client={client} onUpdate={updateClient} />
-              </TabsContent>
-              <TabsContent value="meetings" className="mt-0">
-                <ClientMeetingsTab />
-              </TabsContent>
-              <TabsContent value="relationships" className="mt-0">
-                <ClientRelationshipsTab />
-              </TabsContent>
-              <TabsContent value="workflows" className="mt-0">
-                <ClientWorkflowsTab />
-              </TabsContent>
-              <TabsContent value="compliance" className="mt-0">
-                <ClientComplianceTab />
-              </TabsContent>
-              <TabsContent value="notes" className="mt-0">
-                <ClientNotesTab />
-              </TabsContent>
-              <TabsContent value="communication" className="mt-0">
-                <ClientCommunicationTab />
-              </TabsContent>
-              <TabsContent value="documents" className="mt-0">
-                <ClientDocumentsTab />
-              </TabsContent>
-              <TabsContent value="recent-activity" className="mt-0">
-                <ClientRecentActivityTab clientName={clientName} />
-              </TabsContent>
-            </div>
-          </Tabs>
-        </main>
+          {/* Scrollable tab content */}
+          <main className="flex-1 p-6 overflow-auto">
+            <TabsContent value="summary" className="mt-0">
+              <ClientSummaryTab 
+                client={client} 
+                clientId={clientId!} 
+                onShowMoreActivity={() => setActiveTab("recent-activity")}
+              />
+            </TabsContent>
+            <TabsContent value="360-view" className="mt-0">
+              <Client360ViewTab />
+            </TabsContent>
+            <TabsContent value="details" className="mt-0">
+              <ClientDetailsTab client={client} onUpdate={updateClient} />
+            </TabsContent>
+            <TabsContent value="crm" className="mt-0">
+              <ClientCRMTab client={client} onUpdate={updateClient} />
+            </TabsContent>
+            <TabsContent value="meetings" className="mt-0">
+              <ClientMeetingsTab />
+            </TabsContent>
+            <TabsContent value="relationships" className="mt-0">
+              <ClientRelationshipsTab />
+            </TabsContent>
+            <TabsContent value="workflows" className="mt-0">
+              <ClientWorkflowsTab />
+            </TabsContent>
+            <TabsContent value="compliance" className="mt-0">
+              <ClientComplianceTab />
+            </TabsContent>
+            <TabsContent value="notes" className="mt-0">
+              <ClientNotesTab />
+            </TabsContent>
+            <TabsContent value="communication" className="mt-0">
+              <ClientCommunicationTab />
+            </TabsContent>
+            <TabsContent value="documents" className="mt-0">
+              <ClientDocumentsTab />
+            </TabsContent>
+            <TabsContent value="recent-activity" className="mt-0">
+              <ClientRecentActivityTab clientName={clientName} />
+            </TabsContent>
+          </main>
+        </Tabs>
       </div>
       <GlobalAIChat currentPage="clients" />
     </div>
