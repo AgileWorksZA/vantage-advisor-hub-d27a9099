@@ -336,6 +336,48 @@ const pushNotifications = [
   { content: 'Your claim has been approved! Payment processing.' },
 ];
 
+// ─── Document type definitions for seeding ─────────────────────────────────────
+
+interface DocTypeSeed {
+  name: string;
+  code: string;
+  category: 'Client' | 'FICA' | 'Product';
+}
+
+const documentTypesToSeed: DocTypeSeed[] = [
+  // Client documents
+  { name: 'Record of advice', code: 'ROA', category: 'Client' },
+  { name: 'Client pack', code: 'CP', category: 'Client' },
+  { name: 'Planning document', code: 'PLAN', category: 'Client' },
+  { name: 'Application form', code: 'APP', category: 'Client' },
+  { name: 'Letter of authority', code: 'LOA', category: 'Client' },
+  { name: 'Will', code: 'WILL', category: 'Client' },
+  { name: 'Mandate', code: 'MAND', category: 'Client' },
+  // FICA documents
+  { name: 'Proof of ID', code: 'POID', category: 'FICA' },
+  { name: 'Proof of address', code: 'POA', category: 'FICA' },
+  { name: 'Proof of bank', code: 'POB', category: 'FICA' },
+  { name: 'Source of Funds', code: 'SOF', category: 'FICA' },
+  { name: 'Self certification', code: 'SC', category: 'FICA' },
+  { name: 'Sanction list', code: 'SL', category: 'FICA' },
+  { name: 'Tax certificate', code: 'TC', category: 'FICA' },
+  // Product documents
+  { name: 'Policy form', code: 'PF', category: 'Product' },
+  { name: 'Fee form', code: 'FF', category: 'Product' },
+  { name: 'Beneficiary change', code: 'BC', category: 'Product' },
+  { name: 'Fund switch or rebalance', code: 'FSR', category: 'Product' },
+  { name: 'Quote', code: 'QT', category: 'Product' },
+];
+
+// Jurisdiction-specific product names for product documents
+const jurisdictionProductNames: Record<string, string[]> = {
+  'South Africa': ['Allan Gray Balanced Fund', 'Sanlam RA', 'Old Mutual Wealth', 'Discovery Life Plan'],
+  'Australia': ['AMP Super Fund', 'Australian Super', 'REST Industry Super', 'Colonial First State'],
+  'Canada': ['Manulife RRSP', 'Sun Life TFSA', 'Great-West RESP', 'RBC Wealth Management'],
+  'United Kingdom': ['Aviva ISA', 'Scottish Widows SIPP', 'Prudential Pension', 'HL Fund & Share'],
+  'United States': ['Vanguard 401(k)', 'Fidelity IRA', 'Schwab Roth IRA', 'T. Rowe Price 529'],
+};
+
 // Helper function to generate random date in the past N days
 const randomPastDate = (daysAgo: number): Date => {
   const date = new Date();
@@ -419,9 +461,12 @@ Deno.serve(async (req) => {
       Object.entries(clientsByJurisdiction).map(([k, v]) => `${k}: ${v.length}`).join(', '));
 
     // Clear existing demo data
-    console.log('Clearing existing communications data...');
+    console.log('Clearing existing communications and documents data...');
+    await supabase.from('task_documents').delete().eq('user_id', userId);
     await supabase.from('email_attachments').delete().eq('user_id', userId);
     await supabase.from('direct_message_attachments').delete().eq('user_id', userId);
+    await supabase.from('documents').delete().eq('user_id', userId);
+    await supabase.from('document_types').delete().eq('user_id', userId);
     await supabase.from('emails').delete().eq('user_id', userId);
     await supabase.from('direct_messages').delete().eq('user_id', userId);
     await supabase.from('communications').delete().eq('user_id', userId);
@@ -681,6 +726,259 @@ Deno.serve(async (req) => {
       if (commError) { console.error('Error inserting comms batch:', commError); throw commError; }
     }
 
+    // ─── DOCUMENT SEEDING ─────────────────────────────────────────────────────────
+
+    // 1. Seed document_types
+    console.log('Seeding document_types...');
+    const docTypeRows = documentTypesToSeed.map(dt => ({
+      user_id: userId,
+      name: dt.name,
+      code: dt.code,
+      category: dt.category,
+      is_active: true,
+    }));
+
+    const { data: insertedDocTypes, error: dtError } = await supabase
+      .from('document_types')
+      .insert(docTypeRows)
+      .select('id, name, category, code');
+
+    if (dtError) {
+      console.error('Error inserting document_types:', dtError);
+      throw dtError;
+    }
+
+    console.log(`Inserted ${insertedDocTypes?.length || 0} document types`);
+
+    // Build lookup maps
+    const clientDocTypes = (insertedDocTypes || []).filter(dt => dt.category === 'Client');
+    const ficaDocTypes = (insertedDocTypes || []).filter(dt => dt.category === 'FICA');
+    const productDocTypes = (insertedDocTypes || []).filter(dt => dt.category === 'Product');
+
+    // 2. Seed documents for each client
+    console.log('Seeding documents for all clients...');
+    const documentsToInsert: any[] = [];
+
+    // Build a map of client_id -> inserted email attachments for linking later
+    const clientEmailAttachments: { attachmentId: string; clientId: string; fileName: string }[] = [];
+
+    // We need to query email_attachments we just inserted to get their IDs and client linkage
+    const { data: allAttachments } = await supabase
+      .from('email_attachments')
+      .select('id, email_id, file_name')
+      .eq('user_id', userId);
+
+    // Build email_id -> client_id map from inserted emails
+    const emailClientMap: Record<string, string> = {};
+    for (const e of emailsToInsert) {
+      // We stored client_id on the email object
+      // But we need the actual inserted email IDs - use allInsertedEmails
+    }
+    // Rebuild from allInsertedEmails + emailsToInsert alignment
+    for (let i = 0; i < allInsertedEmails.length; i++) {
+      const insertedEmail = allInsertedEmails[i];
+      const originalEmail = emailsToInsert[i];
+      if (originalEmail?.client_id) {
+        emailClientMap[insertedEmail.id] = originalEmail.client_id;
+      }
+    }
+
+    // Map attachments to clients
+    for (const att of (allAttachments || [])) {
+      const clientId = emailClientMap[att.email_id];
+      if (clientId) {
+        clientEmailAttachments.push({ attachmentId: att.id, clientId, fileName: att.file_name });
+      }
+    }
+
+    const now = new Date();
+    const oneYearAgo = new Date(now);
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+
+    for (const client of allClients) {
+      const country = client.country_of_issue || 'South Africa';
+      const productNames = jurisdictionProductNames[country] || jurisdictionProductNames['South Africa'];
+
+      // 2-3 Client docs
+      const numClientDocs = Math.floor(Math.random() * 2) + 2;
+      for (let i = 0; i < numClientDocs; i++) {
+        const docType = clientDocTypes[i % clientDocTypes.length];
+        const createdAt = new Date(oneYearAgo.getTime() + Math.random() * (now.getTime() - oneYearAgo.getTime()));
+        const statusRand = Math.random();
+        const status = statusRand < 0.6 ? 'Complete' : statusRand < 0.9 ? 'Pending' : 'Expired';
+
+        documentsToInsert.push({
+          user_id: userId,
+          client_id: client.id,
+          document_type_id: docType.id,
+          name: `${docType.name} - ${client.first_name} ${client.surname}`,
+          file_path: `/documents/${client.id}/${docType.code.toLowerCase()}_${createdAt.getFullYear()}.pdf`,
+          file_size: Math.floor(Math.random() * 300000) + 50000,
+          mime_type: 'application/pdf',
+          version: 1,
+          status,
+          created_at: createdAt.toISOString(),
+          uploaded_by: userId,
+          approved_by: status === 'Complete' ? userId : null,
+          approval_date: status === 'Complete' ? new Date(createdAt.getTime() + 86400000 * Math.floor(Math.random() * 7 + 1)).toISOString() : null,
+        });
+      }
+
+      // 2-3 FICA docs
+      const numFicaDocs = Math.floor(Math.random() * 2) + 2;
+      for (let i = 0; i < numFicaDocs; i++) {
+        const docType = ficaDocTypes[i % ficaDocTypes.length];
+        const createdAt = new Date(oneYearAgo.getTime() + Math.random() * (now.getTime() - oneYearAgo.getTime()));
+        const statusRand = Math.random();
+        // FICA docs: some expired based on expiry_date
+        const expiryDate = new Date(createdAt);
+        expiryDate.setFullYear(expiryDate.getFullYear() + (Math.random() < 0.3 ? 0 : 1)); // 30% expire within same year = likely expired
+        const isExpired = expiryDate < now;
+        const status = isExpired ? 'Expired' : (statusRand < 0.7 ? 'Complete' : 'Pending');
+
+        documentsToInsert.push({
+          user_id: userId,
+          client_id: client.id,
+          document_type_id: docType.id,
+          name: `${docType.name} - ${client.first_name} ${client.surname}`,
+          file_path: `/documents/${client.id}/${docType.code.toLowerCase()}_${createdAt.getFullYear()}.pdf`,
+          file_size: Math.floor(Math.random() * 200000) + 30000,
+          mime_type: 'application/pdf',
+          version: 1,
+          status,
+          expiry_date: expiryDate.toISOString().split('T')[0],
+          created_at: createdAt.toISOString(),
+          uploaded_by: userId,
+          approved_by: status === 'Complete' ? userId : null,
+          approval_date: status === 'Complete' ? new Date(createdAt.getTime() + 86400000 * Math.floor(Math.random() * 5 + 1)).toISOString() : null,
+        });
+      }
+
+      // 1-2 Product docs
+      const numProductDocs = Math.floor(Math.random() * 2) + 1;
+      for (let i = 0; i < numProductDocs; i++) {
+        const docType = productDocTypes[i % productDocTypes.length];
+        const productName = productNames[i % productNames.length];
+        const createdAt = new Date(oneYearAgo.getTime() + Math.random() * (now.getTime() - oneYearAgo.getTime()));
+        const status = Math.random() < 0.7 ? 'Complete' : 'Pending';
+
+        documentsToInsert.push({
+          user_id: userId,
+          client_id: client.id,
+          document_type_id: docType.id,
+          name: `${docType.name} - ${productName}`,
+          file_path: `/documents/${client.id}/${docType.code.toLowerCase()}_${productName.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()}.pdf`,
+          file_size: Math.floor(Math.random() * 250000) + 40000,
+          mime_type: 'application/pdf',
+          version: 1,
+          status,
+          created_at: createdAt.toISOString(),
+          uploaded_by: userId,
+          approved_by: status === 'Complete' ? userId : null,
+          approval_date: status === 'Complete' ? new Date(createdAt.getTime() + 86400000 * Math.floor(Math.random() * 5 + 1)).toISOString() : null,
+        });
+      }
+    }
+
+    // Insert documents in batches
+    console.log(`Inserting ${documentsToInsert.length} documents...`);
+    const allInsertedDocs: any[] = [];
+    const docBatchSize = 200;
+    for (let i = 0; i < documentsToInsert.length; i += docBatchSize) {
+      const batch = documentsToInsert.slice(i, i + docBatchSize);
+      const { data: inserted, error: docError } = await supabase
+        .from('documents')
+        .insert(batch)
+        .select('id, client_id, document_type_id, name');
+
+      if (docError) {
+        console.error(`Error inserting documents batch ${i}:`, docError);
+        throw docError;
+      }
+      if (inserted) allInsertedDocs.push(...inserted);
+    }
+
+    console.log(`Inserted ${allInsertedDocs.length} documents`);
+
+    // 3. Link email_attachments to documents
+    console.log('Linking email attachments to documents...');
+    let attachmentLinked = 0;
+
+    // Build client_id -> documents map
+    const docsByClient: Record<string, any[]> = {};
+    for (const doc of allInsertedDocs) {
+      if (!docsByClient[doc.client_id]) docsByClient[doc.client_id] = [];
+      docsByClient[doc.client_id].push(doc);
+    }
+
+    for (const att of clientEmailAttachments) {
+      const clientDocs = docsByClient[att.clientId];
+      if (clientDocs && clientDocs.length > 0) {
+        // Pick a random document from this client to link
+        const doc = clientDocs[Math.floor(Math.random() * clientDocs.length)];
+        const { error: linkError } = await supabase
+          .from('email_attachments')
+          .update({ document_id: doc.id })
+          .eq('id', att.attachmentId);
+
+        if (!linkError) attachmentLinked++;
+      }
+    }
+
+    console.log(`Linked ${attachmentLinked} email attachments to documents`);
+
+    // 4. Seed task_documents
+    console.log('Seeding task_documents...');
+    const { data: tasksWithClients } = await supabase
+      .from('tasks')
+      .select('id, client_id')
+      .eq('user_id', userId)
+      .not('client_id', 'is', null)
+      .limit(300);
+
+    const taskDocsToInsert: any[] = [];
+    if (tasksWithClients) {
+      for (const task of tasksWithClients) {
+        const clientDocs = docsByClient[task.client_id!];
+        if (!clientDocs || clientDocs.length === 0) continue;
+
+        // Link 1-2 documents per task
+        const numLinks = Math.floor(Math.random() * 2) + 1;
+        const usedDocIds = new Set<string>();
+
+        for (let i = 0; i < numLinks; i++) {
+          const doc = clientDocs[Math.floor(Math.random() * clientDocs.length)];
+          if (usedDocIds.has(doc.id)) continue;
+          usedDocIds.add(doc.id);
+
+          // Find the doc type name from insertedDocTypes
+          const docType = (insertedDocTypes || []).find(dt => dt.id === doc.document_type_id);
+
+          taskDocsToInsert.push({
+            user_id: userId,
+            task_id: task.id,
+            document_id: doc.id,
+            document_type: docType?.name || 'Other',
+            notes: null,
+            uploaded_by: userId,
+          });
+        }
+      }
+    }
+
+    if (taskDocsToInsert.length > 0) {
+      console.log(`Inserting ${taskDocsToInsert.length} task_documents...`);
+      for (let i = 0; i < taskDocsToInsert.length; i += docBatchSize) {
+        const batch = taskDocsToInsert.slice(i, i + docBatchSize);
+        const { error: tdError } = await supabase.from('task_documents').insert(batch);
+        if (tdError) console.error('Error inserting task_documents batch:', tdError);
+      }
+    }
+
+    console.log(`Inserted ${taskDocsToInsert.length} task_documents`);
+
+    // ─── SUMMARY ─────────────────────────────────────────────────────────────────
+
     // Count emails per jurisdiction
     const emailsByJurisdiction: Record<string, number> = {};
     for (const email of emailsToInsert) {
@@ -691,12 +989,16 @@ Deno.serve(async (req) => {
 
     const summary = {
       success: true,
-      message: 'Demo communications seeded successfully',
+      message: 'Demo communications and documents seeded successfully',
       counts: {
         emails: emailsToInsert.length,
         emailAttachments: emailAttachmentsToInsert.length,
         directMessages: directMessagesToInsert.length,
         communications: communicationsToInsert.length,
+        documentTypes: insertedDocTypes?.length || 0,
+        documents: allInsertedDocs.length,
+        taskDocuments: taskDocsToInsert.length,
+        attachmentsLinked: attachmentLinked,
         jurisdictions: Object.keys(clientsByJurisdiction).length,
         emailsByJurisdiction,
       },

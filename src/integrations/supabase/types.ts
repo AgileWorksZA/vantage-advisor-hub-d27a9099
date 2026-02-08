@@ -2094,12 +2094,20 @@ export type Database = {
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "documents_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "workflows"
+            referencedColumns: ["id"]
+          },
         ]
       }
       email_attachments: {
         Row: {
           content_type: string | null
           created_at: string
+          document_id: string | null
           email_id: string
           file_name: string
           file_path: string
@@ -2110,6 +2118,7 @@ export type Database = {
         Insert: {
           content_type?: string | null
           created_at?: string
+          document_id?: string | null
           email_id: string
           file_name: string
           file_path: string
@@ -2120,6 +2129,7 @@ export type Database = {
         Update: {
           content_type?: string | null
           created_at?: string
+          document_id?: string | null
           email_id?: string
           file_name?: string
           file_path?: string
@@ -2128,6 +2138,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "email_attachments_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "email_attachments_email_id_fkey"
             columns: ["email_id"]
