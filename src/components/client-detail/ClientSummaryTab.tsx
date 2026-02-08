@@ -207,24 +207,24 @@ const ClientSummaryTab = ({ client, clientId, onShowMoreActivity }: ClientSummar
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-xs">Primary/Advisor</TableHead>
-                  <TableHead className="text-xs">Relationship</TableHead>
-                  <TableHead className="text-xs">Rating</TableHead>
-                  <TableHead className="text-xs">Role</TableHead>
+                  <TableHead className="text-xs h-8 px-3">Primary/Advisor</TableHead>
+                  <TableHead className="text-xs h-8 px-3">Relationship</TableHead>
+                  <TableHead className="text-xs h-8 px-3">Risk Rating</TableHead>
+                  <TableHead className="text-xs h-8 px-3">Role</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {advisorData.map((row, index) => (
                   <TableRow key={index}>
-                    <TableCell className="text-sm">
+                    <TableCell className="text-sm py-1.5 px-3">
                       <div>
                         <span className="text-xs text-muted-foreground">{row.type}</span>
                         <div>{client.advisor || row.advisor}</div>
                       </div>
                     </TableCell>
-                    <TableCell className="text-sm">{client.relationship || row.relationship}</TableCell>
-                    <TableCell className="text-sm">{client.rating || row.rating}</TableCell>
-                    <TableCell className="text-sm">{row.role}</TableCell>
+                    <TableCell className="text-sm py-1.5 px-3">{client.relationship || row.relationship}</TableCell>
+                    <TableCell className="text-sm py-1.5 px-3">{client.rating || row.rating}</TableCell>
+                    <TableCell className="text-sm py-1.5 px-3">{row.role}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
