@@ -1,92 +1,165 @@
 
 
-# Smart Advisor Warning -- Only Warn When Relevant
+# Calendar Timezones, Account Settings Page, and Password Change
 
-## Problem
+## Overview
 
-Currently, deselecting **any** advisor while on a client detail page (or any sub-page) triggers a "Leave this page?" warning popup. This is incorrect -- the warning should only appear when the advisor being deselected is actually **linked to the entity being viewed**.
+Three major additions:
 
-For example, viewing client "Nguyen, David" (advisor: James Mitchell / JM) and deselecting Sarah Thompson (ST) should NOT trigger the warning, because David is not Sarah's client.
-
-## Solution
-
-Create a lightweight **Page Context** that sub-pages populate with the advisor linked to the currently viewed entity. The `AdvisorFilter` reads from this context and only shows the warning when:
-
-1. The user is on a sub-page (not a landing page), **AND**
-2. The advisor being deselected matches the entity's advisor, **OR**
-3. "Toggle All" off is used (deselecting everyone, including the entity's advisor)
-
-When neither condition is met, the advisor change applies silently without navigation.
+1. **Timezone support for calendar events** -- Add a timezone field to events with per-jurisdiction defaults, and a user-configurable default timezone saved to their profile
+2. **Account Settings page** -- A new dedicated page (`/account-settings`) accessible from the user menu, containing profile management, password change, timezone preferences, notification settings, and display preferences
+3. **Password change** -- A secure password update section within Account Settings, allowing users to resolve the leaked password warning on the demo account
 
 ---
 
-## Changes
+## Part 1: Database Migration
 
-### 1. New Context: `PageContext` (`src/contexts/PageContext.tsx`)
+### 1a. Extend `user_settings` table
 
-A simple context that stores metadata about the currently viewed entity:
+Add new columns to store user preferences:
 
 ```text
-interface PageContextType {
-  currentAdvisorInitials: string | null;   // e.g., "JM"
-  setCurrentAdvisorInitials: (initials: string | null) => void;
-}
+ALTER TABLE user_settings ADD COLUMN timezone TEXT DEFAULT NULL;
+ALTER TABLE user_settings ADD COLUMN display_name TEXT DEFAULT NULL;
+ALTER TABLE user_settings ADD COLUMN notification_email BOOLEAN DEFAULT TRUE;
+ALTER TABLE user_settings ADD COLUMN notification_task_reminders BOOLEAN DEFAULT TRUE;
+ALTER TABLE user_settings ADD COLUMN notification_calendar_reminders BOOLEAN DEFAULT TRUE;
+ALTER TABLE user_settings ADD COLUMN notification_client_updates BOOLEAN DEFAULT TRUE;
+ALTER TABLE user_settings ADD COLUMN notification_compliance_alerts BOOLEAN DEFAULT TRUE;
+ALTER TABLE user_settings ADD COLUMN date_format TEXT DEFAULT 'dd/MM/yyyy';
+ALTER TABLE user_settings ADD COLUMN time_format TEXT DEFAULT '24h';
+ALTER TABLE user_settings ADD COLUMN default_calendar_view TEXT DEFAULT 'month';
 ```
 
-- Wrap the app in this provider (in `App.tsx`, inside `RegionProvider`)
-- Sub-pages set the advisor initials when their data loads
-- Landing pages or pages without a specific advisor leave it as `null`
+### 1b. Add `timezone` column to `calendar_events`
 
-### 2. Client Detail Page Sets Context (`src/pages/ClientDetail.tsx`)
-
-When the client data loads, resolve the client's `advisor` name (e.g., "James Mitchell") to their initials (e.g., "JM") using the regional advisor list, and call `setCurrentAdvisorInitials("JM")`.
-
-Clean up on unmount by setting it back to `null`.
-
-### 3. Email View Page Sets Context (`src/pages/EmailView.tsx`)
-
-When the email's linked client loads, resolve that client's advisor to initials and set the context. If no client is linked, leave as `null` (no warning needed).
-
-### 4. Compose Email Page Sets Context (`src/pages/ComposeEmail.tsx`)
-
-Same pattern -- if a client is linked, resolve their advisor. Otherwise, `null`.
-
-### 5. AdvisorFilter Uses Context (`src/components/dashboard/AdvisorFilter.tsx`)
-
-Update the `applyOrWarn` logic:
-
-**Before** (current -- always warns on sub-pages):
 ```text
-if (isLandingPage) {
-  setSelectedAdvisors(newAdvisors);
-} else {
-  showWarning();
-}
+ALTER TABLE calendar_events ADD COLUMN timezone TEXT DEFAULT NULL;
 ```
 
-**After** (only warns when the entity's advisor is affected):
-```text
-if (isLandingPage) {
-  // On a landing page: always safe
-  setSelectedAdvisors(newAdvisors);
-} else if (currentAdvisorInitials && !newAdvisors.includes(currentAdvisorInitials)) {
-  // On a sub-page AND the entity's advisor is being removed: warn
-  showWarning();
-} else {
-  // On a sub-page but entity's advisor is NOT affected: safe
-  setSelectedAdvisors(newAdvisors);
-}
-```
+This stores the timezone for each individual event (e.g., "Africa/Johannesburg"). When NULL, the event uses the user's default timezone.
 
-For `toggleAll` off: the warning fires because the empty array excludes the entity's advisor.
-For `toggleAll` on: always safe (selecting more, never removing).
+No new RLS policies needed -- existing policies on both tables already scope to `auth.uid() = user_id`.
 
-### 6. Advisor Name-to-Initials Resolution
+---
 
-The `RegionContext` already provides `regionalData.advisors`, which is an array of `{ initials, name, ... }`. Each sub-page will:
-1. Read `client.advisor` (full name like "James Mitchell")
-2. Find the matching entry in `regionalData.advisors` by name
-3. Use its `initials` value
+## Part 2: Default Timezone Per Jurisdiction
+
+Define a mapping of region codes to IANA timezone strings:
+
+| Region | Default Timezone |
+|--------|-----------------|
+| ZA | Africa/Johannesburg |
+| AU | Australia/Sydney |
+| CA | America/Toronto |
+| GB | Europe/London |
+| US | America/New_York |
+
+**Logic**: The calendar will determine the active timezone in this priority order:
+1. User's saved timezone in `user_settings.timezone` (master record, set via Account Settings)
+2. If NULL, fall back to the jurisdiction's default from the mapping above
+
+---
+
+## Part 3: Calendar Timezone Integration
+
+### 3a. Display timezone indicator on calendar
+
+**File: `src/pages/Calendar.tsx`**
+
+- Show the current timezone abbreviation (e.g., "SAST", "AEST", "EST") in the calendar header bar, next to the view mode buttons
+- Add a small globe icon with the timezone label
+- The displayed timezone is derived from the user's settings or the jurisdiction default
+- Read `useUserSettings()` to get `settings.timezone`, fall back to region default
+
+### 3b. Event creation dialog -- timezone selector
+
+**File: `src/pages/Calendar.tsx`** (create event dialog)
+
+- Add a timezone dropdown below the time fields in the "Create New Event" dialog
+- Pre-populated with the user's default timezone
+- User can override per-event (e.g., scheduling a meeting in a different timezone)
+- Common timezones listed: Africa/Johannesburg, Australia/Sydney, America/Toronto, Europe/London, America/New_York, plus Pacific/Auckland, Asia/Singapore, America/Los_Angeles, America/Chicago
+
+### 3c. Event detail sheet -- show timezone
+
+**File: `src/pages/Calendar.tsx`** (event detail sheet)
+
+- Display the event's timezone alongside the time (e.g., "9:00 AM - 10:00 AM SAST")
+- If the event timezone differs from the user's default, show both for clarity
+
+### 3d. Hook updates
+
+**File: `src/hooks/useCalendarEvents.ts`**
+
+- Add `timezone` field to `CalendarEvent` interface
+- Include `timezone` in create/update operations
+- Map `timezone` from database response
+
+---
+
+## Part 4: Account Settings Page
+
+### 4a. New page: `src/pages/AccountSettings.tsx`
+
+A dedicated page with tabs/sections:
+
+**Profile Section**
+- Display name (editable text field, saved to `user_settings.display_name`)
+- Email address (read-only, from auth)
+- Business name (from `profiles.business_name`)
+
+**Security Section**
+- Change Password form:
+  - Current password field (not required by Supabase `updateUser` but good UX practice -- we will verify by re-authenticating)
+  - New password field with validation (same rules as signup: min 8 chars, uppercase, lowercase, number)
+  - Confirm new password field
+  - "Update Password" button
+  - Uses `supabase.auth.updateUser({ password: newPassword })`
+  - Shows success/error toast
+
+**Timezone & Regional Section**
+- Default timezone selector (dropdown with common IANA timezones)
+- Date format preference (dd/MM/yyyy, MM/dd/yyyy, yyyy-MM-dd)
+- Time format preference (12h / 24h)
+- Default calendar view (Month / Week / Day)
+
+**Notification Preferences Section**
+- Email notifications toggle (master switch)
+- Task reminder notifications toggle
+- Calendar reminder notifications toggle
+- Client update notifications toggle
+- Compliance alert notifications toggle
+
+**Email Settings Section**
+- Email signature (existing field from `user_settings.email_signature`)
+- Default "From" as primary adviser toggle (existing field)
+
+### 4b. Route registration
+
+**File: `src/App.tsx`**
+
+Add route: `<Route path="/account-settings" element={<AccountSettings />} />`
+
+### 4c. Update navigation
+
+**File: All pages with `onAccountSettings`**
+
+Change `onAccountSettings={() => navigate("/practice")}` to `onAccountSettings={() => navigate("/account-settings")}` across all pages (Dashboard, Clients, Email, Calendar, Tasks, Insights, Portfolio, CommandCenter, ClientDetail, EmailView, ComposeEmail, Practice, Administration).
+
+### 4d. Update `useNavigationWarning.ts`
+
+Add `/account-settings` as a landing page (no warning needed when navigating to it).
+
+---
+
+## Part 5: Update `useUserSettings` Hook
+
+**File: `src/hooks/useUserSettings.ts`**
+
+- Expand the `UserSettings` interface to include all new columns:
+  - `timezone`, `display_name`, `notification_email`, `notification_task_reminders`, `notification_calendar_reminders`, `notification_client_updates`, `notification_compliance_alerts`, `date_format`, `time_format`, `default_calendar_view`
+- The existing upsert mutation already handles partial updates, so no logic changes needed
 
 ---
 
@@ -94,12 +167,67 @@ The `RegionContext` already provides `regionalData.advisors`, which is an array 
 
 | File | Action |
 |------|--------|
-| `src/contexts/PageContext.tsx` | **New** -- simple context for current entity advisor |
-| `src/App.tsx` | Wrap with `PageContextProvider` |
-| `src/pages/ClientDetail.tsx` | Set `currentAdvisorInitials` from `client.advisor` |
-| `src/pages/EmailView.tsx` | Set `currentAdvisorInitials` from linked client's advisor |
-| `src/pages/ComposeEmail.tsx` | Set `currentAdvisorInitials` from linked client's advisor |
-| `src/components/dashboard/AdvisorFilter.tsx` | Read `currentAdvisorInitials`; only warn when that specific advisor is being deselected |
+| Database migration | Add columns to `user_settings` and `calendar_events` |
+| `src/pages/AccountSettings.tsx` | **New** -- full account settings page with profile, security, timezone, notifications |
+| `src/hooks/useUserSettings.ts` | Expand interface with new fields |
+| `src/hooks/useCalendarEvents.ts` | Add `timezone` to interfaces and CRUD operations |
+| `src/pages/Calendar.tsx` | Add timezone indicator in header, timezone selector in create dialog, timezone in event detail |
+| `src/App.tsx` | Add `/account-settings` route |
+| `src/hooks/useNavigationWarning.ts` | Add `/account-settings` as landing page |
+| `src/pages/Dashboard.tsx` | Change `onAccountSettings` to navigate to `/account-settings` |
+| `src/pages/Clients.tsx` | Change `onAccountSettings` navigation |
+| `src/pages/Email.tsx` | Change `onAccountSettings` navigation |
+| `src/pages/Calendar.tsx` | Change `onAccountSettings` navigation |
+| `src/pages/Tasks.tsx` | Change `onAccountSettings` navigation |
+| `src/pages/Insights.tsx` | Change `onAccountSettings` navigation |
+| `src/pages/Portfolio.tsx` | Change `onAccountSettings` navigation |
+| `src/pages/CommandCenter.tsx` | Change `onAccountSettings` navigation |
+| `src/pages/ClientDetail.tsx` | Change `onAccountSettings` navigation |
+| `src/pages/EmailView.tsx` | Change `onAccountSettings` navigation |
+| `src/pages/ComposeEmail.tsx` | Change `onAccountSettings` navigation |
+| `src/pages/Practice.tsx` | Change `onAccountSettings` navigation |
+| `src/pages/Administration.tsx` | Change `onAccountSettings` navigation |
 
-No database changes needed. No new dependencies.
+---
+
+## Technical Details
+
+### Timezone Constants
+
+```text
+REGION_DEFAULT_TIMEZONES = {
+  ZA: "Africa/Johannesburg",
+  AU: "Australia/Sydney",
+  CA: "America/Toronto",
+  GB: "Europe/London",
+  US: "America/New_York"
+}
+
+COMMON_TIMEZONES = [
+  "Africa/Johannesburg",
+  "Australia/Sydney",
+  "America/Toronto",
+  "Europe/London",
+  "America/New_York",
+  "America/Los_Angeles",
+  "America/Chicago",
+  "Pacific/Auckland",
+  "Asia/Singapore",
+  "Asia/Tokyo",
+  "Europe/Paris",
+  "Europe/Berlin"
+]
+```
+
+### Password Change Flow
+
+1. User enters new password + confirmation
+2. Client-side validation (same zod schema as Auth page)
+3. Call `supabase.auth.updateUser({ password: newPassword })`
+4. On success: show toast, clear form
+5. On error: show error toast with message
+
+### Timezone Display Helper
+
+A utility function `getTimezoneAbbreviation(ianaTimezone: string)` that returns the short label (e.g., "SAST", "AEST", "EST") using `Intl.DateTimeFormat` with `timeZoneName: "short"`.
 
