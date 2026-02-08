@@ -144,7 +144,7 @@ const ClientSummaryTab = ({ client, clientId, onShowMoreActivity }: ClientSummar
       <div className="space-y-4">
         {/* General Details */}
         <Card>
-          <CardHeader className="pb-2">
+          <CardHeader className="py-2">
             <CardTitle className="text-lg">General details</CardTitle>
           </CardHeader>
           <CardContent>
@@ -173,7 +173,7 @@ const ClientSummaryTab = ({ client, clientId, onShowMoreActivity }: ClientSummar
 
         {/* Contact Details */}
         <Card>
-          <CardHeader className="pb-2">
+          <CardHeader className="py-2">
             <CardTitle className="text-lg">Contact details</CardTitle>
           </CardHeader>
           <CardContent>
@@ -200,7 +200,7 @@ const ClientSummaryTab = ({ client, clientId, onShowMoreActivity }: ClientSummar
       <div className="space-y-4">
         {/* Current Advisor and Accounts */}
         <Card>
-          <CardHeader className="pb-2">
+          <CardHeader className="py-2">
             <CardTitle className="text-lg">Current Advisor and Accounts</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
@@ -234,7 +234,7 @@ const ClientSummaryTab = ({ client, clientId, onShowMoreActivity }: ClientSummar
 
         {/* Recent Activity */}
         <Card>
-          <CardHeader className="pb-2">
+          <CardHeader className="py-2">
             <CardTitle className="text-lg">Recent Activity</CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
@@ -279,7 +279,7 @@ const ClientSummaryTab = ({ client, clientId, onShowMoreActivity }: ClientSummar
 
         {/* Outstanding Documents */}
         <Card>
-          <CardHeader className="pb-2">
+          <CardHeader className="py-2">
             <CardTitle className="text-lg">Outstanding documents</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
