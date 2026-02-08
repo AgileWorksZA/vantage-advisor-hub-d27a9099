@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import vantageLogo from "@/assets/vantage-logo.png";
+import aiChatIcon from "@/assets/ai-chat-icon.png";
 
 interface Message {
   id: string;
@@ -145,11 +145,9 @@ const ChatPanel = ({
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/30">
         <div className="flex items-center gap-3 min-w-0">
-          <img
-            src={vantageLogo}
-            alt="Vantage"
-            className="w-8 h-8 rounded-full object-contain bg-background p-0.5 border border-border flex-shrink-0"
-          />
+          <div className="w-8 h-8 rounded-full bg-foreground p-1.5 flex-shrink-0 flex items-center justify-center">
+            <img src={aiChatIcon} alt="AI" className="w-full h-full object-contain dark:invert" />
+          </div>
           <div className="min-w-0">
             <h3 className="text-sm font-semibold text-foreground truncate">
               Vantage AI Assistant
@@ -197,11 +195,9 @@ const ChatPanel = ({
           {messages.length === 0 ? (
             <div className="space-y-4 pt-4">
               <div className="flex items-start gap-3">
-                <img
-                  src={vantageLogo}
-                  alt=""
-                  className="w-7 h-7 rounded-full object-contain bg-muted p-0.5 border border-border flex-shrink-0 mt-0.5"
-                />
+                <div className="w-7 h-7 rounded-full bg-foreground p-1.5 flex-shrink-0 mt-0.5 flex items-center justify-center">
+                  <img src={aiChatIcon} alt="" className="w-full h-full object-contain dark:invert" />
+                </div>
                 <div>
                   <div className="bg-muted text-foreground rounded-2xl rounded-tl-md px-4 py-2.5 text-sm">
                     Hi! I'm your Vantage AI Assistant. How can I help you today?
@@ -238,11 +234,9 @@ const ChatPanel = ({
                 <div key={message.id}>
                   {message.role === "assistant" ? (
                     <div className="flex items-start gap-3">
-                      <img
-                        src={vantageLogo}
-                        alt=""
-                        className="w-7 h-7 rounded-full object-contain bg-muted p-0.5 border border-border flex-shrink-0 mt-0.5"
-                      />
+                      <div className="w-7 h-7 rounded-full bg-foreground p-1.5 flex-shrink-0 mt-0.5 flex items-center justify-center">
+                        <img src={aiChatIcon} alt="" className="w-full h-full object-contain dark:invert" />
+                      </div>
                       <div className="max-w-[80%]">
                         <div className="bg-muted text-foreground rounded-2xl rounded-tl-md px-4 py-2.5 text-sm">
                           {message.content}
@@ -269,11 +263,9 @@ const ChatPanel = ({
 
               {isTyping && (
                 <div className="flex items-start gap-3">
-                  <img
-                    src={vantageLogo}
-                    alt=""
-                    className="w-7 h-7 rounded-full object-contain bg-muted p-0.5 border border-border flex-shrink-0 mt-0.5"
-                  />
+                  <div className="w-7 h-7 rounded-full bg-foreground p-1.5 flex-shrink-0 mt-0.5 flex items-center justify-center">
+                    <img src={aiChatIcon} alt="" className="w-full h-full object-contain dark:invert" />
+                  </div>
                   <div className="bg-muted rounded-2xl rounded-tl-md px-4 py-3">
                     <div className="flex gap-1">
                       <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
