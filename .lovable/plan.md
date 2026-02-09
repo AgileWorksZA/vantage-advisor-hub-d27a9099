@@ -1,50 +1,80 @@
 
-# Seed US Jurisdiction Emails for nico@advizorstack.com
+
+# Mobile App UI Improvements
 
 ## Overview
-Create and run a backend function that generates realistic demo emails from US jurisdiction clients in the database, all linked to the `nico@advizorstack.com` user account. This will populate the Communication Hub with US-specific email content across all folders (Inbox, Task Pool, Sent, Draft, Queue, Failed, Archived).
+Three changes to the mobile companion app:
+1. Move the splash screen text ("Your Advice Companion") to below the loading bar
+2. Replace the "Web" button in the mobile header with a Settings gear icon
+3. Tapping the Settings gear opens a popover menu matching the web UserMenu (avatar, user info, Web/Mobile toggle, Account Settings, Dark Mode toggle, AI Assistant toggle, Sign Out)
 
-## What You Will See
-- Approximately 114 emails spread across all 7 email folders (15-18 per folder)
-- Emails from/to your 120 US clients with US-specific financial topics (401(k), IRA, HSA, S&P 500, etc.)
-- WhatsApp, SMS, and Push notification history for up to 10 US clients
-- Email attachments (PDF documents) linked to relevant financial communications
-- Communications log entries for the client communication history tab
+## Changes
+
+### 1. Splash Screen Layout (`src/components/mobile/MobileSplashScreen.tsx`)
+
+Move the tagline text ("Your Advice Companion") from its current position (above the loading bar) to below the loading bar. The order will become:
+- AdvisorFirst logo text
+- Loading bar
+- "Your Advice Companion" tagline (moved below)
+- "Powered by Vantage" at the bottom
+
+### 2. Mobile Header Settings Button (`src/components/mobile/MobileApp.tsx`)
+
+- Remove the "Web" outline button with the Monitor icon from the header
+- Replace it with a Settings (gear) icon button in the same top-right position
+- The Bell notification icon stays as-is
+- Add a settings popover/sheet that opens when the gear is tapped
+
+### 3. Mobile Settings Menu (new component: `src/components/mobile/MobileSettingsMenu.tsx`)
+
+Create a new component that replicates the web UserMenu functionality in a mobile-friendly format. It will use a Popover (same as web) triggered by the gear icon and include:
+
+- **User Info Header**: Purple avatar circle with initial, user name, email, and Web/Mobile toggle pills
+- **Account Settings**: Button row (navigates to account settings -- in mobile context, switches to web mode to show settings page)
+- **Dark Mode**: Toggle row with Sun/Moon icon and Switch component (uses `next-themes` useTheme)
+- **AI Assistant**: Toggle row with Sparkles icon and Switch component (uses localStorage event pattern)
+- **Sign Out**: Button row that calls `supabase.auth.signOut()`
+
+The component will:
+- Fetch the current user from Supabase auth (`supabase.auth.getUser()`) to display name and email
+- Use the same `useTheme` hook from `next-themes` for dark mode toggling
+- Use the same `useAppMode` context for Web/Mobile switching
+- Use the same localStorage event pattern (`ai-chat-toggle`) for AI Assistant toggling
+
+### 4. Dark Mode Support for Mobile
+
+Dark mode already works across the entire app via the `ThemeProvider` wrapping the root `App` component with `attribute="class"`. Since the mobile components use Tailwind's semantic color classes (`bg-background`, `text-foreground`, `border-border`, etc.), dark mode will automatically apply when the theme is toggled. The splash screen uses hardcoded gradient colors which are intentionally dark-themed and won't need changes.
 
 ## Technical Details
 
-### 1. New Edge Function: `seed-us-communications`
+### MobileSplashScreen.tsx Changes
+```text
+Before:
+  Logo -> Tagline -> Loading bar -> Powered by
 
-A one-time function that:
-- Looks up the `nico@advizorstack.com` user by email using the service role key
-- Fetches all US jurisdiction clients (`country_of_issue = 'United States'`) belonging to that user
-- Generates emails using the existing US-specific templates (subjects like "Your 401(k) Performance Review", "Form 1099 and W-2 Tax Documents for 2024", etc.)
-- Creates email records with `user_id` set to the nico account
-- Sets `from_address` to `nico@advizorstack.com` for outbound emails and client emails for inbound
-- Generates WhatsApp, SMS, and Push conversations for a subset of US clients
-- Creates email attachments (Portfolio Reports, Tax Certificates, 401k Statements, etc.)
-- Populates the `communications` log table for client-level communication history
-- Clears any existing communications for this user before seeding (idempotent)
+After:
+  Logo -> Loading bar -> Tagline -> Powered by
+```
 
-### 2. Folder Distribution
+Simply reorder the JSX -- move the tagline paragraph below the loading bar div.
 
-| Folder | Count | Direction |
-|--------|-------|-----------|
-| Inbox | 18 | Inbound |
-| Task Pool | 15 | Inbound |
-| Sent | 18 | Outbound |
-| Draft | 15 | Outbound |
-| Queue | 15 | Outbound |
-| Failed | 15 | Outbound |
-| Archived | 18 | Mixed |
+### MobileApp.tsx Changes
+- Remove `Monitor` import, add `Settings` import from lucide-react
+- Remove the "Web" Button
+- Add the new `MobileSettingsMenu` component in its place
+- The component handles its own popover state and auth
 
-### 3. Config Update
+### MobileSettingsMenu.tsx (New File)
+- Uses Popover from `@/components/ui/popover` for the dropdown
+- Triggered by a gear icon button (`Settings` from lucide-react)
+- Fetches user via `supabase.auth.getUser()` on mount
+- Reads profile display name from the `profiles` table (or falls back to email)
+- Contains the same menu items as the web UserMenu
+- The "Account Settings" option switches to web mode (since account settings is a full web page)
+- Sign Out calls `supabase.auth.signOut()` and switches to web mode (which will redirect to auth page)
 
-Add the new function to `supabase/config.toml` with `verify_jwt = false` (since it uses service role key internally to look up the specific user).
+### Backwards Compatibility
+- All existing users (including nico@advizorstack.com) get the same mobile settings experience
+- Dark mode toggle works for both web and mobile since it uses the shared ThemeProvider
+- No changes to the web UserMenu component
 
-### 4. Execution
-
-After deploying the function, it will be called once to populate the data. The function is idempotent -- running it again will clear and re-seed the data.
-
-### No UI Changes Required
-The existing Communication Hub already displays emails filtered by jurisdiction. Once US emails are seeded for this user, they will appear automatically when logged in as `nico@advizorstack.com`.
