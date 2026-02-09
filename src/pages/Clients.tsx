@@ -31,13 +31,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { MultiSelect } from "@/components/ui/multi-select";
+import { Badge } from "@/components/ui/badge";
 import { useClients } from "@/hooks/useClients";
 import AddClientDialog from "@/components/clients/AddClientDialog";
 import { AddClientChoiceDialog } from "@/components/clients/AddClientChoiceDialog";
@@ -53,6 +48,13 @@ const filterTabs = [
   { label: "Shared Clients", color: "hsl(0, 0%, 70%)" },
   { label: "Incomplete Profile", color: "hsl(0, 0%, 70%)" },
   { label: "Deceased", color: "hsl(0, 0%, 70%)" },
+];
+
+const clientTypeOptions = [
+  { value: "individual", label: "Individual" },
+  { value: "business", label: "Entity" },
+  { value: "trust", label: "Trust" },
+  { value: "family", label: "Family" },
 ];
 
 const sidebarItems = [
@@ -87,6 +89,11 @@ const Clients = () => {
   const [filterSource, setFilterSource] = useState<string | null>(null);
   const [filteredNames, setFilteredNames] = useState<string[]>([]);
   const [widgetData, setWidgetData] = useState<Record<string, { birthday?: string; age?: number; value?: string; bookPercent?: string }>>({});
+  
+  // Client type filter state
+  const [selectedClientTypes, setSelectedClientTypes] = useState<string[]>(
+    ["individual", "business", "trust", "family"]
+  );
 
   const { clients, loading: clientsLoading, refetch } = useClients();
   const { regionalData, selectedAdvisors, selectedRegion } = useRegion();
@@ -201,6 +208,8 @@ const Clients = () => {
         return <Users2 className="w-4 h-4 text-muted-foreground" />;
       case "business":
         return <Building className="w-4 h-4 text-muted-foreground" />;
+      case "trust":
+        return <Briefcase className="w-4 h-4 text-muted-foreground" />;
       default:
         return <Users className="w-4 h-4 text-muted-foreground" />;
     }
@@ -213,6 +222,7 @@ const Clients = () => {
     setFilterSource(null);
     setWidgetData({});
     setActiveFilter("Client");
+    setSelectedClientTypes(["individual", "business", "trust", "family"]);
   };
 
   // Get widget data for a client by fuzzy name matching
@@ -247,6 +257,11 @@ const Clients = () => {
 
   // Filter clients based on active filter, search query, dashboard widget filter, AND selected advisors
   const filteredClients = clients.filter((client) => {
+    // Filter by selected client types (person type)
+    if (selectedClientTypes.length < clientTypeOptions.length) {
+      if (!selectedClientTypes.includes(client.clientType)) return false;
+    }
+
     // Filter by selected advisors from region context
     if (selectedAdvisorNames.length > 0) {
       if (!client.advisor || !selectedAdvisorNames.includes(client.advisor)) {
@@ -392,6 +407,7 @@ const Clients = () => {
                 clearDashboardFilter();
                 setSearchQuery("");
                 setIncludeInactive(false);
+                setSelectedClientTypes(["individual", "business", "trust", "family"]);
               }}
             >
               Reset Filters
@@ -419,17 +435,31 @@ const Clients = () => {
                 >
                   Reports
                 </Button>
-                <Select>
-                  <SelectTrigger className="w-32">
-                    <SelectValue placeholder="Select" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="option1">Option 1</SelectItem>
-                    <SelectItem value="option2">Option 2</SelectItem>
-                  </SelectContent>
-                </Select>
+                <MultiSelect
+                  options={clientTypeOptions}
+                  selected={selectedClientTypes}
+                  onChange={setSelectedClientTypes}
+                  placeholder="Person type"
+                  className="w-48"
+                />
               </div>
             </div>
+
+            {/* Client Type Filter Tags */}
+            {selectedClientTypes.length < clientTypeOptions.length && selectedClientTypes.length > 0 && (
+              <div className="flex items-center gap-2 mb-3 flex-wrap">
+                <span className="text-xs text-muted-foreground">Filtered by:</span>
+                {selectedClientTypes.map(type => (
+                  <Badge key={type} variant="secondary" className="text-xs gap-1">
+                    {clientTypeOptions.find(o => o.value === type)?.label}
+                    <X
+                      className="h-3 w-3 cursor-pointer"
+                      onClick={() => setSelectedClientTypes(prev => prev.filter(t => t !== type))}
+                    />
+                  </Badge>
+                ))}
+              </div>
+            )}
             
             <div className="flex items-center gap-2 mb-4">
               <Input 
