@@ -9,11 +9,11 @@ import {
   ListTodo,
   ArrowRight,
 } from "lucide-react";
-import { TaskStats } from "@/hooks/useTasksEnhanced";
+import { TaskStats, TaskFilters } from "@/hooks/useTasksEnhanced";
 
 interface TaskDashboardProps {
   stats: TaskStats;
-  onViewDetail: () => void;
+  onViewDetail: (filters?: TaskFilters) => void;
 }
 
 export function TaskDashboard({ stats, onViewDetail }: TaskDashboardProps) {
@@ -104,6 +104,23 @@ export function TaskDashboard({ stats, onViewDetail }: TaskDashboardProps) {
     ],
   }), [slaCompliance]);
 
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayStr = today.toISOString().split("T")[0];
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = yesterday.toISOString().split("T")[0];
+
+  const handleStatusChartClick = (params: any) => {
+    if (params?.name) onViewDetail({ status: [params.name] });
+  };
+  const handleTypeChartClick = (params: any) => {
+    if (params?.name) onViewDetail({ taskType: [params.name] });
+  };
+  const handlePriorityChartClick = (params: any) => {
+    if (params?.name) onViewDetail({ priority: [params.name] });
+  };
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -112,7 +129,7 @@ export function TaskDashboard({ stats, onViewDetail }: TaskDashboardProps) {
           <h1 className="text-2xl font-bold">Tasks Dashboard</h1>
           <p className="text-muted-foreground">Overview of your task performance</p>
         </div>
-        <Button onClick={onViewDetail} className="gap-2">
+        <Button onClick={() => onViewDetail()} className="gap-2">
           View All Tasks
           <ArrowRight className="h-4 w-4" />
         </Button>
@@ -120,7 +137,7 @@ export function TaskDashboard({ stats, onViewDetail }: TaskDashboardProps) {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={onViewDetail}>
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => onViewDetail()}>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-primary/10 rounded-full">
@@ -134,7 +151,7 @@ export function TaskDashboard({ stats, onViewDetail }: TaskDashboardProps) {
           </CardContent>
         </Card>
 
-        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={onViewDetail}>
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => onViewDetail({ dueDateFrom: todayStr, dueDateTo: todayStr })}>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-amber-500/10 rounded-full">
@@ -148,7 +165,7 @@ export function TaskDashboard({ stats, onViewDetail }: TaskDashboardProps) {
           </CardContent>
         </Card>
 
-        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={onViewDetail}>
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => onViewDetail({ dueDateTo: yesterdayStr })}>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-destructive/10 rounded-full">
@@ -162,7 +179,7 @@ export function TaskDashboard({ stats, onViewDetail }: TaskDashboardProps) {
           </CardContent>
         </Card>
 
-        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={onViewDetail}>
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => onViewDetail({ status: ["Completed"] })}>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-emerald-500/10 rounded-full">
@@ -179,30 +196,30 @@ export function TaskDashboard({ stats, onViewDetail }: TaskDashboardProps) {
 
       {/* Charts */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
+        <Card className="cursor-pointer">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Tasks by Status</CardTitle>
           </CardHeader>
           <CardContent>
-            <EChartsWrapper option={statusChartOption} height={220} />
+            <EChartsWrapper option={statusChartOption} height={220} onEvents={{ click: handleStatusChartClick }} />
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="cursor-pointer">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Tasks by Type</CardTitle>
           </CardHeader>
           <CardContent>
-            <EChartsWrapper option={typeChartOption} height={220} />
+            <EChartsWrapper option={typeChartOption} height={220} onEvents={{ click: handleTypeChartClick }} />
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="cursor-pointer">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Tasks by Priority</CardTitle>
           </CardHeader>
           <CardContent>
-            <EChartsWrapper option={priorityChartOption} height={220} />
+            <EChartsWrapper option={priorityChartOption} height={220} onEvents={{ click: handlePriorityChartClick }} />
           </CardContent>
         </Card>
 
