@@ -7,13 +7,29 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { MultiSelect } from "@/components/ui/multi-select";
-import { Search, CalendarIcon, X } from "lucide-react";
+import { Search, CalendarIcon, X, Save, BookmarkCheck, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { TaskFilters as TaskFiltersType } from "@/hooks/useTasksEnhanced";
 import { useTaskTypes } from "@/hooks/useTaskTypes";
+import { useSavedTaskFilters } from "@/hooks/useSavedTaskFilters";
+import type { DateRange } from "react-day-picker";
 
 interface TaskFiltersProps {
   filters: TaskFiltersType;
@@ -22,24 +38,39 @@ interface TaskFiltersProps {
 
 export function TaskFilters({ filters, onFiltersChange }: TaskFiltersProps) {
   const { taskTypes, taskStatuses, taskPriorities, taskCategories } = useTaskTypes();
+  const { savedFilters, saveFilter, deleteFilter } = useSavedTaskFilters();
   const [localSearch, setLocalSearch] = useState(filters.search || "");
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [filterName, setFilterName] = useState("");
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onFiltersChange({ ...filters, search: localSearch });
   };
 
-  const handleDueDateFromChange = (date: Date | undefined) => {
-    onFiltersChange({ ...filters, dueDateFrom: date?.toISOString().split("T")[0] });
-  };
-
-  const handleDueDateToChange = (date: Date | undefined) => {
-    onFiltersChange({ ...filters, dueDateTo: date?.toISOString().split("T")[0] });
+  const handleDateRangeChange = (range: DateRange | undefined) => {
+    onFiltersChange({
+      ...filters,
+      dueDateFrom: range?.from?.toISOString().split("T")[0],
+      dueDateTo: range?.to?.toISOString().split("T")[0],
+    });
   };
 
   const clearFilters = () => {
     setLocalSearch("");
     onFiltersChange({});
+  };
+
+  const handleSaveFilter = () => {
+    if (!filterName.trim()) return;
+    saveFilter(filterName.trim(), filters);
+    setFilterName("");
+    setSaveDialogOpen(false);
+  };
+
+  const handleLoadFilter = (savedFilter: typeof savedFilters[0]) => {
+    setLocalSearch(savedFilter.filters.search || "");
+    onFiltersChange(savedFilter.filters);
   };
 
   const statusOptions = taskStatuses.map((s) => ({ value: s.code, label: s.name }));
@@ -81,22 +112,61 @@ export function TaskFilters({ filters, onFiltersChange }: TaskFiltersProps) {
     const name = categoryOptions.find((o) => o.value === v)?.label || v;
     filterTags.push({ label: name, onRemove: () => removeFilterValue("category", v) });
   });
-  if (filters.dueDateFrom) {
+  if (filters.dueDateFrom || filters.dueDateTo) {
+    const fromStr = filters.dueDateFrom ? format(new Date(filters.dueDateFrom), "MMM d, yyyy") : "";
+    const toStr = filters.dueDateTo ? format(new Date(filters.dueDateTo), "MMM d, yyyy") : "";
+    const label = fromStr && toStr ? `${fromStr} – ${toStr}` : fromStr ? `From ${fromStr}` : `To ${toStr}`;
     filterTags.push({
-      label: `From: ${format(new Date(filters.dueDateFrom), "PPP")}`,
-      onRemove: () => onFiltersChange({ ...filters, dueDateFrom: undefined }),
+      label,
+      onRemove: () => onFiltersChange({ ...filters, dueDateFrom: undefined, dueDateTo: undefined }),
     });
   }
-  if (filters.dueDateTo) {
-    filterTags.push({
-      label: `To: ${format(new Date(filters.dueDateTo), "PPP")}`,
-      onRemove: () => onFiltersChange({ ...filters, dueDateTo: undefined }),
-    });
-  }
+
+  // Date range for calendar
+  const dateRange: DateRange | undefined =
+    filters.dueDateFrom || filters.dueDateTo
+      ? {
+          from: filters.dueDateFrom ? new Date(filters.dueDateFrom) : undefined,
+          to: filters.dueDateTo ? new Date(filters.dueDateTo) : undefined,
+        }
+      : undefined;
 
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-center gap-3 p-4 bg-muted/30 rounded-lg border">
+        {/* Saved Filters Dropdown */}
+        {savedFilters.length > 0 && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2">
+                <BookmarkCheck className="h-4 w-4" />
+                Saved Views
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-[220px]">
+              {savedFilters.map((sf) => (
+                <DropdownMenuItem key={sf.id} className="flex items-center justify-between gap-2">
+                  <span
+                    className="flex-1 truncate cursor-pointer"
+                    onClick={() => handleLoadFilter(sf)}
+                  >
+                    {sf.name}
+                  </span>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteFilter(sf.id);
+                    }}
+                    className="text-muted-foreground hover:text-destructive p-0.5"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+
         {/* Search */}
         <form onSubmit={handleSearchSubmit} className="flex-1 min-w-[200px]">
           <div className="relative">
@@ -148,50 +218,36 @@ export function TaskFilters({ filters, onFiltersChange }: TaskFiltersProps) {
           />
         )}
 
-        {/* Due From */}
+        {/* Date Range Picker */}
         <Popover>
           <PopoverTrigger asChild>
             <Button
               variant="outline"
               className={cn(
-                "w-[200px] justify-start text-left font-normal",
-                !filters.dueDateFrom && "text-muted-foreground"
+                "w-[220px] justify-start text-left font-normal",
+                !dateRange && "text-muted-foreground"
               )}
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
-              {filters.dueDateFrom ? format(new Date(filters.dueDateFrom), "PPP") : "Due from"}
+              {dateRange?.from ? (
+                dateRange.to ? (
+                  <>
+                    {format(dateRange.from, "MMM d")} – {format(dateRange.to, "MMM d, yyyy")}
+                  </>
+                ) : (
+                  format(dateRange.from, "MMM d, yyyy")
+                )
+              ) : (
+                "Due Date"
+              )}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
             <Calendar
-              mode="single"
-              selected={filters.dueDateFrom ? new Date(filters.dueDateFrom) : undefined}
-              onSelect={handleDueDateFromChange}
-              initialFocus
-              className={cn("p-3 pointer-events-auto")}
-            />
-          </PopoverContent>
-        </Popover>
-
-        {/* Due To */}
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              className={cn(
-                "w-[200px] justify-start text-left font-normal",
-                !filters.dueDateTo && "text-muted-foreground"
-              )}
-            >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {filters.dueDateTo ? format(new Date(filters.dueDateTo), "PPP") : "Due to"}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="single"
-              selected={filters.dueDateTo ? new Date(filters.dueDateTo) : undefined}
-              onSelect={handleDueDateToChange}
+              mode="range"
+              selected={dateRange}
+              onSelect={handleDateRangeChange}
+              numberOfMonths={2}
               initialFocus
               className={cn("p-3 pointer-events-auto")}
             />
@@ -220,8 +276,40 @@ export function TaskFilters({ filters, onFiltersChange }: TaskFiltersProps) {
           >
             Reset Filters
           </button>
+          <DropdownMenuSeparator className="h-4 w-px bg-border mx-1" />
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1 text-sm h-7"
+            onClick={() => setSaveDialogOpen(true)}
+          >
+            <Save className="h-3.5 w-3.5" />
+            Save Filter
+          </Button>
         </div>
       )}
+
+      {/* Save Filter Dialog */}
+      <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
+        <DialogContent className="sm:max-w-[360px]">
+          <DialogHeader>
+            <DialogTitle>Save Filter View</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <Input
+              placeholder="Filter name..."
+              value={filterName}
+              onChange={(e) => setFilterName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSaveFilter()}
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSaveDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleSaveFilter} disabled={!filterName.trim()}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
