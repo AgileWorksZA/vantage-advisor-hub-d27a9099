@@ -42,13 +42,13 @@ import { AppHeader } from "@/components/layout/AppHeader";
 import { useRegion } from "@/contexts/RegionContext";
 import GlobalAIChat from "@/components/ai-assistant/GlobalAIChat";
 
-const filterTabs = [
-  { label: "Lead", color: "hsl(180, 70%, 45%)" },
-  { label: "Prospect", color: "hsl(180, 70%, 45%)" },
-  { label: "Client", color: "hsl(180, 70%, 45%)" },
-  { label: "Shared Clients", color: "hsl(0, 0%, 70%)" },
-  { label: "Incomplete Profile", color: "hsl(0, 0%, 70%)" },
-  { label: "Deceased", color: "hsl(0, 0%, 70%)" },
+const profileFilterOptions = [
+  { value: "Lead", label: "Lead" },
+  { value: "Prospect", label: "Prospect" },
+  { value: "Client", label: "Client" },
+  { value: "Shared Clients", label: "Shared Clients" },
+  { value: "Incomplete Profile", label: "Incomplete Profile" },
+  { value: "Deceased", label: "Deceased" },
 ];
 
 const clientTypeOptions = [
@@ -76,7 +76,9 @@ const Clients = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [includeInactive, setIncludeInactive] = useState(false);
-  const [activeFilter, setActiveFilter] = useState("Client");
+  const [selectedProfileFilters, setSelectedProfileFilters] = useState<string[]>(
+    profileFilterOptions.map(o => o.value)
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   
@@ -132,7 +134,7 @@ const Clients = () => {
         // Extract names for filtering
         const nameList = parsedData.map((item: any) => item.name);
         setFilteredNames(nameList);
-        setActiveFilter("");
+        setSelectedProfileFilters(profileFilterOptions.map(o => o.value));
       } catch (e) {
         console.error('Failed to parse widget data:', e);
         setFilterSource(null);
@@ -221,10 +223,10 @@ const Clients = () => {
       }
       
       // Filter by profile type (only if not coming from dashboard filter)
-      if (!filterSource) {
-        if (activeFilter === "Lead" && client.profileType !== "Lead") return false;
-        if (activeFilter === "Prospect" && client.profileType !== "Prospect") return false;
-        if (activeFilter === "Client" && client.profileType !== "Client") return false;
+      if (!filterSource && selectedProfileFilters.length < profileFilterOptions.length) {
+        const profileType = client.profileType;
+        // Standard profile types
+        if (!selectedProfileFilters.includes(profileType)) return false;
       }
       
       // Filter by inactive state
@@ -243,7 +245,7 @@ const Clients = () => {
       
       return true;
     });
-  }, [clients, selectedClientTypes, selectedAdvisorNames, filteredNames, filterSource, activeFilter, includeInactive, searchQuery]);
+  }, [clients, selectedClientTypes, selectedAdvisorNames, filteredNames, filterSource, selectedProfileFilters, includeInactive, searchQuery]);
 
   // Determine display clients: recently viewed (recency order) when no search, full results otherwise
   const displayClients = useMemo(() => {
@@ -287,7 +289,7 @@ const Clients = () => {
     setFilteredNames([]);
     setFilterSource(null);
     setWidgetData({});
-    setActiveFilter("Client");
+    setSelectedProfileFilters(profileFilterOptions.map(o => o.value));
     setSelectedClientTypes(["individual", "business", "trust", "family"]);
   };
 
@@ -367,62 +369,8 @@ const Clients = () => {
 
         {/* Clients Content - Scrollable */}
         <main className="flex-1 p-6 overflow-auto">
-          {/* Filter Tabs Row */}
+          {/* Add Profile + Include Inactive Row */}
           <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              {filterTabs.map((tab) => (
-                <button
-                  key={tab.label}
-                  onClick={() => setActiveFilter(tab.label)}
-                  className={`px-4 py-1.5 text-sm rounded border transition-colors ${
-                    activeFilter === tab.label
-                      ? "bg-[hsl(180,70%,45%)] text-white border-[hsl(180,70%,45%)]"
-                      : "bg-background border-border text-foreground hover:bg-muted"
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-            <Button 
-              className="bg-[hsl(180,70%,45%)] hover:bg-[hsl(180,70%,40%)] text-white"
-              onClick={() => setChoiceDialogOpen(true)}
-            >
-              + Add Profile
-            </Button>
-          </div>
-
-          {/* Dashboard Filter Indicator */}
-          {filterSource && (
-            <div className="flex items-center gap-2 mb-4 p-3 bg-primary/10 rounded-lg border border-primary/30">
-              <span className="text-sm">
-                Showing clients from: <strong>{filterSource}</strong>
-              </span>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={clearDashboardFilter}
-                className="h-7 px-2"
-              >
-                <X className="w-4 h-4 mr-1" />
-                Clear Filter
-              </Button>
-            </div>
-          )}
-
-          {/* Reset Filters & Include Inactive */}
-          <div className="flex items-center gap-4 mb-6">
-            <button 
-              className="text-[hsl(180,70%,45%)] text-sm hover:underline"
-              onClick={() => {
-                clearDashboardFilter();
-                setSearchQuery("");
-                setIncludeInactive(false);
-                setSelectedClientTypes(["individual", "business", "trust", "family"]);
-              }}
-            >
-              Reset Filters
-            </button>
             <div className="flex items-center gap-2">
               <Switch 
                 checked={includeInactive} 
@@ -430,6 +378,12 @@ const Clients = () => {
               />
               <span className="text-sm text-muted-foreground">Include inactive clients</span>
             </div>
+            <Button 
+              className="bg-[hsl(180,70%,45%)] hover:bg-[hsl(180,70%,40%)] text-white"
+              onClick={() => setChoiceDialogOpen(true)}
+            >
+              + Add Profile
+            </Button>
           </div>
 
           {/* Recently Viewed Section */}
@@ -447,6 +401,13 @@ const Clients = () => {
                   Reports
                 </Button>
                 <MultiSelect
+                  options={profileFilterOptions}
+                  selected={selectedProfileFilters}
+                  onChange={setSelectedProfileFilters}
+                  placeholder="Profile status"
+                  className="w-48"
+                />
+                <MultiSelect
                   options={clientTypeOptions}
                   selected={selectedClientTypes}
                   onChange={setSelectedClientTypes}
@@ -456,12 +417,22 @@ const Clients = () => {
               </div>
             </div>
 
-            {/* Client Type Filter Tags */}
-            {selectedClientTypes.length < clientTypeOptions.length && selectedClientTypes.length > 0 && (
+            {/* Filter Tags Row */}
+            {((selectedProfileFilters.length < profileFilterOptions.length && selectedProfileFilters.length > 0) || 
+             (selectedClientTypes.length < clientTypeOptions.length && selectedClientTypes.length > 0)) && (
               <div className="flex items-center gap-2 mb-3 flex-wrap">
                 <span className="text-xs text-muted-foreground">Filtered by:</span>
-                {selectedClientTypes.map(type => (
-                  <Badge key={type} variant="secondary" className="text-xs gap-1">
+                {selectedProfileFilters.length < profileFilterOptions.length && selectedProfileFilters.map(type => (
+                  <Badge key={`profile-${type}`} variant="secondary" className="text-xs gap-1">
+                    {profileFilterOptions.find(o => o.value === type)?.label}
+                    <X
+                      className="h-3 w-3 cursor-pointer"
+                      onClick={() => setSelectedProfileFilters(prev => prev.filter(t => t !== type))}
+                    />
+                  </Badge>
+                ))}
+                {selectedClientTypes.length < clientTypeOptions.length && selectedClientTypes.map(type => (
+                  <Badge key={`type-${type}`} variant="secondary" className="text-xs gap-1">
                     {clientTypeOptions.find(o => o.value === type)?.label}
                     <X
                       className="h-3 w-3 cursor-pointer"
@@ -469,6 +440,16 @@ const Clients = () => {
                     />
                   </Badge>
                 ))}
+                <button 
+                  className="text-[hsl(180,70%,45%)] text-xs hover:underline ml-2"
+                  onClick={() => {
+                    clearDashboardFilter();
+                    setSearchQuery("");
+                    setIncludeInactive(false);
+                  }}
+                >
+                  Reset Filters
+                </button>
               </div>
             )}
             
