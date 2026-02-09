@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useRegion } from "@/contexts/RegionContext";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -32,6 +32,11 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
   LayoutDashboard,
   Users,
   Briefcase,
@@ -49,6 +54,7 @@ import {
   Edit,
   X,
   Globe,
+  Search,
 } from "lucide-react";
 import commandCenterIcon from "@/assets/command-center-icon.png";
 import vantageLogo from "@/assets/vantage-logo.png";
@@ -84,6 +90,7 @@ import { useUserSettings } from "@/hooks/useUserSettings";
 import { COMMON_TIMEZONES, TIMEZONE_REGIONS, getActiveTimezone, getTimezoneAbbreviation, convertToTimezone } from "@/lib/timezone-utils";
 import GlobalAIChat from "@/components/ai-assistant/GlobalAIChat";
 import { EventHoverCard, eventTypeAccentColors } from "@/components/calendar/EventHoverCard";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const sidebarItems = [
   { icon: LayoutDashboard, label: "Dash", path: "/dashboard" },
@@ -153,6 +160,34 @@ const CalendarPage = () => {
   const { settings: userSettings, upsertSettings } = useUserSettings();
   const [displayTimezone, setDisplayTimezone] = useState<string | null>(null);
   const activeTimezone = displayTimezone || getActiveTimezone(userSettings?.timezone, selectedRegion);
+
+  // Event search state
+  const [eventSearchQuery, setEventSearchQuery] = useState("");
+  const [eventSearchOpen, setEventSearchOpen] = useState(false);
+  const eventSearchRef = useRef<HTMLDivElement>(null);
+
+  // Month/year picker state
+  const [monthPickerOpen, setMonthPickerOpen] = useState(false);
+  const [pickerYear, setPickerYear] = useState(viewDate.getFullYear());
+
+  // Sync picker year when viewDate changes
+  useEffect(() => {
+    setPickerYear(viewDate.getFullYear());
+  }, [viewDate]);
+
+  // Close event search on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (eventSearchRef.current && !eventSearchRef.current.contains(e.target as Node)) {
+        setEventSearchOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+
+
   const timezoneAbbr = getTimezoneAbbreviation(activeTimezone);
 
   // Sync displayTimezone from persisted settings on load
@@ -242,6 +277,15 @@ const CalendarPage = () => {
       endTime: convertToTimezone(event.endTime, activeTimezone),
     }));
   }, [filteredEvents, activeTimezone]);
+
+  // Filtered event search results
+  const eventSearchResults = useMemo(() => {
+    if (eventSearchQuery.length < 2) return [];
+    const q = eventSearchQuery.toLowerCase();
+    return convertedEvents
+      .filter(e => e.title.toLowerCase().includes(q) || e.clientName?.toLowerCase().includes(q))
+      .slice(0, 8);
+  }, [convertedEvents, eventSearchQuery]);
 
   // Generate calendar days for month view
   const calendarDays = useMemo(() => {
@@ -422,7 +466,6 @@ const CalendarPage = () => {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Header - Sticky */}
         <AppHeader
-          searchPlaceholder="Search events..."
           userName={userName}
           userEmail={userEmail}
           onSignOut={handleSignOut}
@@ -453,6 +496,59 @@ const CalendarPage = () => {
               <Plus className="w-4 h-4 mr-2" />
               Create Event
             </Button>
+
+            {/* Event Search */}
+            <div className="relative" ref={eventSearchRef}>
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
+              <Input
+                placeholder="Search events..."
+                className="pl-10 bg-muted/50 border-0 h-9 text-sm"
+                value={eventSearchQuery}
+                onChange={(e) => {
+                  setEventSearchQuery(e.target.value);
+                  setEventSearchOpen(e.target.value.length >= 2);
+                }}
+                onFocus={() => eventSearchQuery.length >= 2 && setEventSearchOpen(true)}
+                onKeyDown={(e) => e.key === "Escape" && setEventSearchOpen(false)}
+              />
+              {eventSearchOpen && (
+                <div className="absolute left-0 right-0 top-full mt-1 bg-popover border border-border rounded-lg shadow-lg z-50 overflow-hidden">
+                  {eventSearchResults.length === 0 ? (
+                    <div className="px-3 py-4 text-sm text-muted-foreground text-center">
+                      No events found
+                    </div>
+                  ) : (
+                    <ScrollArea className="max-h-[300px]">
+                      <div className="py-1">
+                        {eventSearchResults.map((event) => {
+                          const accent = eventTypeAccentColors[event.eventType];
+                          return (
+                            <button
+                              key={event.id}
+                              type="button"
+                              onClick={() => {
+                                handleEventClick(event);
+                                setEventSearchQuery("");
+                                setEventSearchOpen(false);
+                              }}
+                              className="w-full flex items-start gap-3 px-3 py-2.5 text-left hover:bg-muted/50 transition-colors"
+                            >
+                              <div className={cn("w-1 self-stretch rounded-full mt-0.5", accent.border.replace("border-l-", "bg-"))} />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-foreground truncate">{event.title}</p>
+                                <p className="text-xs text-muted-foreground truncate">
+                                  {event.clientName || format(event.startTime, "EEE, MMM d • h:mm a")}
+                                </p>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </ScrollArea>
+                  )}
+                </div>
+              )}
+            </div>
 
             {/* Mini Calendar */}
             <Card className="p-2 overflow-hidden flex-shrink-0">
@@ -578,7 +674,48 @@ const CalendarPage = () => {
                     ? format(viewDate, "EEEE, MMMM d, yyyy")
                     : viewMode === "week"
                     ? `${format(startOfWeek(viewDate, { weekStartsOn: 0 }), "MMM d")} - ${format(endOfWeek(viewDate, { weekStartsOn: 0 }), "MMM d, yyyy")}`
-                    : format(viewDate, "MMMM yyyy")}
+                    : (
+                      <Popover open={monthPickerOpen} onOpenChange={setMonthPickerOpen}>
+                        <PopoverTrigger asChild>
+                          <button className="hover:underline cursor-pointer decoration-[hsl(180,70%,45%)] underline-offset-4">
+                            {format(viewDate, "MMMM yyyy")}
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-64 p-3 bg-popover z-50" align="start">
+                          <div className="flex items-center justify-between mb-3">
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setPickerYear(y => y - 1)}>
+                              <ChevronLeft className="w-4 h-4" />
+                            </Button>
+                            <span className="text-sm font-semibold">{pickerYear}</span>
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setPickerYear(y => y + 1)}>
+                              <ChevronRight className="w-4 h-4" />
+                            </Button>
+                          </div>
+                          <div className="grid grid-cols-4 gap-1">
+                            {["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].map((m, i) => {
+                              const isCurrentMonth = viewDate.getMonth() === i && viewDate.getFullYear() === pickerYear;
+                              return (
+                                <Button
+                                  key={m}
+                                  variant="ghost"
+                                  size="sm"
+                                  className={cn(
+                                    "h-8 text-xs",
+                                    isCurrentMonth && "bg-[hsl(180,70%,45%)] text-white hover:bg-[hsl(180,70%,40%)] hover:text-white"
+                                  )}
+                                  onClick={() => {
+                                    setViewDate(new Date(pickerYear, i, 1));
+                                    setMonthPickerOpen(false);
+                                  }}
+                                >
+                                  {m}
+                                </Button>
+                              );
+                            })}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    )}
                 </h2>
               </div>
               <div className="flex items-center gap-3">
