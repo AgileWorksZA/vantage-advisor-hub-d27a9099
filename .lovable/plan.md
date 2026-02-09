@@ -1,59 +1,36 @@
 
 
-## Fix: Currency Symbol Flash (R -> C$ -> $) on Initial Load
+## Fix: "american" Incorrectly Matching "CA" (Canada) Jurisdiction
 
 ### Root Cause
 
-`Client360ViewTab` has its own `useClientDetail(clientId)` hook call (line 21). While the client data is being fetched asynchronously, `client` is `null`, so:
+In `mapNationalityToJurisdiction` (line 229 of `regional360ViewData.ts`), the check order causes a false match:
 
-- `mapNationalityToJurisdiction(null, null)` returns `"ZA"` (the hardcoded default)
-- `generateClient360Data(clientId, null, null)` produces data with `currencySymbol: "R"`
-- The component renders with "R" for a brief moment
-- Once the fetch completes, it re-renders with the correct "$"
+```
+Line 229: if (lower.includes("canadian") || lower.includes("ca")) return "CA";
+Line 231: if (lower.includes("american") || ...) return "US";
+```
 
-For `ClientPerformanceTab`, the parent (`ClientDetail.tsx`) passes `client.nationality` and `client.country_of_issue` as props, but during the loading phase these are from the parent's own async fetch, so a similar flash can occur.
+The substring `"ca"` exists inside `"american"` (ameri**ca**n), so the Canadian check matches first and returns `"CA"`. This causes all American clients to display `C$` instead of `$`.
 
 ### Fix
 
-**File: `src/components/client-detail/Client360ViewTab.tsx`**
-- Use the `loading` state from `useClientDetail` 
-- Return the "Loading client data..." message when `loading` is `true` OR `client` is `null` (not just when `clientData` is null)
-- This prevents the component from generating and rendering ZA-defaulted data before the real client record arrives
+**File: `src/data/regional360ViewData.ts`** (line 229)
 
-**File: `src/components/client-detail/ClientPerformanceTab.tsx`**
-- Add a guard: if `nationality` is null/undefined AND `countryOfIssue` is null/undefined, show a loading/skeleton state instead of falling back to the region context
-- This prevents the brief flash of the wrong region's currency
+Replace the loose `lower.includes("ca")` checks with exact word boundaries or more specific substrings. The same issue could theoretically affect other short codes. The fix:
 
-### Technical Details
+- Change `lower.includes("ca")` to a check that won't false-match, e.g. exact equality `lower === "ca"` or remove short-code matching from nationality (it's meant for full words like "Canadian")
+- Similarly audit `lower.includes("za")`, `lower.includes("au")`, `lower.includes("gb")` for false matches (these are safe since no other nationality contains those substrings, but using exact equality is more defensive)
 
-In `Client360ViewTab.tsx`, change:
-```tsx
-const { client } = useClientDetail(clientId || "");
-```
-to:
-```tsx
-const { client, loading } = useClientDetail(clientId || "");
+Updated line 227-231:
+```typescript
+if (lower.includes("south african") || lower === "za") return "ZA";
+if (lower.includes("australian") || lower === "au") return "AU";
+if (lower.includes("canadian") || lower === "ca") return "CA";
+if (lower.includes("british") || lower.includes("english") || lower.includes("scottish") || lower.includes("welsh") || lower === "uk" || lower === "gb") return "GB";
+if (lower.includes("american") || lower.includes("us citizen") || lower === "usa" || lower === "us" || lower.includes("united states")) return "US";
 ```
 
-Then update the early return guard from:
-```tsx
-if (!clientData) {
-  return <div>Loading client data...</div>;
-}
-```
-to:
-```tsx
-if (loading || !client || !clientData) {
-  return <div>Loading client data...</div>;
-}
-```
+Key change: All short jurisdiction codes (`za`, `au`, `ca`, `gb`, `uk`, `usa`, `us`) now use strict equality (`===`) instead of `includes()`, preventing substring false matches.
 
-In `ClientPerformanceTab.tsx`, add a guard near the top:
-```tsx
-if (!nationality && !countryOfIssue) {
-  return <div>Loading...</div>;
-}
-```
-
-This ensures no currency symbols render until the actual client jurisdiction is known.
-
+This is a one-file, 5-line change. No database modifications needed.
