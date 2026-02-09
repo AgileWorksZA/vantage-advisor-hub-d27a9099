@@ -164,21 +164,38 @@ export default function ClientPerformanceTab({ clientId, nationality, countryOfI
       .slice(0, 20);
   }, [availableFunds, fundSearch]);
 
+  const userHasEditedAllocation = useRef(false);
+
+  const evenSplit = (funds: ComparisonFund[]): ComparisonFund[] => {
+    const count = funds.length;
+    if (count === 0) return funds;
+    const each = +(100 / count).toFixed(1);
+    return funds.map((f, i) => ({
+      ...f,
+      allocation: i === count - 1 ? +(100 - each * (count - 1)).toFixed(1) : each,
+    }));
+  };
+
   const addFund = (fund: AdminFund) => {
     if (comparisonFunds.find((c) => c.fundId === fund.id)) return;
-    setComparisonFunds((prev) => [
-      ...prev,
-      { fundId: fund.id, name: fund.name, code: fund.code || "", allocation: 0 },
-    ]);
+    setComparisonFunds((prev) => {
+      const next = [...prev, { fundId: fund.id, name: fund.name, code: fund.code || "", allocation: 0 }];
+      return userHasEditedAllocation.current ? next : evenSplit(next);
+    });
     setFundSearch("");
     setShowFundDropdown(false);
   };
 
   const removeFund = (fundId: string) => {
-    setComparisonFunds((prev) => prev.filter((f) => f.fundId !== fundId));
+    setComparisonFunds((prev) => {
+      const next = prev.filter((f) => f.fundId !== fundId);
+      if (next.length === 0) userHasEditedAllocation.current = false;
+      return userHasEditedAllocation.current ? next : evenSplit(next);
+    });
   };
 
   const updateAllocation = (fundId: string, value: number) => {
+    userHasEditedAllocation.current = true;
     setComparisonFunds((prev) =>
       prev.map((f) => (f.fundId === fundId ? { ...f, allocation: value } : f))
     );
@@ -194,6 +211,7 @@ export default function ClientPerformanceTab({ clientId, nationality, countryOfI
         allocation: i === count - 1 ? +(100 - each * (count - 1)).toFixed(1) : each,
       }))
     );
+    userHasEditedAllocation.current = false;
   };
 
   const compAllocTotal = comparisonFunds.reduce((s, f) => s + f.allocation, 0);
