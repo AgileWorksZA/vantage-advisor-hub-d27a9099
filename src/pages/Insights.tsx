@@ -560,7 +560,7 @@ const Insights = () => {
         
         {/* VANTAGE Logo - rotated to read bottom to top */}
         <div className="mb-2 overflow-visible">
-          <img src={vantageLogo} alt="Vantage" className="h-[80px] w-auto -rotate-90 origin-center" />
+          <img src={vantageLogo} alt="Vantage" className="h-[80px] w-auto object-contain -rotate-90 origin-center" />
         </div>
       </aside>
 

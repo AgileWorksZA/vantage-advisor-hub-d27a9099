@@ -349,7 +349,7 @@ const Clients = () => {
           <img 
             src={vantageLogo} 
             alt="Vantage" 
-            className="h-[80px] w-auto -rotate-90 origin-center"
+            className="h-[80px] w-auto object-contain -rotate-90 origin-center"
           />
         </div>
       </aside>
