@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LayoutDashboard, Users, Briefcase, Mail, CalendarIcon, ListTodo, LineChart, Building2, X, GripVertical } from "lucide-react";
+import { LayoutDashboard, Users, Briefcase, Mail, CalendarIcon, ListTodo, LineChart, Building2, X, GripVertical, MoreVertical } from "lucide-react";
 import commandCenterIcon from "@/assets/command-center-icon.png";
 import vantageLogo from "@/assets/vantage-logo.png";
 import { EChartsWrapper } from "@/components/ui/echarts-wrapper";
@@ -14,6 +14,7 @@ import { DraggableWidgetGrid, WidgetLayout } from "@/components/widgets/Draggabl
 import { useWidgetLayout } from "@/hooks/useWidgetLayout";
 import { toast } from "sonner";
 import GlobalAIChat from "@/components/ai-assistant/GlobalAIChat";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const sidebarItems = [{
   icon: LayoutDashboard,
@@ -55,6 +56,7 @@ const defaultDashboardLayout: WidgetLayout[] = [
   { i: 'top-accounts', x: 6, y: 0, w: 3, h: 3 },
   { i: 'birthdays', x: 0, y: 3, w: 3, h: 3 },
   { i: 'clients-value', x: 3, y: 3, w: 3, h: 3 },
+  { i: 'corporate-actions', x: 6, y: 3, w: 3, h: 3 },
 ];
 
 const Dashboard = () => {
@@ -62,6 +64,7 @@ const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [caFilter, setCaFilter] = useState<'mandatory' | 'voluntary'>('mandatory');
   
   // Use global region context with filtered data
   const { selectedRegion, setSelectedRegion, filteredRegionalData } = useRegion();
@@ -451,6 +454,62 @@ const Dashboard = () => {
                           <td className="py-2 text-right">{row.value}</td>
                           <td className="py-2 text-right text-muted-foreground">{row.investors}</td>
                         </tr>)}
+                    </tbody>
+                  </table>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Upcoming Corporate Actions */}
+            <div key="corporate-actions">
+              <Card className="h-full">
+                <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
+                  <div className="flex items-center gap-2">
+                    <GripVertical className="w-4 h-4 text-muted-foreground" />
+                    <CardTitle className="text-sm font-medium">Upcoming corporate actions</CardTitle>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Select value={caFilter} onValueChange={(v) => setCaFilter(v as 'mandatory' | 'voluntary')}>
+                      <SelectTrigger className="h-6 text-xs w-[130px] border-none bg-muted/50">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="mandatory">Mandatory CAs</SelectItem>
+                        <SelectItem value="voluntary">Voluntary CAs</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button variant="ghost" size="icon" className="h-6 w-6">
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="px-4 pb-4">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-muted-foreground text-xs">
+                        <th className="text-left pb-2 font-normal">CAID</th>
+                        <th className="text-left pb-2 font-normal">Investment code</th>
+                        <th className="text-left pb-2 font-normal">Event type</th>
+                        <th className="text-right pb-2 font-normal">Affected accounts</th>
+                        <th className="text-right pb-2 font-normal">Ex date</th>
+                        <th className="pb-2 w-6"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredRegionalData.corporateActions
+                        .filter(ca => ca.type === caFilter)
+                        .map(ca => (
+                          <tr key={ca.id} className="border-t border-border">
+                            <td className="py-1.5 text-primary font-medium">{ca.id}</td>
+                            <td className="py-1.5">{ca.investmentCode}</td>
+                            <td className="py-1.5">{ca.eventType}</td>
+                            <td className="py-1.5 text-right">{ca.affectedAccounts}</td>
+                            <td className="py-1.5 text-right text-muted-foreground">{ca.exDate}</td>
+                            <td className="py-1.5 text-right">
+                              <MoreVertical className="w-4 h-4 text-muted-foreground inline-block" />
+                            </td>
+                          </tr>
+                        ))}
                     </tbody>
                   </table>
                 </CardContent>

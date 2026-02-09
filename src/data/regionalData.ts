@@ -53,6 +53,15 @@ export interface TaskData {
   isOverdue?: boolean;
 }
 
+export interface CorporateActionData {
+  id: string;
+  investmentCode: string;
+  eventType: string;
+  affectedAccounts: number;
+  exDate: string;
+  type: 'mandatory' | 'voluntary';
+}
+
 export interface RegionalData {
   currencySymbol: string;
   totalAUM: string;
@@ -64,6 +73,7 @@ export interface RegionalData {
   clientsByValue: ClientsByValueData[];
   advisors: AdvisorData[];
   tasks: TaskData[];
+  corporateActions: CorporateActionData[];
 }
 
 // Helper to format currency
@@ -154,6 +164,15 @@ const southAfricaData: RegionalData = {
     { initials: "PN", name: "Pieter Naudé", aum: 720000000, clientCount: 340 },
     { initials: "LV", name: "Linda van Wyk", aum: 650000000, clientCount: 310 },
     { initials: "DG", name: "David Greenberg", aum: 467726572.38, clientCount: 270 },
+  ],
+  corporateActions: [
+    { id: "CA-10234", investmentCode: "NPN.XJSE", eventType: "Dividend", affectedAccounts: 42, exDate: "15/03/2026", type: "mandatory" },
+    { id: "CA-10235", investmentCode: "SBK.XJSE", eventType: "Dividend", affectedAccounts: 38, exDate: "18/03/2026", type: "mandatory" },
+    { id: "CA-10236", investmentCode: "SOL.XJSE", eventType: "Rights Issue", affectedAccounts: 15, exDate: "22/03/2026", type: "voluntary" },
+    { id: "CA-10237", investmentCode: "SHP.XJSE", eventType: "Stock Split", affectedAccounts: 27, exDate: "01/04/2026", type: "mandatory" },
+    { id: "CA-10238", investmentCode: "AGL.XJSE", eventType: "Dividend", affectedAccounts: 31, exDate: "05/04/2026", type: "mandatory" },
+    { id: "CA-10239", investmentCode: "FSR.XJSE", eventType: "Spin-off", affectedAccounts: 12, exDate: "10/04/2026", type: "voluntary" },
+    { id: "CA-10240", investmentCode: "BIL.XJSE", eventType: "Merger", affectedAccounts: 8, exDate: "15/04/2026", type: "voluntary" },
   ],
   tasks: [
     // Page 1 (1-15)
@@ -280,6 +299,15 @@ const australiaData: RegionalData = {
     { initials: "EA", name: "Emily Anderson", aum: 780000000, clientCount: 420 },
     { initials: "TM", name: "Thomas Murphy", aum: 739625872, clientCount: 367 },
   ],
+  corporateActions: [
+    { id: "CA-20301", investmentCode: "CBA.XASX", eventType: "Dividend", affectedAccounts: 55, exDate: "10/03/2026", type: "mandatory" },
+    { id: "CA-20302", investmentCode: "BHP.XASX", eventType: "Dividend", affectedAccounts: 48, exDate: "17/03/2026", type: "mandatory" },
+    { id: "CA-20303", investmentCode: "CSL.XASX", eventType: "Stock Split", affectedAccounts: 22, exDate: "24/03/2026", type: "mandatory" },
+    { id: "CA-20304", investmentCode: "WES.XASX", eventType: "Rights Issue", affectedAccounts: 18, exDate: "02/04/2026", type: "voluntary" },
+    { id: "CA-20305", investmentCode: "NAB.XASX", eventType: "Dividend", affectedAccounts: 35, exDate: "08/04/2026", type: "mandatory" },
+    { id: "CA-20306", investmentCode: "MQG.XASX", eventType: "Spin-off", affectedAccounts: 10, exDate: "14/04/2026", type: "voluntary" },
+    { id: "CA-20307", investmentCode: "RIO.XASX", eventType: "Merger", affectedAccounts: 6, exDate: "20/04/2026", type: "voluntary" },
+  ],
   tasks: [
     // Page 1 (1-15)
     { id: "Onboard-91234", clientName: "Papadopoulos, Konstantinos", taskType: "Client onboarding", title: "Super fund setup", dueDate: "18/05/2025", followupDate: "16/05/2025", status: "In Progress", lastComment: "TFN declaration received", advisorInitials: "JM", advisorName: "James Mitchell", assigneeName: "James Mitchell", isUrgent: false, isOverdue: false },
@@ -403,6 +431,14 @@ const canadaData: RegionalData = {
     { initials: "JM", name: "James MacDonald", aum: 1100000000, clientCount: 512 },
     { initials: "SG", name: "Sophie Gagnon", aum: 950000000, clientCount: 467 },
     { initials: "RS", name: "Robert Singh", aum: 922649990, clientCount: 376 },
+  ],
+  corporateActions: [
+    { id: "CA-30401", investmentCode: "RY.XTSE", eventType: "Dividend", affectedAccounts: 62, exDate: "12/03/2026", type: "mandatory" },
+    { id: "CA-30402", investmentCode: "TD.XTSE", eventType: "Dividend", affectedAccounts: 51, exDate: "19/03/2026", type: "mandatory" },
+    { id: "CA-30403", investmentCode: "ENB.XTSE", eventType: "Dividend", affectedAccounts: 44, exDate: "26/03/2026", type: "mandatory" },
+    { id: "CA-30404", investmentCode: "CNR.XTSE", eventType: "Stock Split", affectedAccounts: 19, exDate: "03/04/2026", type: "mandatory" },
+    { id: "CA-30405", investmentCode: "BMO.XTSE", eventType: "Rights Issue", affectedAccounts: 14, exDate: "09/04/2026", type: "voluntary" },
+    { id: "CA-30406", investmentCode: "SU.XTSE", eventType: "Merger", affectedAccounts: 9, exDate: "16/04/2026", type: "voluntary" },
   ],
   tasks: [
     // Page 1 (1-15)
@@ -528,6 +564,15 @@ const unitedKingdomData: RegionalData = {
     { initials: "VB", name: "Victoria Brown", aum: 520000000, clientCount: 378 },
     { initials: "JT", name: "James Taylor", aum: 417392156, clientCount: 308 },
   ],
+  corporateActions: [
+    { id: "CA-40501", investmentCode: "SHEL.XLON", eventType: "Dividend", affectedAccounts: 58, exDate: "11/03/2026", type: "mandatory" },
+    { id: "CA-40502", investmentCode: "AZN.XLON", eventType: "Dividend", affectedAccounts: 43, exDate: "18/03/2026", type: "mandatory" },
+    { id: "CA-40503", investmentCode: "HSBA.XLON", eventType: "Dividend", affectedAccounts: 39, exDate: "25/03/2026", type: "mandatory" },
+    { id: "CA-40504", investmentCode: "ULVR.XLON", eventType: "Rights Issue", affectedAccounts: 16, exDate: "01/04/2026", type: "voluntary" },
+    { id: "CA-40505", investmentCode: "RIO.XLON", eventType: "Stock Split", affectedAccounts: 24, exDate: "08/04/2026", type: "mandatory" },
+    { id: "CA-40506", investmentCode: "GSK.XLON", eventType: "Spin-off", affectedAccounts: 11, exDate: "15/04/2026", type: "voluntary" },
+    { id: "CA-40507", investmentCode: "BATS.XLON", eventType: "Merger", affectedAccounts: 7, exDate: "22/04/2026", type: "voluntary" },
+  ],
   tasks: [
     // Page 1 (1-15)
     { id: "Onboard-81234", clientName: "Smith, William", taskType: "Client onboarding", title: "ISA account setup", dueDate: "20/05/2025", followupDate: "18/05/2025", status: "In Progress", lastComment: "NI number verified", advisorInitials: "WS", advisorName: "William Smith", assigneeName: "William Smith", isUrgent: false, isOverdue: false },
@@ -651,6 +696,15 @@ const unitedStatesData: RegionalData = {
     { initials: "RB", name: "Robert Brown", aum: 1100000000, clientCount: 467 },
     { initials: "MG", name: "Maria Garcia", aum: 950000000, clientCount: 412 },
     { initials: "WD", name: "William Davis", aum: 922649990, clientCount: 392 },
+  ],
+  corporateActions: [
+    { id: "CA-50601", investmentCode: "AAPL.XNAS", eventType: "Dividend", affectedAccounts: 72, exDate: "13/03/2026", type: "mandatory" },
+    { id: "CA-50602", investmentCode: "MSFT.XNAS", eventType: "Dividend", affectedAccounts: 65, exDate: "20/03/2026", type: "mandatory" },
+    { id: "CA-50603", investmentCode: "JPM.XNYS", eventType: "Dividend", affectedAccounts: 48, exDate: "27/03/2026", type: "mandatory" },
+    { id: "CA-50604", investmentCode: "GOOGL.XNAS", eventType: "Stock Split", affectedAccounts: 33, exDate: "03/04/2026", type: "mandatory" },
+    { id: "CA-50605", investmentCode: "AMZN.XNAS", eventType: "Rights Issue", affectedAccounts: 21, exDate: "10/04/2026", type: "voluntary" },
+    { id: "CA-50606", investmentCode: "JNJ.XNYS", eventType: "Spin-off", affectedAccounts: 15, exDate: "17/04/2026", type: "voluntary" },
+    { id: "CA-50607", investmentCode: "XOM.XNYS", eventType: "Merger", affectedAccounts: 9, exDate: "24/04/2026", type: "voluntary" },
   ],
   tasks: [
     // Page 1 (1-15)
