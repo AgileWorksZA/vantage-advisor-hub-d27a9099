@@ -1,6 +1,7 @@
-import { createContext, useContext, useState, useMemo, ReactNode } from "react";
+import { createContext, useContext, useState, useMemo, useEffect, ReactNode } from "react";
 import { getRegionalData, getFilteredRegionalData, getRegionalOpportunities, RegionalData } from "@/data/regionalData";
 import { ClientOpportunity } from "@/components/ai-assistant/OpportunityCard";
+import { useUserJurisdictions } from "@/hooks/useUserJurisdictions";
 
 interface RegionContextType {
   selectedRegion: string;
@@ -13,6 +14,8 @@ interface RegionContextType {
   currencyCode: string;
   formatCurrency: (value: number) => string;
   opportunities: ClientOpportunity[];
+  isJurisdictionRestricted: boolean;
+  allowedJurisdictions: string[];
 }
 
 const RegionContext = createContext<RegionContextType | undefined>(undefined);
@@ -58,12 +61,25 @@ function getAdvisorsForRegion(region: string, map: Record<string, string[]>): st
 }
 
 export function RegionProvider({ children }: { children: ReactNode }) {
+  const { allowedJurisdictions, isRestricted, loading: jurisdictionLoading } = useUserJurisdictions();
+
   const [selectedRegion, setSelectedRegionState] = useState<string>(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem(STORAGE_KEY) || "ZA";
     }
     return "ZA";
   });
+
+  // Force region when jurisdiction restriction is loaded
+  useEffect(() => {
+    if (!jurisdictionLoading && isRestricted && allowedJurisdictions.length > 0) {
+      const forced = allowedJurisdictions[0];
+      if (selectedRegion !== forced) {
+        setSelectedRegionState(forced);
+        localStorage.setItem(STORAGE_KEY, forced);
+      }
+    }
+  }, [jurisdictionLoading, isRestricted, allowedJurisdictions]);
 
   // Load the full advisor map once on init
   const [advisorMap, setAdvisorMapState] = useState<Record<string, string[]>>(() => loadAdvisorMap());
@@ -77,6 +93,9 @@ export function RegionProvider({ children }: { children: ReactNode }) {
   const regionalData = useMemo(() => getRegionalData(selectedRegion), [selectedRegion]);
 
   const setSelectedRegion = (newRegion: string) => {
+    // No-op for restricted users
+    if (isRestricted) return;
+
     // Save current advisor selection for the old region
     const updatedMap = { ...advisorMap, [selectedRegion]: selectedAdvisors };
     setAdvisorMapState(updatedMap);
@@ -131,6 +150,8 @@ export function RegionProvider({ children }: { children: ReactNode }) {
     currencyCode: currency.code,
     formatCurrency,
     opportunities,
+    isJurisdictionRestricted: isRestricted,
+    allowedJurisdictions,
   };
 
   return <RegionContext.Provider value={value}>{children}</RegionContext.Provider>;

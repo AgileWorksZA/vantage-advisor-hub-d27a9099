@@ -7,6 +7,11 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useRegion } from "@/contexts/RegionContext";
 import { useNavigationWarning } from "@/hooks/useNavigationWarning";
@@ -41,7 +46,7 @@ const FlagIcon = ({ code, height = 18 }: { code: string; height?: number }) => {
 };
 
 export function RegionSelector() {
-  const { selectedRegion, setSelectedRegion } = useRegion();
+  const { selectedRegion, setSelectedRegion, isJurisdictionRestricted } = useRegion();
   const { isLandingPage, parentLandingPage, parentLandingLabel } = useNavigationWarning();
   const navigate = useNavigate();
 
@@ -50,6 +55,25 @@ export function RegionSelector() {
   const [pendingRegion, setPendingRegion] = useState<string | null>(null);
 
   const currentRegion = regions.find(r => r.code === selectedRegion) || regions[0];
+
+  // Render static flag for restricted users
+  if (isJurisdictionRestricted) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div
+            className="h-9 w-9 rounded-full flex items-center justify-center cursor-default"
+            title={currentRegion.name}
+          >
+            <FlagIcon code={currentRegion.flagCode} height={18} />
+          </div>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>Your account is restricted to {currentRegion.name}</p>
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
 
   const handleSelect = (regionCode: string) => {
     if (regionCode === selectedRegion) {
