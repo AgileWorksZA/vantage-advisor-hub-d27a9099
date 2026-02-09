@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.seed-us-communications]
 verify_jwt = false
+
+[functions.seed-onboarding-tasks]
+verify_jwt = false
