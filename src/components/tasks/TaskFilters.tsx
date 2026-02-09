@@ -161,7 +161,7 @@ export function TaskFilters({ filters, onFiltersChange }: TaskFiltersProps) {
           <Button
             variant="outline"
             className={cn(
-              "w-[150px] justify-start text-left font-normal",
+              "w-[200px] justify-start text-left font-normal",
               !filters.dueDateTo && "text-muted-foreground"
             )}
           >
