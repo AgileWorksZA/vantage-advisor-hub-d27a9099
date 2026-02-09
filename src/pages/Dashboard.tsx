@@ -56,7 +56,7 @@ const defaultDashboardLayout: WidgetLayout[] = [
   { i: 'top-accounts', x: 6, y: 0, w: 3, h: 3 },
   { i: 'birthdays', x: 0, y: 3, w: 3, h: 3 },
   { i: 'clients-value', x: 3, y: 3, w: 3, h: 3 },
-  { i: 'corporate-actions', x: 3, y: 3, w: 6, h: 3 },
+  { i: 'corporate-actions', x: 6, y: 3, w: 3, h: 3 },
 ];
 
 const Dashboard = () => {
@@ -470,12 +470,12 @@ const Dashboard = () => {
                   </div>
                   <div className="flex items-center gap-1">
                     <Select value={caFilter} onValueChange={(v) => setCaFilter(v as 'mandatory' | 'voluntary')}>
-                      <SelectTrigger className="h-6 text-xs w-[130px] border-none bg-muted/50">
+                      <SelectTrigger className="h-6 text-xs w-[110px] border-none bg-muted/50">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="mandatory">Mandatory CAs</SelectItem>
-                        <SelectItem value="voluntary">Voluntary CAs</SelectItem>
+                        <SelectItem value="mandatory">Mandatory</SelectItem>
+                        <SelectItem value="voluntary">Voluntary</SelectItem>
                       </SelectContent>
                     </Select>
                     <Button variant="ghost" size="icon" className="h-6 w-6">
@@ -484,15 +484,12 @@ const Dashboard = () => {
                   </div>
                 </CardHeader>
                 <CardContent className="px-4 pb-4">
-                  <table className="w-full text-sm">
+                  <table className="w-full text-xs">
                     <thead>
                       <tr className="text-muted-foreground text-xs">
-                        <th className="text-left pb-2 font-normal">CAID</th>
-                        <th className="text-left pb-2 font-normal">Investment code</th>
-                        <th className="text-left pb-2 font-normal">Event type</th>
-                        <th className="text-right pb-2 font-normal">Affected accounts</th>
+                        <th className="text-left pb-2 font-normal">Code</th>
+                        <th className="text-left pb-2 font-normal">Event</th>
                         <th className="text-right pb-2 font-normal">Ex date</th>
-                        <th className="pb-2 w-6"></th>
                       </tr>
                     </thead>
                     <tbody>
@@ -500,14 +497,9 @@ const Dashboard = () => {
                         .filter(ca => ca.type === caFilter)
                         .map(ca => (
                           <tr key={ca.id} className="border-t border-border">
-                            <td className="py-1.5 text-primary font-medium">{ca.id}</td>
-                            <td className="py-1.5">{ca.investmentCode}</td>
-                            <td className="py-1.5">{ca.eventType}</td>
-                            <td className="py-1.5 text-right">{ca.affectedAccounts}</td>
-                            <td className="py-1.5 text-right text-muted-foreground">{ca.exDate}</td>
-                            <td className="py-1.5 text-right">
-                              <MoreVertical className="w-4 h-4 text-muted-foreground inline-block" />
-                            </td>
+                            <td className="py-1.5 max-w-[80px] truncate" title={ca.investmentCode}>{ca.investmentCode}</td>
+                            <td className="py-1.5 max-w-[100px] truncate" title={ca.eventType}>{ca.eventType}</td>
+                            <td className="py-1.5 text-right text-muted-foreground whitespace-nowrap">{ca.exDate}</td>
                           </tr>
                         ))}
                     </tbody>
