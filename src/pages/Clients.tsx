@@ -369,7 +369,7 @@ const Clients = () => {
 
         {/* Clients Content - Scrollable */}
         <main className="flex-1 p-6 overflow-auto">
-          {/* Add Profile + Include Inactive Row */}
+          {/* Add Profile Row */}
           <div className="flex items-center justify-end mb-4">
             <Button 
               className="bg-[hsl(180,70%,45%)] hover:bg-[hsl(180,70%,40%)] text-white"
@@ -382,10 +382,27 @@ const Clients = () => {
           {/* Recently Viewed Section */}
           <div className="mb-4">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-[hsl(180,70%,45%)] font-medium">
-                {searchQuery ? "SEARCH RESULTS" : "RECENTLY VIEWED"}
+              <h2 className="text-[hsl(180,70%,45%)] font-medium whitespace-nowrap">
+                {searchQuery ? "SEARCH RESULTS" : "RECENTLY VIEWED CLIENTS"}
               </h2>
               <div className="flex items-center gap-2">
+                <Input 
+                  placeholder="Search clients..." 
+                  className="w-64 bg-background"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                <Button className="bg-[hsl(180,70%,45%)] hover:bg-[hsl(180,70%,40%)] text-white" size="sm">
+                  Search
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  className="border-[hsl(180,70%,45%)] text-[hsl(180,70%,45%)]"
+                  onClick={refetch}
+                >
+                  <RefreshCw className="w-4 h-4" />
+                </Button>
                 <Button 
                   variant="outline" 
                   size="sm"
@@ -452,26 +469,6 @@ const Clients = () => {
                 </button>
               </div>
             )}
-            
-            <div className="flex items-center gap-2 mb-4">
-              <Input 
-                placeholder="Search clients..." 
-                className="max-w-md bg-background"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-              <Button className="bg-[hsl(180,70%,45%)] hover:bg-[hsl(180,70%,40%)] text-white">
-                Search
-              </Button>
-              <Button 
-                variant="outline" 
-                size="icon" 
-                className="border-[hsl(180,70%,45%)] text-[hsl(180,70%,45%)]"
-                onClick={refetch}
-              >
-                <RefreshCw className="w-4 h-4" />
-              </Button>
-            </div>
           </div>
 
           {/* Clients Table */}
