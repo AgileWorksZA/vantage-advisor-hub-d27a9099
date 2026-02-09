@@ -143,7 +143,7 @@ export function DayView({
                   key={event.id}
                   onClick={() => onEventClick(event)}
                   className={cn(
-                    "rounded px-2 py-1 text-sm text-white truncate max-w-[200px]",
+                    "rounded px-2 py-1 text-sm text-gray-900 dark:text-white truncate max-w-[200px]",
                     event.color || eventTypeColors[event.eventType]
                   )}
                 >
@@ -213,7 +213,7 @@ export function DayView({
                     onEventClick(event);
                   }}
                   className={cn(
-                    "absolute rounded-lg px-3 py-2 text-white overflow-hidden text-left shadow-sm",
+                    "absolute rounded-lg px-3 py-2 text-gray-900 dark:text-white overflow-hidden text-left shadow-sm",
                     event.color || eventTypeColors[event.eventType]
                   )}
                   style={{
@@ -225,14 +225,14 @@ export function DayView({
                   }}
                 >
                   <p className="font-medium truncate">{event.title}</p>
-                  <p className="text-sm text-white/80 truncate">
+                  <p className="text-sm text-gray-700 dark:text-white/80 truncate">
                     {format(event.startTime, "h:mm a")} - {format(event.endTime, "h:mm a")}
                   </p>
                   {position.height >= 80 && event.location && (
-                    <p className="text-sm text-white/70 truncate mt-1">📍 {event.location}</p>
+                    <p className="text-sm text-gray-600 dark:text-white/70 truncate mt-1">📍 {event.location}</p>
                   )}
                   {position.height >= 100 && event.clientName && (
-                    <p className="text-sm text-white/70 truncate">👤 {event.clientName}</p>
+                    <p className="text-sm text-gray-600 dark:text-white/70 truncate">👤 {event.clientName}</p>
                   )}
                 </button>
               );

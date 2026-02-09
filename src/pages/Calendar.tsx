@@ -675,7 +675,7 @@ const CalendarPage = () => {
                                 handleEventClick(event);
                               }}
                               className={cn(
-                                "w-full text-left px-1 py-0.5 rounded text-xs text-white truncate",
+                                "w-full text-left px-1 py-0.5 rounded text-xs text-gray-900 dark:text-white truncate",
                                 event.color || eventTypeColors[event.eventType]
                               )}
                             >
