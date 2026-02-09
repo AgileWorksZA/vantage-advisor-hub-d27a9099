@@ -1,0 +1,1 @@
+ALTER TABLE public.user_widget_layouts ADD COLUMN hidden_widgets JSONB NOT NULL DEFAULT '[]'::jsonb;

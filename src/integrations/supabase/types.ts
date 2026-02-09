@@ -4083,6 +4083,7 @@ export type Database = {
       user_widget_layouts: {
         Row: {
           created_at: string
+          hidden_widgets: Json
           id: string
           layout: Json
           page_id: string
@@ -4091,6 +4092,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          hidden_widgets?: Json
           id?: string
           layout?: Json
           page_id: string
@@ -4099,6 +4101,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          hidden_widgets?: Json
           id?: string
           layout?: Json
           page_id?: string
