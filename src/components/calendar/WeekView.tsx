@@ -193,7 +193,7 @@ export function WeekView({
                         onEventClick(event);
                       }}
                       className={cn(
-                        "absolute rounded px-1 py-0.5 text-xs text-white overflow-hidden text-left",
+                        "absolute rounded px-1 py-0.5 text-xs text-gray-900 dark:text-white overflow-hidden text-left",
                         event.color || eventTypeColors[event.eventType]
                       )}
                       style={{
@@ -206,7 +206,7 @@ export function WeekView({
                     >
                       <p className="font-medium truncate">{event.title}</p>
                       {position.height >= 40 && (
-                        <p className="text-white/80 truncate">
+                        <p className="text-gray-700 dark:text-white/80 truncate">
                           {format(event.startTime, "h:mm a")}
                         </p>
                       )}
@@ -225,7 +225,7 @@ export function WeekView({
                           onEventClick(event);
                         }}
                         className={cn(
-                          "w-full rounded px-1 py-0.5 text-xs text-white truncate mb-0.5 text-left",
+                          "w-full rounded px-1 py-0.5 text-xs text-gray-900 dark:text-white truncate mb-0.5 text-left",
                           event.color || eventTypeColors[event.eventType]
                         )}
                       >
