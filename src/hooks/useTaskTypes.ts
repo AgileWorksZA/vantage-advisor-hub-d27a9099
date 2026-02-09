@@ -39,7 +39,7 @@ export const useTaskTypes = () => {
 
       (data || []).forEach((item: any) => {
         const option: TaskTypeOption = {
-          code: item.code,
+          code: item.name,
           name: item.name,
           description: item.description,
           display_order: item.display_order || 0,
