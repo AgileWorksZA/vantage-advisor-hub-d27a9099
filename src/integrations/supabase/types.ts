@@ -4002,6 +4002,27 @@ export type Database = {
           },
         ]
       }
+      user_jurisdictions: {
+        Row: {
+          created_at: string
+          id: string
+          jurisdiction_code: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          jurisdiction_code: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          jurisdiction_code?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_settings: {
         Row: {
           created_at: string
