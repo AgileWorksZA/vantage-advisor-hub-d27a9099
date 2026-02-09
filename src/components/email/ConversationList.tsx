@@ -13,6 +13,14 @@ import { useClients } from "@/hooks/useClients";
 
 type TabType = "recent" | "favourites" | "contacts";
 
+const regionToCountry: Record<string, string> = {
+  ZA: "South Africa",
+  AU: "Australia",
+  CA: "Canada",
+  GB: "United Kingdom",
+  US: "United States",
+};
+
 interface ConversationListProps {
   channel: DirectMessageChannel;
   conversations: ConversationSummary[];
@@ -54,9 +62,11 @@ export const ConversationList = ({
   );
 
   // Contacts: all clients for this jurisdiction
+  const jurisdictionCountryName = jurisdiction ? (regionToCountry[jurisdiction] || jurisdiction) : undefined;
+
   const contactClients = clients
     .filter(c => {
-      if (jurisdiction && c.countryOfIssue !== jurisdiction) return false;
+      if (jurisdictionCountryName && c.countryOfIssue !== jurisdictionCountryName) return false;
       if (searchQuery && !c.client.toLowerCase().includes(searchQuery.toLowerCase())) return false;
       return true;
     })
