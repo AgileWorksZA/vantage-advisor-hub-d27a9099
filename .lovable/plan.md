@@ -1,37 +1,43 @@
 
 
-## Fix Vantage Logo Aspect Ratio
+# Add "Upcoming Corporate Actions" Widget to Dashboard
 
-### Problem
-Removing `object-contain` in the previous change caused the logo's aspect ratio to distort. The `object-contain` class is needed to ensure the image scales proportionally.
+## Overview
+Add a new dashboard widget matching the reference screenshot that displays upcoming corporate actions (dividends, rights issues, stock splits, etc.) localized per jurisdiction with real exchange-traded investment codes. The widget includes a "Mandatory CAs" / "Voluntary CAs" dropdown filter and a table with CAID, Investment code, Event type, Affected accounts, and Ex date columns.
 
-### Solution
-Add `object-contain` back to the logo's class list while keeping the `h-[80px]`, `w-auto`, and `overflow-visible` changes that allow it to render larger than the sidebar width.
+## Data Design
 
-Update across all 14 files:
+Add a new `CorporateActionData` interface and corporate actions array to `RegionalData` in `src/data/regionalData.ts`. Each jurisdiction gets realistic, localized data:
 
-```tsx
-// Before
-className="h-[80px] w-auto -rotate-90 origin-center"
+| Jurisdiction | Exchange | Example Codes |
+|---|---|---|
+| ZA | JSE | NPN.XJSE, SBK.XJSE, SOL.XJSE |
+| AU | ASX | CBA.XASX, BHP.XASX, CSL.XASX |
+| CA | TSX | RY.XTSE, TD.XTSE, ENB.XTSE |
+| GB | LSE | SHEL.XLON, AZN.XLON, HSBA.XLON |
+| US | NYSE/NASDAQ | AAPL.XNAS, MSFT.XNAS, JPM.XNYS |
 
-// After
-className="h-[80px] w-auto object-contain -rotate-90 origin-center"
-```
+Each action has: `id` (CAID number), `investmentCode`, `eventType` (Dividend, Rights Issue, Stock Split, Merger, Spin-off), `affectedAccounts` (number), `exDate`, and `type` ("mandatory" or "voluntary").
 
-### Files to Update
-1. `src/components/layout/AppLayout.tsx`
-2. `src/pages/Dashboard.tsx`
-3. `src/pages/Clients.tsx`
-4. `src/pages/Portfolio.tsx`
-5. `src/pages/Email.tsx`
-6. `src/pages/EmailView.tsx`
-7. `src/pages/Calendar.tsx`
-8. `src/pages/Tasks.tsx`
-9. `src/pages/Insights.tsx`
-10. `src/pages/Practice.tsx`
-11. `src/pages/ClientDetail.tsx`
-12. `src/pages/AccountSettings.tsx`
-13. `src/pages/Administration.tsx`
-14. `src/pages/ComposeEmail.tsx`
+## Technical Changes
 
-Single class addition per file, no other changes needed.
+### 1. `src/data/regionalData.ts`
+- Add `CorporateActionData` interface
+- Add `corporateActions` field to `RegionalData` interface
+- Add 6-8 corporate actions per jurisdiction (mix of mandatory and voluntary)
+
+### 2. `src/pages/Dashboard.tsx`
+- Add `corporate-actions` to `defaultDashboardLayout` array (position: `{ i: 'corporate-actions', x: 6, y: 3, w: 3, h: 3 }`)
+- Add a new widget card with:
+  - Drag handle header with "Upcoming corporate actions" title
+  - A `Select` dropdown to filter between "Mandatory CAs" and "Voluntary CAs" (default: Mandatory)
+  - Table columns: CAID, Investment code, Event type, Affected accounts, Ex date
+  - Three-dot menu icon on each row (visual only, matching reference)
+- Data sourced from `filteredRegionalData.corporateActions`, filtered by the local mandatory/voluntary state
+
+### 3. Files using `RegionalData` type
+No other files need changes -- the corporate actions data is only consumed on the Dashboard page. The `getFilteredRegionalData` function in `regionalData.ts` will pass through the `corporateActions` array unchanged (it's not advisor-specific).
+
+## Widget Layout
+The new widget slots into position `(6, 3)` in the default grid -- bottom-right, next to the existing "Clients by Value" widget. Existing users' saved layouts won't include it, so it will appear once they reset their layout or on first load for new users.
+
