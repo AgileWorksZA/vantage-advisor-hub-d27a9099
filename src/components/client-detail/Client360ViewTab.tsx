@@ -24,15 +24,15 @@ const Client360ViewTab = () => {
   const [showQuoteWizard, setShowQuoteWizard] = useState(false);
   const [showNewBusinessWizard, setShowNewBusinessWizard] = useState(false);
 
-  const jurisdiction = mapNationalityToJurisdiction(client?.nationality || null);
+  const jurisdiction = mapNationalityToJurisdiction(client?.nationality || null, client?.country_of_issue || null);
   
   const VISIBLE_ROWS_LIMIT = 5;
 
   // Generate dynamic 360 view data based on client nationality
   const clientData = useMemo(() => {
     if (!clientId) return null;
-    return generateClient360Data(clientId, client?.nationality || null);
-  }, [clientId, client?.nationality]);
+    return generateClient360Data(clientId, client?.nationality || null, client?.country_of_issue || null);
+  }, [clientId, client?.nationality, client?.country_of_issue]);
 
   if (!clientData) {
     return <div className="text-center py-8 text-muted-foreground">Loading client data...</div>;

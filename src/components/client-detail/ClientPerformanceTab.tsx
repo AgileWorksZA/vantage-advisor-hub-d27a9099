@@ -53,6 +53,7 @@ interface AdminFund {
 interface ClientPerformanceTabProps {
   clientId: string;
   nationality?: string | null;
+  countryOfIssue?: string | null;
 }
 
 const CURRENT_COLOR = "#a3d5f7";
@@ -60,11 +61,11 @@ const COMP_COLOR = "#b3e6b3";
 const CURRENT_LINE = "hsl(200, 70%, 55%)";
 const COMP_LINE = "hsl(142, 60%, 45%)";
 
-export default function ClientPerformanceTab({ clientId, nationality }: ClientPerformanceTabProps) {
+export default function ClientPerformanceTab({ clientId, nationality, countryOfIssue }: ClientPerformanceTabProps) {
   const { selectedRegion } = useRegion();
-  const jurisdiction = nationality ? mapNationalityToJurisdiction(nationality) : selectedRegion;
+  const jurisdiction = nationality ? mapNationalityToJurisdiction(nationality, countryOfIssue) : selectedRegion;
 
-  const data360 = useMemo(() => generateClient360Data(clientId, nationality || null), [clientId, nationality]);
+  const data360 = useMemo(() => generateClient360Data(clientId, nationality || null, countryOfIssue || null), [clientId, nationality, countryOfIssue]);
   const currentPortfolio = useMemo(() => {
     const total = data360.onPlatformProducts.reduce((s, p) => s + p.amountValue, 0);
     return data360.onPlatformProducts.map((p) => ({
