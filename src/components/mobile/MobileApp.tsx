@@ -1,13 +1,13 @@
 import { useState } from "react";
-import { CalendarDays, Users, CheckSquare, BarChart3, Sparkles, Bell, Monitor } from "lucide-react";
+import { CalendarDays, Users, CheckSquare, BarChart3, Sparkles, Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useAppMode } from "@/contexts/AppModeContext";
 import { Button } from "@/components/ui/button";
 import MobileTodayTab from "./MobileTodayTab";
 import MobileClientsTab from "./MobileClientsTab";
 import MobileTasksTab from "./MobileTasksTab";
 import MobileInsightsTab from "./MobileInsightsTab";
 import MobileAITab from "./MobileAITab";
+import MobileSettingsMenu from "./MobileSettingsMenu";
 
 type MobileTab = "today" | "clients" | "tasks" | "insights" | "ai";
 
@@ -21,7 +21,6 @@ const tabs: { id: MobileTab; label: string; icon: typeof CalendarDays }[] = [
 
 const MobileApp = () => {
   const [activeTab, setActiveTab] = useState<MobileTab>("today");
-  const { setMode } = useAppMode();
 
   const renderContent = () => {
     switch (activeTab) {
@@ -65,19 +64,10 @@ const MobileApp = () => {
               3
             </span>
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-7 text-xs gap-1"
-            onClick={() => setMode("web")}
-          >
-            <Monitor className="h-3 w-3" />
-            Web
-          </Button>
+          <MobileSettingsMenu />
         </div>
       </header>
 
-      {/* Content */}
       <main className="flex-1 overflow-y-auto">
         {renderContent()}
       </main>

@@ -39,11 +39,6 @@ const MobileSplashScreen = () => {
           </span>
         </div>
 
-        {/* Tagline */}
-        <p className="text-lg tracking-widest text-white/70 font-light">
-          Your Advice Companion <span className="text-xs align-super">™</span>
-        </p>
-
         {/* Loading bar */}
         <div className="w-48 mt-8">
           <div className="h-1 w-full rounded-full bg-white/10 overflow-hidden">
@@ -53,6 +48,11 @@ const MobileSplashScreen = () => {
             />
           </div>
         </div>
+
+        {/* Tagline */}
+        <p className="text-lg tracking-widest text-white/70 font-light mt-6">
+          Your Advice Companion <span className="text-xs align-super">™</span>
+        </p>
       </div>
 
       {/* Powered by Vantage */}
