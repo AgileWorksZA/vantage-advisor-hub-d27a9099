@@ -158,7 +158,7 @@ const Tasks = () => {
           </button>
         ))}
         <div className="flex-1" />
-        <div className="mb-2"><img src={vantageLogo} alt="Vantage" className="h-10 object-contain -rotate-90 origin-center" /></div>
+        <div className="mb-2"><img src={vantageLogo} alt="Vantage" className="h-[46px] object-contain -rotate-90 origin-center" /></div>
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
