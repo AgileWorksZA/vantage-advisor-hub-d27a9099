@@ -1,17 +1,30 @@
 
 
-## Reduce Font Size in Allocation % Fields
+## Hide "Request Astute" for Non-South African Jurisdictions
 
 ### Change
 
-**File: `src/components/client-detail/ClientPerformanceTab.tsx`** (line 640)
+**File: `src/components/client-detail/Client360ViewTab.tsx`**
 
-Reduce the input font size from `text-[11px]` to `text-[10px]` and widen slightly from `w-16` to `w-[4.5rem]` so the one-decimal values (e.g. `33.3`) display comfortably without clipping.
+The `jurisdiction` variable is already available (line 27). Wrap the separator and "Request Astute" button in both the Risk Products section (lines 406-407) and Medical Aid section (lines 461-462) with a `jurisdiction === "ZA"` conditional so they only render for South African clients.
 
+**Risk Products (lines 405-407):**
+```tsx
+// Before
+<Button variant="link" ...>+ Risk Products</Button>
+<span className="text-muted-foreground">|</span>
+<Button variant="link" ...>Request Astute</Button>
+
+// After
+<Button variant="link" ...>+ Risk Products</Button>
+{jurisdiction === "ZA" && (
+  <>
+    <span className="text-muted-foreground">|</span>
+    <Button variant="link" ...>Request Astute</Button>
+  </>
+)}
 ```
-Before: className="w-16 h-6 text-[11px] text-right"
-After:  className="w-[4.5rem] h-6 text-[10px] text-right"
-```
 
-Single line change, no other files affected.
+**Medical Aid (lines 459-462):** Same conditional wrapping.
 
+Two small edits in one file. No database changes.
