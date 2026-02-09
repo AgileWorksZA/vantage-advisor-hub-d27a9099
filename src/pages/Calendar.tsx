@@ -360,7 +360,7 @@ const CalendarPage = () => {
           <img 
             src={vantageLogo} 
             alt="Vantage" 
-            className="h-[46px] object-contain -rotate-90 origin-center"
+            className="h-[53px] object-contain -rotate-90 origin-center"
           />
         </div>
       </aside>
