@@ -1,31 +1,22 @@
 
-
-# Reorder Mobile Splash Screen Elements
+# Shift Splash Screen Content Downward
 
 ## Overview
-Rearrange the splash screen layout so the loading bar appears first (at the top of the centered group), followed by the AdvisorFirst logo, then the tagline.
+Move the loading bar, logo, and tagline group lower on the splash screen. The loading bar should sit approximately where the tagline currently is (below center), with the logo and tagline flowing beneath it.
 
-## Current Order
-1. AdvisorFirst logo
-2. Loading bar
-3. Tagline ("Your Advice Companion")
+## Current Layout
+The content group is vertically centered (`justify-center`) in the screen. This places the loading bar near the center point, with the logo and tagline below it.
 
-## New Order
-1. Loading bar
-2. AdvisorFirst logo
-3. Tagline ("Your Advice Companion")
+## Change
+The outer container currently uses `justify-center` which vertically centers the content group. To push the group downward so the loading bar sits lower (roughly where the tagline currently is), we will:
 
-(The "Powered by Vantage" footer stays at the bottom, unchanged.)
+- Replace `justify-center` with `justify-end` on the outer container and add bottom padding (`pb-48` or similar) to position the group in the lower portion of the screen -- OR more precisely:
+- Keep `justify-center` but add a top margin (`mt-24` or `mt-32`) to the content group to shift it down from center, so the loading bar lands approximately where the tagline currently sits.
+
+The second approach is cleaner since it preserves the centered layout feel while nudging everything down. A `mt-24` (6rem / 96px) shift should place the loading bar roughly where the tagline is now (the tagline is about 80-100px below center currently given the gap and margins).
 
 ## Technical Details
 
 ### File: `src/components/mobile/MobileSplashScreen.tsx`
-
-Reorder the three child blocks inside the centered `div` (lines 24-55):
-
-- Move the **loading bar** block (lines 42-50) to the top, before the AdvisorFirst logo
-- Keep the **AdvisorFirst logo** block (lines 24-40) in the middle
-- Keep the **tagline** block (lines 52-55) at the bottom
-
-The `mt-8` spacing on the loading bar will be removed (since it's now at the top), and a small margin-top will be added to the logo instead to maintain visual spacing between the elements.
-
+- Add `mt-24` to the content group div (line 23) to shift the entire block (loading bar + logo + tagline) downward
+- This keeps all three elements in the same relative order and spacing, just positioned lower on the screen
