@@ -31,7 +31,7 @@ export function OnboardingProgressWidget({ selectedAdvisorNames }: OnboardingPro
   };
 
   return (
-    <Card className="h-full">
+    <Card className="h-full overflow-hidden">
       <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
         <div className="flex items-center gap-2">
           <GripVertical className="w-4 h-4 text-muted-foreground" />
@@ -42,7 +42,7 @@ export function OnboardingProgressWidget({ selectedAdvisorNames }: OnboardingPro
           <X className="w-4 h-4" />
         </Button>
       </CardHeader>
-      <CardContent className="px-4 pb-4">
+      <CardContent className="px-4 pb-2">
         {loading ? (
           <div className="flex items-center justify-center py-8">
             <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary" />
@@ -51,20 +51,20 @@ export function OnboardingProgressWidget({ selectedAdvisorNames }: OnboardingPro
           <table className="w-full text-sm">
             <thead>
               <tr className="text-muted-foreground text-xs">
-                <th className="text-left pb-2 font-normal">Time</th>
+                <th className="text-left pb-1.5 font-normal">Time</th>
                 {STATUS_COLUMNS.map((col) => (
-                  <th key={col.key} className="text-center pb-2 font-normal">{col.label}</th>
+                  <th key={col.key} className="text-center pb-1.5 font-normal">{col.label}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {TIME_BUCKET_LABELS.map((bucket) => (
                 <tr key={bucket.key} className="border-t border-border">
-                  <td className="py-2 text-muted-foreground">{bucket.label}</td>
+                  <td className="py-1.5 text-muted-foreground">{bucket.label}</td>
                   {STATUS_COLUMNS.map((col) => {
                     const count = matrix[bucket.key]?.[col.key] || 0;
                     return (
-                      <td key={col.key} className="py-2 text-center">
+                      <td key={col.key} className="py-1.5 text-center">
                         {count > 0 ? (
                           <button
                             onClick={() => handleCountClick(col.key, bucket.key)}
