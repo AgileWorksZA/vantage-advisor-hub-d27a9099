@@ -1,43 +1,28 @@
 
 
-# Add "Upcoming Corporate Actions" Widget to Dashboard
+# Fix Corporate Actions Widget Size
 
-## Overview
-Add a new dashboard widget matching the reference screenshot that displays upcoming corporate actions (dividends, rights issues, stock splits, etc.) localized per jurisdiction with real exchange-traded investment codes. The widget includes a "Mandatory CAs" / "Voluntary CAs" dropdown filter and a table with CAID, Investment code, Event type, Affected accounts, and Ex date columns.
+## Problem
+The "Upcoming Corporate Actions" widget is set to `w: 3` (350px wide), the same as other widgets. However, it has 6 columns of data (CAID, Investment code, Event type, Affected accounts, Ex date, menu icon), making it too cramped at that width. The reference screenshot shows this as a wider widget.
 
-## Data Design
-
-Add a new `CorporateActionData` interface and corporate actions array to `RegionalData` in `src/data/regionalData.ts`. Each jurisdiction gets realistic, localized data:
-
-| Jurisdiction | Exchange | Example Codes |
-|---|---|---|
-| ZA | JSE | NPN.XJSE, SBK.XJSE, SOL.XJSE |
-| AU | ASX | CBA.XASX, BHP.XASX, CSL.XASX |
-| CA | TSX | RY.XTSE, TD.XTSE, ENB.XTSE |
-| GB | LSE | SHEL.XLON, AZN.XLON, HSBA.XLON |
-| US | NYSE/NASDAQ | AAPL.XNAS, MSFT.XNAS, JPM.XNYS |
-
-Each action has: `id` (CAID number), `investmentCode`, `eventType` (Dividend, Rights Issue, Stock Split, Merger, Spin-off), `affectedAccounts` (number), `exDate`, and `type` ("mandatory" or "voluntary").
+## Solution
+Change the corporate-actions widget to span `w: 6` (two standard widget widths = 700px) so the table columns have room to breathe. This also better matches the reference design. Additionally, add `overflow-hidden` to the card content to prevent any content from breaking the grid cell boundaries.
 
 ## Technical Changes
 
-### 1. `src/data/regionalData.ts`
-- Add `CorporateActionData` interface
-- Add `corporateActions` field to `RegionalData` interface
-- Add 6-8 corporate actions per jurisdiction (mix of mandatory and voluntary)
+### `src/pages/Dashboard.tsx`
+- Update `defaultDashboardLayout`: change `corporate-actions` from `w: 3` to `w: 6` to span two columns
+- Reposition it to `x: 3, y: 3` so it sits next to "Birthdays" on the second row, filling the remaining space
 
-### 2. `src/pages/Dashboard.tsx`
-- Add `corporate-actions` to `defaultDashboardLayout` array (position: `{ i: 'corporate-actions', x: 6, y: 3, w: 3, h: 3 }`)
-- Add a new widget card with:
-  - Drag handle header with "Upcoming corporate actions" title
-  - A `Select` dropdown to filter between "Mandatory CAs" and "Voluntary CAs" (default: Mandatory)
-  - Table columns: CAID, Investment code, Event type, Affected accounts, Ex date
-  - Three-dot menu icon on each row (visual only, matching reference)
-- Data sourced from `filteredRegionalData.corporateActions`, filtered by the local mandatory/voluntary state
+Layout becomes:
+```
+Row 0: provider-view (0,0 w:3) | aum-product (3,0 w:3) | top-accounts (6,0 w:3)
+Row 1: birthdays (0,3 w:3)     | corporate-actions (3,3 w:6)
+       clients-value (0,6 w:3) |
+```
 
-### 3. Files using `RegionalData` type
-No other files need changes -- the corporate actions data is only consumed on the Dashboard page. The `getFilteredRegionalData` function in `regionalData.ts` will pass through the `corporateActions` array unchanged (it's not advisor-specific).
+### `src/hooks/useWidgetLayout.ts`
+- No changes needed -- the existing auto-heal logic will detect the width mismatch between saved layout (`w:3`) and new default (`w:6`) and reset to defaults automatically.
 
-## Widget Layout
-The new widget slots into position `(6, 3)` in the default grid -- bottom-right, next to the existing "Clients by Value" widget. Existing users' saved layouts won't include it, so it will appear once they reset their layout or on first load for new users.
-
+### One file changed
+- `src/pages/Dashboard.tsx` -- update one line in `defaultDashboardLayout`
