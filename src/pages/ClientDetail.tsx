@@ -37,6 +37,7 @@ import { useClientDetail } from "@/hooks/useClientDetail";
 import { useClientRelationships } from "@/hooks/useClientRelationships";
 import { getDisplayName } from "@/types/client";
 import GlobalAIChat from "@/components/ai-assistant/GlobalAIChat";
+import { useRecentlyViewedClients } from "@/hooks/useRecentlyViewedClients";
 
 const sidebarItems = [
   { icon: LayoutDashboard, label: "Dash", path: "/dashboard" },
@@ -61,9 +62,17 @@ const ClientDetail = () => {
 
   // Fetch client data from Supabase
   const { client, loading: clientLoading, error, updateClient, refetch } = useClientDetail(clientId);
+  const { recordView } = useRecentlyViewedClients();
   
   // Fetch relationships for the "Manage related entity" dropdown
   const { familyMembers, businesses } = useClientRelationships(clientId || "");
+
+  // Record client view when profile is loaded
+  useEffect(() => {
+    if (client && clientId) {
+      recordView(clientId);
+    }
+  }, [client, clientId, recordView]);
   
   // Combine family members and businesses that have a related_client_id for quick navigation
   const relatedEntities = [
