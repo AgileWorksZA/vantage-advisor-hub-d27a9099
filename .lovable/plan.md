@@ -1,43 +1,46 @@
 
 
-## Seed Calendar Events for All Advisors
+## Allow User to Set Calendar Timezone with Persistence
 
-### Overview
-Create a temporary edge function `seed-calendar-events` that populates calendar events for all 3 existing users, covering all 25 advisors across 5 jurisdictions. Events will span the current month and next month, with at least 2 events per day per advisor, linked to real clients from the database.
+### Problem
+The timezone indicator in the calendar header is currently read-only, showing only the abbreviation (e.g., "SAST"). Users cannot change their timezone, and event times are always displayed in the browser's local time.
 
-### Approach
+### Solution
+Replace the static timezone badge with a dropdown selector containing all major world timezones. When the user selects a timezone, event times will be displayed in that timezone, and the selection will be persisted to the `user_settings.timezone` column so it's remembered across sessions and page navigations.
 
-The function will:
-1. Query all clients grouped by `user_id` and `advisor`
-2. For each user+advisor combination, generate 2-3 calendar events per weekday over a 30-day window (today minus 7 days through today plus 23 days)
-3. Randomly assign event types (Meeting, Annual Review, Portfolio Review, Compliance Review, Client Call) and link each to a client belonging to that advisor
-4. Set realistic time slots (9am-5pm) with appropriate durations (30-60 min) and timezone based on jurisdiction
-5. Insert all events in bulk
+### Changes
 
-### Event Details
-- **Types**: Meeting, Annual Review, Portfolio Review, Compliance Review, Client Call (client-facing types)
-- **Times**: Business hours, varying start times to avoid overlap
-- **Durations**: 30-60 minutes depending on type
-- **Colors**: Match existing color scheme (teal for meetings, purple for reviews, amber for compliance, etc.)
-- **Status**: Past events = "Completed", future events = "Scheduled"
-- **Titles**: Contextual (e.g., "Annual Review - {ClientName}", "Portfolio Review with {ClientName}")
+**1. Expand timezone list (`src/lib/timezone-utils.ts`)**
+- Add all major world timezones (~30-40 entries covering all continents) to the `COMMON_TIMEZONES` array
+- Add a helper function `convertToTimezone(date: Date, timezone: string): Date` that shifts a UTC date to display in the target timezone
+- Group timezones by region (Americas, Europe, Africa, Asia/Pacific) for easier browsing
 
-### Steps
+**2. Update Calendar page (`src/pages/Calendar.tsx`)**
+- Replace the static timezone badge (lines 533-536) with a `Select` dropdown using the expanded `COMMON_TIMEZONES` list
+- Add local state `displayTimezone` initialized from `userSettings?.timezone` or the region default
+- On timezone change: call `upsertSettings.mutate({ timezone: newValue })` to persist, and update local state immediately
+- Apply timezone conversion to all displayed event times: wrap `event.startTime` and `event.endTime` through the conversion helper before rendering in month/week/day views and the upcoming events sidebar
+- Pass the display timezone to `WeekView` and `DayView` components
 
-1. Create `supabase/functions/seed-calendar-events/index.ts`
-2. Add config entry in `supabase/config.toml` with `verify_jwt = false`
-3. Deploy and invoke against Test
-4. Invoke against Production
-5. Clean up: delete function and revert config
+**3. Update WeekView (`src/components/calendar/WeekView.tsx`)**
+- Accept a `displayTimezone` prop
+- Apply timezone offset to event start/end times for positioning and display
 
-### Technical Details
+**4. Update DayView (`src/components/calendar/DayView.tsx`)**
+- Accept a `displayTimezone` prop
+- Apply timezone offset to event start/end times for positioning and display
 
-- Jurisdiction timezone mapping: ZA=Africa/Johannesburg, AU=Australia/Sydney, CA=America/Toronto, GB=Europe/London, US=America/New_York
-- ~2-3 events per weekday x ~16 weekdays x 25 advisors x 3 users = significant volume; will batch inserts
-- Each event linked to a real `client_id` from the clients table
-- Weekends get fewer/no events for realism
-- `created_by` set to the owning `user_id`
+### Timezone Conversion Approach
+Since events are stored as UTC ISO strings in the database, we'll use `Intl.DateTimeFormat` to calculate the UTC offset for the target timezone and shift the Date objects accordingly. This gives accurate display without needing a heavy library like `date-fns-tz`.
 
-### Files Changed
-- `supabase/functions/seed-calendar-events/index.ts` (temporary)
-- `supabase/config.toml` (temporary edit, then revert)
+### Timezone List (major zones to include)
+Americas: New York, Chicago, Denver, Los Angeles, Anchorage, Honolulu, Toronto, Vancouver, Mexico City, Sao Paulo, Buenos Aires  
+Europe: London, Paris, Berlin, Madrid, Rome, Amsterdam, Stockholm, Helsinki, Athens, Moscow  
+Africa: Johannesburg, Cairo, Lagos, Nairobi  
+Asia/Pacific: Dubai, Mumbai, Kolkata, Singapore, Hong Kong, Tokyo, Seoul, Shanghai, Sydney, Melbourne, Auckland, Fiji
+
+### Persistence
+- Uses existing `user_settings.timezone` column (already in the schema)
+- Uses existing `useUserSettings` hook with `upsertSettings` mutation
+- On first load: falls back to jurisdiction default, then UTC
+- On change: immediately updates local state + saves to database
