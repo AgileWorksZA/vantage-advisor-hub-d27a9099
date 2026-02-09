@@ -289,7 +289,7 @@ const ClientDetail = () => {
               <Client360ViewTab />
             </TabsContent>
             <TabsContent value="performance" className="mt-0">
-              <ClientPerformanceTab clientId={clientId!} nationality={client.nationality} />
+              <ClientPerformanceTab clientId={clientId!} nationality={client.nationality} countryOfIssue={client.country_of_issue} />
             </TabsContent>
             <TabsContent value="details" className="mt-0">
               <ClientDetailsTab client={client} onUpdate={updateClient} />

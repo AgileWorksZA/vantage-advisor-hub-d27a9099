@@ -220,17 +220,27 @@ function seededRandom(seed: string): () => number {
 }
 
 // Map nationality to jurisdiction code
-export function mapNationalityToJurisdiction(nationality: string | null): string {
-  if (!nationality) return "ZA";
-  
-  const lower = nationality.toLowerCase();
-  
-  if (lower.includes("south african") || lower.includes("za")) return "ZA";
-  if (lower.includes("australian") || lower.includes("au")) return "AU";
-  if (lower.includes("canadian") || lower.includes("ca")) return "CA";
-  if (lower.includes("british") || lower.includes("english") || lower.includes("scottish") || lower.includes("welsh") || lower.includes("uk") || lower.includes("gb")) return "GB";
-  if (lower.includes("american") || lower.includes("us citizen") || lower.includes("usa") || lower.includes("united states")) return "US";
-  
+export function mapNationalityToJurisdiction(nationality: string | null, countryOfIssue?: string | null): string {
+  // Try nationality first
+  if (nationality) {
+    const lower = nationality.toLowerCase();
+    if (lower.includes("south african") || lower.includes("za")) return "ZA";
+    if (lower.includes("australian") || lower.includes("au")) return "AU";
+    if (lower.includes("canadian") || lower.includes("ca")) return "CA";
+    if (lower.includes("british") || lower.includes("english") || lower.includes("scottish") || lower.includes("welsh") || lower.includes("uk") || lower.includes("gb")) return "GB";
+    if (lower.includes("american") || lower.includes("us citizen") || lower.includes("usa") || lower.includes("united states")) return "US";
+  }
+
+  // Fallback to country_of_issue
+  if (countryOfIssue) {
+    const country = countryOfIssue.toLowerCase();
+    if (country.includes("south africa")) return "ZA";
+    if (country.includes("australia")) return "AU";
+    if (country.includes("canada")) return "CA";
+    if (country.includes("united kingdom")) return "GB";
+    if (country.includes("united states")) return "US";
+  }
+
   return "ZA"; // Default fallback
 }
 
@@ -262,8 +272,8 @@ function generatePolicyNumber(random: () => number, prefix: string): string {
 }
 
 // Generate client 360 view data
-export function generateClient360Data(clientId: string, nationality: string | null): Client360Data {
-  const jurisdiction = mapNationalityToJurisdiction(nationality);
+export function generateClient360Data(clientId: string, nationality: string | null, countryOfIssue?: string | null): Client360Data {
+  const jurisdiction = mapNationalityToJurisdiction(nationality, countryOfIssue);
   const config = jurisdictionConfigs[jurisdiction];
   const random = seededRandom(clientId);
   
