@@ -21,8 +21,18 @@ const MobileSplashScreen = () => {
     <div className="relative w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-[hsl(180,70%,30%)] via-[hsl(200,80%,25%)] to-[hsl(222,84%,10%)]">
       {/* Logo area */}
       <div className="flex flex-col items-center gap-6 animate-in fade-in duration-700">
+        {/* Loading bar */}
+        <div className="w-48">
+          <div className="h-1 w-full rounded-full bg-white/10 overflow-hidden">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-[hsl(180,80%,55%)] to-[hsl(18,86%,56%)] transition-all duration-100 ease-linear"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
+
         {/* AdvisorFirst logo */}
-        <div className="flex items-baseline gap-0">
+        <div className="flex items-baseline gap-0 mt-4">
           <span className="text-5xl font-extrabold tracking-tight text-white">
             Advisor
           </span>
@@ -39,18 +49,8 @@ const MobileSplashScreen = () => {
           </span>
         </div>
 
-        {/* Loading bar */}
-        <div className="w-48 mt-8">
-          <div className="h-1 w-full rounded-full bg-white/10 overflow-hidden">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-[hsl(180,80%,55%)] to-[hsl(18,86%,56%)] transition-all duration-100 ease-linear"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-        </div>
-
         {/* Tagline */}
-        <p className="text-lg tracking-widest text-white/70 font-light mt-6">
+        <p className="text-lg tracking-widest text-white/70 font-light mt-2">
           Your Advice Companion <span className="text-xs align-super">™</span>
         </p>
       </div>
