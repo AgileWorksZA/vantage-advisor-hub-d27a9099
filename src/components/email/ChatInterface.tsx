@@ -3,6 +3,7 @@ import { ConversationList } from "./ConversationList";
 import { ChatPanel } from "./ChatPanel";
 import { useDirectMessages, DirectMessageChannel } from "@/hooks/useDirectMessages";
 import { CommunicationChannel } from "@/hooks/useCommunicationCampaigns";
+import { useRegion } from "@/contexts/RegionContext";
 
 interface ChatInterfaceProps {
   channel: CommunicationChannel;
@@ -23,9 +24,10 @@ const mapChannelToDirectChannel = (channel: CommunicationChannel): DirectMessage
 
 export const ChatInterface = ({ channel }: ChatInterfaceProps) => {
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
-  
+  const { selectedRegion } = useRegion();
+
   const directChannel = mapChannelToDirectChannel(channel);
-  const { conversations, loading } = useDirectMessages(directChannel);
+  const { conversations, loading } = useDirectMessages(directChannel, selectedRegion);
 
   return (
     <div className="flex flex-1 overflow-hidden">
@@ -35,6 +37,7 @@ export const ChatInterface = ({ channel }: ChatInterfaceProps) => {
         selectedClientId={selectedClientId}
         onSelectClient={setSelectedClientId}
         loading={loading}
+        jurisdiction={selectedRegion}
       />
       <ChatPanel
         channel={directChannel}

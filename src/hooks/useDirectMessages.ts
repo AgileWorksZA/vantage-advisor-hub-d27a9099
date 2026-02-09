@@ -5,6 +5,14 @@ import { toast } from "sonner";
 export type DirectMessageChannel = "whatsapp" | "sms" | "push";
 export type MessageDirection = "inbound" | "outbound";
 export type MessageStatus = "sent" | "delivered" | "read" | "failed" | "pending";
+export type MessageType = "text" | "image" | "poll" | "document";
+
+export interface PollData {
+  question: string;
+  options: { text: string; votes: number }[];
+  total_votes: number;
+  is_closed: boolean;
+}
 
 export interface DirectMessage {
   id: string;
@@ -14,6 +22,8 @@ export interface DirectMessage {
   direction: MessageDirection;
   content: string;
   media_url: string | null;
+  message_type: MessageType;
+  poll_data: PollData | null;
   status: MessageStatus;
   external_id: string | null;
   sent_at: string;
@@ -25,6 +35,7 @@ export interface ConversationSummary {
   client_id: string;
   client_name: string;
   client_initials: string;
+  client_phone: string | null;
   last_message: string;
   last_message_time: string;
   unread_count: number;
@@ -36,30 +47,25 @@ export interface SendMessageInput {
   channel: DirectMessageChannel;
   content: string;
   media_url?: string;
+  message_type?: MessageType;
+  poll_data?: PollData;
 }
 
-export const useDirectMessages = (channel: DirectMessageChannel) => {
+export const useDirectMessages = (channel: DirectMessageChannel, jurisdiction?: string) => {
   const [messages, setMessages] = useState<DirectMessage[]>([]);
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchConversations = useCallback(async () => {
+    setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) { setLoading(false); return; }
 
-      // Get unique clients with their latest message for this channel
       const { data: messagesData, error: messagesError } = await supabase
         .from("direct_messages")
-        .select(`
-          id,
-          client_id,
-          content,
-          sent_at,
-          direction,
-          status
-        `)
+        .select("id, client_id, content, sent_at, direction, status, message_type")
         .eq("user_id", user.id)
         .eq("channel", channel)
         .eq("is_deleted", false)
@@ -67,41 +73,57 @@ export const useDirectMessages = (channel: DirectMessageChannel) => {
 
       if (messagesError) throw messagesError;
 
-      // Get unique client IDs
       const clientIds = [...new Set((messagesData || []).map(m => m.client_id).filter(Boolean))] as string[];
-      
+
       if (clientIds.length === 0) {
         setConversations([]);
+        setLoading(false);
         return;
       }
 
-      // Fetch client names
-      const { data: clientsData, error: clientsError } = await supabase
+      let clientQuery = supabase
         .from("clients")
-        .select("id, first_name, surname")
+        .select("id, first_name, surname, cell_number, country_of_issue")
         .in("id", clientIds);
 
+      if (jurisdiction) {
+        clientQuery = clientQuery.eq("country_of_issue", jurisdiction);
+      }
+
+      const { data: clientsData, error: clientsError } = await clientQuery;
       if (clientsError) throw clientsError;
 
       const clientMap = new Map(
-        (clientsData || []).map(c => [c.id, { name: `${c.first_name} ${c.surname}`, initials: `${c.first_name[0]}${c.surname[0]}` }])
+        (clientsData || []).map(c => [c.id, {
+          name: `${c.first_name} ${c.surname}`,
+          initials: `${c.first_name[0]}${c.surname[0]}`,
+          phone: c.cell_number,
+        }])
       );
 
-      // Group messages by client and get summaries
+      // Only include conversations for clients matching jurisdiction
+      const allowedClientIds = new Set(clientMap.keys());
+
       const conversationMap = new Map<string, ConversationSummary>();
-      
+
       for (const msg of messagesData || []) {
-        if (!msg.client_id) continue;
-        
+        if (!msg.client_id || !allowedClientIds.has(msg.client_id)) continue;
+
         const existing = conversationMap.get(msg.client_id);
         const client = clientMap.get(msg.client_id);
-        
+
+        const preview = msg.message_type === "poll" ? "📊 Poll" :
+          msg.message_type === "image" ? "📷 Photo" :
+          msg.message_type === "document" ? "📎 Document" :
+          msg.content.substring(0, 50) + (msg.content.length > 50 ? "..." : "");
+
         if (!existing) {
           conversationMap.set(msg.client_id, {
             client_id: msg.client_id,
             client_name: client?.name || "Unknown",
             client_initials: client?.initials || "??",
-            last_message: msg.content.substring(0, 50) + (msg.content.length > 50 ? "..." : ""),
+            client_phone: client?.phone || null,
+            last_message: preview,
             last_message_time: msg.sent_at,
             unread_count: msg.direction === "inbound" && msg.status !== "read" ? 1 : 0,
             channel,
@@ -115,8 +137,10 @@ export const useDirectMessages = (channel: DirectMessageChannel) => {
     } catch (err: any) {
       console.error("Error fetching conversations:", err);
       setError(err.message);
+    } finally {
+      setLoading(false);
     }
-  }, [channel]);
+  }, [channel, jurisdiction]);
 
   const fetchMessages = useCallback(async (clientId: string) => {
     setLoading(true);
@@ -136,7 +160,11 @@ export const useDirectMessages = (channel: DirectMessageChannel) => {
 
       if (fetchError) throw fetchError;
 
-      setMessages((data || []) as DirectMessage[]);
+      setMessages((data || []).map(d => ({
+        ...d,
+        message_type: (d as any).message_type || "text",
+        poll_data: (d as any).poll_data || null,
+      })) as DirectMessage[]);
     } catch (err: any) {
       console.error("Error fetching messages:", err);
       setError(err.message);
@@ -150,28 +178,32 @@ export const useDirectMessages = (channel: DirectMessageChannel) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
+      const insertPayload: any = {
+        user_id: user.id,
+        client_id: input.client_id,
+        channel: input.channel,
+        direction: "outbound",
+        content: input.content,
+        media_url: input.media_url || null,
+        status: "sent",
+        message_type: input.message_type || "text",
+      };
+      if (input.poll_data) insertPayload.poll_data = input.poll_data;
+
       const { data, error: insertError } = await supabase
         .from("direct_messages")
-        .insert([{
-          user_id: user.id,
-          client_id: input.client_id,
-          channel: input.channel,
-          direction: "outbound" as MessageDirection,
-          content: input.content,
-          media_url: input.media_url || null,
-          status: "sent" as MessageStatus,
-        }])
+        .insert([insertPayload])
         .select()
         .single();
 
       if (insertError) throw insertError;
 
-      // Add to local state
-      setMessages(prev => [...prev, data as DirectMessage]);
-      
-      // Update conversation list
+      setMessages(prev => [...prev, {
+        ...data,
+        message_type: (data as any).message_type || "text",
+        poll_data: (data as any).poll_data || null,
+      } as DirectMessage]);
       await fetchConversations();
-      
       return true;
     } catch (err: any) {
       console.error("Error sending message:", err);

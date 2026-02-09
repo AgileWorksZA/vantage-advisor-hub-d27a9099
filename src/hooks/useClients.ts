@@ -76,6 +76,8 @@ export interface ClientListItem {
   wealthManager: string;
   language: string;
   dateCreated: string;
+  countryOfIssue: string;
+  cellNumber: string;
 }
 
 // Calculate age from date of birth
@@ -125,6 +127,8 @@ const transformClientToListItem = (client: Client): ClientListItem => {
     wealthManager: client.wealth_manager || "",
     language: client.language || "",
     dateCreated: formatDate(client.created_at),
+    countryOfIssue: client.country_of_issue || "",
+    cellNumber: client.cell_number || "",
   };
 };
 
