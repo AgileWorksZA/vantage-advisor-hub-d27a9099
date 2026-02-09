@@ -1,17 +1,20 @@
 
-## Fix Date Overflow in Task Filter Date Picker
 
-### Problem
-The "Due by" date picker button has a fixed width of `w-[150px]`, which is too narrow to display a fully formatted date like "February 3rd, 2026" (the `PPP` format). The text overflows or gets clipped.
+## Remove Underline from Onboarding Widget Numbers
 
-### Solution
-Widen the button from `w-[150px]` to `w-[200px]` so the full date string fits comfortably.
+### Change
 
-### Changes
+**File: `src/components/dashboard/OnboardingProgressWidget.tsx`** (line 71)
 
-**`src/components/tasks/TaskFilters.tsx`**
-
-- Change the date picker button width from `w-[150px]` to `w-[200px]`
+Remove `underline` from the button className, changing:
+```
+"text-primary underline hover:text-primary/80 font-medium cursor-pointer"
+```
+to:
+```
+"text-primary hover:text-primary/80 font-medium cursor-pointer"
+```
 
 ### Files Changed
-- `src/components/tasks/TaskFilters.tsx` (1 line change)
+- `src/components/dashboard/OnboardingProgressWidget.tsx` (1 word removal)
+
