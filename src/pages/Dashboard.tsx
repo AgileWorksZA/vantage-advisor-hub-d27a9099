@@ -16,6 +16,7 @@ import { useWidgetLayout } from "@/hooks/useWidgetLayout";
 import { toast } from "sonner";
 import GlobalAIChat from "@/components/ai-assistant/GlobalAIChat";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { OnboardingProgressWidget } from "@/components/dashboard/OnboardingProgressWidget";
 
 const sidebarItems = [{
   icon: LayoutDashboard,
@@ -58,6 +59,7 @@ const defaultDashboardLayout: WidgetLayout[] = [
   { i: 'birthdays', x: 0, y: 3, w: 3, h: 3 },
   { i: 'clients-value', x: 3, y: 3, w: 3, h: 3 },
   { i: 'corporate-actions', x: 6, y: 3, w: 3, h: 3 },
+  { i: 'onboarding-progress', x: 0, y: 6, w: 3, h: 3 },
 ];
 
 const DASHBOARD_WIDGETS: WidgetConfig[] = [
@@ -67,6 +69,7 @@ const DASHBOARD_WIDGETS: WidgetConfig[] = [
   { id: 'birthdays', label: 'Birthdays' },
   { id: 'clients-value', label: 'Clients by Value' },
   { id: 'corporate-actions', label: 'Upcoming Corporate Actions' },
+  { id: 'onboarding-progress', label: 'Account Onboarding Progress' },
 ];
 
 const Dashboard = () => {
@@ -77,7 +80,14 @@ const Dashboard = () => {
   const [caFilter, setCaFilter] = useState<'mandatory' | 'voluntary'>('mandatory');
   
   // Use global region context with filtered data
-  const { selectedRegion, setSelectedRegion, filteredRegionalData } = useRegion();
+  const { selectedRegion, setSelectedRegion, filteredRegionalData, selectedAdvisors, regionalData } = useRegion();
+
+  // Map selected advisor initials to full names for onboarding widget filtering
+  const selectedAdvisorNames = useMemo(() => {
+    return regionalData.advisors
+      .filter(a => selectedAdvisors.includes(a.initials))
+      .map(a => a.name);
+  }, [selectedAdvisors, regionalData.advisors]);
 
   // Widget layout hook
   const { layout, onLayoutChange, hiddenWidgets, setHiddenWidgets, loading: layoutLoading } = useWidgetLayout({
@@ -158,6 +168,28 @@ const Dashboard = () => {
     }
   };
 
+  // Seed onboarding tasks for new users
+  const seedOnboardingTasks = async (accessToken: string) => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/seed-onboarding-tasks`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      const result = await response.json();
+      if (result.seeded) {
+        console.log(`Seeded ${result.count} onboarding tasks`);
+      }
+    } catch (error) {
+      console.error('Failed to seed onboarding tasks:', error);
+    }
+  };
+
   useEffect(() => {
     const {
       data: {
@@ -172,6 +204,7 @@ const Dashboard = () => {
       } else if (session.access_token) {
         // Seed demo clients on login
         seedDemoClients(session.access_token);
+        seedOnboardingTasks(session.access_token);
       }
     });
     supabase.auth.getSession().then(({
@@ -187,6 +220,7 @@ const Dashboard = () => {
       } else if (session.access_token) {
         // Seed demo clients on initial load
         seedDemoClients(session.access_token);
+        seedOnboardingTasks(session.access_token);
       }
     });
     return () => subscription.unsubscribe();
@@ -540,6 +574,11 @@ const Dashboard = () => {
                   </table>
                 </CardContent>
               </Card>
+            </div>}
+
+            {/* Account Onboarding Progress */}
+            {isWidgetVisible('onboarding-progress') && <div key="onboarding-progress">
+              <OnboardingProgressWidget selectedAdvisorNames={selectedAdvisorNames} />
             </div>}
           </DraggableWidgetGrid>
         </main>

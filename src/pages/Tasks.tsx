@@ -45,10 +45,66 @@ const Tasks = () => {
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
 
-  const [view, setView] = useState<"dashboard" | "detail">(
-    searchParams.get("view") === "detail" ? "detail" : "dashboard"
-  );
-  const [filters, setFilters] = useState<TaskFilters>({});
+  // Read URL params for deep-linking from onboarding widget
+  const urlTaskType = searchParams.get("taskType");
+  const urlStatus = searchParams.get("status");
+  const urlDueBucket = searchParams.get("dueBucket");
+
+  const [view, setView] = useState<"dashboard" | "detail">(() => {
+    if (urlTaskType || searchParams.get("view") === "detail") return "detail";
+    return "dashboard";
+  });
+
+  // Build initial filters from URL params
+  const [filters, setFilters] = useState<TaskFilters>(() => {
+    const initial: TaskFilters = {};
+    if (urlTaskType) initial.taskType = [urlTaskType];
+    if (urlStatus) initial.status = [urlStatus];
+    if (urlDueBucket) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayStr = today.toISOString().split("T")[0];
+
+      switch (urlDueBucket) {
+        case "today":
+          initial.dueDateFrom = todayStr;
+          initial.dueDateTo = todayStr;
+          break;
+        case "lt7days": {
+          const d = new Date(today);
+          d.setDate(d.getDate() + 7);
+          initial.dueDateFrom = todayStr;
+          initial.dueDateTo = d.toISOString().split("T")[0];
+          break;
+        }
+        case "lt14days": {
+          const d1 = new Date(today);
+          d1.setDate(d1.getDate() + 8);
+          const d2 = new Date(today);
+          d2.setDate(d2.getDate() + 14);
+          initial.dueDateFrom = d1.toISOString().split("T")[0];
+          initial.dueDateTo = d2.toISOString().split("T")[0];
+          break;
+        }
+        case "lt1month": {
+          const d1 = new Date(today);
+          d1.setDate(d1.getDate() + 15);
+          const d2 = new Date(today);
+          d2.setDate(d2.getDate() + 30);
+          initial.dueDateFrom = d1.toISOString().split("T")[0];
+          initial.dueDateTo = d2.toISOString().split("T")[0];
+          break;
+        }
+        case "gte1month": {
+          const d = new Date(today);
+          d.setDate(d.getDate() + 31);
+          initial.dueDateFrom = d.toISOString().split("T")[0];
+          break;
+        }
+      }
+    }
+    return initial;
+  });
   const [selectedTask, setSelectedTask] = useState<EnhancedTask | null>(null);
   const [detailSheetOpen, setDetailSheetOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
