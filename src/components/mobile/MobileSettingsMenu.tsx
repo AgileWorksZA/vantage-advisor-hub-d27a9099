@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
 import { useAppMode } from "@/contexts/AppModeContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
+
 
 const AI_CHAT_STORAGE_KEY = "vantage-ai-chat-enabled";
 
@@ -19,7 +19,7 @@ const MobileSettingsMenu = () => {
   const [open, setOpen] = useState(false);
   const { resolvedTheme, setTheme } = useTheme();
   const { mode, setMode } = useAppMode();
-  const navigate = useNavigate();
+  
   const [mounted, setMounted] = useState(false);
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
@@ -75,7 +75,8 @@ const MobileSettingsMenu = () => {
   const handleAccountSettings = () => {
     setOpen(false);
     setMode("web");
-    setTimeout(() => navigate("/account-settings"), 100);
+    // Use window.location since mobile app renders outside Router context
+    setTimeout(() => { window.location.href = "/account-settings"; }, 100);
   };
 
   const handleSignOut = async () => {
