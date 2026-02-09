@@ -224,11 +224,11 @@ export function mapNationalityToJurisdiction(nationality: string | null, country
   // Try nationality first
   if (nationality) {
     const lower = nationality.toLowerCase();
-    if (lower.includes("south african") || lower.includes("za")) return "ZA";
-    if (lower.includes("australian") || lower.includes("au")) return "AU";
-    if (lower.includes("canadian") || lower.includes("ca")) return "CA";
-    if (lower.includes("british") || lower.includes("english") || lower.includes("scottish") || lower.includes("welsh") || lower.includes("uk") || lower.includes("gb")) return "GB";
-    if (lower.includes("american") || lower.includes("us citizen") || lower.includes("usa") || lower.includes("united states")) return "US";
+    if (lower.includes("south african") || lower === "za") return "ZA";
+    if (lower.includes("australian") || lower === "au") return "AU";
+    if (lower.includes("canadian") || lower === "ca") return "CA";
+    if (lower.includes("british") || lower.includes("english") || lower.includes("scottish") || lower.includes("welsh") || lower === "uk" || lower === "gb") return "GB";
+    if (lower.includes("american") || lower.includes("us citizen") || lower === "usa" || lower === "us" || lower.includes("united states")) return "US";
   }
 
   // Fallback to country_of_issue
