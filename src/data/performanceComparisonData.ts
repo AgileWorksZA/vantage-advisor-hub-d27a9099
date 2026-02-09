@@ -195,3 +195,86 @@ export function generateAssetAllocation(items: { name: string }[], seed: string)
     };
   });
 }
+
+// ===== Fund-level breakdown per product =====
+
+export interface ProductFund {
+  productName: string;
+  fundName: string;
+  allocation: number;
+  value: number;
+}
+
+const JURISDICTION_FUND_POOLS: Record<string, string[]> = {
+  ZA: [
+    'Allan Gray Equity Fund', 'Coronation Balanced Plus', 'Nedgroup Investments Core Diversified',
+    'Prescient Income Provider', 'Ninety One Opportunity Fund', 'Sanlam Investment Management Balanced',
+    'Old Mutual Global Equity', 'Absa Bond Fund', 'Investec Property Equity', 'Stanlib Income Fund',
+    'PSG Flexible Fund', 'Discovery Balanced Fund', 'Momentum Diversified Income',
+  ],
+  AU: [
+    'Magellan Global Fund', 'Vanguard Diversified Growth', 'BetaShares Australia 200 ETF',
+    'Platinum International Fund', 'Colonial First State Growth', 'AMP Capital Dynamic Markets',
+    'Macquarie Income Opportunities', 'Pendal Sustainable Future', 'Fidelity Australian Equities',
+    'Janus Henderson Global NR', 'PIMCO Australian Bond', 'IFM Australian Infrastructure',
+  ],
+  CA: [
+    'Mawer Balanced Fund', 'RBC Select Conservative Portfolio', 'TD e-Series Canadian Index',
+    'Fidelity NorthStar Fund', 'CI Canadian Investment Fund', 'BMO Aggregate Bond Index ETF',
+    'Mackenzie Canadian Growth', 'Dynamic Power Canadian Growth', 'iShares Core S&P/TSX',
+    'CIBC Balanced Fund', 'Scotia Canadian Equity', 'AGF Global Select Fund',
+  ],
+  GB: [
+    'Fundsmith Equity Fund', 'Baillie Gifford Positive Change', 'Vanguard LifeStrategy 60%',
+    'Jupiter Income Trust', 'Lindsell Train UK Equity', 'Rathbone Global Opportunities',
+    'Troy Trojan Fund', 'M&G Optimal Income', 'HSBC FTSE All-World Index',
+    'Fidelity Index World', 'Scottish Mortgage Investment', 'BlackRock UK Special Situations',
+  ],
+  US: [
+    'Vanguard 500 Index Fund', 'Fidelity Contrafund', 'T. Rowe Price Blue Chip Growth',
+    'PIMCO Income Fund', 'Dodge & Cox Stock Fund', 'American Funds Growth Fund',
+    'iShares Core S&P 500 ETF', 'Schwab Total Stock Market Index', 'Capital Group New Perspective',
+    'JPMorgan Equity Income', 'BlackRock Global Allocation', 'Templeton Global Bond',
+  ],
+};
+
+export function generateProductFunds(
+  products: { product: string; amountValue: number }[],
+  jurisdiction: string,
+  seed: string
+): ProductFund[] {
+  const fundPool = JURISDICTION_FUND_POOLS[jurisdiction] || JURISDICTION_FUND_POOLS['ZA'];
+  const rng = seededRandom('prod-funds-' + seed);
+  const results: ProductFund[] = [];
+  let poolIdx = 0;
+
+  for (const product of products) {
+    const numFunds = 2 + Math.floor(rng() * 4); // 2-5 funds
+    let remaining = 100;
+    const funds: { name: string; pct: number }[] = [];
+
+    for (let i = 0; i < numFunds; i++) {
+      const fundName = fundPool[(poolIdx++) % fundPool.length];
+      const isLast = i === numFunds - 1;
+      const pct = isLast ? remaining : +(rng() * (remaining / (numFunds - i)) * 1.6).toFixed(1);
+      const capped = Math.min(Math.max(pct, 2), remaining);
+      remaining -= capped;
+      funds.push({ name: fundName, pct: +capped.toFixed(1) });
+    }
+
+    // Normalize to 100
+    const totalPct = funds.reduce((s, f) => s + f.pct, 0);
+    for (const f of funds) {
+      const alloc = totalPct > 0 ? +(f.pct / totalPct * 100).toFixed(1) : 0;
+      const value = totalPct > 0 ? +(product.amountValue * f.pct / totalPct) : 0;
+      results.push({
+        productName: product.product,
+        fundName: f.name,
+        allocation: alloc,
+        value: +value.toFixed(0),
+      });
+    }
+  }
+
+  return results;
+}
