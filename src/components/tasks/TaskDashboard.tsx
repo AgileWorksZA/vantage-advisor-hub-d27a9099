@@ -7,7 +7,6 @@ import {
   Clock,
   AlertTriangle,
   ListTodo,
-  ArrowRight,
 } from "lucide-react";
 import { TaskStats, TaskFilters } from "@/hooks/useTasksEnhanced";
 
@@ -124,15 +123,9 @@ export function TaskDashboard({ stats, onViewDetail }: TaskDashboardProps) {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Tasks Dashboard</h1>
-          <p className="text-muted-foreground">Overview of your task performance</p>
-        </div>
-        <Button onClick={() => onViewDetail()} className="gap-2">
-          View All Tasks
-          <ArrowRight className="h-4 w-4" />
-        </Button>
+      <div>
+        <h1 className="text-2xl font-bold">Tasks Dashboard</h1>
+        <p className="text-muted-foreground">Overview of your task performance</p>
       </div>
 
       {/* Stats Cards */}

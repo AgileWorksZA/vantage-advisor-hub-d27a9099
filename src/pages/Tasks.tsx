@@ -232,11 +232,9 @@ const Tasks = () => {
               <TableIcon className="h-4 w-4" />All Tasks
             </Button>
           </div>
-          {view === "detail" && (
-            <Button onClick={() => setCreateDialogOpen(true)} className="gap-2">
-              <Plus className="h-4 w-4" />New Task
-            </Button>
-          )}
+          <Button onClick={() => setCreateDialogOpen(true)} className="gap-2">
+            <Plus className="h-4 w-4" />New Task
+          </Button>
         </div>
 
         <main className="flex-1 overflow-y-auto">
