@@ -370,14 +370,7 @@ const Clients = () => {
         {/* Clients Content - Scrollable */}
         <main className="flex-1 p-6 overflow-auto">
           {/* Add Profile + Include Inactive Row */}
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Switch 
-                checked={includeInactive} 
-                onCheckedChange={setIncludeInactive}
-              />
-              <span className="text-sm text-muted-foreground">Include inactive clients</span>
-            </div>
+          <div className="flex items-center justify-end mb-4">
             <Button 
               className="bg-[hsl(180,70%,45%)] hover:bg-[hsl(180,70%,40%)] text-white"
               onClick={() => setChoiceDialogOpen(true)}
@@ -414,6 +407,13 @@ const Clients = () => {
                   placeholder="Client types"
                   className="w-48"
                 />
+                <div className="flex items-center gap-2 ml-2">
+                  <Switch 
+                    checked={includeInactive} 
+                    onCheckedChange={setIncludeInactive}
+                  />
+                  <span className="text-sm text-muted-foreground whitespace-nowrap">Include inactive clients</span>
+                </div>
               </div>
             </div>
 
