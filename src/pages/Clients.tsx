@@ -12,14 +12,12 @@ import {
   ListTodo, 
   LineChart, 
   Building2,
-  Plus,
   X,
   RefreshCw,
   ChevronLeft,
   ChevronFirst,
   Users2,
   Building,
-  Trash2
 } from "lucide-react";
 import commandCenterIcon from "@/assets/command-center-icon.png";
 import vantageLogo from "@/assets/vantage-logo.png";
@@ -40,16 +38,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { useClients } from "@/hooks/useClients";
 import AddClientDialog from "@/components/clients/AddClientDialog";
 import { AddClientChoiceDialog } from "@/components/clients/AddClientChoiceDialog";
@@ -88,8 +76,6 @@ const Clients = () => {
   const [activeFilter, setActiveFilter] = useState("Client");
   const [searchQuery, setSearchQuery] = useState("");
   const [addDialogOpen, setAddDialogOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [clientToDelete, setClientToDelete] = useState<{ id: string; name: string } | null>(null);
   
   // Add Client Choice Dialog state
   const [choiceDialogOpen, setChoiceDialogOpen] = useState(false);
@@ -102,8 +88,8 @@ const Clients = () => {
   const [filteredNames, setFilteredNames] = useState<string[]>([]);
   const [widgetData, setWidgetData] = useState<Record<string, { birthday?: string; age?: number; value?: string; bookPercent?: string }>>({});
 
-  const { clients, loading: clientsLoading, refetch, deleteClient } = useClients();
-  const { regionalData, selectedAdvisors } = useRegion();
+  const { clients, loading: clientsLoading, refetch } = useClients();
+  const { regionalData, selectedAdvisors, selectedRegion } = useRegion();
 
   // Map selected advisor initials to full names for filtering
   const selectedAdvisorNames = useMemo(() => {
@@ -182,19 +168,6 @@ const Clients = () => {
     navigate("/auth");
   };
 
-  const handleDeleteClick = (e: React.MouseEvent, clientId: string, clientName: string) => {
-    e.stopPropagation();
-    setClientToDelete({ id: clientId, name: clientName });
-    setDeleteDialogOpen(true);
-  };
-
-  const confirmDelete = async () => {
-    if (clientToDelete) {
-      await deleteClient(clientToDelete.id);
-      setDeleteDialogOpen(false);
-      setClientToDelete(null);
-    }
-  };
 
   // Handler for choice dialog selection
   const handleChoiceSelected = (choice: "simple" | "advice") => {
@@ -514,9 +487,10 @@ const Clients = () => {
                     <TableHead className="text-xs font-normal text-muted-foreground">Contact Details</TableHead>
                     <TableHead className="text-xs font-normal text-muted-foreground">Advisor</TableHead>
                     <TableHead className="text-xs font-normal text-muted-foreground">Wealth Manager</TableHead>
-                    <TableHead className="text-xs font-normal text-muted-foreground">Language</TableHead>
+                    {selectedRegion === "ZA" && (
+                      <TableHead className="text-xs font-normal text-muted-foreground">Language</TableHead>
+                    )}
                     <TableHead className="text-xs font-normal text-muted-foreground">Date Created</TableHead>
-                    <TableHead className="w-20"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -555,23 +529,10 @@ const Clients = () => {
                       </TableCell>
                       <TableCell className="text-sm">{client.advisor}</TableCell>
                       <TableCell className="text-sm">{client.wealthManager}</TableCell>
-                      <TableCell className="text-sm">{client.language}</TableCell>
+                      {selectedRegion === "ZA" && (
+                        <TableCell className="text-sm">{client.language}</TableCell>
+                      )}
                       <TableCell className="text-sm">{client.dateCreated}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Button variant="ghost" size="icon" className="h-6 w-6">
-                            <Plus className="w-4 h-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-6 w-6 text-destructive hover:text-destructive"
-                            onClick={(e) => handleDeleteClick(e, client.id, client.client)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -622,26 +583,6 @@ const Clients = () => {
         />
       )}
 
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Client</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete "{clientToDelete?.name}"? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
       <GlobalAIChat currentPage="clients" />
     </div>
   );
