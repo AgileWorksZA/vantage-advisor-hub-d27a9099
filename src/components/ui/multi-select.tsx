@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Check, ChevronsUpDown, X } from "lucide-react";
+import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,8 +15,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Badge } from "@/components/ui/badge";
-
 interface MultiSelectProps {
   options: { value: string; label: string }[];
   selected: string[];
@@ -42,11 +40,6 @@ export function MultiSelect({
     }
   };
 
-  const handleClear = (e: React.MouseEvent, value: string) => {
-    e.stopPropagation();
-    onChange(selected.filter((item) => item !== value));
-  };
-
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -58,22 +51,10 @@ export function MultiSelect({
         >
           {selected.length === 0 ? (
             <span className="text-muted-foreground">{placeholder}</span>
+          ) : selected.length === options.length ? (
+            <span>{placeholder} (all)</span>
           ) : (
-            <div className="flex gap-1 flex-wrap">
-              {selected.length <= 2 ? (
-                selected.map((value) => (
-                  <Badge key={value} variant="secondary" className="text-xs">
-                    {options.find((o) => o.value === value)?.label}
-                    <X
-                      className="ml-1 h-3 w-3 cursor-pointer"
-                      onClick={(e) => handleClear(e, value)}
-                    />
-                  </Badge>
-                ))
-              ) : (
-                <span>{selected.length} selected</span>
-              )}
-            </div>
+            <span>{placeholder} ({selected.length})</span>
           )}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
