@@ -1,30 +1,33 @@
 
 
-## Style WhatsApp/SMS/Push Conversation List Like Reference Image
+## Remove User nico@advizorstack.com
 
-### Changes (single file: `src/components/email/ConversationList.tsx`)
+### Approach
+Create a temporary edge function that uses the Admin Auth API to delete the user `nico@advizorstack.com` and their associated data from both Test and Production environments.
 
-#### 1. Bold unread conversation names
-- When `unread_count > 0`, apply `font-bold` to the client name (currently only changes color)
+### Steps
 
-#### 2. Bold unread message preview  
-- When `unread_count > 0`, apply `font-semibold` to the last message text
+1. **Create edge function** `delete-user/index.ts` that:
+   - Looks up user by email via `admin.listUsers()`
+   - Deletes related records from `user_jurisdictions`, `profiles`, and `clients` tables
+   - Calls `auth.admin.deleteUser(userId)` to remove the auth record
+   - Returns confirmation
 
-#### 3. Green circle for unread count
-- Change the unread badge from teal (`bg-[hsl(180,70%,45%)]`) to green (`bg-green-500`)
-- Make it a proper circle: `rounded-full w-5 h-5 flex items-center justify-center` instead of the current Badge component
-- Display the unread count number inside
+2. **Deploy and invoke** against Test environment
 
-#### 4. Time color for unread
-- When `unread_count > 0`, show the time in green (`text-green-500`) to match the reference image style
+3. **Invoke again** against Production environment
+
+4. **Clean up** -- delete the function and revert config.toml
 
 ### Technical Details
 
-All changes are in the `renderConversationItem` function (lines 75-113) of `ConversationList.tsx`:
+The function will:
+- Find the user ID by email
+- Delete from `user_jurisdictions` where `user_id` matches
+- Delete from `profiles` where `id` matches
+- Delete seeded `clients` where `user_id` matches
+- Call `auth.admin.deleteUser(userId)` to fully remove the user
+- Uses service role key to bypass RLS
 
-- Line 91: Add `font-bold` when unread (currently `font-medium`)
-- Line 94: Add `text-green-500` when unread for the time
-- Line 102: Add `font-semibold` when unread for message preview  
-- Lines 105-109: Replace `Badge` with a plain green circle `div`
+Single file change: `supabase/functions/delete-user/index.ts` (temporary) and a temporary config.toml entry.
 
-No backend changes needed -- this is purely a UI styling update that applies to all channels (WhatsApp, SMS, Push) across all jurisdictions automatically since they all use the same `renderConversationItem` function.
