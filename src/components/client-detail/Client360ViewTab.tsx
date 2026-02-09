@@ -18,7 +18,7 @@ import NewBusinessWizardDialog from "./NewBusinessWizardDialog";
 
 const Client360ViewTab = () => {
   const { clientId } = useParams<{ clientId: string }>();
-  const { client } = useClientDetail(clientId || "");
+  const { client, loading } = useClientDetail(clientId || "");
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [showAllOnPlatform, setShowAllOnPlatform] = useState(false);
   const [showQuoteWizard, setShowQuoteWizard] = useState(false);
@@ -34,7 +34,7 @@ const Client360ViewTab = () => {
     return generateClient360Data(clientId, client?.nationality || null, client?.country_of_issue || null);
   }, [clientId, client?.nationality, client?.country_of_issue]);
 
-  if (!clientData) {
+  if (loading || !client || !clientData) {
     return <div className="text-center py-8 text-muted-foreground">Loading client data...</div>;
   }
 

@@ -63,7 +63,10 @@ const COMP_LINE = "hsl(142, 60%, 45%)";
 
 export default function ClientPerformanceTab({ clientId, nationality, countryOfIssue }: ClientPerformanceTabProps) {
   const { selectedRegion } = useRegion();
-  const jurisdiction = nationality ? mapNationalityToJurisdiction(nationality, countryOfIssue) : selectedRegion;
+  const isClientDataReady = !!(nationality || countryOfIssue);
+  const jurisdiction = isClientDataReady
+    ? (nationality ? mapNationalityToJurisdiction(nationality, countryOfIssue) : selectedRegion)
+    : selectedRegion;
 
   const data360 = useMemo(() => generateClient360Data(clientId, nationality || null, countryOfIssue || null), [clientId, nationality, countryOfIssue]);
   const currentPortfolio = useMemo(() => {
@@ -457,6 +460,10 @@ export default function ClientPerformanceTab({ clientId, nationality, countryOfI
       ))}
     </div>
   );
+
+  if (!isClientDataReady) {
+    return <div className="text-center py-8 text-muted-foreground">Loading...</div>;
+  }
 
   // ===== RENDER =====
   return (
