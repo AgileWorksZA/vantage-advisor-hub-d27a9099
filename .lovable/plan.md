@@ -1,27 +1,52 @@
 
 
-# Align Mobile Settings Styling with Web UserMenu
+# Convert Profile Type Filters to Multi-Select with Tags
 
 ## Overview
-Update the mobile settings page user info section to match the web settings popover styling exactly -- same avatar colors, email color, and spacing.
+Transform the single-select filter tabs (Lead, Prospect, Client, Shared Clients, Incomplete Profile, Deceased) into a multi-select dropdown matching the style of the existing "Client types" dropdown. Display removable tags below when filters are active, and only show "Reset Filters" inline with those tags when any tags are visible.
 
-## Differences to Fix
+## Changes
 
-| Element | Mobile (current) | Web (target) |
-|---------|-----------------|--------------|
-| Avatar background | `bg-primary` | `bg-purple-500` |
-| Avatar text color | `text-primary-foreground` | `text-white` |
-| Email text color | `text-primary mt-0.5` | `text-purple-500` (no mt-0.5) |
-| User info padding | `py-6` | `py-4` |
-| Web/Mobile toggle margin | `mt-4` | `mt-3` |
+### File: `src/pages/Clients.tsx`
 
-## Technical Details
+**1. Replace single-select state with multi-select state**
+- Change `activeFilter` (single string) to `selectedProfileFilters` (string array), defaulting to all options selected.
 
-### File: `src/components/mobile/MobileSettingsMenu.tsx`
+**2. Create profile filter options array**
+- Replace `filterTabs` with a `profileFilterOptions` array in the same `{ value, label }` format as `clientTypeOptions`:
+  ```
+  Lead, Prospect, Client, Shared Clients, Incomplete Profile, Deceased
+  ```
 
-Four small changes in the user info section (lines 93-127):
+**3. Replace the filter tabs row (lines 370-393)**
+- Remove the row of single-select buttons.
+- Add a new `MultiSelect` dropdown (same component used for Client types) for profile filters, placed next to the existing "Client types" dropdown in the row with "Reports" button (lines 441-456).
 
-1. **Line 93**: Change `py-6` to `py-4` on the user info container
-2. **Line 94**: Change avatar from `bg-primary text-primary-foreground` to `bg-purple-500 text-white`
-3. **Line 99**: Change email from `text-primary mt-0.5` to `text-purple-500` (remove mt-0.5)
-4. **Line 102**: Change toggle margin from `mt-4` to `mt-3`
+**4. Add profile filter tags below client type tags**
+- Below the existing client type filter tags section, add a similar tags row for profile filters -- showing removable Badge tags when not all profile filters are selected.
+
+**5. Move "Reset Filters" to be inline with tags**
+- Remove the standalone "Reset Filters" link (lines 414-433).
+- Only show "Reset Filters" when any filter tags are visible (either client type or profile type tags are showing).
+- Display it inline at the end of the tags row(s).
+- Keep the "Include inactive clients" switch in a separate row.
+
+**6. Update filtering logic (lines 197-246)**
+- Replace the single `activeFilter` comparisons (lines 224-228) with multi-select logic: check if `client.profileType` is included in `selectedProfileFilters` (when not all are selected).
+- Handle "Shared Clients", "Incomplete Profile", and "Deceased" as special filters that check different client fields.
+
+## Layout After Changes
+
+```text
+[+ Add Profile button right-aligned]
+
+[Include inactive clients toggle]
+
+RECENTLY VIEWED / SEARCH RESULTS    [Reports] [Profile status v] [Client types v]
+
+Filtered by: [Lead x] [Client x] [Individual x] [Trust x]  Reset Filters
+```
+
+- The "Filtered by:" row with tags and "Reset Filters" only appears when at least one filter is not fully selected (i.e., some tags to show).
+- Both profile and client type tags appear in the same row.
+
