@@ -136,6 +136,8 @@ const CalendarPage = () => {
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [eventSheetOpen, setEventSheetOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [isEditingEvent, setIsEditingEvent] = useState(false);
+  const [editEvent, setEditEvent] = useState<Partial<CreateCalendarEventInput>>({});
 
   // Form state for new event
   const [newEvent, setNewEvent] = useState<Partial<CreateCalendarEventInput>>({
@@ -298,7 +300,34 @@ const CalendarPage = () => {
 
   const handleEventClick = (event: CalendarEvent) => {
     setSelectedEvent(event);
+    setIsEditingEvent(false);
     setEventSheetOpen(true);
+  };
+
+  const handleStartEditing = () => {
+    if (!selectedEvent) return;
+    setEditEvent({
+      title: selectedEvent.title,
+      eventType: selectedEvent.eventType,
+      startTime: selectedEvent.startTime,
+      endTime: selectedEvent.endTime,
+      allDay: selectedEvent.allDay,
+      location: selectedEvent.location || "",
+      description: selectedEvent.description || "",
+      clientId: selectedEvent.clientId || undefined,
+      timezone: selectedEvent.timezone || activeTimezone,
+    });
+    setIsEditingEvent(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!selectedEvent || !editEvent.title) return;
+    const success = await updateEvent(selectedEvent.id, editEvent);
+    if (success) {
+      setIsEditingEvent(false);
+      setEventSheetOpen(false);
+      setSelectedEvent(null);
+    }
   };
 
   const handleDayClick = (day: Date) => {
@@ -714,9 +743,9 @@ const CalendarPage = () => {
       </div>
 
       {/* Event Detail Sheet */}
-      <Sheet open={eventSheetOpen} onOpenChange={setEventSheetOpen}>
+      <Sheet open={eventSheetOpen} onOpenChange={(open) => { setEventSheetOpen(open); if (!open) setIsEditingEvent(false); }}>
         <SheetContent className="w-[400px] sm:w-[600px] overflow-y-auto">
-          {selectedEvent && (
+          {selectedEvent && !isEditingEvent && (
             <>
               <SheetHeader>
                 <SheetTitle className="flex items-center gap-2">
@@ -745,7 +774,15 @@ const CalendarPage = () => {
                 {selectedEvent.location && (
                   <div className="flex items-start gap-3">
                     <MapPin className="w-5 h-5 text-muted-foreground mt-0.5" />
-                    <p>{selectedEvent.location}</p>
+                    <div>
+                      {selectedEvent.location.startsWith("http") ? (
+                        <a href={selectedEvent.location} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline break-all">
+                          {selectedEvent.location}
+                        </a>
+                      ) : (
+                        <p>{selectedEvent.location}</p>
+                      )}
+                    </div>
                   </div>
                 )}
 
@@ -779,7 +816,6 @@ const CalendarPage = () => {
                     onAnalyze={() => eventRecordings[0] && processRecording(eventRecordings[0].id)}
                   />
 
-                  {/* Transcription Panel */}
                   {eventRecordings[0] && (
                     <TranscriptionPanel
                       transcription={eventRecordings[0].transcription}
@@ -788,7 +824,6 @@ const CalendarPage = () => {
                     />
                   )}
 
-                  {/* Action Items */}
                   {eventRecordings[0] && (
                     <ActionItemsList
                       actionItems={eventRecordings[0].aiActionItems}
@@ -798,9 +833,9 @@ const CalendarPage = () => {
                 </div>
 
                 <div className="pt-4 border-t flex gap-2">
-                  <Button variant="outline" className="flex-1" onClick={() => setEventSheetOpen(false)}>
-                    <X className="w-4 h-4 mr-2" />
-                    Close
+                  <Button variant="outline" className="flex-1" onClick={handleStartEditing}>
+                    <Edit className="w-4 h-4 mr-2" />
+                    Edit
                   </Button>
                   <Button
                     variant="destructive"
@@ -808,6 +843,187 @@ const CalendarPage = () => {
                   >
                     <Trash2 className="w-4 h-4 mr-2" />
                     Delete
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Edit mode */}
+          {selectedEvent && isEditingEvent && (
+            <>
+              <SheetHeader>
+                <SheetTitle>Edit Event</SheetTitle>
+                <SheetDescription>Update event details</SheetDescription>
+              </SheetHeader>
+              <div className="mt-6 space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-title">Title</Label>
+                  <Input
+                    id="edit-title"
+                    value={editEvent.title || ""}
+                    onChange={(e) => setEditEvent((prev) => ({ ...prev, title: e.target.value }))}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Event Type</Label>
+                  <Select
+                    value={editEvent.eventType}
+                    onValueChange={(value) => setEditEvent((prev) => ({ ...prev, eventType: value as CalendarEventType }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {eventTypes.map((type) => (
+                        <SelectItem key={type} value={type}>
+                          <div className="flex items-center gap-2">
+                            <div className={cn("w-2 h-2 rounded-full", eventTypeColors[type])} />
+                            {type}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Start Date</Label>
+                    <Input
+                      type="date"
+                      value={editEvent.startTime ? format(editEvent.startTime, "yyyy-MM-dd") : ""}
+                      onChange={(e) => {
+                        const date = new Date(e.target.value);
+                        const currentTime = editEvent.startTime || new Date();
+                        date.setHours(currentTime.getHours(), currentTime.getMinutes());
+                        setEditEvent((prev) => ({ ...prev, startTime: date }));
+                      }}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Start Time</Label>
+                    <Input
+                      type="time"
+                      value={editEvent.startTime ? format(editEvent.startTime, "HH:mm") : ""}
+                      onChange={(e) => {
+                        const [hours, minutes] = e.target.value.split(":").map(Number);
+                        const date = new Date(editEvent.startTime || new Date());
+                        date.setHours(hours, minutes);
+                        setEditEvent((prev) => ({ ...prev, startTime: date }));
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>End Date</Label>
+                    <Input
+                      type="date"
+                      value={editEvent.endTime ? format(editEvent.endTime, "yyyy-MM-dd") : ""}
+                      onChange={(e) => {
+                        const date = new Date(e.target.value);
+                        const currentTime = editEvent.endTime || new Date();
+                        date.setHours(currentTime.getHours(), currentTime.getMinutes());
+                        setEditEvent((prev) => ({ ...prev, endTime: date }));
+                      }}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>End Time</Label>
+                    <Input
+                      type="time"
+                      value={editEvent.endTime ? format(editEvent.endTime, "HH:mm") : ""}
+                      onChange={(e) => {
+                        const [hours, minutes] = e.target.value.split(":").map(Number);
+                        const date = new Date(editEvent.endTime || new Date());
+                        date.setHours(hours, minutes);
+                        setEditEvent((prev) => ({ ...prev, endTime: date }));
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Timezone</Label>
+                  <Select
+                    value={editEvent.timezone || activeTimezone}
+                    onValueChange={(value) => setEditEvent((prev) => ({ ...prev, timezone: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {COMMON_TIMEZONES.map((tz) => (
+                        <SelectItem key={tz.value} value={tz.value}>
+                          {tz.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Link to Client (Optional)</Label>
+                  <Select
+                    value={editEvent.clientId || "none"}
+                    onValueChange={(value) => setEditEvent((prev) => ({ ...prev, clientId: value === "none" ? undefined : value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select client" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No client</SelectItem>
+                      {clients.map((client) => (
+                        <SelectItem key={client.id} value={client.id}>
+                          {client.client}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-location">Location (Optional)</Label>
+                  <Input
+                    id="edit-location"
+                    value={editEvent.location || ""}
+                    onChange={(e) => setEditEvent((prev) => ({ ...prev, location: e.target.value }))}
+                    placeholder="Zoom link, address, or Google Maps URL"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-description">Description (Optional)</Label>
+                  <Textarea
+                    id="edit-description"
+                    value={editEvent.description || ""}
+                    onChange={(e) => setEditEvent((prev) => ({ ...prev, description: e.target.value }))}
+                    rows={3}
+                  />
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="edit-allDay"
+                    checked={editEvent.allDay || false}
+                    onCheckedChange={(checked) => setEditEvent((prev) => ({ ...prev, allDay: !!checked }))}
+                  />
+                  <Label htmlFor="edit-allDay" className="cursor-pointer">All day event</Label>
+                </div>
+
+                <div className="flex gap-2 pt-4 border-t">
+                  <Button variant="outline" className="flex-1" onClick={() => setIsEditingEvent(false)}>
+                    Cancel
+                  </Button>
+                  <Button
+                    className="flex-1 bg-[hsl(180,70%,45%)] hover:bg-[hsl(180,70%,40%)]"
+                    onClick={handleSaveEdit}
+                    disabled={!editEvent.title}
+                  >
+                    Save Changes
                   </Button>
                 </div>
               </div>
