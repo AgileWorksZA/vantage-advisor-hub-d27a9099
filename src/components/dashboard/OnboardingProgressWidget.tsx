@@ -18,7 +18,7 @@ const TIME_BUCKET_LABELS: { key: TimeBucket; label: string }[] = [
 
 const STATUS_COLUMNS = [
   { key: "In Progress", label: "In progress" },
-  { key: "Pending Client", label: "Pending client acceptance" },
+  { key: "Pending Client", label: "Pending client" },
   { key: "Not Started", label: "Pending approval" },
 ];
 
@@ -48,7 +48,7 @@ export function OnboardingProgressWidget({ selectedAdvisorNames }: OnboardingPro
             <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary" />
           </div>
         ) : (
-          <table className="w-full text-sm">
+          <table className="w-full text-xs">
             <thead>
               <tr className="text-muted-foreground text-xs">
                 <th className="text-left pb-1.5 font-normal">Time</th>
