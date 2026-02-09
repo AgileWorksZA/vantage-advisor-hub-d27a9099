@@ -1,22 +1,27 @@
 
-# Shift Splash Screen Content Downward
+
+# Align Mobile Settings Styling with Web UserMenu
 
 ## Overview
-Move the loading bar, logo, and tagline group lower on the splash screen. The loading bar should sit approximately where the tagline currently is (below center), with the logo and tagline flowing beneath it.
+Update the mobile settings page user info section to match the web settings popover styling exactly -- same avatar colors, email color, and spacing.
 
-## Current Layout
-The content group is vertically centered (`justify-center`) in the screen. This places the loading bar near the center point, with the logo and tagline below it.
+## Differences to Fix
 
-## Change
-The outer container currently uses `justify-center` which vertically centers the content group. To push the group downward so the loading bar sits lower (roughly where the tagline currently is), we will:
-
-- Replace `justify-center` with `justify-end` on the outer container and add bottom padding (`pb-48` or similar) to position the group in the lower portion of the screen -- OR more precisely:
-- Keep `justify-center` but add a top margin (`mt-24` or `mt-32`) to the content group to shift it down from center, so the loading bar lands approximately where the tagline currently sits.
-
-The second approach is cleaner since it preserves the centered layout feel while nudging everything down. A `mt-24` (6rem / 96px) shift should place the loading bar roughly where the tagline is now (the tagline is about 80-100px below center currently given the gap and margins).
+| Element | Mobile (current) | Web (target) |
+|---------|-----------------|--------------|
+| Avatar background | `bg-primary` | `bg-purple-500` |
+| Avatar text color | `text-primary-foreground` | `text-white` |
+| Email text color | `text-primary mt-0.5` | `text-purple-500` (no mt-0.5) |
+| User info padding | `py-6` | `py-4` |
+| Web/Mobile toggle margin | `mt-4` | `mt-3` |
 
 ## Technical Details
 
-### File: `src/components/mobile/MobileSplashScreen.tsx`
-- Add `mt-24` to the content group div (line 23) to shift the entire block (loading bar + logo + tagline) downward
-- This keeps all three elements in the same relative order and spacing, just positioned lower on the screen
+### File: `src/components/mobile/MobileSettingsMenu.tsx`
+
+Four small changes in the user info section (lines 93-127):
+
+1. **Line 93**: Change `py-6` to `py-4` on the user info container
+2. **Line 94**: Change avatar from `bg-primary text-primary-foreground` to `bg-purple-500 text-white`
+3. **Line 99**: Change email from `text-primary mt-0.5` to `text-purple-500` (remove mt-0.5)
+4. **Line 102**: Change toggle margin from `mt-4` to `mt-3`
