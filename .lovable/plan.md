@@ -1,15 +1,25 @@
 
-## Align Gear Icon with the Flag in the Top Bar
+
+## Align Gear Icon Horizontally with the Flag
 
 ### Problem
-The gear icon is currently constrained to `max-w-[1082px] pr-4`, which positions it aligned with the widget grid. The user wants it aligned with the flag icon (RegionSelector) in the AppHeader instead, which sits at the far right of the page with `px-6` padding.
+The gear icon currently sits at the far right of the content area. The flag icon in the header has the UserMenu avatar (36px) and a gap (16px) to its right, placing it roughly 52px inward from the right edge. The gear needs to shift right-ward to match the flag's horizontal position.
 
 ### Solution
-Remove the `max-w-[1082px] pr-4` constraints from the heading wrapper so it spans the full width of the content area. Since the main content already has `p-6` padding (matching the header's `px-6`), the gear icon pushed to the right via `justify-between` will naturally align with the flag icon above it.
+Add `pr-[52px]` to the heading wrapper div. This accounts for the avatar width (h-9 = 36px) plus the gap-4 (16px) in the header's right-side items, aligning the gear icon directly beneath the flag.
 
 ### Change
 **`src/pages/Dashboard.tsx`** (line 251):
-- Change `max-w-[1082px] pr-4` back to no width constraint, so the div spans the full content width
+- Add `pr-[52px]` to the heading div
+
+```tsx
+// Before
+<div className="flex items-center justify-between mb-6">
+
+// After
+<div className="flex items-center justify-between mb-6 pr-[52px]">
+```
 
 ### Files Changed
 - `src/pages/Dashboard.tsx` (1 line)
+
