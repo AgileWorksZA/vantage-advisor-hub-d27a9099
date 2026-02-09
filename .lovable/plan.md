@@ -1,20 +1,30 @@
 
 
-## Reset Password in Production
+## Style WhatsApp/SMS/Push Conversation List Like Reference Image
 
-### Approach
-Re-create the same one-time `reset-user-password` edge function, deploy it, and invoke it against the **Live** environment to update the password for `nico@advizorstack.com` to `12Eqwme@dwqd1!`.
+### Changes (single file: `src/components/email/ConversationList.tsx`)
 
-### Steps
+#### 1. Bold unread conversation names
+- When `unread_count > 0`, apply `font-bold` to the client name (currently only changes color)
 
-1. **Re-create** `supabase/functions/reset-user-password/index.ts` (same code as before)
-2. **Add** `verify_jwt = false` entry in `supabase/config.toml`
-3. **Deploy** the function
-4. **Invoke** it against the **production** environment
-5. **Clean up** -- delete the function and revert config.toml
+#### 2. Bold unread message preview  
+- When `unread_count > 0`, apply `font-semibold` to the last message text
 
-### Technical Notes
-- The function uses the Service Role key (available in both environments) to call `auth.admin.updateUserById()`
-- The curl call will target the production environment to ensure the Live auth database is updated
-- Same cleanup process as before
+#### 3. Green circle for unread count
+- Change the unread badge from teal (`bg-[hsl(180,70%,45%)]`) to green (`bg-green-500`)
+- Make it a proper circle: `rounded-full w-5 h-5 flex items-center justify-center` instead of the current Badge component
+- Display the unread count number inside
 
+#### 4. Time color for unread
+- When `unread_count > 0`, show the time in green (`text-green-500`) to match the reference image style
+
+### Technical Details
+
+All changes are in the `renderConversationItem` function (lines 75-113) of `ConversationList.tsx`:
+
+- Line 91: Add `font-bold` when unread (currently `font-medium`)
+- Line 94: Add `text-green-500` when unread for the time
+- Line 102: Add `font-semibold` when unread for message preview  
+- Lines 105-109: Replace `Badge` with a plain green circle `div`
+
+No backend changes needed -- this is purely a UI styling update that applies to all channels (WhatsApp, SMS, Push) across all jurisdictions automatically since they all use the same `renderConversationItem` function.
