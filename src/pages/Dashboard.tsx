@@ -489,6 +489,7 @@ const Dashboard = () => {
                       <tr className="text-muted-foreground text-xs">
                         <th className="text-left pb-2 font-normal">Code</th>
                         <th className="text-left pb-2 font-normal">Event</th>
+                        <th className="text-right pb-2 font-normal">Accts</th>
                         <th className="text-right pb-2 font-normal">Ex date</th>
                       </tr>
                     </thead>
@@ -497,8 +498,9 @@ const Dashboard = () => {
                         .filter(ca => ca.type === caFilter)
                         .map(ca => (
                           <tr key={ca.id} className="border-t border-border">
-                            <td className="py-1.5 max-w-[80px] truncate" title={ca.investmentCode}>{ca.investmentCode}</td>
-                            <td className="py-1.5 max-w-[100px] truncate" title={ca.eventType}>{ca.eventType}</td>
+                            <td className="py-1.5 max-w-[70px] truncate" title={ca.investmentCode}>{ca.investmentCode}</td>
+                            <td className="py-1.5 max-w-[80px] truncate" title={ca.eventType}>{ca.eventType}</td>
+                            <td className="py-1.5 text-right text-muted-foreground">{ca.affectedAccounts}</td>
                             <td className="py-1.5 text-right text-muted-foreground whitespace-nowrap">{ca.exDate}</td>
                           </tr>
                         ))}
