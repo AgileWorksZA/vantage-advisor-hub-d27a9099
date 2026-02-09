@@ -363,8 +363,6 @@ const Clients = () => {
           userEmail={userEmail}
           onSignOut={handleSignOut}
           onAccountSettings={() => navigate("/account-settings")}
-          searchValue={searchQuery}
-          onSearchChange={setSearchQuery}
         />
 
         {/* Clients Content - Scrollable */}
