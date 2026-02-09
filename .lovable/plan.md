@@ -1,18 +1,17 @@
 
 
-## Move Gear Icon to Align with Widget Grid Right Edge
+## Align Gear Icon with Widget Close (X) Buttons
 
 ### Problem
-The gear icon currently sits at the far right of the page (due to `justify-between` on the full-width heading row), but it should align with the right edge of the widget grid -- specifically lining up with the close/X buttons on the far-right widget cards.
+The gear icon sits at the absolute right edge of the 1082px container, but the X buttons on widget cards are inset by `px-4` (16px) due to the card's internal padding. This misalignment makes them look off.
 
 ### Solution
+Add `pr-4` (16px right padding) to the heading container so the gear icon shifts inward to match the horizontal position of the X buttons inside the widget cards.
 
-In `src/pages/Dashboard.tsx`, constrain the heading row's max-width to match the widget grid's width. The grid renders 3 standard widgets at 350px each with 16px margins between them, giving a total width of `3*350 + 2*16 = 1082px`. Setting `max-w-[1082px]` on the heading `div` will align the gear icon with the right edge of the rightmost widget.
-
-### Changes
-
-**`src/pages/Dashboard.tsx`** (line ~251):
-- Add `max-w-[1082px]` to the heading wrapper `div` so the gear icon aligns with the grid's right edge
+### Change
+**`src/pages/Dashboard.tsx`** (line 251):
+- Change: `max-w-[1082px]` to `max-w-[1082px] pr-4`
 
 ### Files Changed
-- `src/pages/Dashboard.tsx` (1 file, 1 line change)
+- `src/pages/Dashboard.tsx` (1 line)
+
