@@ -1,34 +1,44 @@
 
 
-## Fix: US Client Showing C$ Instead of $ on Performance Tab
+## Fix: 360 View Showing C$ Instead of $ for US Client
 
-### Root Cause
+### Investigation Summary
 
-The **Performance tab** (`ClientPerformanceTab.tsx`) imports `currencySymbol` from the global `useRegion()` context (line 64), which reflects the **advisor's currently selected region** (e.g., Canada), not the **client's nationality**. So when an advisor has Canada selected but views a US client, the tab displays "C$" instead of "$".
+The database confirms "White, Emily" has `nationality: "American"` and `country_of_issue: "United States"`. The `Client360ViewTab` code correctly uses `client?.nationality` to generate data via `generateClient360Data`. The `mapNationalityToJurisdiction("American")` function correctly returns `"US"` which maps to `currencySymbol: "$"`.
 
-The **360 View tab** does not have this bug because it correctly uses `clientData.currencySymbol` from `generateClient360Data`.
+However, to make this more robust, the fix will add `country_of_issue` as a secondary fallback for jurisdiction mapping, so if nationality fails for any reason, the country field can still resolve the correct currency.
 
-### Fix
+### Changes
+
+**File: `src/data/regional360ViewData.ts`**
+- Update `mapNationalityToJurisdiction` to accept an optional second parameter `countryOfIssue`
+- If `nationality` is null/unmatched, try mapping from `countryOfIssue` (e.g., "United States" maps to "US", "Canada" maps to "CA")
+- Only fall back to "ZA" if both fields fail
+
+**File: `src/components/client-detail/Client360ViewTab.tsx`**
+- Pass `client?.country_of_issue` as the second argument to both `mapNationalityToJurisdiction` and `generateClient360Data`
+- Update the `useMemo` dependency array to include `client?.country_of_issue`
 
 **File: `src/components/client-detail/ClientPerformanceTab.tsx`**
+- Same change: pass `country_of_issue` as fallback to the jurisdiction/data generation calls
 
-- Stop using `currencySymbol` from `useRegion()` for display purposes
-- Instead, derive the correct currency symbol from the client's jurisdiction using the existing `regional360ViewData` config
-- The `data360` object already contains the correct `currencySymbol` (set by `generateClient360Data` based on nationality)
-- Replace all usages of the RegionContext `currencySymbol` with `data360.currencySymbol`
+### Technical Detail
 
-This is a code-only fix. No database changes are needed -- the nationality data ("American") and country_of_issue ("United States") are already correct in the database.
-
-### Specific Change
-
-Line 64 currently reads:
+Updated function signature:
 ```
-const { selectedRegion, currencySymbol } = useRegion();
+mapNationalityToJurisdiction(nationality: string | null, countryOfIssue?: string | null): string
 ```
 
-Change to:
+Country-of-issue mapping additions:
+- "south africa" -> "ZA"
+- "australia" -> "AU"  
+- "canada" -> "CA"
+- "united kingdom" -> "GB"
+- "united states" -> "US"
+
+`generateClient360Data` signature updated to:
 ```
-const { selectedRegion } = useRegion();
+generateClient360Data(clientId: string, nationality: string | null, countryOfIssue?: string | null)
 ```
 
-Then use `data360.currencySymbol` everywhere `currencySymbol` was previously used in the component (approximately 10+ occurrences for fund values, fee tables, etc.).
+This is a code-only fix. No database changes needed.
