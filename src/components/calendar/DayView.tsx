@@ -10,8 +10,6 @@ import {
 } from "date-fns";
 import { CalendarEvent, CalendarEventType } from "@/hooks/useCalendarEvents";
 import { cn } from "@/lib/utils";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 const eventTypeColors: Record<CalendarEventType, string> = {
   "Meeting": "bg-[hsl(180,70%,45%)]",
@@ -34,6 +32,43 @@ interface DayViewProps {
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const HOUR_HEIGHT = 64; // pixels per hour
 
+interface OverlapInfo {
+  index: number;
+  total: number;
+}
+
+function computeOverlapLayout(events: CalendarEvent[]): Map<string, OverlapInfo> {
+  const timedEvents = events
+    .filter(e => !e.allDay)
+    .sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
+
+  const result = new Map<string, OverlapInfo>();
+  const groups: CalendarEvent[][] = [];
+
+  for (const event of timedEvents) {
+    let placed = false;
+    for (const group of groups) {
+      const groupEnd = Math.max(...group.map(e => e.endTime.getTime()));
+      if (event.startTime.getTime() < groupEnd) {
+        group.push(event);
+        placed = true;
+        break;
+      }
+    }
+    if (!placed) {
+      groups.push([event]);
+    }
+  }
+
+  for (const group of groups) {
+    group.forEach((event, index) => {
+      result.set(event.id, { index, total: group.length });
+    });
+  }
+
+  return result;
+}
+
 export function DayView({
   viewDate,
   events,
@@ -50,6 +85,10 @@ export function DayView({
 
   const timedEvents = useMemo(() => {
     return dayEvents.filter((event) => !event.allDay);
+  }, [dayEvents]);
+
+  const overlapLayout = useMemo(() => {
+    return computeOverlapLayout(dayEvents);
   }, [dayEvents]);
 
   const getEventPosition = (event: CalendarEvent) => {
@@ -124,10 +163,10 @@ export function DayView({
             {HOURS.map((hour) => (
               <div
                 key={hour}
-                className="border-b border-border text-right pr-3 text-sm text-muted-foreground"
+                className="border-b border-border flex items-start justify-end pr-3"
                 style={{ height: HOUR_HEIGHT }}
               >
-                <span className="relative -top-3">
+                <span className="text-sm text-muted-foreground -translate-y-1/2">
                   {hour === 0 ? "" : format(setMinutes(setHours(new Date(), hour), 0), "h:mm a")}
                 </span>
               </div>
@@ -162,6 +201,9 @@ export function DayView({
             {/* Events */}
             {timedEvents.map((event) => {
               const position = getEventPosition(event);
+              const overlap = overlapLayout.get(event.id) || { index: 0, total: 1 };
+              const widthPercent = 100 / overlap.total;
+              const leftPercent = overlap.index * widthPercent;
 
               return (
                 <button
@@ -171,12 +213,14 @@ export function DayView({
                     onEventClick(event);
                   }}
                   className={cn(
-                    "absolute left-2 right-2 rounded-lg px-3 py-2 text-white overflow-hidden text-left shadow-sm",
+                    "absolute rounded-lg px-3 py-2 text-white overflow-hidden text-left shadow-sm",
                     event.color || eventTypeColors[event.eventType]
                   )}
                   style={{
                     top: position.top,
                     height: position.height,
+                    left: `calc(${leftPercent}% + 4px)`,
+                    width: `calc(${widthPercent}% - 8px)`,
                     zIndex: 1,
                   }}
                 >

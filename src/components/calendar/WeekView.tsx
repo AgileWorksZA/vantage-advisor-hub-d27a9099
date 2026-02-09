@@ -37,6 +37,43 @@ interface WeekViewProps {
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const HOUR_HEIGHT = 60; // pixels per hour
 
+interface OverlapInfo {
+  index: number;
+  total: number;
+}
+
+function computeOverlapLayout(events: CalendarEvent[]): Map<string, OverlapInfo> {
+  const timedEvents = events
+    .filter(e => !e.allDay)
+    .sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
+
+  const result = new Map<string, OverlapInfo>();
+  const groups: CalendarEvent[][] = [];
+
+  for (const event of timedEvents) {
+    let placed = false;
+    for (const group of groups) {
+      const groupEnd = Math.max(...group.map(e => e.endTime.getTime()));
+      if (event.startTime.getTime() < groupEnd) {
+        group.push(event);
+        placed = true;
+        break;
+      }
+    }
+    if (!placed) {
+      groups.push([event]);
+    }
+  }
+
+  for (const group of groups) {
+    group.forEach((event, index) => {
+      result.set(event.id, { index, total: group.length });
+    });
+  }
+
+  return result;
+}
+
 export function WeekView({
   viewDate,
   events,
@@ -109,10 +146,10 @@ export function WeekView({
             {HOURS.map((hour) => (
               <div
                 key={hour}
-                className="border-b border-border text-right pr-2 text-xs text-muted-foreground"
+                className="border-b border-border flex items-start justify-end pr-2"
                 style={{ height: HOUR_HEIGHT }}
               >
-                <span className="relative -top-2">
+                <span className="text-xs text-muted-foreground -translate-y-1/2">
                   {hour === 0 ? "" : format(setHours(new Date(), hour), "h a")}
                 </span>
               </div>
@@ -122,6 +159,7 @@ export function WeekView({
           {/* Day columns */}
           {weekDays.map((day) => {
             const dayEvents = getEventsForDay(day);
+            const overlapLayout = computeOverlapLayout(dayEvents);
             
             return (
               <div
@@ -143,6 +181,9 @@ export function WeekView({
                   if (event.allDay) return null;
                   
                   const position = getEventPosition(event);
+                  const overlap = overlapLayout.get(event.id) || { index: 0, total: 1 };
+                  const widthPercent = 100 / overlap.total;
+                  const leftPercent = overlap.index * widthPercent;
                   
                   return (
                     <button
@@ -152,12 +193,14 @@ export function WeekView({
                         onEventClick(event);
                       }}
                       className={cn(
-                        "absolute left-1 right-1 rounded px-1 py-0.5 text-xs text-white overflow-hidden text-left",
+                        "absolute rounded px-1 py-0.5 text-xs text-white overflow-hidden text-left",
                         event.color || eventTypeColors[event.eventType]
                       )}
                       style={{
                         top: position.top,
                         height: position.height,
+                        left: `calc(${leftPercent}% + 2px)`,
+                        width: `calc(${widthPercent}% - 4px)`,
                         zIndex: 1,
                       }}
                     >
