@@ -439,7 +439,7 @@ const Clients = () => {
                   options={clientTypeOptions}
                   selected={selectedClientTypes}
                   onChange={setSelectedClientTypes}
-                  placeholder="Person type"
+                  placeholder="Client types"
                   className="w-48"
                 />
               </div>
