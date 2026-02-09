@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useRegion } from "@/contexts/RegionContext";
 import { generateClient360Data, mapNationalityToJurisdiction } from "@/data/regional360ViewData";
@@ -15,6 +15,8 @@ import {
   EACRow,
 } from "@/data/performanceComparisonData";
 import { MultiSelect } from "@/components/ui/multi-select";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { EChartsWrapper } from "@/components/ui/echarts-wrapper";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -82,11 +84,33 @@ export default function ClientPerformanceTab({ clientId, nationality }: ClientPe
     setSelectedProducts(data360.onPlatformProducts.map((p) => p.product));
   }, [data360]);
 
+  // Expand by product toggle
+  const [expandByProduct, setExpandByProduct] = useState(false);
+
   // Generate fund-level breakdown for selected products
   const productFunds = useMemo(() => {
     const selected = data360.onPlatformProducts.filter((p) => selectedProducts.includes(p.product));
     return generateProductFunds(selected, jurisdiction, clientId);
   }, [data360, selectedProducts, jurisdiction, clientId]);
+
+  // Consolidated funds (merged by fund name across products)
+  const consolidatedFunds = useMemo(() => {
+    if (expandByProduct) return null;
+    const map = new Map<string, { fundName: string; value: number }>();
+    productFunds.forEach((f) => {
+      const existing = map.get(f.fundName);
+      if (existing) {
+        existing.value += f.value;
+      } else {
+        map.set(f.fundName, { fundName: f.fundName, value: f.value });
+      }
+    });
+    const totalValue = productFunds.reduce((s, f) => s + f.value, 0);
+    return Array.from(map.values()).map((f) => ({
+      ...f,
+      allocation: totalValue > 0 ? +((f.value / totalValue) * 100).toFixed(1) : 0,
+    }));
+  }, [productFunds, expandByProduct]);
 
   // Comparison state
   const [comparisonFunds, setComparisonFunds] = useState<ComparisonFund[]>([]);
@@ -445,13 +469,28 @@ export default function ClientPerformanceTab({ clientId, nationality }: ClientPe
               <div className="w-2.5 h-2.5 rounded-full" style={{ background: CURRENT_COLOR }} />
               Current Portfolio
             </CardTitle>
-            <MultiSelect
-              options={allProductOptions}
-              selected={selectedProducts}
-              onChange={setSelectedProducts}
-              placeholder="Products"
-              className="mt-2 h-8 text-xs"
-            />
+            <div className="flex items-center gap-3 mt-2">
+              <div className="max-w-[220px]">
+                <MultiSelect
+                  options={allProductOptions}
+                  selected={selectedProducts}
+                  onChange={setSelectedProducts}
+                  placeholder="Products"
+                  className="h-8 text-xs"
+                />
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Switch
+                  id="expand-by-product"
+                  checked={expandByProduct}
+                  onCheckedChange={setExpandByProduct}
+                  className="scale-75"
+                />
+                <Label htmlFor="expand-by-product" className="text-[10px] text-muted-foreground whitespace-nowrap cursor-pointer">
+                  Expand by Product
+                </Label>
+              </div>
+            </div>
           </CardHeader>
           <CardContent className="px-4 pb-3">
             <Table>
@@ -463,30 +502,39 @@ export default function ClientPerformanceTab({ clientId, nationality }: ClientPe
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {(() => {
-                  const grouped = selectedProducts.map((pName) => ({
-                    product: pName,
-                    funds: productFunds.filter((f) => f.productName === pName),
-                  }));
-                  return grouped.map((group) => (
-                    <>
-                      <TableRow key={`hdr-${group.product}`} className="bg-muted/30">
-                        <TableCell colSpan={3} className="text-[10px] py-0.5 font-bold text-muted-foreground">
-                          {group.product}
-                        </TableCell>
-                      </TableRow>
-                      {group.funds.map((f, fi) => (
-                        <TableRow key={`${group.product}-${fi}`}>
-                          <TableCell className="text-[11px] py-1 pl-6 font-medium">{f.fundName}</TableCell>
-                          <TableCell className="text-[11px] py-1 text-right">{f.allocation}%</TableCell>
-                          <TableCell className="text-[11px] py-1 text-right">
-                            {currencySymbol}{f.value.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                {expandByProduct ? (
+                  selectedProducts.map((pName) => {
+                    const funds = productFunds.filter((f) => f.productName === pName);
+                    return (
+                      <React.Fragment key={`grp-${pName}`}>
+                        <TableRow className="bg-muted/30">
+                          <TableCell colSpan={3} className="text-[10px] py-0.5 font-bold text-muted-foreground">
+                            {pName}
                           </TableCell>
                         </TableRow>
-                      ))}
-                    </>
-                  ));
-                })()}
+                        {funds.map((f, fi) => (
+                          <TableRow key={`${pName}-${fi}`}>
+                            <TableCell className="text-[11px] py-1 pl-6 font-medium">{f.fundName}</TableCell>
+                            <TableCell className="text-[11px] py-1 text-right">{f.allocation}%</TableCell>
+                            <TableCell className="text-[11px] py-1 text-right">
+                              {currencySymbol}{f.value.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </React.Fragment>
+                    );
+                  })
+                ) : (
+                  consolidatedFunds?.map((f, i) => (
+                    <TableRow key={`cons-${i}`}>
+                      <TableCell className="text-[11px] py-1 font-medium">{f.fundName}</TableCell>
+                      <TableCell className="text-[11px] py-1 text-right">{f.allocation}%</TableCell>
+                      <TableCell className="text-[11px] py-1 text-right">
+                        {currencySymbol}{f.value.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
                 <TableRow className="border-t-2">
                   <TableCell className="text-[11px] py-1 font-bold">Total</TableCell>
                   <TableCell className="text-[11px] py-1 text-right font-bold">100%</TableCell>
