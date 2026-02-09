@@ -1954,6 +1954,8 @@ export type Database = {
           id: string
           is_deleted: boolean
           media_url: string | null
+          message_type: string
+          poll_data: Json | null
           sent_at: string
           status: string
           updated_at: string
@@ -1970,6 +1972,8 @@ export type Database = {
           id?: string
           is_deleted?: boolean
           media_url?: string | null
+          message_type?: string
+          poll_data?: Json | null
           sent_at?: string
           status?: string
           updated_at?: string
@@ -1986,6 +1990,8 @@ export type Database = {
           id?: string
           is_deleted?: boolean
           media_url?: string | null
+          message_type?: string
+          poll_data?: Json | null
           sent_at?: string
           status?: string
           updated_at?: string
@@ -4139,6 +4145,35 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      whatsapp_favourites: {
+        Row: {
+          client_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_favourites_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       workflow_templates: {
         Row: {
