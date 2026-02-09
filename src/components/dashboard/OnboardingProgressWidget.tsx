@@ -68,7 +68,7 @@ export function OnboardingProgressWidget({ selectedAdvisorNames }: OnboardingPro
                         {count > 0 ? (
                           <button
                             onClick={() => handleCountClick(col.key, bucket.key)}
-                            className="text-primary underline hover:text-primary/80 font-medium cursor-pointer"
+                            className="text-primary hover:text-primary/80 font-medium cursor-pointer"
                           >
                             {count}
                           </button>
