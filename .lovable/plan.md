@@ -1,29 +1,20 @@
 
 
-## Reset Password for User
+## Reset Password in Production
 
 ### Approach
-Create a one-time edge function that uses the admin API to update the password for `nico@advizorstack.com` to `12Eqwme@dwqd1!`.
+Re-create the same one-time `reset-user-password` edge function, deploy it, and invoke it against the **Live** environment to update the password for `nico@advizorstack.com` to `12Eqwme@dwqd1!`.
 
 ### Steps
 
-1. **Create edge function** `reset-user-password/index.ts` that:
-   - Uses the service role key to call `supabase.auth.admin.updateUserById()`
-   - Looks up the user by email, then updates their password
-   - Returns success/failure response
+1. **Re-create** `supabase/functions/reset-user-password/index.ts` (same code as before)
+2. **Add** `verify_jwt = false` entry in `supabase/config.toml`
+3. **Deploy** the function
+4. **Invoke** it against the **production** environment
+5. **Clean up** -- delete the function and revert config.toml
 
-2. **Deploy and invoke** the function once to apply the password change
-
-3. **Clean up** by deleting the edge function after use (it's a one-time operation)
-
-### Technical Details
-
-The edge function will:
-```
-- Look up user by email via admin.listUsers() filter
-- Call admin.updateUserById(userId, { password: "12Eqwme@dwqd1!" })
-- Return confirmation
-```
-
-No database migrations or UI changes required.
+### Technical Notes
+- The function uses the Service Role key (available in both environments) to call `auth.admin.updateUserById()`
+- The curl call will target the production environment to ensure the Live auth database is updated
+- Same cleanup process as before
 
