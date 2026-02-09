@@ -259,7 +259,7 @@ const AccountSettings = () => {
         ))}
         <div className="flex-1" />
         <div className="mb-2 overflow-visible">
-          <img src={vantageLogo} alt="Vantage" className="h-[80px] w-auto -rotate-90 origin-center" />
+          <img src={vantageLogo} alt="Vantage" className="h-[80px] w-auto object-contain -rotate-90 origin-center" />
         </div>
       </aside>
 
