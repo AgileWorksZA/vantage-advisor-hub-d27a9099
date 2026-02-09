@@ -1,80 +1,35 @@
 
 
-# Mobile App UI Improvements
+# Fix Settings Menu: Full-Screen View Instead of Popover
 
-## Overview
-Three changes to the mobile companion app:
-1. Move the splash screen text ("Your Advice Companion") to below the loading bar
-2. Replace the "Web" button in the mobile header with a Settings gear icon
-3. Tapping the Settings gear opens a popover menu matching the web UserMenu (avatar, user info, Web/Mobile toggle, Account Settings, Dark Mode toggle, AI Assistant toggle, Sign Out)
+## Problem
+The settings gear button does nothing when tapped. This is because the `Popover` component renders via a React portal at the document body level, which places it **outside** the constrained phone frame container (393x852px with `overflow-hidden`). The popover content is technically there but invisible -- it renders behind the phone frame or off-screen.
 
-## Changes
+## Solution
+Replace the popover-based settings menu with a **full-screen settings view** that renders inside the mobile app's content area (within the phone frame). When the user taps the gear icon, the entire main area slides to a settings screen. A back arrow at the top lets the user return to whatever tab they were on.
 
-### 1. Splash Screen Layout (`src/components/mobile/MobileSplashScreen.tsx`)
+## What You Will See
+- Tapping the gear icon shows a full-screen settings page inside the phone frame
+- A back button (left arrow) in the top-left corner returns you to the previous tab
+- The settings screen matches the reference image: avatar with initial, user name, email, Web/Mobile toggle, Account Settings, Dark Mode toggle, AI Assistant toggle, and Sign Out
+- The bottom tab bar is hidden while settings is open for a clean full-screen feel
 
-Move the tagline text ("Your Advice Companion") from its current position (above the loading bar) to below the loading bar. The order will become:
-- AdvisorFirst logo text
-- Loading bar
-- "Your Advice Companion" tagline (moved below)
-- "Powered by Vantage" at the bottom
+## Technical Changes
 
-### 2. Mobile Header Settings Button (`src/components/mobile/MobileApp.tsx`)
+### 1. Refactor `MobileSettingsMenu.tsx` to `MobileSettingsScreen.tsx`
+- Remove the `Popover` wrapper entirely
+- Convert to a full-screen component that receives an `onBack` callback prop
+- Layout: header bar with back arrow and "Settings" title, then the settings content (avatar, toggles, sign out) taking the full screen
+- Keep all existing logic (theme toggle, AI toggle, sign out, account settings, mode switch)
 
-- Remove the "Web" outline button with the Monitor icon from the header
-- Replace it with a Settings (gear) icon button in the same top-right position
-- The Bell notification icon stays as-is
-- Add a settings popover/sheet that opens when the gear is tapped
+### 2. Update `MobileApp.tsx`
+- Add a `showSettings` boolean state
+- When `showSettings` is true, render the settings screen instead of the tab content
+- The header gear icon sets `showSettings = true`
+- The settings screen's back button sets `showSettings = false`
+- Hide the bottom tab bar when settings is visible
+- The gear icon in the header becomes a simple button that toggles this state (no popover needed)
 
-### 3. Mobile Settings Menu (new component: `src/components/mobile/MobileSettingsMenu.tsx`)
-
-Create a new component that replicates the web UserMenu functionality in a mobile-friendly format. It will use a Popover (same as web) triggered by the gear icon and include:
-
-- **User Info Header**: Purple avatar circle with initial, user name, email, and Web/Mobile toggle pills
-- **Account Settings**: Button row (navigates to account settings -- in mobile context, switches to web mode to show settings page)
-- **Dark Mode**: Toggle row with Sun/Moon icon and Switch component (uses `next-themes` useTheme)
-- **AI Assistant**: Toggle row with Sparkles icon and Switch component (uses localStorage event pattern)
-- **Sign Out**: Button row that calls `supabase.auth.signOut()`
-
-The component will:
-- Fetch the current user from Supabase auth (`supabase.auth.getUser()`) to display name and email
-- Use the same `useTheme` hook from `next-themes` for dark mode toggling
-- Use the same `useAppMode` context for Web/Mobile switching
-- Use the same localStorage event pattern (`ai-chat-toggle`) for AI Assistant toggling
-
-### 4. Dark Mode Support for Mobile
-
-Dark mode already works across the entire app via the `ThemeProvider` wrapping the root `App` component with `attribute="class"`. Since the mobile components use Tailwind's semantic color classes (`bg-background`, `text-foreground`, `border-border`, etc.), dark mode will automatically apply when the theme is toggled. The splash screen uses hardcoded gradient colors which are intentionally dark-themed and won't need changes.
-
-## Technical Details
-
-### MobileSplashScreen.tsx Changes
-```text
-Before:
-  Logo -> Tagline -> Loading bar -> Powered by
-
-After:
-  Logo -> Loading bar -> Tagline -> Powered by
-```
-
-Simply reorder the JSX -- move the tagline paragraph below the loading bar div.
-
-### MobileApp.tsx Changes
-- Remove `Monitor` import, add `Settings` import from lucide-react
-- Remove the "Web" Button
-- Add the new `MobileSettingsMenu` component in its place
-- The component handles its own popover state and auth
-
-### MobileSettingsMenu.tsx (New File)
-- Uses Popover from `@/components/ui/popover` for the dropdown
-- Triggered by a gear icon button (`Settings` from lucide-react)
-- Fetches user via `supabase.auth.getUser()` on mount
-- Reads profile display name from the `profiles` table (or falls back to email)
-- Contains the same menu items as the web UserMenu
-- The "Account Settings" option switches to web mode (since account settings is a full web page)
-- Sign Out calls `supabase.auth.signOut()` and switches to web mode (which will redirect to auth page)
-
-### Backwards Compatibility
-- All existing users (including nico@advizorstack.com) get the same mobile settings experience
-- Dark mode toggle works for both web and mobile since it uses the shared ThemeProvider
-- No changes to the web UserMenu component
-
+### Files Modified
+- `src/components/mobile/MobileSettingsMenu.tsx` -- rewritten as a full-screen settings view
+- `src/components/mobile/MobileApp.tsx` -- add settings state management and conditional rendering
