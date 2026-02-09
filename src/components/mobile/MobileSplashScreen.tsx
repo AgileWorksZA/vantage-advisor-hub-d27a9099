@@ -20,7 +20,7 @@ const MobileSplashScreen = () => {
   return (
     <div className="relative w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-[hsl(180,70%,30%)] via-[hsl(200,80%,25%)] to-[hsl(222,84%,10%)]">
       {/* Logo area */}
-      <div className="flex flex-col items-center gap-6 animate-in fade-in duration-700">
+      <div className="flex flex-col items-center gap-6 animate-in fade-in duration-700 mt-24">
         {/* Loading bar */}
         <div className="w-48">
           <div className="h-1 w-full rounded-full bg-white/10 overflow-hidden">
