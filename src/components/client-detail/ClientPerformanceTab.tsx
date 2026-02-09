@@ -637,7 +637,7 @@ export default function ClientPerformanceTab({ clientId, nationality, countryOfI
                       min={0}
                       max={100}
                       step={0.1}
-                      className="w-16 h-6 text-[11px] text-right"
+                      className="w-[4.5rem] h-6 text-[10px] text-right"
                       value={fund.allocation}
                       onChange={(e) => updateAllocation(fund.fundId, +e.target.value)}
                     />
