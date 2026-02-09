@@ -13,6 +13,7 @@ import {
 } from "date-fns";
 import { CalendarEvent, CalendarEventType } from "@/hooks/useCalendarEvents";
 import { cn } from "@/lib/utils";
+import { EventHoverCard, eventTypeAccentColors } from "@/components/calendar/EventHoverCard";
 
 const eventTypeColors: Record<CalendarEventType, string> = {
   "Meeting": "bg-[hsl(180,70%,45%)]",
@@ -184,54 +185,62 @@ export function WeekView({
                   const overlap = overlapLayout.get(event.id) || { index: 0, total: 1 };
                   const widthPercent = 100 / overlap.total;
                   const leftPercent = overlap.index * widthPercent;
+                  const accent = eventTypeAccentColors[event.eventType];
                   
                   return (
-                    <button
-                      key={event.id}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onEventClick(event);
-                      }}
-                      className={cn(
-                        "absolute rounded px-1 py-0.5 text-xs text-gray-900 dark:text-white overflow-hidden text-left",
-                        event.color || eventTypeColors[event.eventType]
-                      )}
-                      style={{
-                        top: position.top,
-                        height: position.height,
-                        left: `calc(${leftPercent}% + 2px)`,
-                        width: `calc(${widthPercent}% - 4px)`,
-                        zIndex: 1,
-                      }}
-                    >
-                      <p className="font-medium truncate">{event.title}</p>
-                      {position.height >= 40 && (
-                        <p className="text-gray-700 dark:text-white/80 truncate">
-                          {format(event.startTime, "h:mm a")}
-                        </p>
-                      )}
-                    </button>
+                    <EventHoverCard key={event.id} event={event} side="right">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEventClick(event);
+                        }}
+                        className={cn(
+                          "absolute rounded px-1 py-0.5 text-xs text-gray-900 dark:text-white overflow-hidden text-left border-l-[3px] border border-border/30 shadow-sm",
+                          accent.border,
+                          accent.bg
+                        )}
+                        style={{
+                          top: position.top,
+                          height: position.height,
+                          left: `calc(${leftPercent}% + 2px)`,
+                          width: `calc(${widthPercent}% - 4px)`,
+                          zIndex: 1,
+                        }}
+                      >
+                        <p className="font-medium truncate">{event.title}</p>
+                        {position.height >= 40 && (
+                          <p className="text-gray-700 dark:text-white/80 truncate">
+                            {format(event.startTime, "h:mm a")}
+                          </p>
+                        )}
+                      </button>
+                    </EventHoverCard>
                   );
                 })}
 
                 {/* All-day events bar at top */}
                 {dayEvents.filter(e => e.allDay).length > 0 && (
                   <div className="absolute top-0 left-0 right-0 bg-muted p-1">
-                    {dayEvents.filter(e => e.allDay).map((event) => (
-                      <button
-                        key={event.id}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onEventClick(event);
-                        }}
-                        className={cn(
-                          "w-full rounded px-1 py-0.5 text-xs text-gray-900 dark:text-white truncate mb-0.5 text-left",
-                          event.color || eventTypeColors[event.eventType]
-                        )}
-                      >
-                        {event.title}
-                      </button>
-                    ))}
+                    {dayEvents.filter(e => e.allDay).map((event) => {
+                      const allDayAccent = eventTypeAccentColors[event.eventType];
+                      return (
+                        <EventHoverCard key={event.id} event={event} side="bottom">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onEventClick(event);
+                            }}
+                            className={cn(
+                              "w-full rounded px-1 py-0.5 text-xs text-gray-900 dark:text-white truncate mb-0.5 text-left border-l-[3px] border border-border/30",
+                              allDayAccent.border,
+                              allDayAccent.bg
+                            )}
+                          >
+                            {event.title}
+                          </button>
+                        </EventHoverCard>
+                      );
+                    })}
                   </div>
                 )}
               </div>

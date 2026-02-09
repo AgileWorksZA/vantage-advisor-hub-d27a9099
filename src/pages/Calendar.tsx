@@ -83,6 +83,7 @@ import { cn } from "@/lib/utils";
 import { useUserSettings } from "@/hooks/useUserSettings";
 import { COMMON_TIMEZONES, TIMEZONE_REGIONS, getActiveTimezone, getTimezoneAbbreviation, convertToTimezone } from "@/lib/timezone-utils";
 import GlobalAIChat from "@/components/ai-assistant/GlobalAIChat";
+import { EventHoverCard, eventTypeAccentColors } from "@/components/calendar/EventHoverCard";
 
 const sidebarItems = [
   { icon: LayoutDashboard, label: "Dash", path: "/dashboard" },
@@ -667,21 +668,26 @@ const CalendarPage = () => {
                           {format(day, "d")}
                         </div>
                         <div className="space-y-0.5">
-                          {dayEvents.slice(0, 3).map((event) => (
-                            <button
-                              key={event.id}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEventClick(event);
-                              }}
-                              className={cn(
-                                "w-full text-left px-1 py-0.5 rounded text-xs text-gray-900 dark:text-white truncate",
-                                event.color || eventTypeColors[event.eventType]
-                              )}
-                            >
-                              {event.title}
-                            </button>
-                          ))}
+                          {dayEvents.slice(0, 3).map((event) => {
+                            const accent = eventTypeAccentColors[event.eventType];
+                            return (
+                              <EventHoverCard key={event.id} event={event} side="right">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleEventClick(event);
+                                  }}
+                                  className={cn(
+                                    "w-full text-left px-1.5 py-0.5 rounded text-xs text-gray-900 dark:text-white truncate border-l-[3px] border border-border/40",
+                                    accent.border,
+                                    accent.bg
+                                  )}
+                                >
+                                  {event.title}
+                                </button>
+                              </EventHoverCard>
+                            );
+                          })}
                           {dayEvents.length > 3 && (
                             <p className="text-xs text-muted-foreground px-1">
                               +{dayEvents.length - 3} more
