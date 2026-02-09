@@ -9,10 +9,12 @@ import {
   generateHistoricalPerformance,
   generateHoldings,
   generateAssetAllocation,
+  generateProductFunds,
   getExchangesForJurisdiction,
   FeeRow,
   EACRow,
 } from "@/data/performanceComparisonData";
+import { MultiSelect } from "@/components/ui/multi-select";
 import { EChartsWrapper } from "@/components/ui/echarts-wrapper";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -69,6 +71,22 @@ export default function ClientPerformanceTab({ clientId, nationality }: ClientPe
       value: p.amountValue,
     }));
   }, [data360]);
+
+  // Product multi-select for fund-level view
+  const allProductOptions = useMemo(
+    () => data360.onPlatformProducts.map((p) => ({ value: p.product, label: p.product })),
+    [data360]
+  );
+  const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
+  useEffect(() => {
+    setSelectedProducts(data360.onPlatformProducts.map((p) => p.product));
+  }, [data360]);
+
+  // Generate fund-level breakdown for selected products
+  const productFunds = useMemo(() => {
+    const selected = data360.onPlatformProducts.filter((p) => selectedProducts.includes(p.product));
+    return generateProductFunds(selected, jurisdiction, clientId);
+  }, [data360, selectedProducts, jurisdiction, clientId]);
 
   // Comparison state
   const [comparisonFunds, setComparisonFunds] = useState<ComparisonFund[]>([]);
@@ -296,9 +314,17 @@ export default function ClientPerformanceTab({ clientId, nationality }: ClientPe
   });
 
   // ===== SUB-COMPONENTS =====
-  const FeeTable = ({ fees, title }: { fees: FeeRow[]; title: string }) => {
+  const FeeTable = ({ fees, title, referenceFees, mode }: { fees: FeeRow[]; title: string; referenceFees?: FeeRow[]; mode?: "current" | "comparison" }) => {
     const weightedAvg = (key: keyof FeeRow) =>
-      fees.reduce((s, f) => s + (f[key] as number) * (f.allocation / 100), 0).toFixed(2);
+      fees.reduce((s, f) => s + (f[key] as number) * (f.allocation / 100), 0);
+    const refWeightedAvg = (key: keyof FeeRow) =>
+      referenceFees ? referenceFees.reduce((s, f) => s + (f[key] as number) * (f.allocation / 100), 0) : undefined;
+    const hl = (val: number, refVal: number | undefined) => {
+      if (refVal === undefined || mode !== "comparison") return "";
+      if (val > refVal) return "bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-400";
+      if (val < refVal) return "bg-green-50 text-green-600 dark:bg-green-950/30 dark:text-green-400";
+      return "";
+    };
     return (
       <div>
         <h4 className="font-semibold text-xs mb-1">{title}</h4>
@@ -314,23 +340,30 @@ export default function ClientPerformanceTab({ clientId, nationality }: ClientPe
             </TableRow>
           </TableHeader>
           <TableBody>
-            {fees.map((f, i) => (
-              <TableRow key={i}>
-                <TableCell className="text-[10px] py-1 font-medium truncate max-w-[120px]">{f.instrument}</TableCell>
-                <TableCell className="text-[10px] py-1 text-right">{f.investmentMgmtFee}%</TableCell>
-                <TableCell className="text-[10px] py-1 text-right">{f.adminFee}%</TableCell>
-                <TableCell className="text-[10px] py-1 text-right">{f.advisorFee}%</TableCell>
-                <TableCell className="text-[10px] py-1 text-right">{f.otherFee}%</TableCell>
-                <TableCell className="text-[10px] py-1 text-right font-semibold">{f.totalCost}%</TableCell>
-              </TableRow>
-            ))}
+            {fees.map((f, i) => {
+              const ref = referenceFees?.[i];
+              return (
+                <TableRow key={i}>
+                  <TableCell className="text-[10px] py-1 font-medium truncate max-w-[120px]">{f.instrument}</TableCell>
+                  <TableCell className={`text-[10px] py-1 text-right ${hl(f.investmentMgmtFee, ref?.investmentMgmtFee)}`}>{f.investmentMgmtFee}%</TableCell>
+                  <TableCell className={`text-[10px] py-1 text-right ${hl(f.adminFee, ref?.adminFee)}`}>{f.adminFee}%</TableCell>
+                  <TableCell className={`text-[10px] py-1 text-right ${hl(f.advisorFee, ref?.advisorFee)}`}>{f.advisorFee}%</TableCell>
+                  <TableCell className={`text-[10px] py-1 text-right ${hl(f.otherFee, ref?.otherFee)}`}>{f.otherFee}%</TableCell>
+                  <TableCell className={`text-[10px] py-1 text-right font-semibold ${hl(f.totalCost, ref?.totalCost)}`}>{f.totalCost}%</TableCell>
+                </TableRow>
+              );
+            })}
             <TableRow className="border-t-2">
               <TableCell className="text-[10px] py-1 font-bold">Weighted Avg</TableCell>
-              <TableCell className="text-[10px] py-1 text-right font-bold">{weightedAvg("investmentMgmtFee")}%</TableCell>
-              <TableCell className="text-[10px] py-1 text-right font-bold">{weightedAvg("adminFee")}%</TableCell>
-              <TableCell className="text-[10px] py-1 text-right font-bold">{weightedAvg("advisorFee")}%</TableCell>
-              <TableCell className="text-[10px] py-1 text-right font-bold">{weightedAvg("otherFee")}%</TableCell>
-              <TableCell className="text-[10px] py-1 text-right font-bold">{weightedAvg("totalCost")}%</TableCell>
+              {(["investmentMgmtFee", "adminFee", "advisorFee", "otherFee", "totalCost"] as (keyof FeeRow)[]).map((key) => {
+                const val = weightedAvg(key);
+                const refVal = refWeightedAvg(key);
+                return (
+                  <TableCell key={key} className={`text-[10px] py-1 text-right font-bold ${hl(val, refVal)}`}>
+                    {val.toFixed(2)}%
+                  </TableCell>
+                );
+              })}
             </TableRow>
           </TableBody>
         </Table>
@@ -338,33 +371,44 @@ export default function ClientPerformanceTab({ clientId, nationality }: ClientPe
     );
   };
 
-  const EACTable = ({ eac, title }: { eac: EACRow[]; title: string }) => (
-    <div>
-      <h4 className="font-semibold text-xs mb-1 mt-3">{title}</h4>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="text-[10px] py-1">Impact of Charge</TableHead>
-            <TableHead className="text-[10px] py-1 text-right">Year 1</TableHead>
-            <TableHead className="text-[10px] py-1 text-right">Year 3</TableHead>
-            <TableHead className="text-[10px] py-1 text-right">Year 5</TableHead>
-            <TableHead className="text-[10px] py-1 text-right">Year 10</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {eac.map((row, i) => (
-            <TableRow key={i} className={row.category === "Total" ? "border-t-2 font-bold" : ""}>
-              <TableCell className="text-[10px] py-1">{row.category}</TableCell>
-              <TableCell className="text-[10px] py-1 text-right">{row.year1}%</TableCell>
-              <TableCell className="text-[10px] py-1 text-right">{row.year3}%</TableCell>
-              <TableCell className="text-[10px] py-1 text-right">{row.year5}%</TableCell>
-              <TableCell className="text-[10px] py-1 text-right">{row.year10}%</TableCell>
+  const EACTable = ({ eac, title, referenceEAC, mode }: { eac: EACRow[]; title: string; referenceEAC?: EACRow[]; mode?: "current" | "comparison" }) => {
+    const hl = (val: number, refVal: number | undefined) => {
+      if (refVal === undefined || mode !== "comparison") return "";
+      if (val > refVal) return "bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-400";
+      if (val < refVal) return "bg-green-50 text-green-600 dark:bg-green-950/30 dark:text-green-400";
+      return "";
+    };
+    return (
+      <div>
+        <h4 className="font-semibold text-xs mb-1 mt-3">{title}</h4>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="text-[10px] py-1">Impact of Charge</TableHead>
+              <TableHead className="text-[10px] py-1 text-right">Year 1</TableHead>
+              <TableHead className="text-[10px] py-1 text-right">Year 3</TableHead>
+              <TableHead className="text-[10px] py-1 text-right">Year 5</TableHead>
+              <TableHead className="text-[10px] py-1 text-right">Year 10</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
-  );
+          </TableHeader>
+          <TableBody>
+            {eac.map((row, i) => {
+              const ref = referenceEAC?.[i];
+              return (
+                <TableRow key={i} className={row.category === "Total" ? "border-t-2 font-bold" : ""}>
+                  <TableCell className="text-[10px] py-1">{row.category}</TableCell>
+                  <TableCell className={`text-[10px] py-1 text-right ${hl(row.year1, ref?.year1)}`}>{row.year1}%</TableCell>
+                  <TableCell className={`text-[10px] py-1 text-right ${hl(row.year3, ref?.year3)}`}>{row.year3}%</TableCell>
+                  <TableCell className={`text-[10px] py-1 text-right ${hl(row.year5, ref?.year5)}`}>{row.year5}%</TableCell>
+                  <TableCell className={`text-[10px] py-1 text-right ${hl(row.year10, ref?.year10)}`}>{row.year10}%</TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
+    );
+  };
 
   const Placeholder = ({ text }: { text: string }) => (
     <div className="flex items-center justify-center h-full min-h-[120px] text-xs text-muted-foreground italic">
@@ -401,26 +445,55 @@ export default function ClientPerformanceTab({ clientId, nationality }: ClientPe
               <div className="w-2.5 h-2.5 rounded-full" style={{ background: CURRENT_COLOR }} />
               Current Portfolio
             </CardTitle>
+            <MultiSelect
+              options={allProductOptions}
+              selected={selectedProducts}
+              onChange={setSelectedProducts}
+              placeholder="Products"
+              className="mt-2 h-8 text-xs"
+            />
           </CardHeader>
           <CardContent className="px-4 pb-3">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-[10px] py-1">Fund</TableHead>
+                  <TableHead className="text-[10px] py-1">Mutual Fund</TableHead>
                   <TableHead className="text-[10px] py-1 text-right">Alloc.</TableHead>
                   <TableHead className="text-[10px] py-1 text-right">Value</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {currentPortfolio.map((p, i) => (
-                  <TableRow key={i}>
-                    <TableCell className="text-[11px] py-1 font-medium">{p.name}</TableCell>
-                    <TableCell className="text-[11px] py-1 text-right">{p.allocation}%</TableCell>
-                    <TableCell className="text-[11px] py-1 text-right">
-                      {currencySymbol}{p.value.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {(() => {
+                  const grouped = selectedProducts.map((pName) => ({
+                    product: pName,
+                    funds: productFunds.filter((f) => f.productName === pName),
+                  }));
+                  return grouped.map((group) => (
+                    <>
+                      <TableRow key={`hdr-${group.product}`} className="bg-muted/30">
+                        <TableCell colSpan={3} className="text-[10px] py-0.5 font-bold text-muted-foreground">
+                          {group.product}
+                        </TableCell>
+                      </TableRow>
+                      {group.funds.map((f, fi) => (
+                        <TableRow key={`${group.product}-${fi}`}>
+                          <TableCell className="text-[11px] py-1 pl-6 font-medium">{f.fundName}</TableCell>
+                          <TableCell className="text-[11px] py-1 text-right">{f.allocation}%</TableCell>
+                          <TableCell className="text-[11px] py-1 text-right">
+                            {currencySymbol}{f.value.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </>
+                  ));
+                })()}
+                <TableRow className="border-t-2">
+                  <TableCell className="text-[11px] py-1 font-bold">Total</TableCell>
+                  <TableCell className="text-[11px] py-1 text-right font-bold">100%</TableCell>
+                  <TableCell className="text-[11px] py-1 text-right font-bold">
+                    {currencySymbol}{productFunds.reduce((s, f) => s + f.value, 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                  </TableCell>
+                </TableRow>
               </TableBody>
             </Table>
           </CardContent>
@@ -518,8 +591,8 @@ export default function ClientPerformanceTab({ clientId, nationality }: ClientPe
             <CardTitle className="text-sm text-teal-600">Current Portfolio Fees & EAC</CardTitle>
           </CardHeader>
           <CardContent className="px-4 pb-3">
-            <FeeTable fees={currentFees} title="Ongoing Fees" />
-            <EACTable eac={currentEAC} title="Effective Annual Cost (EAC)" />
+            <FeeTable fees={currentFees} title="Ongoing Fees" referenceFees={hasComparison ? comparisonFees : undefined} mode="current" />
+            <EACTable eac={currentEAC} title="Effective Annual Cost (EAC)" referenceEAC={hasComparison ? comparisonEAC : undefined} mode="current" />
           </CardContent>
         </Card>
         <Card>
@@ -529,8 +602,8 @@ export default function ClientPerformanceTab({ clientId, nationality }: ClientPe
           <CardContent className="px-4 pb-3">
             {hasComparison ? (
               <>
-                <FeeTable fees={comparisonFees} title="Ongoing Fees" />
-                <EACTable eac={comparisonEAC} title="Effective Annual Cost (EAC)" />
+                <FeeTable fees={comparisonFees} title="Ongoing Fees" referenceFees={currentFees} mode="comparison" />
+                <EACTable eac={comparisonEAC} title="Effective Annual Cost (EAC)" referenceEAC={currentEAC} mode="comparison" />
               </>
             ) : (
               <Placeholder text="Add funds to see comparison" />
