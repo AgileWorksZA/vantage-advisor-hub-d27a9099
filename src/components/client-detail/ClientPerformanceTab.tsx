@@ -61,7 +61,7 @@ const CURRENT_LINE = "hsl(200, 70%, 55%)";
 const COMP_LINE = "hsl(142, 60%, 45%)";
 
 export default function ClientPerformanceTab({ clientId, nationality }: ClientPerformanceTabProps) {
-  const { selectedRegion, currencySymbol } = useRegion();
+  const { selectedRegion } = useRegion();
   const jurisdiction = nationality ? mapNationalityToJurisdiction(nationality) : selectedRegion;
 
   const data360 = useMemo(() => generateClient360Data(clientId, nationality || null), [clientId, nationality]);
@@ -517,7 +517,7 @@ export default function ClientPerformanceTab({ clientId, nationality }: ClientPe
                             <TableCell className="text-[11px] py-1 pl-6 font-medium">{f.fundName}</TableCell>
                             <TableCell className="text-[11px] py-1 text-right">{f.allocation}%</TableCell>
                             <TableCell className="text-[11px] py-1 text-right">
-                              {currencySymbol}{f.value.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                              {data360.currencySymbol}{f.value.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                             </TableCell>
                           </TableRow>
                         ))}
@@ -530,7 +530,7 @@ export default function ClientPerformanceTab({ clientId, nationality }: ClientPe
                       <TableCell className="text-[11px] py-1 font-medium">{f.fundName}</TableCell>
                       <TableCell className="text-[11px] py-1 text-right">{f.allocation}%</TableCell>
                       <TableCell className="text-[11px] py-1 text-right">
-                        {currencySymbol}{f.value.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                        {data360.currencySymbol}{f.value.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                       </TableCell>
                     </TableRow>
                   ))
@@ -539,7 +539,7 @@ export default function ClientPerformanceTab({ clientId, nationality }: ClientPe
                   <TableCell className="text-[11px] py-1 font-bold">Total</TableCell>
                   <TableCell className="text-[11px] py-1 text-right font-bold">100%</TableCell>
                   <TableCell className="text-[11px] py-1 text-right font-bold">
-                    {currencySymbol}{productFunds.reduce((s, f) => s + f.value, 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                    {data360.currencySymbol}{productFunds.reduce((s, f) => s + f.value, 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                   </TableCell>
                 </TableRow>
               </TableBody>
