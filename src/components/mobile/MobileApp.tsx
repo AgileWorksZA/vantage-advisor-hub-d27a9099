@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CalendarDays, Users, CheckSquare, BarChart3, Sparkles, Bell } from "lucide-react";
+import { CalendarDays, Users, CheckSquare, BarChart3, Sparkles, Bell, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import MobileTodayTab from "./MobileTodayTab";
@@ -21,6 +21,7 @@ const tabs: { id: MobileTab; label: string; icon: typeof CalendarDays }[] = [
 
 const MobileApp = () => {
   const [activeTab, setActiveTab] = useState<MobileTab>("today");
+  const [showSettings, setShowSettings] = useState(false);
 
   const renderContent = () => {
     switch (activeTab) {
@@ -36,6 +37,14 @@ const MobileApp = () => {
         return <MobileAITab />;
     }
   };
+
+  if (showSettings) {
+    return (
+      <div className="relative w-full h-full flex flex-col bg-background">
+        <MobileSettingsMenu onBack={() => setShowSettings(false)} />
+      </div>
+    );
+  }
 
   return (
     <div className="relative w-full h-full flex flex-col bg-background">
@@ -64,7 +73,9 @@ const MobileApp = () => {
               3
             </span>
           </Button>
-          <MobileSettingsMenu />
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowSettings(true)}>
+            <Settings className="h-4 w-4" />
+          </Button>
         </div>
       </header>
 

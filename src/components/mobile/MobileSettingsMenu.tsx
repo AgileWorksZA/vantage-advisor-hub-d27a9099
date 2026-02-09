@@ -1,25 +1,22 @@
 import { useState, useEffect } from "react";
-import { Settings, LogOut, Moon, Sun, Sparkles, Monitor, Smartphone } from "lucide-react";
+import { ArrowLeft, Settings, LogOut, Moon, Sun, Sparkles, Monitor, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
 import { useAppMode } from "@/contexts/AppModeContext";
 import { supabase } from "@/integrations/supabase/client";
 
-
 const AI_CHAT_STORAGE_KEY = "vantage-ai-chat-enabled";
 
-const MobileSettingsMenu = () => {
-  const [open, setOpen] = useState(false);
+interface MobileSettingsMenuProps {
+  onBack: () => void;
+}
+
+const MobileSettingsMenu = ({ onBack }: MobileSettingsMenuProps) => {
   const { resolvedTheme, setTheme } = useTheme();
   const { mode, setMode } = useAppMode();
-  
+
   const [mounted, setMounted] = useState(false);
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
@@ -37,17 +34,15 @@ const MobileSettingsMenu = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setUserEmail(user.email || "");
-        // Try to get display name from profiles table
         const { data: profile } = await supabase
           .from("profiles" as any)
           .select("display_name")
           .eq("user_id", user.id)
           .maybeSingle();
-        
+
         if (profile && (profile as any).display_name) {
           setUserName((profile as any).display_name);
         } else {
-          // Fallback to email prefix
           setUserName(user.email?.split("@")[0] || "User");
         }
       }
@@ -73,39 +68,40 @@ const MobileSettingsMenu = () => {
   };
 
   const handleAccountSettings = () => {
-    setOpen(false);
     setMode("web");
-    // Use window.location since mobile app renders outside Router context
     setTimeout(() => { window.location.href = "/account-settings"; }, 100);
   };
 
   const handleSignOut = async () => {
-    setOpen(false);
     await supabase.auth.signOut();
     setMode("web");
   };
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-8 w-8">
-          <Settings className="h-4 w-4" />
+    <div className="flex flex-col h-full bg-background">
+      {/* Header */}
+      <header className="flex items-center gap-3 px-4 h-12 border-b border-border shrink-0">
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onBack}>
+          <ArrowLeft className="h-4 w-4" />
         </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-64 p-0 bg-popover border border-border shadow-lg" align="end">
-        {/* User Info Header */}
-        <div className="flex flex-col items-center py-4 border-b border-border">
-          <div className="h-14 w-14 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold text-xl mb-2">
+        <span className="text-sm font-semibold">Settings</span>
+      </header>
+
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto">
+        {/* User Info */}
+        <div className="flex flex-col items-center py-6 border-b border-border">
+          <div className="h-16 w-16 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold text-2xl mb-2">
             {getInitial(userName)}
           </div>
           <span className="font-medium text-sm">{userName}</span>
           {userEmail && (
-            <span className="text-xs text-primary">{userEmail}</span>
+            <span className="text-xs text-primary mt-0.5">{userEmail}</span>
           )}
           {/* Web / Mobile Toggle */}
-          <div className="flex mt-3 bg-muted rounded-full p-0.5">
+          <div className="flex mt-4 bg-muted rounded-full p-0.5">
             <button
-              onClick={() => { setMode("web"); setOpen(false); }}
+              onClick={() => { setMode("web"); }}
               className={cn(
                 "flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all",
                 mode === "web"
@@ -117,7 +113,7 @@ const MobileSettingsMenu = () => {
               Web
             </button>
             <button
-              onClick={() => { setMode("mobile"); setOpen(false); }}
+              onClick={() => { setMode("mobile"); }}
               className={cn(
                 "flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all",
                 mode === "mobile"
@@ -135,14 +131,14 @@ const MobileSettingsMenu = () => {
         <div className="py-2">
           <button
             onClick={handleAccountSettings}
-            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors hover:bg-muted/50"
+            className="w-full flex items-center gap-3 px-4 py-3 text-sm transition-colors hover:bg-muted/50 active:bg-muted"
           >
             <Settings className="h-4 w-4 text-muted-foreground" />
             <span className="flex-1 text-left">Account Settings</span>
           </button>
           <button
             onClick={toggleTheme}
-            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors hover:bg-muted/50"
+            className="w-full flex items-center gap-3 px-4 py-3 text-sm transition-colors hover:bg-muted/50 active:bg-muted"
           >
             {mounted ? (
               isDark ? (
@@ -162,7 +158,7 @@ const MobileSettingsMenu = () => {
           </button>
           <button
             onClick={toggleAiChat}
-            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors hover:bg-muted/50"
+            className="w-full flex items-center gap-3 px-4 py-3 text-sm transition-colors hover:bg-muted/50 active:bg-muted"
           >
             <Sparkles className="h-4 w-4 text-muted-foreground" />
             <span className="flex-1 text-left">AI Assistant</span>
@@ -174,14 +170,14 @@ const MobileSettingsMenu = () => {
           </button>
           <button
             onClick={handleSignOut}
-            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors hover:bg-muted/50"
+            className="w-full flex items-center gap-3 px-4 py-3 text-sm transition-colors hover:bg-muted/50 active:bg-muted"
           >
             <LogOut className="h-4 w-4 text-muted-foreground" />
             <span className="flex-1 text-left">Sign Out</span>
           </button>
         </div>
-      </PopoverContent>
-    </Popover>
+      </div>
+    </div>
   );
 };
 
