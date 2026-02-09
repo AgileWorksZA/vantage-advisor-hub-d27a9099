@@ -1,56 +1,74 @@
 
 
-## Calendar: Event Search, Client Search Fix, and Month/Year Navigator
+## Add Performance Tab with Fund Comparison Tool
 
-### 1. Top bar search - always client search
+### Overview
+Add a new "Performance" tab after "360 View" in the client detail page. This tab provides a full-page portfolio comparison tool where advisors can compare a client's current holdings against alternative mutual funds, with interactive fee tables, performance charts, asset allocation breakdowns, and holdings analysis -- all driven by jurisdiction-specific fund data from the `admin_funds` table.
 
-The AppHeader already performs client search by default. The Calendar page just passes a misleading placeholder "Search events...". Change it to "Search clients..." (or simply remove the prop so it uses the default).
+### New Files
 
-**File**: `src/pages/Calendar.tsx` (line 425)
-- Remove `searchPlaceholder="Search events..."` from the AppHeader props
+**1. `src/components/client-detail/ClientPerformanceTab.tsx`** - Main tab component
 
-### 2. Event search box in left sidebar
+The page is organized as a single scrollable view with these sections:
 
-Add a search input below the "Create Event" button in the left sidebar (lines 436-455). As the user types, show a dropdown of matching events with:
-- Color-coded left border accent matching event type
-- Event title on first line
-- Client name on second line (if linked)
-- Click navigates to that event's detail sheet
+**Section A: Portfolio Selection Header**
+- Left: "Current Portfolio" showing the client's on-platform products from the 360 view data (fund name, allocation %, value)
+- Right: "Comparison Portfolio" with searchable dropdown selectors pulling from `admin_funds` filtered by jurisdiction (ZA=JSE, AU=ASX, CA=TSX, GB=LSE, US=NYSE+NASDAQ), allocation % inputs, "+ Add" button, and delete buttons
+- A "Compare" button triggers the comparison calculations
 
-**File**: `src/pages/Calendar.tsx`
-- Add state: `eventSearchQuery` and `eventSearchOpen`
-- Add a ref for the search container
-- Below the Create Event button, add a `div` with a `Search` icon input
-- Below the input, render a dropdown (absolute positioned, bg-popover, shadow, z-50) that filters `convertedEvents` by title/client name match
-- Each result shows the color accent dot, event title, and client name on a second line
-- Clicking a result calls `handleEventClick(event)` and clears the search
-- Close dropdown on outside click and Escape key
+**Section B: Fee Comparison (side-by-side tables)**
+- "Current Portfolio Fees and EAC" on the left
+- "Comparison Portfolio Fees and EAC" on the right
+- Ongoing fees table: Instrument, Investment Management Fee, Admin Fee, Advisor Fee, Other Fee, Cost Per Instrument
+- EAC table: Impact of Charge rows (Admin, Advice, Investment Mgmt, Other) across Year 1/3/5/10
+- Weighted averages row at bottom
+- All fee data generated deterministically from fund metadata (sector, exchange) using seeded random
 
-### 3. Month/Year selector when clicking "Month" heading
+**Section C: Performance Returns (interactive ECharts)**
+- Left chart: Grouped bar chart comparing 6M, 1Y, 3Y, 5Y, 7Y, 10Y returns (current portfolio blue vs comparison green)
+- Radio toggle: "Portfolio" vs "Instrument" view
+- Right chart: Line chart showing historical monthly/quarterly/annually performance with area fill, date picker, time period toggles
+- Both use the `EChartsWrapper` component with tooltips, zoom, and legend interactivity
 
-When viewing the month, the heading shows e.g. "February 2026". Clicking it should open a popover with a month and year picker to quickly jump to any month.
+**Section D: Top 10 Holdings (interactive ECharts)**
+- 4 horizontal bar charts in a 2x2 grid:
+  1. Top 10 Holdings (current) - blue bars
+  2. Top 10 Holdings Comparison - green bars
+  3. Top 10 Underlying Holdings (current) - blue bars
+  4. Top 10 Underlying Holdings Comparison - green bars
+- Generated from seeded random data based on fund names
 
-**File**: `src/pages/Calendar.tsx` (lines 576-582)
-- Wrap the month heading text in a `Popover` trigger (only in month view mode)
-- The `PopoverContent` contains:
-  - A year row with left/right arrows and the current year displayed
-  - A 4x3 grid of month buttons (Jan-Dec)
-  - Clicking a month sets `viewDate` to that month+year and closes the popover
-- The heading gets a hover style (cursor-pointer, underline) to indicate it's clickable
+**Section E: Asset Allocation Breakdown**
+- Table showing Local/Offshore/Overall breakdown by asset class (Equity, Property, Bond, Cash, Other) for current portfolio
+- 3 interactive pie charts: Overall, Local, Offshore asset allocation (current)
+- Comparison table and 3 comparison pie charts below
+- All pie charts use ECharts with tooltip and "explode" interaction on click
+
+**2. `src/data/performanceComparisonData.ts`** - Data generation utilities
+
+- `generateCurrentPortfolioFees(products, jurisdiction)` - deterministic fee generation from 360 view products
+- `generateComparisonFees(funds)` - fee generation for selected comparison funds
+- `generatePerformanceReturns(products, comparisonFunds)` - return data for bar chart
+- `generateHistoricalPerformance(products, comparisonFunds)` - monthly time series
+- `generateHoldings(products)` - top 10 holdings from product names
+- `generateAssetAllocation(products)` - asset class breakdown
+- Exchange-to-jurisdiction mapping: JSE=ZA, ASX=AU, TSX=CA, LSE=GB, NYSE/NASDAQ=US
+
+### Changes to Existing Files
+
+**`src/pages/ClientDetail.tsx`**
+- Import `ClientPerformanceTab`
+- Add `{ value: "performance", label: "Performance" }` to the tabs array after "360-view" (line 255)
+- Add `TabsContent` for the performance tab passing `clientId`
 
 ### Technical Details
 
-**Event search dropdown styling** (consistent with ClientAutocompleteDropdown):
-- Container: `absolute top-full left-0 right-0 mt-1 bg-popover border rounded-md shadow-lg z-50 max-h-[300px] overflow-auto`
-- Each item: colored dot + title on line 1, client name in muted text on line 2
-- Filter logic: case-insensitive match on `event.title` or `event.clientName`
+- Fund dropdown uses `supabase.from('admin_funds').select('id, name, code, exchange, sector, fund_manager').eq('is_deleted', false)` filtered by jurisdiction exchanges
+- All charts use the existing `EChartsWrapper` with `vantage-light`/`vantage-dark` themes
+- Fee percentages are seeded-random based on fund name hash for consistency
+- Comparison state managed locally: `comparisonFunds: { fundId, name, code, allocation }[]`
+- The "Compare" button recalculates all derived data via `useMemo`
+- Current portfolio data reuses `generateClient360Data` from `regional360ViewData.ts`
+- Color convention: blue/teal for current portfolio, green for comparison (matching reference images)
+- All charts have tooltips, legend toggles, and dataZoom where applicable
 
-**Month/Year popover**:
-- State: `monthPickerOpen`, `pickerYear` (initialized from viewDate's year)
-- Year navigation: ChevronLeft/ChevronRight to decrement/increment `pickerYear`
-- Month grid: 12 buttons in a `grid grid-cols-4` layout
-- Current month highlighted with teal accent
-- On month click: `setViewDate(new Date(pickerYear, monthIndex, 1))`, close popover
-
-**Files changed**:
-- `src/pages/Calendar.tsx`
