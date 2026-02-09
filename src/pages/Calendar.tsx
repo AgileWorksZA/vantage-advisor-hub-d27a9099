@@ -81,7 +81,7 @@ import { TranscriptionPanel } from "@/components/calendar/TranscriptionPanel";
 import { ActionItemsList } from "@/components/calendar/ActionItemsList";
 import { cn } from "@/lib/utils";
 import { useUserSettings } from "@/hooks/useUserSettings";
-import { COMMON_TIMEZONES, getActiveTimezone, getTimezoneAbbreviation } from "@/lib/timezone-utils";
+import { COMMON_TIMEZONES, TIMEZONE_REGIONS, getActiveTimezone, getTimezoneAbbreviation, convertToTimezone } from "@/lib/timezone-utils";
 import GlobalAIChat from "@/components/ai-assistant/GlobalAIChat";
 
 const sidebarItems = [
@@ -147,9 +147,23 @@ const CalendarPage = () => {
   const { events: rawEvents, loading: eventsLoading, createEvent, updateEvent, deleteEvent, refetch } = useCalendarEvents(viewDate, viewMode);
   const { clients } = useClients();
   const { selectedAdvisors, regionalData, selectedRegion } = useRegion();
-  const { settings: userSettings } = useUserSettings();
-  const activeTimezone = getActiveTimezone(userSettings?.timezone, selectedRegion);
+  const { settings: userSettings, upsertSettings } = useUserSettings();
+  const [displayTimezone, setDisplayTimezone] = useState<string | null>(null);
+  const activeTimezone = displayTimezone || getActiveTimezone(userSettings?.timezone, selectedRegion);
   const timezoneAbbr = getTimezoneAbbreviation(activeTimezone);
+
+  // Sync displayTimezone from persisted settings on load
+  useEffect(() => {
+    if (userSettings?.timezone && !displayTimezone) {
+      setDisplayTimezone(userSettings.timezone);
+    }
+  }, [userSettings?.timezone]);
+
+  const handleTimezoneChange = (tz: string) => {
+    setDisplayTimezone(tz);
+    upsertSettings.mutate({ timezone: tz });
+  };
+
 
   // Map selected advisor initials to full names
   const selectedAdvisorNames = useMemo(() => {
@@ -217,6 +231,15 @@ const CalendarPage = () => {
     });
   }, [events, calendarFilters]);
 
+  // Convert event times to display timezone
+  const convertedEvents = useMemo(() => {
+    return filteredEvents.map(event => ({
+      ...event,
+      startTime: convertToTimezone(event.startTime, activeTimezone),
+      endTime: convertToTimezone(event.endTime, activeTimezone),
+    }));
+  }, [filteredEvents, activeTimezone]);
+
   // Generate calendar days for month view
   const calendarDays = useMemo(() => {
     const monthStart = startOfMonth(viewDate);
@@ -233,20 +256,20 @@ const CalendarPage = () => {
     return days;
   }, [viewDate]);
 
-  // Get events for a specific day
+  // Get events for a specific day (using converted times)
   const getEventsForDay = (day: Date) => {
-    return filteredEvents.filter((event) => isSameDay(event.startTime, day));
+    return convertedEvents.filter((event) => isSameDay(event.startTime, day));
   };
 
   // Get upcoming events (next 7 days)
   const upcomingEvents = useMemo(() => {
-    const now = new Date();
+    const now = convertToTimezone(new Date(), activeTimezone);
     const weekFromNow = addDays(now, 7);
-    return filteredEvents
+    return convertedEvents
       .filter((event) => event.startTime >= now && event.startTime <= weekFromNow)
       .sort((a, b) => a.startTime.getTime() - b.startTime.getTime())
       .slice(0, 5);
-  }, [filteredEvents]);
+  }, [convertedEvents, activeTimezone]);
 
   const handlePrev = () => {
     if (viewMode === "month") {
@@ -529,11 +552,25 @@ const CalendarPage = () => {
                 </h2>
               </div>
               <div className="flex items-center gap-3">
-                {/* Timezone indicator */}
-                <div className="flex items-center gap-1.5 text-sm text-muted-foreground bg-muted/50 px-2.5 py-1 rounded-md">
-                  <Globe className="w-3.5 h-3.5" />
-                  <span>{timezoneAbbr}</span>
-                </div>
+                {/* Timezone selector */}
+                <Select value={activeTimezone} onValueChange={handleTimezoneChange}>
+                  <SelectTrigger className="w-auto min-w-[160px] h-8 text-sm bg-muted/50 border-none gap-1.5">
+                    <Globe className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                    <SelectValue>{timezoneAbbr}</SelectValue>
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover max-h-[300px] z-50">
+                    {TIMEZONE_REGIONS.map(region => (
+                      <div key={region}>
+                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">{region}</div>
+                        {COMMON_TIMEZONES.filter(tz => tz.region === region).map(tz => (
+                          <SelectItem key={tz.value} value={tz.value} className="text-sm">
+                            {tz.label}
+                          </SelectItem>
+                        ))}
+                      </div>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <Button
                   variant={viewMode === "day" ? "default" : "outline"}
                   size="sm"
@@ -633,7 +670,7 @@ const CalendarPage = () => {
             {viewMode === "week" && (
               <WeekView
                 viewDate={viewDate}
-                events={filteredEvents}
+                events={convertedEvents}
                 selectedDate={selectedDate}
                 onEventClick={handleEventClick}
                 onDayClick={handleDayClick}
@@ -656,7 +693,7 @@ const CalendarPage = () => {
             {viewMode === "day" && (
               <DayView
                 viewDate={viewDate}
-                events={filteredEvents}
+                events={convertedEvents}
                 onEventClick={handleEventClick}
                 onTimeSlotClick={(day, hour) => {
                   const startTime = setMinutes(setHours(day, hour), 0);
