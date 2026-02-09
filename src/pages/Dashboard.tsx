@@ -56,7 +56,7 @@ const defaultDashboardLayout: WidgetLayout[] = [
   { i: 'top-accounts', x: 6, y: 0, w: 3, h: 3 },
   { i: 'birthdays', x: 0, y: 3, w: 3, h: 3 },
   { i: 'clients-value', x: 3, y: 3, w: 3, h: 3 },
-  { i: 'corporate-actions', x: 6, y: 3, w: 3, h: 3 },
+  { i: 'corporate-actions', x: 3, y: 3, w: 6, h: 3 },
 ];
 
 const Dashboard = () => {
