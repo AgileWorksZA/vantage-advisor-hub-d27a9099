@@ -1,52 +1,47 @@
 
 
-# Convert Profile Type Filters to Multi-Select with Tags
+# Move "Include Inactive Clients" Toggle Inline with Search
 
 ## Overview
-Transform the single-select filter tabs (Lead, Prospect, Client, Shared Clients, Incomplete Profile, Deceased) into a multi-select dropdown matching the style of the existing "Client types" dropdown. Display removable tags below when filters are active, and only show "Reset Filters" inline with those tags when any tags are visible.
+Relocate the "Include inactive clients" switch from its current position (separate row above the client list header) to be inline with the AppHeader search bar, aligned to the far right.
 
-## Changes
+## Change
 
 ### File: `src/pages/Clients.tsx`
 
-**1. Replace single-select state with multi-select state**
-- Change `activeFilter` (single string) to `selectedProfileFilters` (string array), defaulting to all options selected.
+1. **Remove the switch from its current location** (lines 373-380): Remove the Switch + label from the top row, leaving only the "+ Add Profile" button in that row (right-aligned).
 
-**2. Create profile filter options array**
-- Replace `filterTabs` with a `profileFilterOptions` array in the same `{ value, label }` format as `clientTypeOptions`:
-  ```
-  Lead, Prospect, Client, Shared Clients, Incomplete Profile, Deceased
-  ```
+2. **Add the switch to the AppHeader row**: Move the "Include inactive clients" Switch into the AppHeader's right-side area. Since AppHeader is a shared component, the cleanest approach is to place the switch in a wrapper row that contains the AppHeader search output. However, looking at the architecture, the AppHeader is a self-contained component.
 
-**3. Replace the filter tabs row (lines 370-393)**
-- Remove the row of single-select buttons.
-- Add a new `MultiSelect` dropdown (same component used for Client types) for profile filters, placed next to the existing "Client types" dropdown in the row with "Reports" button (lines 441-456).
+   **Better approach**: Place the switch in a new inline container that sits on the same visual line as the search bar, immediately after the AppHeader. This can be done by:
+   - Removing the switch from lines 374-380
+   - Making the "+ Add Profile" button row right-aligned only (`justify-end`)
+   - Adding the switch as a `rightContent` or similar prop to AppHeader, OR positioning it absolutely/as an overlay aligned to the right of the search row.
 
-**4. Add profile filter tags below client type tags**
-- Below the existing client type filter tags section, add a similar tags row for profile filters -- showing removable Badge tags when not all profile filters are selected.
+   **Simplest approach**: Since AppHeader accepts no slot props for extra content, we'll pass the switch as additional right-side content. Looking at AppHeader, it likely has a fixed layout. The cleanest solution is to add the toggle to the same row as the section header (line 391-417) on the far right, or pass it to AppHeader.
 
-**5. Move "Reset Filters" to be inline with tags**
-- Remove the standalone "Reset Filters" link (lines 414-433).
-- Only show "Reset Filters" when any filter tags are visible (either client type or profile type tags are showing).
-- Display it inline at the end of the tags row(s).
-- Keep the "Include inactive clients" switch in a separate row.
+   **Final approach**: Move the switch into the header actions row (lines 391-417) at the far right, after the MultiSelect dropdowns. This keeps it on the same visual line as the search and filters.
 
-**6. Update filtering logic (lines 197-246)**
-- Replace the single `activeFilter` comparisons (lines 224-228) with multi-select logic: check if `client.profileType` is included in `selectedProfileFilters` (when not all are selected).
-- Handle "Shared Clients", "Incomplete Profile", and "Deceased" as special filters that check different client fields.
+### Specific Edits
 
-## Layout After Changes
-
-```text
-[+ Add Profile button right-aligned]
-
-[Include inactive clients toggle]
-
-RECENTLY VIEWED / SEARCH RESULTS    [Reports] [Profile status v] [Client types v]
-
-Filtered by: [Lead x] [Client x] [Individual x] [Trust x]  Reset Filters
+**Lines 373-387** - Remove the Switch from this row, keep only the button:
+```tsx
+<div className="flex items-center justify-end mb-4">
+  <Button ...>+ Add Profile</Button>
+</div>
 ```
 
-- The "Filtered by:" row with tags and "Reset Filters" only appears when at least one filter is not fully selected (i.e., some tags to show).
-- Both profile and client type tags appear in the same row.
+**Lines 395-417** - Add the Switch after the MultiSelect dropdowns:
+```tsx
+<div className="flex items-center gap-2">
+  <Button variant="outline" ...>Reports</Button>
+  <MultiSelect ... placeholder="Profile status" />
+  <MultiSelect ... placeholder="Client types" />
+  <div className="flex items-center gap-2 ml-2">
+    <Switch checked={includeInactive} onCheckedChange={setIncludeInactive} />
+    <span className="text-sm text-muted-foreground whitespace-nowrap">Include inactive clients</span>
+  </div>
+</div>
+```
 
+This places the toggle on the same line as the search results header and filter dropdowns, pushed to the far right.
