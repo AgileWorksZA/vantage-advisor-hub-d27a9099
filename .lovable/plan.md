@@ -1,36 +1,79 @@
 
 
-## Fix: "american" Incorrectly Matching "CA" (Canada) Jurisdiction
+## Auto-Populate Fund Allocations to 100%
 
-### Root Cause
+### Current Behavior
+When funds are added to the comparison portfolio, they start with 0% allocation. The user must click "Auto Balance" to distribute evenly.
 
-In `mapNationalityToJurisdiction` (line 229 of `regional360ViewData.ts`), the check order causes a false match:
+### New Behavior
+1. First fund added: automatically gets 100%
+2. Second fund added: both get 50%
+3. Third fund added: all get 33.3% (last fund gets remainder to total exactly 100%)
+4. When a fund is removed: remaining funds re-split evenly
+5. Once the user manually edits any allocation value, auto-splitting stops entirely
+6. The "Auto Balance" button remains available to re-trigger even splitting at any time
 
-```
-Line 229: if (lower.includes("canadian") || lower.includes("ca")) return "CA";
-Line 231: if (lower.includes("american") || ...) return "US";
-```
+### Technical Changes
 
-The substring `"ca"` exists inside `"american"` (ameri**ca**n), so the Canadian check matches first and returns `"CA"`. This causes all American clients to display `C$` instead of `$`.
+**File: `src/components/client-detail/ClientPerformanceTab.tsx`**
 
-### Fix
+1. Add a `userHasEditedAllocation` ref (using `useRef<boolean>(false)`) to track whether the user has manually changed any allocation value. A ref is used instead of state to avoid triggering re-renders.
 
-**File: `src/data/regional360ViewData.ts`** (line 229)
+2. Modify `addFund` (line 167): After adding the new fund, if `userHasEditedAllocation` is `false`, auto-balance all funds evenly (same logic as `autoBalance`).
 
-Replace the loose `lower.includes("ca")` checks with exact word boundaries or more specific substrings. The same issue could theoretically affect other short codes. The fix:
+3. Modify `removeFund` (line 177): After removing the fund, if `userHasEditedAllocation` is `false` and there are remaining funds, auto-balance them evenly.
 
-- Change `lower.includes("ca")` to a check that won't false-match, e.g. exact equality `lower === "ca"` or remove short-code matching from nationality (it's meant for full words like "Canadian")
-- Similarly audit `lower.includes("za")`, `lower.includes("au")`, `lower.includes("gb")` for false matches (these are safe since no other nationality contains those substrings, but using exact equality is more defensive)
+4. Modify `updateAllocation` (line 181): Set `userHasEditedAllocation.current = true` so future add/remove operations no longer auto-balance.
 
-Updated line 227-231:
+5. Modify `autoBalance` (line 187): Reset `userHasEditedAllocation.current = false` since the user is explicitly requesting even distribution -- subsequent adds/removes should continue auto-balancing.
+
+6. When all comparison funds are cleared (length becomes 0), reset `userHasEditedAllocation.current = false` so a fresh start auto-balances again.
+
+### Implementation Detail
+
 ```typescript
-if (lower.includes("south african") || lower === "za") return "ZA";
-if (lower.includes("australian") || lower === "au") return "AU";
-if (lower.includes("canadian") || lower === "ca") return "CA";
-if (lower.includes("british") || lower.includes("english") || lower.includes("scottish") || lower.includes("welsh") || lower === "uk" || lower === "gb") return "GB";
-if (lower.includes("american") || lower.includes("us citizen") || lower === "usa" || lower === "us" || lower.includes("united states")) return "US";
+const userHasEditedAllocation = useRef(false);
+
+const evenSplit = (funds: ComparisonFund[]): ComparisonFund[] => {
+  const count = funds.length;
+  if (count === 0) return funds;
+  const each = +(100 / count).toFixed(1);
+  return funds.map((f, i) => ({
+    ...f,
+    allocation: i === count - 1 ? +(100 - each * (count - 1)).toFixed(1) : each,
+  }));
+};
+
+const addFund = (fund: AdminFund) => {
+  if (comparisonFunds.find((c) => c.fundId === fund.id)) return;
+  setComparisonFunds((prev) => {
+    const next = [...prev, { fundId: fund.id, name: fund.name, code: fund.code || "", allocation: 0 }];
+    return userHasEditedAllocation.current ? next : evenSplit(next);
+  });
+  setFundSearch("");
+  setShowFundDropdown(false);
+};
+
+const removeFund = (fundId: string) => {
+  setComparisonFunds((prev) => {
+    const next = prev.filter((f) => f.fundId !== fundId);
+    if (next.length === 0) userHasEditedAllocation.current = false;
+    return userHasEditedAllocation.current ? next : evenSplit(next);
+  });
+};
+
+const updateAllocation = (fundId: string, value: number) => {
+  userHasEditedAllocation.current = true;
+  setComparisonFunds((prev) =>
+    prev.map((f) => (f.fundId === fundId ? { ...f, allocation: value } : f))
+  );
+};
+
+const autoBalance = () => {
+  // ... existing even-split logic ...
+  userHasEditedAllocation.current = false;
+};
 ```
 
-Key change: All short jurisdiction codes (`za`, `au`, `ca`, `gb`, `uk`, `usa`, `us`) now use strict equality (`===`) instead of `includes()`, preventing substring false matches.
+No database changes needed. Single file modification.
 
-This is a one-file, 5-line change. No database modifications needed.
