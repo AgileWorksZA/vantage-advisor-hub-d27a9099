@@ -193,6 +193,70 @@ const Clients = () => {
     refetch();
   };
 
+  // Filter clients based on active filter, search query, dashboard widget filter, AND selected advisors
+  const filteredClients = useMemo(() => {
+    return clients.filter((client) => {
+      // Filter by selected client types (person type)
+      if (selectedClientTypes.length < clientTypeOptions.length) {
+        if (!selectedClientTypes.includes(client.clientType)) return false;
+      }
+
+      // Filter by selected advisors from region context
+      if (selectedAdvisorNames.length > 0) {
+        if (!client.advisor || !selectedAdvisorNames.includes(client.advisor)) {
+          return false;
+        }
+      }
+
+      // If coming from Dashboard widget, filter by name list
+      if (filteredNames.length > 0) {
+        const clientFullName = client.client.toLowerCase();
+        const matchesName = filteredNames.some(name => {
+          const nameParts = name.toLowerCase().split(' ');
+          const surname = nameParts[nameParts.length - 1];
+          const firstName = nameParts[0];
+          return clientFullName.includes(surname) || clientFullName.includes(firstName);
+        });
+        if (!matchesName) return false;
+      }
+      
+      // Filter by profile type (only if not coming from dashboard filter)
+      if (!filterSource) {
+        if (activeFilter === "Lead" && client.profileType !== "Lead") return false;
+        if (activeFilter === "Prospect" && client.profileType !== "Prospect") return false;
+        if (activeFilter === "Client" && client.profileType !== "Client") return false;
+      }
+      
+      // Filter by inactive state
+      if (!includeInactive && client.profileState === "Inactive") return false;
+      
+      // Filter by search query
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        return (
+          client.client.toLowerCase().includes(query) ||
+          client.email.toLowerCase().includes(query) ||
+          client.phone.includes(query) ||
+          client.identification.includes(query)
+        );
+      }
+      
+      return true;
+    });
+  }, [clients, selectedClientTypes, selectedAdvisorNames, filteredNames, filterSource, activeFilter, includeInactive, searchQuery]);
+
+  // Determine display clients: recently viewed (recency order) when no search, full results otherwise
+  const displayClients = useMemo(() => {
+    if (searchQuery || filterSource) {
+      return filteredClients;
+    }
+    // No search: show only recently viewed, in recency order
+    if (recentClientIds.length === 0) return [];
+    return recentClientIds
+      .map(id => filteredClients.find(c => c.id === id))
+      .filter((c): c is NonNullable<typeof c> => Boolean(c));
+  }, [filteredClients, recentClientIds, searchQuery, filterSource]);
+
   if (authLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -235,20 +299,16 @@ const Clients = () => {
       let surname: string;
       let firstName: string;
       
-      // Handle "Surname, FirstName" format (Top Accounts) vs "FirstName ... Surname" format (Birthdays)
       if (widgetName.includes(',')) {
-        // Top Accounts format: "Chen, Wei" or "Johnson, Robert"
         const commaParts = widgetName.split(',').map(p => p.trim());
-        surname = commaParts[0]; // "Chen"
-        firstName = commaParts[1] || ''; // "Wei"
+        surname = commaParts[0];
+        firstName = commaParts[1] || '';
       } else {
-        // Birthday format: "Andre Thomas Coetzer"
         const spaceParts = widgetName.split(' ');
-        surname = spaceParts[spaceParts.length - 1]; // Last word
-        firstName = spaceParts[0]; // First word
+        surname = spaceParts[spaceParts.length - 1];
+        firstName = spaceParts[0];
       }
       
-      // Check if client name contains surname or firstName
       if (clientLower.includes(surname.toLowerCase()) || 
           (firstName && clientLower.includes(firstName.toLowerCase()))) {
         return data;
@@ -256,69 +316,6 @@ const Clients = () => {
     }
     return null;
   };
-
-  // Filter clients based on active filter, search query, dashboard widget filter, AND selected advisors
-  const filteredClients = clients.filter((client) => {
-    // Filter by selected client types (person type)
-    if (selectedClientTypes.length < clientTypeOptions.length) {
-      if (!selectedClientTypes.includes(client.clientType)) return false;
-    }
-
-    // Filter by selected advisors from region context
-    if (selectedAdvisorNames.length > 0) {
-      if (!client.advisor || !selectedAdvisorNames.includes(client.advisor)) {
-        return false;
-      }
-    }
-
-    // If coming from Dashboard widget, filter by name list
-    if (filteredNames.length > 0) {
-      const clientFullName = client.client.toLowerCase();
-      const matchesName = filteredNames.some(name => {
-        const nameParts = name.toLowerCase().split(' ');
-        const surname = nameParts[nameParts.length - 1];
-        const firstName = nameParts[0];
-        // Match surname or first name in client display name
-        return clientFullName.includes(surname) || clientFullName.includes(firstName);
-      });
-      if (!matchesName) return false;
-    }
-    
-    // Filter by profile type (only if not coming from dashboard filter)
-    if (!filterSource) {
-      if (activeFilter === "Lead" && client.profileType !== "Lead") return false;
-      if (activeFilter === "Prospect" && client.profileType !== "Prospect") return false;
-      if (activeFilter === "Client" && client.profileType !== "Client") return false;
-    }
-    
-    // Filter by inactive state
-    if (!includeInactive && client.profileState === "Inactive") return false;
-    
-    // Filter by search query
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      return (
-        client.client.toLowerCase().includes(query) ||
-        client.email.toLowerCase().includes(query) ||
-        client.phone.includes(query) ||
-        client.identification.includes(query)
-      );
-    }
-    
-    return true;
-  });
-
-  // Determine display clients: recently viewed (recency order) when no search, full results otherwise
-  const displayClients = useMemo(() => {
-    if (searchQuery || filterSource) {
-      return filteredClients;
-    }
-    // No search: show only recently viewed, in recency order
-    if (recentClientIds.length === 0) return [];
-    return recentClientIds
-      .map(id => filteredClients.find(c => c.id === id))
-      .filter((c): c is NonNullable<typeof c> => Boolean(c));
-  }, [filteredClients, recentClientIds, searchQuery, filterSource]);
 
   return (
     <div className="h-screen bg-muted/30 flex overflow-hidden">
