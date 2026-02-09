@@ -180,9 +180,12 @@ const Tasks = () => {
     navigate("/auth");
   };
 
-  const handleViewChange = (newView: "dashboard" | "detail") => {
+  const handleViewChange = (newView: "dashboard" | "detail", newFilters?: TaskFilters) => {
     setView(newView);
     setSearchParams(newView === "detail" ? { view: "detail" } : {});
+    if (newFilters) {
+      setFilters(newFilters);
+    }
   };
 
   const handleTaskClick = (task: EnhancedTask) => {
@@ -238,7 +241,7 @@ const Tasks = () => {
 
         <main className="flex-1 overflow-y-auto">
           {view === "dashboard" ? (
-            <TaskDashboard stats={stats} onViewDetail={() => handleViewChange("detail")} />
+            <TaskDashboard stats={stats} onViewDetail={(filters) => handleViewChange("detail", filters)} />
           ) : (
             <div className="p-6 space-y-4">
               <TaskFiltersComponent filters={filters} onFiltersChange={setFilters} />
