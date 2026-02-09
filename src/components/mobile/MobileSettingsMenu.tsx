@@ -90,16 +90,16 @@ const MobileSettingsMenu = ({ onBack }: MobileSettingsMenuProps) => {
       {/* Content */}
       <div className="flex-1 overflow-y-auto">
         {/* User Info */}
-        <div className="flex flex-col items-center py-6 border-b border-border">
-          <div className="h-16 w-16 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold text-2xl mb-2">
+        <div className="flex flex-col items-center py-4 border-b border-border">
+          <div className="h-16 w-16 rounded-full bg-purple-500 flex items-center justify-center text-white font-semibold text-2xl mb-2">
             {getInitial(userName)}
           </div>
           <span className="font-medium text-sm">{userName}</span>
           {userEmail && (
-            <span className="text-xs text-primary mt-0.5">{userEmail}</span>
+            <span className="text-xs text-purple-500">{userEmail}</span>
           )}
           {/* Web / Mobile Toggle */}
-          <div className="flex mt-4 bg-muted rounded-full p-0.5">
+          <div className="flex mt-3 bg-muted rounded-full p-0.5">
             <button
               onClick={() => { setMode("web"); }}
               className={cn(
