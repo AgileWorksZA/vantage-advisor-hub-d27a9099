@@ -403,8 +403,12 @@ const Client360ViewTab = () => {
             <CardTitle className="text-base font-medium">Risk Products</CardTitle>
             <div className="flex items-center gap-2">
               <Button variant="link" className="text-[hsl(180,70%,45%)] p-0 h-auto font-normal">+ Risk Products</Button>
-              <span className="text-muted-foreground">|</span>
-              <Button variant="link" className="text-[hsl(180,70%,45%)] p-0 h-auto font-normal">Request Astute</Button>
+              {jurisdiction === "ZA" && (
+                <>
+                  <span className="text-muted-foreground">|</span>
+                  <Button variant="link" className="text-[hsl(180,70%,45%)] p-0 h-auto font-normal">Request Astute</Button>
+                </>
+              )}
             </div>
           </div>
         </CardHeader>
@@ -458,8 +462,12 @@ const Client360ViewTab = () => {
             <CardTitle className="text-base font-medium">Medical Aid</CardTitle>
             <div className="flex items-center gap-2">
               <Button variant="link" className="text-[hsl(180,70%,45%)] p-0 h-auto font-normal">+ Medical Aid</Button>
-              <span className="text-muted-foreground">|</span>
-              <Button variant="link" className="text-[hsl(180,70%,45%)] p-0 h-auto font-normal">Request Astute</Button>
+              {jurisdiction === "ZA" && (
+                <>
+                  <span className="text-muted-foreground">|</span>
+                  <Button variant="link" className="text-[hsl(180,70%,45%)] p-0 h-auto font-normal">Request Astute</Button>
+                </>
+              )}
             </div>
           </div>
         </CardHeader>
