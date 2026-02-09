@@ -33,6 +33,7 @@ import ClientCommunicationTab from "@/components/client-detail/ClientCommunicati
 import ClientDocumentsTab from "@/components/client-detail/ClientDocumentsTab";
 import ClientMeetingsTab from "@/components/client-detail/ClientMeetingsTab";
 import ClientRecentActivityTab from "@/components/client-detail/ClientRecentActivityTab";
+import ClientPerformanceTab from "@/components/client-detail/ClientPerformanceTab";
 import { useClientDetail } from "@/hooks/useClientDetail";
 import { useClientRelationships } from "@/hooks/useClientRelationships";
 import { getDisplayName } from "@/types/client";
@@ -253,6 +254,7 @@ const ClientDetail = () => {
               {[
                 { value: "summary", label: "Summary" },
                 { value: "360-view", label: "360 View" },
+                { value: "performance", label: "Performance" },
                 { value: "details", label: "Details" },
                 { value: "crm", label: "CRM" },
                 { value: "meetings", label: "Meetings" },
@@ -285,6 +287,9 @@ const ClientDetail = () => {
             </TabsContent>
             <TabsContent value="360-view" className="mt-0">
               <Client360ViewTab />
+            </TabsContent>
+            <TabsContent value="performance" className="mt-0">
+              <ClientPerformanceTab clientId={clientId!} nationality={client.nationality} />
             </TabsContent>
             <TabsContent value="details" className="mt-0">
               <ClientDetailsTab client={client} onUpdate={updateClient} />
