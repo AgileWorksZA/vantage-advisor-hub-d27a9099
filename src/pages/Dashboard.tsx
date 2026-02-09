@@ -248,7 +248,7 @@ const Dashboard = () => {
 
         {/* Dashboard Content - Scrollable */}
         <main className="flex-1 p-6 overflow-auto">
-          <div className="flex items-center justify-between mb-6 pr-[52px]">
+          <div className="flex items-center justify-between mb-6 pr-[54px]">
             <h1 className="text-2xl font-semibold">
               Advisor Dashboard
               <button 
