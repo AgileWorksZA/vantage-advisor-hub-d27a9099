@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LayoutDashboard, Users, Briefcase, Mail, CalendarIcon, ListTodo, LineChart, Building2, X, GripVertical, MoreVertical } from "lucide-react";
+import { LayoutDashboard, Users, Briefcase, Mail, CalendarIcon, ListTodo, LineChart, Building2, X, GripVertical, MoreVertical, Settings } from "lucide-react";
+import { WidgetSettingsDialog, WidgetConfig } from "@/components/widgets/WidgetSettingsDialog";
 import commandCenterIcon from "@/assets/command-center-icon.png";
 import vantageLogo from "@/assets/vantage-logo.png";
 import { EChartsWrapper } from "@/components/ui/echarts-wrapper";
@@ -59,6 +60,15 @@ const defaultDashboardLayout: WidgetLayout[] = [
   { i: 'corporate-actions', x: 6, y: 3, w: 3, h: 3 },
 ];
 
+const DASHBOARD_WIDGETS: WidgetConfig[] = [
+  { id: 'provider-view', label: 'Provider View' },
+  { id: 'aum-product', label: 'AUM by Product' },
+  { id: 'top-accounts', label: 'Top 5 Accounts' },
+  { id: 'birthdays', label: 'Birthdays' },
+  { id: 'clients-value', label: 'Clients by Value' },
+  { id: 'corporate-actions', label: 'Upcoming Corporate Actions' },
+];
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
@@ -70,11 +80,27 @@ const Dashboard = () => {
   const { selectedRegion, setSelectedRegion, filteredRegionalData } = useRegion();
 
   // Widget layout hook
-  const { layout, onLayoutChange, loading: layoutLoading } = useWidgetLayout({
+  const { layout, onLayoutChange, hiddenWidgets, setHiddenWidgets, loading: layoutLoading } = useWidgetLayout({
     pageId: 'dashboard',
     defaultLayout: defaultDashboardLayout,
     userId: user?.id,
   });
+
+  const handleToggleWidget = useCallback((widgetId: string, visible: boolean) => {
+    if (visible) {
+      setHiddenWidgets(hiddenWidgets.filter(id => id !== widgetId));
+    } else {
+      setHiddenWidgets([...hiddenWidgets, widgetId]);
+    }
+  }, [hiddenWidgets, setHiddenWidgets]);
+
+  // Filter layout and determine which widgets to show
+  const visibleLayout = useMemo(() => 
+    layout.filter(item => !hiddenWidgets.includes(item.i)),
+    [layout, hiddenWidgets]
+  );
+
+  const isWidgetVisible = useCallback((id: string) => !hiddenWidgets.includes(id), [hiddenWidgets]);
 
   // Helper function to find client by name in database
   const findClientByName = async (fullName: string): Promise<string | null> => {
@@ -222,22 +248,29 @@ const Dashboard = () => {
 
         {/* Dashboard Content - Scrollable */}
         <main className="flex-1 p-6 overflow-auto">
-          <h1 className="text-2xl font-semibold mb-6">
-            Advisor Dashboard
-            <button 
-              onClick={() => navigate("/ai-assistant")}
-              className="ml-2 inline-flex items-center px-2 py-0.5 text-xs font-bold 
-                         bg-gradient-to-r from-violet-500 to-cyan-500 text-white 
-                         rounded-full animate-pulse hover:scale-110 transition-transform
-                         align-super cursor-pointer"
-            >
-              AI
-            </button>
-          </h1>
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="text-2xl font-semibold">
+              Advisor Dashboard
+              <button 
+                onClick={() => navigate("/ai-assistant")}
+                className="ml-2 inline-flex items-center px-2 py-0.5 text-xs font-bold 
+                           bg-gradient-to-r from-violet-500 to-cyan-500 text-white 
+                           rounded-full animate-pulse hover:scale-110 transition-transform
+                           align-super cursor-pointer"
+              >
+                AI
+              </button>
+            </h1>
+            <WidgetSettingsDialog
+              widgets={DASHBOARD_WIDGETS}
+              hiddenWidgets={hiddenWidgets}
+              onToggleWidget={handleToggleWidget}
+            />
+          </div>
           
-          <DraggableWidgetGrid layout={layout} onLayoutChange={onLayoutChange}>
+          <DraggableWidgetGrid layout={visibleLayout} onLayoutChange={onLayoutChange}>
             {/* Provider View */}
-            <div key="provider-view">
+            {isWidgetVisible('provider-view') && <div key="provider-view">
               <Card className="h-full">
                 <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
                   <div className="flex items-center gap-2">
@@ -267,10 +300,9 @@ const Dashboard = () => {
                   </table>
                 </CardContent>
               </Card>
-            </div>
+            </div>}
 
-            {/* Top 5 Accounts */}
-            <div key="top-accounts">
+            {isWidgetVisible('top-accounts') && <div key="top-accounts">
               <Card className="h-full">
                 <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
                   <div className="flex items-center gap-2">
@@ -312,10 +344,10 @@ const Dashboard = () => {
                   </table>
                 </CardContent>
               </Card>
-            </div>
+            </div>}
 
             {/* AUM by Product */}
-            <div key="aum-product">
+            {isWidgetVisible('aum-product') && <div key="aum-product">
               <Card className="h-full">
                 <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
                   <div className="flex items-center gap-2">
@@ -371,10 +403,10 @@ const Dashboard = () => {
                   </div>
                 </CardContent>
               </Card>
-            </div>
+            </div>}
 
             {/* Birthdays */}
-            <div key="birthdays">
+            {isWidgetVisible('birthdays') && <div key="birthdays">
               <Card className="h-full">
                 <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
                   <div className="flex items-center gap-2">
@@ -425,10 +457,10 @@ const Dashboard = () => {
                   )}
                 </CardContent>
               </Card>
-            </div>
+            </div>}
 
             {/* Clients by Value */}
-            <div key="clients-value">
+            {isWidgetVisible('clients-value') && <div key="clients-value">
               <Card className="h-full">
                 <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
                   <div className="flex items-center gap-2">
@@ -458,10 +490,10 @@ const Dashboard = () => {
                   </table>
                 </CardContent>
               </Card>
-            </div>
+            </div>}
 
             {/* Upcoming Corporate Actions */}
-            <div key="corporate-actions">
+            {isWidgetVisible('corporate-actions') && <div key="corporate-actions">
               <Card className="h-full">
                 <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
                   <div className="flex items-center gap-2">
@@ -508,7 +540,7 @@ const Dashboard = () => {
                   </table>
                 </CardContent>
               </Card>
-            </div>
+            </div>}
           </DraggableWidgetGrid>
         </main>
       </div>

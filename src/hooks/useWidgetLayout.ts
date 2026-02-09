@@ -24,9 +24,10 @@ interface UseWidgetLayoutProps {
 
 export const useWidgetLayout = ({ pageId, defaultLayout, userId }: UseWidgetLayoutProps) => {
   const [layout, setLayout] = useState<WidgetLayout[]>(defaultLayout);
+  const [hiddenWidgets, setHiddenWidgetsState] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Load layout from database on mount
+  // Load layout + hidden_widgets from database on mount
   useEffect(() => {
     if (!userId) {
       setLoading(false);
@@ -36,10 +37,15 @@ export const useWidgetLayout = ({ pageId, defaultLayout, userId }: UseWidgetLayo
     const fetchLayout = async () => {
       const { data, error } = await supabase
         .from('user_widget_layouts')
-        .select('layout')
+        .select('layout, hidden_widgets')
         .eq('user_id', userId)
         .eq('page_id', pageId)
         .maybeSingle();
+
+      // Restore hidden widgets
+      if (data?.hidden_widgets && Array.isArray(data.hidden_widgets)) {
+        setHiddenWidgetsState(data.hidden_widgets as string[]);
+      }
 
       if (data?.layout && Array.isArray(data.layout)) {
         // Validate and cast the layout data
@@ -57,7 +63,6 @@ export const useWidgetLayout = ({ pageId, defaultLayout, userId }: UseWidgetLayo
           });
 
           // Widgets are not resizable in the UI, so any height mismatch is safe to auto-migrate.
-          // This prevents old saved layouts (e.g. Insights using h:4) from keeping widgets taller.
           const needsHeightMigration = savedLayout.some(item => {
             const defaults = defaultLayoutMap.get(item.i);
             return defaults !== undefined && item.h !== defaults.h;
@@ -134,5 +139,21 @@ export const useWidgetLayout = ({ pageId, defaultLayout, userId }: UseWidgetLayo
     }
   }, [saveLayout, userId]);
 
-  return { layout, onLayoutChange, loading };
+  const setHiddenWidgets = useCallback(async (widgetIds: string[]) => {
+    setHiddenWidgetsState(widgetIds);
+    if (!userId) return;
+    
+    await supabase
+      .from('user_widget_layouts')
+      .upsert({
+        user_id: userId,
+        page_id: pageId,
+        hidden_widgets: widgetIds as unknown as Json,
+        updated_at: new Date().toISOString(),
+      }, {
+        onConflict: 'user_id,page_id'
+      });
+  }, [userId, pageId]);
+
+  return { layout, onLayoutChange, hiddenWidgets, setHiddenWidgets, loading };
 };
