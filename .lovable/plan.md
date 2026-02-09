@@ -1,57 +1,18 @@
 
 
-# Add Widget Visibility Settings Gear to Dashboard
+## Move Gear Icon to Align with Widget Grid Right Edge
 
-## Overview
-Add a gear icon to the right of the "Advisor Dashboard" heading that opens a popup dialog. The dialog lets users toggle widget visibility using switches. Preferences are persisted per user in the database and restored on return.
+### Problem
+The gear icon currently sits at the far right of the page (due to `justify-between` on the full-width heading row), but it should align with the right edge of the widget grid -- specifically lining up with the close/X buttons on the far-right widget cards.
 
-## Technical Approach
+### Solution
 
-### 1. Database Migration
-Add a `hidden_widgets` JSONB column to the existing `user_widget_layouts` table to store an array of hidden widget IDs per page. Default value: `'[]'::jsonb`.
+In `src/pages/Dashboard.tsx`, constrain the heading row's max-width to match the widget grid's width. The grid renders 3 standard widgets at 350px each with 16px margins between them, giving a total width of `3*350 + 2*16 = 1082px`. Setting `max-w-[1082px]` on the heading `div` will align the gear icon with the right edge of the rightmost widget.
 
-```sql
-ALTER TABLE public.user_widget_layouts 
-ADD COLUMN hidden_widgets JSONB NOT NULL DEFAULT '[]'::jsonb;
-```
+### Changes
 
-### 2. New Component: `WidgetSettingsDialog`
-Create `src/components/widgets/WidgetSettingsDialog.tsx`:
-- Receives the list of all widget IDs with display labels
-- Shows a Dialog/Popover with a Switch for each widget
-- On toggle, calls a callback to update hidden state
-- Widget labels map:
-  - `provider-view` -> "Provider View"
-  - `aum-product` -> "AUM by Product"
-  - `top-accounts` -> "Top 5 Accounts"
-  - `birthdays` -> "Birthdays"
-  - `clients-value` -> "Clients by Value"
-  - `corporate-actions` -> "Upcoming Corporate Actions"
-
-### 3. Update `useWidgetLayout` Hook
-Extend `src/hooks/useWidgetLayout.ts`:
-- Add `hiddenWidgets: string[]` state
-- Load `hidden_widgets` from database alongside `layout`
-- Add `setHiddenWidgets(widgetIds: string[])` function that updates state and persists to database
-- Return `{ layout, onLayoutChange, hiddenWidgets, setHiddenWidgets, loading }`
-
-### 4. Update Dashboard Page (`src/pages/Dashboard.tsx`)
-- Import `Settings` icon from lucide-react and the new `WidgetSettingsDialog`
-- Add gear icon button aligned far-right in the heading row (use `flex justify-between items-center`)
-- Wrap heading + AI badge in a `div` and place gear on the opposite side
-- Filter widget children passed to `DraggableWidgetGrid`: only render widgets whose key is NOT in `hiddenWidgets`
-- Also filter the `layout` array to exclude hidden widgets so grid compacts properly
-
-### 5. Layout Structure
-```text
-+-- flex row, justify-between, items-center --+
-| "Advisor Dashboard" [AI badge]    [gear icon]|
-+----------------------------------------------+
-```
+**`src/pages/Dashboard.tsx`** (line ~251):
+- Add `max-w-[1082px]` to the heading wrapper `div` so the gear icon aligns with the grid's right edge
 
 ### Files Changed
-- `supabase/migrations/new_migration.sql` -- add `hidden_widgets` column
-- `src/components/widgets/WidgetSettingsDialog.tsx` -- new component
-- `src/hooks/useWidgetLayout.ts` -- extend with hidden widgets state
-- `src/pages/Dashboard.tsx` -- add gear icon, filter hidden widgets
-
+- `src/pages/Dashboard.tsx` (1 file, 1 line change)
