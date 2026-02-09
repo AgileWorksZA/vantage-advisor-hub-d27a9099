@@ -3,6 +3,8 @@ project_id = "aseefhqhksblqagehklg"
 [functions.create-restricted-user]
 verify_jwt = false
 
+
+
 [functions.seed-us-communications]
 verify_jwt = false
 
