@@ -1,16 +1,33 @@
 
 
-# Fix Vantage Logo Size -- Actual 15% Increase
+# Fix Vantage Logo Size - Container Constraint Issue
 
 ## Problem
-The logo was already `h-[46px]` across all files before the previous change was applied, so no visible increase occurred. The change was a no-op.
+The logo has `h-[53px]` applied, but the sidebar is only `w-16` (64px) wide. The logo's parent `<div className="mb-2">` inherits this 64px width. With `object-contain`, the image scales down to fit within its container while preserving aspect ratio. Since the image is rotated 90 degrees, the constraints interact in a way that prevents the logo from actually rendering larger.
 
 ## Solution
-Increase the logo height from `h-[46px]` to `h-[53px]` (46 * 1.15 = 52.9, rounded to 53px). This applies a true 15% increase from the current size.
+Instead of only setting height, explicitly set both dimensions and allow overflow from the container. The approach:
+
+1. **Remove `object-contain`** (which constrains the image to its container)
+2. **Use fixed width and height** that represent a 15% increase from the original visual size
+3. **Allow the rotated image to overflow** its container by adding `overflow-visible` to the parent div
+
+Specifically, change the logo `img` class from:
+```
+h-[53px] object-contain -rotate-90 origin-center
+```
+to:
+```
+h-[80px] w-auto -rotate-90 origin-center
+```
+
+And add `overflow-visible` to the parent wrapper div.
+
+This ensures the image is not constrained by the 64px sidebar width after rotation. The `h-[80px]` gives a noticeable visual increase (the previous `h-[53px]` was being capped by container constraints).
 
 ## Files to Update (14 files)
 
-Every file containing the Vantage logo in the sidebar needs `h-[46px]` changed to `h-[53px]`:
+All sidebar logo instances need both the wrapper div and img class updated:
 
 1. `src/pages/Dashboard.tsx`
 2. `src/pages/Clients.tsx`
@@ -27,4 +44,7 @@ Every file containing the Vantage logo in the sidebar needs `h-[46px]` changed t
 13. `src/pages/ComposeEmail.tsx`
 14. `src/components/layout/AppLayout.tsx`
 
-Each change is a single class update: `h-[46px]` to `h-[53px]`. The `object-contain` class preserves aspect ratio automatically. The mobile splash screen logo (`MobileSplashScreen.tsx`) is excluded as it uses a different size/style.
+Each change updates:
+- Parent div: `className="mb-2"` to `className="mb-2 overflow-visible"`
+- Image: `className="h-[53px] object-contain -rotate-90 origin-center"` to `className="h-[80px] w-auto -rotate-90 origin-center"`
+
