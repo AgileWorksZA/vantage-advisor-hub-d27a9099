@@ -1,74 +1,60 @@
 
 
-## Add Performance Tab with Fund Comparison Tool
+## Realtime Fund Comparison with Analyst-Style Charts
 
-### Overview
-Add a new "Performance" tab after "360 View" in the client detail page. This tab provides a full-page portfolio comparison tool where advisors can compare a client's current holdings against alternative mutual funds, with interactive fee tables, performance charts, asset allocation breakdowns, and holdings analysis -- all driven by jurisdiction-specific fund data from the `admin_funds` table.
+### Key Changes
 
-### New Files
+**1. Remove the "Compare" button gate -- make all calculations realtime**
 
-**1. `src/components/client-detail/ClientPerformanceTab.tsx`** - Main tab component
+Currently, all comparison data is gated behind a `compared` boolean set by clicking "Compare". This will be removed so that all charts and tables update live as funds are added/removed or allocations changed.
 
-The page is organized as a single scrollable view with these sections:
+- Remove `compared` state entirely
+- All `useMemo` hooks for fees, EAC, performance, holdings, and allocation will depend directly on `comparisonFunds` array
+- Show comparison sections whenever `comparisonFunds.length > 0` (instead of `compared`)
+- Keep the "Auto Balance" button but remove the "Compare" button
 
-**Section A: Portfolio Selection Header**
-- Left: "Current Portfolio" showing the client's on-platform products from the 360 view data (fund name, allocation %, value)
-- Right: "Comparison Portfolio" with searchable dropdown selectors pulling from `admin_funds` filtered by jurisdiction (ZA=JSE, AU=ASX, CA=TSX, GB=LSE, US=NYSE+NASDAQ), allocation % inputs, "+ Add" button, and delete buttons
-- A "Compare" button triggers the comparison calculations
+**2. Restructure layout into 2-4 card boxes per row (analyst dashboard style)**
 
-**Section B: Fee Comparison (side-by-side tables)**
-- "Current Portfolio Fees and EAC" on the left
-- "Comparison Portfolio Fees and EAC" on the right
-- Ongoing fees table: Instrument, Investment Management Fee, Admin Fee, Advisor Fee, Other Fee, Cost Per Instrument
-- EAC table: Impact of Charge rows (Admin, Advice, Investment Mgmt, Other) across Year 1/3/5/10
-- Weighted averages row at bottom
-- All fee data generated deterministically from fund metadata (sector, exchange) using seeded random
+Replace the current single-card-per-section layout with individual cards per chart/table, arranged in a grid matching the reference image:
 
-**Section C: Performance Returns (interactive ECharts)**
-- Left chart: Grouped bar chart comparing 6M, 1Y, 3Y, 5Y, 7Y, 10Y returns (current portfolio blue vs comparison green)
-- Radio toggle: "Portfolio" vs "Instrument" view
-- Right chart: Line chart showing historical monthly/quarterly/annually performance with area fill, date picker, time period toggles
-- Both use the `EChartsWrapper` component with tooltips, zoom, and legend interactivity
+```text
+Row 1: [Current Portfolio Card] [Comparison Portfolio Card]
+Row 2: [Current Fees + EAC Card] [Comparison Fees + EAC Card]  
+Row 3: [Portfolio Performance Returns Card] [History Performance Return Card]
+Row 4: [Top 10 Holdings] [Top 10 Holdings Comparison] [Top 10 Underlying] [Top 10 Underlying Comparison]
+Row 5: [Current Asset Alloc Table+Pies] [Comparison Asset Alloc Table+Pies]
+```
 
-**Section D: Top 10 Holdings (interactive ECharts)**
-- 4 horizontal bar charts in a 2x2 grid:
-  1. Top 10 Holdings (current) - blue bars
-  2. Top 10 Holdings Comparison - green bars
-  3. Top 10 Underlying Holdings (current) - blue bars
-  4. Top 10 Underlying Holdings Comparison - green bars
-- Generated from seeded random data based on fund names
+- Fee tables become narrower individual cards (2 per row)
+- Holdings charts become 4 individual cards per row (matching the reference image exactly)
+- Each card has its own header with teal-colored title text (matching reference style)
 
-**Section E: Asset Allocation Breakdown**
-- Table showing Local/Offshore/Overall breakdown by asset class (Equity, Property, Bond, Cash, Other) for current portfolio
-- 3 interactive pie charts: Overall, Local, Offshore asset allocation (current)
-- Comparison table and 3 comparison pie charts below
-- All pie charts use ECharts with tooltip and "explode" interaction on click
+**3. Enhance chart styling to match analyst-style reference**
 
-**2. `src/data/performanceComparisonData.ts`** - Data generation utilities
+- **Performance Returns bar chart**: Add "Portfolio / Instrument" radio toggle at top-left, light blue bars for current, green bars for comparison, clean axis labels like "6-Month Return", "1-Year Return" etc.
+- **History Performance Return line chart**: Add "Monthly / Quarterly / Annually" radio toggle, date input field, green area-fill for comparison, blue line for current, smooth curves with confidence band feel
+- **Holdings bar charts**: Light blue (#a3d5f7) fill for current, light green (#b3e6b3) fill for comparison, horizontal bars with percentage axis (0-50%), truncated labels on y-axis
+- All charts get `dataZoom` for interactivity
 
-- `generateCurrentPortfolioFees(products, jurisdiction)` - deterministic fee generation from 360 view products
-- `generateComparisonFees(funds)` - fee generation for selected comparison funds
-- `generatePerformanceReturns(products, comparisonFunds)` - return data for bar chart
-- `generateHistoricalPerformance(products, comparisonFunds)` - monthly time series
-- `generateHoldings(products)` - top 10 holdings from product names
-- `generateAssetAllocation(products)` - asset class breakdown
-- Exchange-to-jurisdiction mapping: JSE=ZA, ASX=AU, TSX=CA, LSE=GB, NYSE/NASDAQ=US
+**4. File changes**
 
-### Changes to Existing Files
-
-**`src/pages/ClientDetail.tsx`**
-- Import `ClientPerformanceTab`
-- Add `{ value: "performance", label: "Performance" }` to the tabs array after "360-view" (line 255)
-- Add `TabsContent` for the performance tab passing `clientId`
+**`src/components/client-detail/ClientPerformanceTab.tsx`** (major rewrite):
+- Remove `compared` state and "Compare" button
+- All computed data (`comparisonFees`, `comparisonEAC`, `perfReturns`, `historicalPerf`, `compHoldings`, `compUnderlying`, `compAlloc`) now derived directly when `comparisonFunds.length > 0`
+- Add `perfViewMode` state ("portfolio" | "instrument") for the bar chart radio toggle
+- Add `historyFrequency` state ("monthly" | "quarterly" | "annually") for line chart toggle
+- Restructure JSX: each visualization gets its own `Card` wrapper
+- Holdings section: `grid grid-cols-2 xl:grid-cols-4 gap-4` with 4 individual cards
+- Fee section: `grid grid-cols-1 lg:grid-cols-2 gap-4` with 2 individual cards
+- Performance section: `grid grid-cols-1 lg:grid-cols-2 gap-4` with 2 individual cards
+- Chart titles use `text-teal-600` color matching reference
+- Bar chart colors: `hsl(200, 70%, 75%)` (light blue) for current, `hsl(142, 60%, 70%)` (light green) for comparison
+- Holdings bar height reduced to 220px per card to fit 4 across
 
 ### Technical Details
 
-- Fund dropdown uses `supabase.from('admin_funds').select('id, name, code, exchange, sector, fund_manager').eq('is_deleted', false)` filtered by jurisdiction exchanges
-- All charts use the existing `EChartsWrapper` with `vantage-light`/`vantage-dark` themes
-- Fee percentages are seeded-random based on fund name hash for consistency
-- Comparison state managed locally: `comparisonFunds: { fundId, name, code, allocation }[]`
-- The "Compare" button recalculates all derived data via `useMemo`
-- Current portfolio data reuses `generateClient360Data` from `regional360ViewData.ts`
-- Color convention: blue/teal for current portfolio, green for comparison (matching reference images)
-- All charts have tooltips, legend toggles, and dataZoom where applicable
-
+- Removing the `compared` gate means `useMemo` dependencies change from `[compared, comparisonFunds]` to just `[comparisonFunds]`
+- Empty comparison state shows placeholder text in comparison cards: "Add funds to see comparison"
+- `compAllocTotal` validation warning remains on the portfolio selection card
+- Radio toggles use simple `button` elements with active state styling (matching reference: circle radio indicators)
+- History chart date filtering: when "Quarterly" selected, sample every 3rd point; "Annually" every 12th point from the generated monthly data
