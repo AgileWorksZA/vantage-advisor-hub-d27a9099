@@ -10,6 +10,7 @@ import {
 } from "date-fns";
 import { CalendarEvent, CalendarEventType } from "@/hooks/useCalendarEvents";
 import { cn } from "@/lib/utils";
+import { EventHoverCard, eventTypeAccentColors } from "@/components/calendar/EventHoverCard";
 
 const eventTypeColors: Record<CalendarEventType, string> = {
   "Meeting": "bg-[hsl(180,70%,45%)]",
@@ -138,18 +139,23 @@ export function DayView({
           <div className="px-4 pb-2 border-t border-border pt-2">
             <p className="text-xs text-muted-foreground mb-1">All day</p>
             <div className="flex flex-wrap gap-1">
-              {allDayEvents.map((event) => (
-                <button
-                  key={event.id}
-                  onClick={() => onEventClick(event)}
-                  className={cn(
-                    "rounded px-2 py-1 text-sm text-gray-900 dark:text-white truncate max-w-[200px]",
-                    event.color || eventTypeColors[event.eventType]
-                  )}
-                >
-                  {event.title}
-                </button>
-              ))}
+              {allDayEvents.map((event) => {
+                const accent = eventTypeAccentColors[event.eventType];
+                return (
+                  <EventHoverCard key={event.id} event={event}>
+                    <button
+                      onClick={() => onEventClick(event)}
+                      className={cn(
+                        "rounded px-2 py-1 text-sm text-gray-900 dark:text-white truncate max-w-[200px] border-l-[3px] border border-border/30",
+                        accent.border,
+                        accent.bg
+                      )}
+                    >
+                      {event.title}
+                    </button>
+                  </EventHoverCard>
+                );
+              })}
             </div>
           </div>
         )}
@@ -204,37 +210,40 @@ export function DayView({
               const overlap = overlapLayout.get(event.id) || { index: 0, total: 1 };
               const widthPercent = 100 / overlap.total;
               const leftPercent = overlap.index * widthPercent;
+              const accent = eventTypeAccentColors[event.eventType];
 
               return (
-                <button
-                  key={event.id}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onEventClick(event);
-                  }}
-                  className={cn(
-                    "absolute rounded-lg px-3 py-2 text-gray-900 dark:text-white overflow-hidden text-left shadow-sm",
-                    event.color || eventTypeColors[event.eventType]
-                  )}
-                  style={{
-                    top: position.top,
-                    height: position.height,
-                    left: `calc(${leftPercent}% + 4px)`,
-                    width: `calc(${widthPercent}% - 8px)`,
-                    zIndex: 1,
-                  }}
-                >
-                  <p className="font-medium truncate">{event.title}</p>
-                  <p className="text-sm text-gray-700 dark:text-white/80 truncate">
-                    {format(event.startTime, "h:mm a")} - {format(event.endTime, "h:mm a")}
-                  </p>
-                  {position.height >= 80 && event.location && (
-                    <p className="text-sm text-gray-600 dark:text-white/70 truncate mt-1">📍 {event.location}</p>
-                  )}
-                  {position.height >= 100 && event.clientName && (
-                    <p className="text-sm text-gray-600 dark:text-white/70 truncate">👤 {event.clientName}</p>
-                  )}
-                </button>
+                <EventHoverCard key={event.id} event={event} side="right">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEventClick(event);
+                    }}
+                    className={cn(
+                      "absolute rounded-lg px-3 py-2 text-gray-900 dark:text-white overflow-hidden text-left shadow-sm border-l-[3px] border border-border/30",
+                      accent.border,
+                      accent.bg
+                    )}
+                    style={{
+                      top: position.top,
+                      height: position.height,
+                      left: `calc(${leftPercent}% + 4px)`,
+                      width: `calc(${widthPercent}% - 8px)`,
+                      zIndex: 1,
+                    }}
+                  >
+                    <p className="font-medium truncate">{event.title}</p>
+                    <p className="text-sm text-gray-700 dark:text-white/80 truncate">
+                      {format(event.startTime, "h:mm a")} - {format(event.endTime, "h:mm a")}
+                    </p>
+                    {position.height >= 80 && event.location && (
+                      <p className="text-sm text-gray-600 dark:text-white/70 truncate mt-1">📍 {event.location}</p>
+                    )}
+                    {position.height >= 100 && event.clientName && (
+                      <p className="text-sm text-gray-600 dark:text-white/70 truncate">👤 {event.clientName}</p>
+                    )}
+                  </button>
+                </EventHoverCard>
               );
             })}
           </div>
