@@ -1,27 +1,44 @@
 
 
-## Match Onboarding Widget Styling to Birthdays Widget
+## Make Task Dashboard Stats Cards and Charts Clickable with Filters
 
-### Problem
-The onboarding progress widget doesn't visually match the birthdays widget despite having the same grid dimensions (w:3, h:3). The styles diverge in several places.
+### Current State
+The task dashboard stats and charts already use real database data. However:
+- All 4 stat cards navigate to the detail view without any filters
+- The 4 ECharts (status pie, type bar, priority pie, SLA gauge) have no click handlers at all
 
-### Solution
-Align the onboarding widget's internal styling to exactly match the birthdays widget pattern:
+### Changes
 
-**File: `src/components/dashboard/OnboardingProgressWidget.tsx`**
+**File: `src/components/tasks/TaskDashboard.tsx`**
 
-1. Remove `overflow-hidden` from the Card (birthdays uses just `h-full`)
-2. Change `CardContent` padding from `px-4 pb-2` to `px-4 pb-4` (match birthdays)
-3. Change table font from `text-xs` back to `text-sm` (match birthdays)
-4. Change header padding from `pb-1.5` to `pb-2` (match birthdays)
-5. Keep row padding at `py-1.5` (already matches birthdays)
+1. Change the `onViewDetail` callback signature to accept optional filters: `onViewDetail: (filters?: TaskFilters) => void`
+2. Update each stat card's `onClick` to pass specific filters:
+   - **Total Open**: `status` excludes Completed/Cancelled (no specific filter needed, just switch view)
+   - **Due Today**: `dueDateFrom` and `dueDateTo` set to today's date
+   - **Overdue**: `dueDateTo` set to yesterday, status excludes Completed/Cancelled
+   - **Completed This Week**: `status: ["Completed"]`
+3. Add `onEvents` handlers to the 3 interactive charts:
+   - **Status pie chart**: clicking a slice sets `status` filter to the clicked status name
+   - **Type bar chart**: clicking a bar sets `taskType` filter to the clicked type name
+   - **Priority pie chart**: clicking a slice sets `priority` filter to the clicked priority name
+4. Import `TaskFilters` type from the hook
 
-These changes make the internal structure identical to the birthdays widget:
-- `Card className="h-full"`
-- `CardContent className="px-4 pb-4"`
-- `table className="w-full text-sm"`
-- Header cells: `pb-2`
-- Body cells: `py-1.5`
+**File: `src/pages/Tasks.tsx`**
+
+1. Update `handleViewChange` to accept optional filters
+2. When called with filters, merge them into the current filter state and switch to detail view
+3. Pass the updated callback to `TaskDashboard`
+
+### How It Works
+- Clicking "Due Today" card switches to detail view with date filter set to today
+- Clicking "Overdue" card switches to detail view showing only overdue tasks
+- Clicking "In Progress" slice on the status pie chart switches to detail view filtered to `status=["In Progress"]`
+- Clicking "Onboarding" bar on the type chart switches to detail view filtered to `taskType=["Onboarding"]`
+- Same pattern for priority pie chart
 
 ### Files Changed
-- `src/components/dashboard/OnboardingProgressWidget.tsx` (revert to match birthdays pattern)
+| File | Action |
+|------|--------|
+| `src/components/tasks/TaskDashboard.tsx` | Modify (add click handlers, update prop types) |
+| `src/pages/Tasks.tsx` | Modify (update handleViewChange to accept filters) |
+
