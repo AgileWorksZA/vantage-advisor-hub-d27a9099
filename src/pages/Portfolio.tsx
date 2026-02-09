@@ -114,11 +114,11 @@ const Portfolio = () => {
         <div className="flex-1" />
 
         {/* VANTAGE Logo - rotated to read bottom to top */}
-        <div className="mb-2">
-          <img
+        <div className="mb-2 overflow-visible">
+          <img 
             src={vantageLogo}
             alt="Vantage"
-            className="h-[53px] object-contain -rotate-90 origin-center"
+            className="h-[80px] w-auto -rotate-90 origin-center"
           />
         </div>
       </aside>

@@ -258,8 +258,8 @@ const AccountSettings = () => {
           </button>
         ))}
         <div className="flex-1" />
-        <div className="mb-2">
-          <img src={vantageLogo} alt="Vantage" className="h-[53px] object-contain -rotate-90 origin-center" />
+        <div className="mb-2 overflow-visible">
+          <img src={vantageLogo} alt="Vantage" className="h-[80px] w-auto -rotate-90 origin-center" />
         </div>
       </aside>
 
