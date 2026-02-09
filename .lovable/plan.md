@@ -1,24 +1,21 @@
 
 
-## Align Gear Icon Horizontally with the Flag
+## Align Gear Icon Center with Flag Icon Center
 
 ### Problem
-The gear icon currently sits at the far right of the content area. The flag icon in the header has the UserMenu avatar (36px) and a gap (16px) to its right, placing it roughly 52px inward from the right edge. The gear needs to shift right-ward to match the flag's horizontal position.
+The current `pr-[52px]` puts the gear icon's center at ~68px from the right edge, while the flag icon's center sits at ~70px. They are close but not perfectly aligned.
 
-### Solution
-Add `pr-[52px]` to the heading wrapper div. This accounts for the avatar width (h-9 = 36px) plus the gap-4 (16px) in the header's right-side items, aligning the gear icon directly beneath the flag.
+### Calculation
+- **Header right side** (gap-4 = 16px between items):
+  - UserMenu avatar: 36px wide, center at 18px from right
+  - Gap: 16px
+  - Flag (RegionSelector): 36px wide, center at 36 + 16 + 18 = 70px from right
+- **Gear icon**: 32px wide, center = pr + 16px
+  - To align center at 70px: pr = 70 - 16 = 54px
 
 ### Change
 **`src/pages/Dashboard.tsx`** (line 251):
-- Add `pr-[52px]` to the heading div
-
-```tsx
-// Before
-<div className="flex items-center justify-between mb-6">
-
-// After
-<div className="flex items-center justify-between mb-6 pr-[52px]">
-```
+- Change `pr-[52px]` to `pr-[54px]`
 
 ### Files Changed
 - `src/pages/Dashboard.tsx` (1 line)
