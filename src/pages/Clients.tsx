@@ -34,6 +34,7 @@ import {
 import { MultiSelect } from "@/components/ui/multi-select";
 import { Badge } from "@/components/ui/badge";
 import { useClients } from "@/hooks/useClients";
+import { useRecentlyViewedClients } from "@/hooks/useRecentlyViewedClients";
 import AddClientDialog from "@/components/clients/AddClientDialog";
 import { AddClientChoiceDialog } from "@/components/clients/AddClientChoiceDialog";
 import { FinancialPlanningWizard } from "@/components/financial-planning-workflow/FinancialPlanningWizard";
@@ -96,6 +97,7 @@ const Clients = () => {
   );
 
   const { clients, loading: clientsLoading, refetch } = useClients();
+  const { recentClientIds, loading: recentLoading } = useRecentlyViewedClients();
   const { regionalData, selectedAdvisors, selectedRegion } = useRegion();
 
   // Map selected advisor initials to full names for filtering
@@ -306,6 +308,18 @@ const Clients = () => {
     return true;
   });
 
+  // Determine display clients: recently viewed (recency order) when no search, full results otherwise
+  const displayClients = useMemo(() => {
+    if (searchQuery || filterSource) {
+      return filteredClients;
+    }
+    // No search: show only recently viewed, in recency order
+    if (recentClientIds.length === 0) return [];
+    return recentClientIds
+      .map(id => filteredClients.find(c => c.id === id))
+      .filter((c): c is NonNullable<typeof c> => Boolean(c));
+  }, [filteredClients, recentClientIds, searchQuery, filterSource]);
+
   return (
     <div className="h-screen bg-muted/30 flex overflow-hidden">
       {/* Sidebar - Fixed */}
@@ -425,7 +439,7 @@ const Clients = () => {
           <div className="mb-4">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-[hsl(180,70%,45%)] font-medium">
-                {clients.length > 0 ? "YOUR CLIENTS" : "RECENTLY VIEWED"}
+                {searchQuery ? "SEARCH RESULTS" : "RECENTLY VIEWED"}
               </h2>
               <div className="flex items-center gap-2">
                 <Button 
@@ -488,14 +502,16 @@ const Clients = () => {
               <div className="flex items-center justify-center py-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
               </div>
-            ) : filteredClients.length === 0 ? (
+            ) : displayClients.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
                 <Users className="w-12 h-12 mb-4 opacity-50" />
-                <p className="text-lg font-medium">No clients found</p>
+                <p className="text-lg font-medium">
+                  {searchQuery ? "No clients found" : "No recently viewed clients"}
+                </p>
                 <p className="text-sm">
-                  {clients.length === 0 
-                    ? "Click '+ Add Profile' to add your first client" 
-                    : "Try adjusting your filters or search query"}
+                  {searchQuery 
+                    ? "Try adjusting your filters or search query"
+                    : "Search for a client or click a profile to get started"}
                 </p>
               </div>
             ) : (
@@ -524,7 +540,7 @@ const Clients = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredClients.map((client) => (
+                  {displayClients.map((client) => (
                     <TableRow 
                       key={client.id} 
                       className="hover:bg-muted/50 cursor-pointer"
@@ -579,7 +595,7 @@ const Clients = () => {
               <ChevronLeft className="w-4 h-4" />
             </Button>
             <span className="text-sm text-muted-foreground ml-2">
-              1 to {filteredClients.length} of {filteredClients.length}
+              1 to {displayClients.length} of {displayClients.length}
             </span>
           </div>
         </main>
