@@ -51,6 +51,14 @@ export interface SendMessageInput {
   poll_data?: PollData;
 }
 
+const regionToCountry: Record<string, string> = {
+  ZA: "South Africa",
+  AU: "Australia",
+  CA: "Canada",
+  GB: "United Kingdom",
+  US: "United States",
+};
+
 export const useDirectMessages = (channel: DirectMessageChannel, jurisdiction?: string) => {
   const [messages, setMessages] = useState<DirectMessage[]>([]);
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
@@ -87,7 +95,8 @@ export const useDirectMessages = (channel: DirectMessageChannel, jurisdiction?: 
         .in("id", clientIds);
 
       if (jurisdiction) {
-        clientQuery = clientQuery.eq("country_of_issue", jurisdiction);
+        const countryName = regionToCountry[jurisdiction] || jurisdiction;
+        clientQuery = clientQuery.eq("country_of_issue", countryName);
       }
 
       const { data: clientsData, error: clientsError } = await clientQuery;
