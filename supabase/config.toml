@@ -20,3 +20,6 @@ verify_jwt = false
 [functions.seed-demo-relationships]
 verify_jwt = false
 
+[functions.seed-calendar-events]
+verify_jwt = false
+
