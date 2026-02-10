@@ -21,11 +21,27 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Download, Users, ListTodo, CalendarIcon, ChevronRight, Filter } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Download, Users, ListTodo, CalendarIcon, ChevronRight, Filter, X, Save, BookmarkCheck, Trash2 } from "lucide-react";
 import { EnhancedTask, TaskFilters } from "@/hooks/useTasksEnhanced";
 import { useTeamMembers } from "@/hooks/useTeamMembers";
 import { useRegion } from "@/contexts/RegionContext";
+import { useSavedTaskFilters } from "@/hooks/useSavedTaskFilters";
 import { MultiSelect } from "@/components/ui/multi-select";
+import { toast } from "sonner";
 import {
   startOfWeek,
   endOfWeek,
@@ -334,9 +350,23 @@ export function TaskAnalyticsTab({ tasks, onDrillDown }: TaskAnalyticsTabProps) 
   const [customFrom, setCustomFrom] = useState<Date | undefined>();
   const [customTo, setCustomTo] = useState<Date | undefined>();
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [filterName, setFilterName] = useState("");
+  const [savedViewsSearch, setSavedViewsSearch] = useState("");
 
   const { teamMembers } = useTeamMembers();
   const { selectedRegion } = useRegion();
+  const { savedFilters, saveFilter, deleteFilter } = useSavedTaskFilters();
+  // Analytics-specific saved filters
+  const analyticsSavedFilters = useMemo(
+    () => savedFilters.filter((f) => (f.filters as any)?.type === "analytics"),
+    [savedFilters]
+  );
+
+  const filteredSavedViews = useMemo(
+    () => analyticsSavedFilters.filter((f) => f.name.toLowerCase().includes(savedViewsSearch.toLowerCase())),
+    [analyticsSavedFilters, savedViewsSearch]
+  );
 
   // Filter team members by current jurisdiction
   const jurisdictionMembers = useMemo(
@@ -344,13 +374,11 @@ export function TaskAnalyticsTab({ tasks, onDrillDown }: TaskAnalyticsTabProps) 
     [teamMembers, selectedRegion]
   );
 
-  // Unique team names for filter
   const teamOptions = useMemo(() => {
     const names = new Set(jurisdictionMembers.map((m) => m.team_name).filter(Boolean) as string[]);
     return Array.from(names).sort().map((n) => ({ label: n, value: n }));
   }, [jurisdictionMembers]);
 
-  // Map member names to teams
   const memberTeamMap = useMemo(() => {
     const map: Record<string, string> = {};
     jurisdictionMembers.forEach((m) => {
@@ -359,24 +387,17 @@ export function TaskAnalyticsTab({ tasks, onDrillDown }: TaskAnalyticsTabProps) 
     return map;
   }, [jurisdictionMembers]);
 
-  // Date range calculations
   const { periodStart, periodEnd, priorStart, priorEnd, workingDays } = useMemo(() => {
     const { start, end } = getDateRange(datePreset, customFrom, customTo);
     const periodDays = differenceInDays(end, start) + 1;
-    const prior = {
-      start: addDays(start, -periodDays),
-      end: addDays(start, -1),
-    };
+    const prior = { start: addDays(start, -periodDays), end: addDays(start, -1) };
     return {
-      periodStart: start,
-      periodEnd: end,
-      priorStart: prior.start,
-      priorEnd: prior.end,
+      periodStart: start, periodEnd: end,
+      priorStart: prior.start, priorEnd: prior.end,
       workingDays: getWorkingDays(start, end),
     };
   }, [datePreset, customFrom, customTo]);
 
-  // Filter tasks by selected teams (user view only)
   const filteredTasks = useMemo(() => {
     if (subView !== "user" || selectedTeams.length === 0) return tasks;
     const validNames = new Set(
@@ -388,16 +409,10 @@ export function TaskAnalyticsTab({ tasks, onDrillDown }: TaskAnalyticsTabProps) 
   }, [tasks, subView, selectedTeams, jurisdictionMembers]);
 
   const rows = useMemo(
-    () =>
-      computeRows(
-        filteredTasks,
-        subView === "user" ? "assigned_to_name" : "task_type",
-        periodStart, periodEnd, priorStart, priorEnd, workingDays
-      ),
+    () => computeRows(filteredTasks, subView === "user" ? "assigned_to_name" : "task_type", periodStart, periodEnd, priorStart, priorEnd, workingDays),
     [filteredTasks, subView, periodStart, periodEnd, priorStart, priorEnd, workingDays]
   );
 
-  // Group rows by team for user view
   const groupedRows = useMemo(() => {
     if (subView !== "user") return null;
     const groups: Record<string, AnalyticsRow[]> = {};
@@ -419,33 +434,71 @@ export function TaskAnalyticsTab({ tasks, onDrillDown }: TaskAnalyticsTabProps) 
 
   const handleRowClick = (row: AnalyticsRow) => {
     const filters: TaskFilters = {};
-    if (subView === "type") {
-      filters.taskType = [row.filterKey];
-    }
+    if (subView === "type") filters.taskType = [row.filterKey];
     onDrillDown(filters);
   };
 
   const groupLabel = subView === "user" ? "Assigned To" : "Task Type";
   const presetLabels: Record<DatePreset, string> = {
-    this_week: "This Week",
-    last_week: "Last Week",
-    this_month: "This Month",
-    last_month: "Last Month",
+    this_week: "This Week", last_week: "Last Week",
+    this_month: "This Month", last_month: "Last Month",
     custom: "Custom Range",
   };
 
+  // Filter active state detection
+  const isDefaultFilters = datePreset === "this_week" && selectedTeams.length === 0;
+
+  const getDateLabel = () => {
+    if (datePreset === "custom" && customFrom && customTo) {
+      return `${format(customFrom, "dd MMM")} – ${format(customTo, "dd MMM yyyy")}`;
+    }
+    if (datePreset !== "this_week") return presetLabels[datePreset];
+    return null;
+  };
+
+  const resetFilters = () => {
+    setSubView("user");
+    setDatePreset("this_week");
+    setCustomFrom(undefined);
+    setCustomTo(undefined);
+    setSelectedTeams([]);
+  };
+
+  const handleSaveFilter = async () => {
+    if (!filterName.trim()) return;
+    const payload: any = {
+      type: "analytics",
+      subView,
+      datePreset,
+      customFrom: customFrom?.toISOString(),
+      customTo: customTo?.toISOString(),
+      selectedTeams,
+    };
+    await saveFilter(filterName.trim(), payload);
+    setFilterName("");
+    setSaveDialogOpen(false);
+  };
+
+  const applySavedFilter = (filters: any) => {
+    const f = typeof filters === "string" ? JSON.parse(filters) : filters;
+    if (f.subView) setSubView(f.subView);
+    if (f.datePreset) setDatePreset(f.datePreset);
+    setCustomFrom(f.customFrom ? new Date(f.customFrom) : undefined);
+    setCustomTo(f.customTo ? new Date(f.customTo) : undefined);
+    setSelectedTeams(f.selectedTeams || []);
+  };
+
+  const dateLabel = getDateLabel();
+
   return (
     <div className="p-6 space-y-4">
+      {/* Row 1: Toolbar */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-2 flex-wrap">
           <Tabs value={subView} onValueChange={(v) => setSubView(v as "user" | "type")}>
             <TabsList>
-              <TabsTrigger value="user" className="gap-2">
-                <Users className="h-4 w-4" />By User
-              </TabsTrigger>
-              <TabsTrigger value="type" className="gap-2">
-                <ListTodo className="h-4 w-4" />By Task Type
-              </TabsTrigger>
+              <TabsTrigger value="user" className="gap-2"><Users className="h-4 w-4" />By User</TabsTrigger>
+              <TabsTrigger value="type" className="gap-2"><ListTodo className="h-4 w-4" />By Task Type</TabsTrigger>
             </TabsList>
           </Tabs>
 
@@ -496,12 +549,101 @@ export function TaskAnalyticsTab({ tasks, onDrillDown }: TaskAnalyticsTabProps) 
               className="w-[220px]"
             />
           )}
+
+          {analyticsSavedFilters.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="h-9 gap-2">
+                  <BookmarkCheck className="h-4 w-4" />Saved Views
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-[260px]">
+                <div className="p-2">
+                  <Input
+                    placeholder="Search saved views..."
+                    value={savedViewsSearch}
+                    onChange={(e) => setSavedViewsSearch(e.target.value)}
+                    className="h-8 text-xs"
+                  />
+                </div>
+                {filteredSavedViews.length === 0 ? (
+                  <div className="px-2 py-3 text-xs text-muted-foreground text-center">No saved views found</div>
+                ) : (
+                  filteredSavedViews.map((sf) => (
+                    <DropdownMenuItem
+                      key={sf.id}
+                      className="flex items-center justify-between cursor-pointer"
+                      onSelect={() => applySavedFilter(sf.filters)}
+                    >
+                      <span className="truncate text-xs">{sf.name}</span>
+                      <button
+                        className="ml-2 p-0.5 rounded hover:bg-destructive/10"
+                        onClick={(e) => { e.stopPropagation(); deleteFilter(sf.id); }}
+                      >
+                        <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
+                      </button>
+                    </DropdownMenuItem>
+                  ))
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
 
         <Button variant="outline" size="sm" className="gap-2" onClick={() => exportToCsv(rows, groupLabel)}>
           <Download className="h-4 w-4" />Export Report
         </Button>
       </div>
+
+      {/* Row 2: Active Filter Tags */}
+      {!isDefaultFilters && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs text-muted-foreground font-medium">Filtered by:</span>
+          {dateLabel && (
+            <Badge variant="secondary" className="gap-1 text-xs">
+              {dateLabel}
+              <button onClick={() => { setDatePreset("this_week"); setCustomFrom(undefined); setCustomTo(undefined); }}>
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          )}
+          {selectedTeams.map((team) => (
+            <Badge key={team} variant="secondary" className="gap-1 text-xs">
+              {team}
+              <button onClick={() => setSelectedTeams((prev) => prev.filter((t) => t !== team))}>
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          ))}
+          <button onClick={resetFilters} className="text-xs text-primary hover:underline ml-1">Reset Filters</button>
+          <span className="text-muted-foreground">|</span>
+          <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={() => setSaveDialogOpen(true)}>
+            <Save className="h-3.5 w-3.5" />Save Filter
+          </Button>
+        </div>
+      )}
+
+      {/* Save Filter Dialog */}
+      <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
+        <DialogContent className="sm:max-w-[360px]">
+          <DialogHeader>
+            <DialogTitle>Save Analytics Filter</DialogTitle>
+          </DialogHeader>
+          <div className="py-2">
+            <Input
+              placeholder="Filter name..."
+              value={filterName}
+              onChange={(e) => setFilterName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSaveFilter()}
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setSaveDialogOpen(false)}>Cancel</Button>
+            <Button size="sm" onClick={handleSaveFilter} disabled={!filterName.trim()}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Card>
         <CardHeader className="pb-2">
