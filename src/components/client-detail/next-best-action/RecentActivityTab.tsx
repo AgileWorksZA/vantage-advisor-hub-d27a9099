@@ -2,6 +2,10 @@ import React from "react";
 import { DollarSign, Image, MessageSquare, User, FileCheck } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
+interface RecentActivityTabProps {
+  householdView?: boolean;
+}
+
 const recentActivities = [
   { id: 1, type: "product_sold", title: "Product purchased", description: 'Client added "Discovery Life Plan"', timestamp: new Date(Date.now() - 5 * 60 * 1000) },
   { id: 2, type: "document_uploaded", title: "Document uploaded", description: 'Uploaded "ID Document.pdf"', timestamp: new Date(Date.now() - 30 * 60 * 1000) },
@@ -37,7 +41,7 @@ const getTitleColor = (type: string) => {
 
 export const RECENT_ACTIVITY_COUNT = recentActivities.length;
 
-const RecentActivityTab = () => (
+const RecentActivityTab = ({ householdView }: RecentActivityTabProps) => (
   <div className="space-y-0">
     {recentActivities.map((activity) => (
       <div key={activity.id} className="flex gap-2 py-1.5 border-b border-border/50 last:border-0">

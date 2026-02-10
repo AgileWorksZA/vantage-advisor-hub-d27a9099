@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 import {
@@ -13,7 +13,10 @@ import {
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Client, getDisplayName, getInitials, calculateAge, formatBirthday } from "@/types/client";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Users } from "lucide-react";
 import { useClientMeetingPrep } from "@/hooks/useClientMeetingPrep";
+import { useHouseholdMeetingPrep } from "@/hooks/useHouseholdMeetingPrep";
 import OpportunitiesTab, { getOpportunitiesCount } from "./next-best-action/OpportunitiesTab";
 import OutstandingTab from "./next-best-action/OutstandingTab";
 import RecentActivityTab, { RECENT_ACTIVITY_COUNT } from "./next-best-action/RecentActivityTab";
@@ -42,8 +45,16 @@ const ClientSummaryTab = ({ client, clientId, onShowMoreActivity }: ClientSummar
   const birthday = formatBirthday(client.date_of_birth);
   const prepData = useClientMeetingPrep(clientId);
 
-  const oppsCount = getOpportunitiesCount(prepData.opportunities, prepData.products);
-  const outstandingCount = prepData.tasks.length + prepData.documents.length;
+  const [householdView, setHouseholdView] = useState(false);
+  const householdData = useHouseholdMeetingPrep(client.household_group, householdView);
+
+  const activeOpps = householdView ? householdData.opportunities : prepData.opportunities;
+  const activeProducts = householdView ? householdData.products : prepData.products;
+  const activeTasks = householdView ? householdData.tasks : prepData.tasks;
+  const activeDocs = householdView ? householdData.documents : prepData.documents;
+
+  const oppsCount = getOpportunitiesCount(activeOpps, activeProducts);
+  const outstandingCount = activeTasks.length + activeDocs.length;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -142,7 +153,20 @@ const ClientSummaryTab = ({ client, clientId, onShowMoreActivity }: ClientSummar
       <div className="flex flex-col">
         <Card className="flex-1 flex flex-col">
           <CardHeader className="py-2">
-            <CardTitle className="text-lg">Next Best Action</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg">Next Best Action</CardTitle>
+              {client.household_group && (
+                <div className="flex items-center gap-1.5">
+                  <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground font-medium">Household</span>
+                  <Switch
+                    checked={householdView}
+                    onCheckedChange={setHouseholdView}
+                    className="scale-75"
+                  />
+                </div>
+              )}
+            </div>
           </CardHeader>
           <CardContent className="pt-0 flex-1 flex flex-col">
             <Tabs defaultValue="opportunities" className="w-full flex-1 flex flex-col">
@@ -158,13 +182,13 @@ const ClientSummaryTab = ({ client, clientId, onShowMoreActivity }: ClientSummar
                 </TabsTrigger>
               </TabsList>
               <TabsContent value="opportunities" className="mt-0 flex-1">
-                <OpportunitiesTab opportunities={prepData.opportunities} products={prepData.products} />
+                <OpportunitiesTab opportunities={activeOpps} products={activeProducts} householdView={householdView} />
               </TabsContent>
               <TabsContent value="outstanding" className="mt-0 flex-1">
-                <OutstandingTab tasks={prepData.tasks} documents={prepData.documents} />
+                <OutstandingTab tasks={activeTasks} documents={activeDocs} householdView={householdView} />
               </TabsContent>
               <TabsContent value="recent" className="mt-0 flex-1">
-                <RecentActivityTab />
+                <RecentActivityTab householdView={householdView} />
               </TabsContent>
             </Tabs>
 
