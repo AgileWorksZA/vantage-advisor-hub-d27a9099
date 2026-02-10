@@ -1,6 +1,8 @@
 import { useMemo } from "react";
 import { useCalendarEvents } from "@/hooks/useCalendarEvents";
 import { useTasks } from "@/hooks/useTasks";
+import { useClients } from "@/hooks/useClients";
+import { useRegion } from "@/contexts/RegionContext";
 import { Clock, CheckSquare, AlertTriangle, Calendar } from "lucide-react";
 import { format, isToday, isBefore, startOfDay } from "date-fns";
 
@@ -8,20 +10,43 @@ const MobileTodayTab = () => {
   const today = useMemo(() => new Date(), []);
   const { events, loading: eventsLoading } = useCalendarEvents(today, "day");
   const { tasks, loading: tasksLoading } = useTasks();
+  const { clients, loading: clientsLoading } = useClients();
+  const { selectedAdvisors, regionalData } = useRegion();
+
+  const selectedAdvisorNames = useMemo(() =>
+    regionalData.advisors
+      .filter(a => selectedAdvisors.includes(a.initials))
+      .map(a => a.name),
+    [regionalData.advisors, selectedAdvisors]
+  );
+
+  const advisorClientNames = useMemo(() => {
+    const names = new Set<string>();
+    clients.filter(c => selectedAdvisorNames.includes(c.advisor)).forEach(c => names.add(c.client));
+    return names;
+  }, [clients, selectedAdvisorNames]);
 
   const todayEvents = useMemo(
-    () => events.filter((e) => isToday(e.startTime)).sort((a, b) => a.startTime.getTime() - b.startTime.getTime()),
-    [events]
+    () => events
+      .filter((e) => isToday(e.startTime))
+      .filter((e) => !e.clientId || selectedAdvisorNames.includes(e.clientAdvisor || ""))
+      .sort((a, b) => a.startTime.getTime() - b.startTime.getTime()),
+    [events, selectedAdvisorNames]
+  );
+
+  const filteredTasks = useMemo(() =>
+    tasks.filter((t) => t.isPracticeTask || advisorClientNames.has(t.clientName)),
+    [tasks, advisorClientNames]
   );
 
   const taskStats = useMemo(() => {
-    const openTasks = tasks.filter((t) => t.status !== "Completed" && t.status !== "Cancelled");
+    const openTasks = filteredTasks.filter((t) => t.status !== "Completed" && t.status !== "Cancelled");
     const dueToday = openTasks.filter((t) => isToday(t.dueDate));
     const overdue = openTasks.filter((t) => isBefore(t.dueDate, startOfDay(today)) && !isToday(t.dueDate));
     return { open: openTasks.length, dueToday: dueToday.length, overdue: overdue.length };
-  }, [tasks, today]);
+  }, [filteredTasks, today]);
 
-  const isLoading = eventsLoading || tasksLoading;
+  const isLoading = eventsLoading || tasksLoading || clientsLoading;
 
   return (
     <div className="p-4 space-y-5">
@@ -116,7 +141,7 @@ const MobileTodayTab = () => {
           </div>
         ) : (
           <div className="space-y-2">
-            {tasks
+            {filteredTasks
               .filter((t) => t.status !== "Completed" && t.status !== "Cancelled")
               .slice(0, 5)
               .map((task) => (

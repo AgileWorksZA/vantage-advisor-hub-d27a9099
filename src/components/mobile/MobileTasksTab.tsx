@@ -1,5 +1,7 @@
 import { useState, useMemo } from "react";
 import { useTasks } from "@/hooks/useTasks";
+import { useClients } from "@/hooks/useClients";
+import { useRegion } from "@/contexts/RegionContext";
 import { CheckCircle2, Circle, Clock, AlertTriangle } from "lucide-react";
 import { format, isToday, isBefore, startOfDay } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -8,12 +10,32 @@ type TaskFilter = "all" | "due-today" | "overdue";
 
 const MobileTasksTab = () => {
   const { tasks, loading, updateTask } = useTasks();
+  const { clients, loading: clientsLoading } = useClients();
+  const { selectedAdvisors, regionalData } = useRegion();
   const [filter, setFilter] = useState<TaskFilter>("all");
 
   const today = useMemo(() => new Date(), []);
 
+  const selectedAdvisorNames = useMemo(() =>
+    regionalData.advisors
+      .filter(a => selectedAdvisors.includes(a.initials))
+      .map(a => a.name),
+    [regionalData.advisors, selectedAdvisors]
+  );
+
+  const advisorClientNames = useMemo(() => {
+    const names = new Set<string>();
+    clients.filter(c => selectedAdvisorNames.includes(c.advisor)).forEach(c => names.add(c.client));
+    return names;
+  }, [clients, selectedAdvisorNames]);
+
+  const advisorTasks = useMemo(() =>
+    tasks.filter((t) => t.isPracticeTask || advisorClientNames.has(t.clientName)),
+    [tasks, advisorClientNames]
+  );
+
   const filteredTasks = useMemo(() => {
-    const open = tasks.filter((t) => t.status !== "Completed" && t.status !== "Cancelled");
+    const open = advisorTasks.filter((t) => t.status !== "Completed" && t.status !== "Cancelled");
     switch (filter) {
       case "due-today":
         return open.filter((t) => isToday(t.dueDate));
@@ -22,7 +44,7 @@ const MobileTasksTab = () => {
       default:
         return open;
     }
-  }, [tasks, filter, today]);
+  }, [advisorTasks, filter, today]);
 
   const handleToggleComplete = async (taskId: string, currentStatus: string) => {
     const newStatus = currentStatus === "Completed" ? "Not Started" : "Completed";
@@ -30,13 +52,13 @@ const MobileTasksTab = () => {
   };
 
   const filters: { id: TaskFilter; label: string; count: number }[] = useMemo(() => {
-    const open = tasks.filter((t) => t.status !== "Completed" && t.status !== "Cancelled");
+    const open = advisorTasks.filter((t) => t.status !== "Completed" && t.status !== "Cancelled");
     return [
       { id: "all", label: "All", count: open.length },
       { id: "due-today", label: "Due Today", count: open.filter((t) => isToday(t.dueDate)).length },
       { id: "overdue", label: "Overdue", count: open.filter((t) => isBefore(t.dueDate, startOfDay(today)) && !isToday(t.dueDate)).length },
     ];
-  }, [tasks, today]);
+  }, [advisorTasks, today]);
 
   return (
     <div className="flex flex-col h-full">
