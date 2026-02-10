@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
-import { ArrowLeft, CalendarDays, CalendarClock } from "lucide-react";
+import { ArrowLeft, CalendarDays } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { CalendarEvent } from "@/hooks/useCalendarEvents";
@@ -128,10 +128,6 @@ export default function MobileMeetingScreen({ event, onBack, onNotification }: M
             <ArrowLeft className="h-5 w-5 text-foreground" />
           </button>
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-0.5">
-              <CalendarDays className="h-3 w-3 shrink-0" />
-              <span>{format(event.startTime, "EEE, d MMM yyyy")} | {format(event.startTime, "HH:mm")} – {format(event.endTime, "HH:mm")}</span>
-            </div>
             <h1 className="text-base font-semibold text-foreground truncate">{event.title}</h1>
             <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
               {event.clientName && <span>{event.clientName}</span>}
@@ -140,8 +136,18 @@ export default function MobileMeetingScreen({ event, onBack, onNotification }: M
               </span>
             </div>
           </div>
-          <button onClick={() => setRescheduleOpen(true)} className="p-1 mt-0.5" title="Reschedule">
-            <CalendarClock className="h-4.5 w-4.5 text-muted-foreground" />
+          <button
+            onClick={() => setRescheduleOpen(true)}
+            className="shrink-0 rounded-lg border border-border bg-muted/50 px-2.5 py-1.5 text-right"
+            title="Reschedule"
+          >
+            <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+              <CalendarDays className="h-3 w-3" />
+              <span>{format(event.startTime, "EEE, d MMM")}</span>
+            </div>
+            <div className="text-[11px] font-medium text-foreground">
+              {format(event.startTime, "HH:mm")} – {format(event.endTime, "HH:mm")}
+            </div>
           </button>
         </div>
 
