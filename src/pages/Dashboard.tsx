@@ -320,7 +320,7 @@ const Dashboard = () => {
                     <thead>
                       <tr className="text-muted-foreground text-xs">
                         <th className="text-left pb-2 font-normal">Provider name</th>
-                        <th className="text-right pb-2 font-normal">Book%</th>
+                        <th className="text-right pb-2 font-normal">Book %</th>
                         <th className="text-right pb-2 font-normal">Value</th>
                       </tr>
                     </thead>
@@ -352,7 +352,7 @@ const Dashboard = () => {
                     <thead>
                       <tr className="text-muted-foreground text-xs">
                         <th className="text-left pb-2 font-normal">Investor</th>
-                        <th className="text-right pb-2 font-normal">Book%</th>
+                        <th className="text-right pb-2 font-normal">Book %</th>
                         <th className="text-right pb-2 font-normal">Value</th>
                       </tr>
                     </thead>
