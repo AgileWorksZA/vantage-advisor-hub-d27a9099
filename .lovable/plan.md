@@ -1,70 +1,80 @@
 
 
-## Add Household View Toggle to Next Best Action
+## Make Calendar Items Clickable with AI Meeting Prep Notes
 
 ### Overview
 
-Add a toggle switch to the "Next Best Action" card header that enables a "Household View". When toggled on, data from all clients sharing the same `household_group` is fetched and displayed, with an additional "Client" column showing which household member each item relates to.
+Add clickable calendar events to the client detail page that open a dedicated Meeting Prep dialog/sheet. When clicked, AI generates a structured meeting prep note with clickable tags that navigate the user to the linked activity (task, document, note, communication).
+
+---
 
 ### Changes
 
-**New Hook: `src/hooks/useHouseholdMeetingPrep.ts`**
+**1. New Component: `src/components/client-detail/MeetingPrepSheet.tsx`**
 
-- Accepts the current client's `household_group` string and `clientId`
-- When enabled, queries `clients` table for all clients with the same `household_group`
-- Calls `useClientMeetingPrep`-style queries for each household member in parallel
-- Returns aggregated opportunities, tasks, documents, and products, each enriched with a `clientName` field
-- Returns a loading state
+A Sheet (side panel) that opens when a calendar event is clicked. Contains:
 
-**File: `src/components/client-detail/ClientSummaryTab.tsx`**
+- **Event header**: title, date/time, event type badge
+- **AI-generated meeting prep note** using the existing `MeetingPrepPanel` component (which already renders client summary, outstanding actions, and revenue opportunities from `useClientMeetingPrep`)
+- **Clickable tags** on each item:
+  - Tasks: clicking navigates to `/tasks` with the task selected (or opens task detail sheet inline)
+  - Documents: clicking switches to the Documents tab on the client detail page
+  - Notes: clicking switches to the Notes tab
+  - Communications: clicking switches to the Communication tab
+  - Opportunities: clicking switches to the 360 View tab
+- Tags are styled as small teal pill buttons with the activity type icon
 
-- Add a `Switch` component (from `@/components/ui/switch`) and a `Users` icon in the card header, positioned to the right of the "Next Best Action" title
-- Add `useState` for `householdView` (boolean, default false)
-- Only show the toggle if `client.household_group` exists
-- When `householdView` is true, use data from the household hook instead of the single-client `useClientMeetingPrep`
-- Pass a `householdView` prop down to the three tab components
-- Update tab counts to reflect aggregated data
+**2. New Hook: `src/hooks/useClientCalendarEvents.ts`**
 
-**File: `src/components/client-detail/next-best-action/OpportunitiesTab.tsx`**
+- Fetches upcoming and recent calendar events for a specific client from `calendar_events` table
+- Returns events sorted by start_time
+- Used by the client detail page to show events in the Next Best Action panel
 
-- Add optional `householdView` prop
-- When `householdView` is true, show a "Client" label next to each opportunity item (compact, as a small text tag after the type badge)
-- Opportunities and gap analysis items gain an optional `clientName` field
+**3. Modify: `src/components/client-detail/ClientSummaryTab.tsx`**
 
-**File: `src/components/client-detail/next-best-action/OutstandingTab.tsx`**
+- Add a "Meetings" section within or near the Next Best Action card (or as a 4th tab)
+- Alternatively, make existing items in Opportunities/Outstanding tabs link-aware
+- Add state for `selectedMeetingEvent` and `meetingPrepOpen`
+- Render `MeetingPrepSheet` when an event is clicked
 
-- Add optional `householdView` prop
-- When `householdView` is true, show client name next to each task/document item (small text label inline with the category)
+**4. Modify: `src/components/client-detail/next-best-action/RecentActivityTab.tsx`**
 
-**File: `src/components/client-detail/next-best-action/RecentActivityTab.tsx`**
+- Replace static demo data with real calendar events fetched via `useClientCalendarEvents`
+- Each calendar event row becomes clickable, opening the `MeetingPrepSheet`
+- Non-calendar activity items (notes, documents, etc.) remain but become clickable too, navigating to the relevant client detail tab
 
-- Add optional `householdView` prop (for future use; current data is demo-static so no client column added yet, but the prop is accepted for consistency)
+**5. Modify: `src/components/calendar/MeetingPrepPanel.tsx`**
 
-### Layout Detail
+- Make each item (note, task, document, opportunity, communication) render as a clickable element
+- Accept an optional `onNavigate` callback prop: `(type: 'task' | 'note' | 'document' | 'communication' | 'opportunity', id: string) => void`
+- When provided, each item renders as a button/link with a subtle hover effect and an external-link or arrow icon
+- Tags appear as small colored pills: Tasks (blue), Documents (purple), Notes (green), Communications (teal), Opportunities (emerald)
 
-The card header will look like:
+**6. Modify: `src/pages/ClientDetail.tsx`**
 
-```text
-Next Best Action          [Users icon] Household [toggle]
-```
+- Accept navigation from the MeetingPrepSheet to switch tabs programmatically
+- The `onNavigate` callback from MeetingPrepPanel calls `setActiveTab('notes')`, `setActiveTab('documents')`, etc.
+- For tasks, navigate to `/tasks` or open the task detail sheet
 
-The toggle uses the existing `Switch` component, sized small (`scale-75`), with a "Household" label in `text-xs`.
+---
 
 ### Technical Details
 
-- The household hook queries `clients` where `household_group = ?` and `household_group IS NOT NULL`
-- For each household client, it runs the same parallel queries as `useClientMeetingPrep` (notes, tasks, documents, opportunities, products)
-- Results are merged with `clientName` (formatted as "FirstName S.") added to each item
-- The hook is only called when the toggle is enabled (lazy fetch)
-- Gap analysis in OpportunitiesTab runs per-client within the household, so each client's gaps are identified separately with their name attached
+- `useClientCalendarEvents` queries: `supabase.from('calendar_events').select('*').eq('client_id', clientId).eq('is_deleted', false).order('start_time', { ascending: false }).limit(10)`
+- The MeetingPrepSheet reuses the existing `MeetingPrepPanel` component, wrapping it in a Sheet with the event metadata header
+- Tab switching uses a callback pattern: `ClientSummaryTab` receives an `onTabChange` prop from `ClientDetail`, which calls `setActiveTab`
+- Clickable tags use `react-router-dom`'s `useNavigate` for cross-page navigation (e.g., tasks) and prop callbacks for same-page tab switching
+- The RecentActivityTab transitions from static demo data to real data: calendar events from the hook plus recent client_notes, documents, and communications from `useClientMeetingPrep`
 
 ### Files
 
 | File | Action |
 |------|--------|
-| `src/hooks/useHouseholdMeetingPrep.ts` | Create |
-| `src/components/client-detail/ClientSummaryTab.tsx` | Modify |
-| `src/components/client-detail/next-best-action/OpportunitiesTab.tsx` | Modify |
-| `src/components/client-detail/next-best-action/OutstandingTab.tsx` | Modify |
-| `src/components/client-detail/next-best-action/RecentActivityTab.tsx` | Modify |
+| `src/components/client-detail/MeetingPrepSheet.tsx` | Create |
+| `src/hooks/useClientCalendarEvents.ts` | Create |
+| `src/components/client-detail/ClientSummaryTab.tsx` | Modify - add meeting prep sheet trigger |
+| `src/components/client-detail/next-best-action/RecentActivityTab.tsx` | Modify - real data, clickable items |
+| `src/components/calendar/MeetingPrepPanel.tsx` | Modify - add clickable tags with onNavigate |
+| `src/pages/ClientDetail.tsx` | Modify - expose tab switching callback |
 
+No database changes required. All data sources already exist.
