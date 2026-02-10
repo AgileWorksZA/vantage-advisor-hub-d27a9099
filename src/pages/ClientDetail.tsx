@@ -302,7 +302,7 @@ const ClientDetail = () => {
               <ClientMeetingsTab />
             </TabsContent>
             <TabsContent value="relationships" className="mt-0">
-              <ClientRelationshipsTab />
+              <ClientRelationshipsTab householdGroup={client?.household_group} />
             </TabsContent>
             <TabsContent value="workflows" className="mt-0">
               <ClientWorkflowsTab />

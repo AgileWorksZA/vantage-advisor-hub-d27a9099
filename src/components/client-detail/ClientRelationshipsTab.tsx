@@ -18,7 +18,13 @@ import AddBusinessDialog from "./AddBusinessDialog";
 import AddContactDialog from "./AddContactDialog";
 import EditFamilyMemberDialog from "./EditFamilyMemberDialog";
 
-const ClientRelationshipsTab = () => {
+import { Badge } from "@/components/ui/badge";
+
+interface ClientRelationshipsTabProps {
+  householdGroup?: string | null;
+}
+
+const ClientRelationshipsTab = ({ householdGroup }: ClientRelationshipsTabProps) => {
   const { clientId } = useParams<{ clientId: string }>();
   const navigate = useNavigate();
   const { 
@@ -96,7 +102,17 @@ const ClientRelationshipsTab = () => {
                 ) : (
                   familyMembers.map((member) => (
                     <TableRow key={member.id} className="hover:bg-muted/50">
-                      <TableCell className="text-sm font-medium">{member.name}</TableCell>
+                      <TableCell className="text-sm font-medium">
+                        {member.name}
+                        {householdGroup && member.name.split(" ").some(word => word.length > 1 && householdGroup.includes(word)) && (
+                          <Badge
+                            variant="outline"
+                            className="border-amber-500 text-amber-600 bg-transparent dark:text-amber-400 dark:border-amber-400 text-[10px] px-1.5 py-0 ml-2"
+                          >
+                            Main Member
+                          </Badge>
+                        )}
+                      </TableCell>
                       <TableCell className="text-sm">{member.familyType}</TableCell>
                       <TableCell className="text-sm">{member.identification}</TableCell>
                       <TableCell className="text-sm">{member.identificationType}</TableCell>
