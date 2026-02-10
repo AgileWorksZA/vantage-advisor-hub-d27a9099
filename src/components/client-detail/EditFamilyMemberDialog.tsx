@@ -296,7 +296,7 @@ const EditFamilyMemberDialog = ({
         }
       } catch (error: any) {
         console.error("Error loading family member data:", error);
-        toast.error("Failed to load family member data");
+        toast.error("Failed to load household member data");
       } finally {
         setIsLoading(false);
       }
@@ -385,12 +385,12 @@ const EditFamilyMemberDialog = ({
         if (clientError) throw clientError;
       }
 
-      toast.success("Family member updated successfully");
+      toast.success("Household member updated successfully");
       onOpenChange(false);
       onSuccess();
     } catch (error: any) {
       console.error("Error updating family member:", error);
-      toast.error(error.message || "Failed to update family member");
+      toast.error(error.message || "Failed to update household member");
     } finally {
       setIsSubmitting(false);
     }
@@ -400,7 +400,7 @@ const EditFamilyMemberDialog = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Edit Family Member</DialogTitle>
+          <DialogTitle>Edit Household Member</DialogTitle>
         </DialogHeader>
 
         {isLoading ? (
@@ -451,7 +451,7 @@ const EditFamilyMemberDialog = ({
                         name="family_type"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Family Type</FormLabel>
+                            <FormLabel>Household Type</FormLabel>
                             <Select onValueChange={field.onChange} value={field.value}>
                               <FormControl>
                                 <SelectTrigger>

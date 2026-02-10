@@ -223,13 +223,13 @@ const AddFamilyMemberDialog = ({ open, onOpenChange, clientId, onSuccess }: AddF
         // Don't throw - primary relationship was created successfully
       }
 
-      toast.success("Family member added successfully");
+      toast.success("Household member added successfully");
       form.reset();
       onOpenChange(false);
       onSuccess();
     } catch (error: any) {
       console.error("Error adding family member:", error);
-      toast.error(error.message || "Failed to add family member");
+      toast.error(error.message || "Failed to add household member");
     } finally {
       setIsSubmitting(false);
     }
@@ -240,7 +240,7 @@ const AddFamilyMemberDialog = ({ open, onOpenChange, clientId, onSuccess }: AddF
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add Family Member</DialogTitle>
+          <DialogTitle>Add Household Member</DialogTitle>
         </DialogHeader>
         
         <Form {...form}>
@@ -454,7 +454,7 @@ const AddFamilyMemberDialog = ({ open, onOpenChange, clientId, onSuccess }: AddF
                 disabled={isSubmitting}
                 className="bg-[hsl(180,70%,45%)] hover:bg-[hsl(180,70%,40%)]"
               >
-                {isSubmitting ? "Adding..." : "Add Family Member"}
+                {isSubmitting ? "Adding..." : "Add Household Member"}
               </Button>
             </div>
           </form>

@@ -44,6 +44,7 @@ interface ClientRibbonProps {
   client: Client;
   clientName: string;
   relatedEntities: RelatedEntity[];
+  onTabChange?: (tab: string) => void;
 }
 
 const getProfileTypeBadgeClass = (profileType: string) => {
@@ -77,7 +78,7 @@ const formatRibbonName = (client: Client): string => {
   return `${client.surname}, ${initial} (${displayName})`;
 };
 
-const ClientRibbon = ({ client, clientName, relatedEntities }: ClientRibbonProps) => {
+const ClientRibbon = ({ client, clientName, relatedEntities, onTabChange }: ClientRibbonProps) => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [isExpanded, setIsExpanded] = useState(false);
@@ -184,6 +185,14 @@ const ClientRibbon = ({ client, clientName, relatedEntities }: ClientRibbonProps
                 <div className="flex items-center gap-1.5 text-sm font-medium">
                   <UserRound className="w-4 h-4 text-muted-foreground shrink-0" />
                   <span>{formatRibbonName(client)}</span>
+                  {client.household_group?.includes(client.surname) && (
+                    <Badge
+                      variant="outline"
+                      className="border-amber-500 text-amber-600 bg-transparent dark:text-amber-400 dark:border-amber-400 text-[10px] px-1.5 py-0"
+                    >
+                      Main Member
+                    </Badge>
+                  )}
                 </div>
                 <span className="text-muted-foreground">|</span>
                 <span className="text-sm text-muted-foreground">
@@ -202,13 +211,14 @@ const ClientRibbon = ({ client, clientName, relatedEntities }: ClientRibbonProps
                 >
                   {client.profile_state}
                 </Badge>
-                {client.family_group && (
+                {client.household_group && (
                   <Badge
                     variant="outline"
-                    className="border-purple-500 text-purple-600 bg-transparent dark:text-purple-400 dark:border-purple-400"
+                    className="border-purple-500 text-purple-600 bg-transparent dark:text-purple-400 dark:border-purple-400 cursor-pointer hover:bg-purple-50 dark:hover:bg-purple-900/20"
+                    onClick={() => onTabChange?.("relationships")}
                   >
                     <Users className="w-3 h-3 mr-1" />
-                    {client.family_group}
+                    {client.household_group}
                   </Badge>
                 )}
               </div>
