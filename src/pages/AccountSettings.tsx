@@ -34,15 +34,12 @@ import {
   Loader2,
   Eye,
   EyeOff,
-  Check,
-  Settings2,
 } from "lucide-react";
 import commandCenterIcon from "@/assets/command-center-icon.png";
 import vantageLogo from "@/assets/vantage-logo.png";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { useUserSettings } from "@/hooks/useUserSettings";
 import { useRegion } from "@/contexts/RegionContext";
-import { regions } from "@/components/dashboard/RegionSelector";
 import { COMMON_TIMEZONES, getActiveTimezone, getTimezoneAbbreviation } from "@/lib/timezone-utils";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
@@ -69,7 +66,6 @@ const passwordSchema = z
   .regex(/[0-9]/, "Must contain a number");
 
 const settingsSections = [
-  { id: "setup", label: "User Setup", icon: Settings2 },
   { id: "profile", label: "Profile", icon: UserIcon },
   { id: "security", label: "Security", icon: Shield },
   { id: "timezone", label: "Timezone & Regional", icon: Globe },
@@ -84,7 +80,7 @@ const AccountSettings = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [activeSection, setActiveSection] = useState("profile");
-  const { selectedRegion, setSelectedRegion, regionalData, selectedAdvisors, setSelectedAdvisors, isJurisdictionRestricted } = useRegion();
+  const { selectedRegion } = useRegion();
   const { settings, isLoading: settingsLoading, upsertSettings } = useUserSettings();
 
   // Profile state
@@ -301,102 +297,6 @@ const AccountSettings = () => {
 
             {/* Content Area */}
             <div className="flex-1 max-w-2xl">
-              {/* User Setup Section */}
-              {activeSection === "setup" && (
-                <div className="space-y-6">
-                  {/* Jurisdiction Card */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg text-[hsl(180,70%,45%)] flex items-center gap-2">
-                        <Globe className="w-5 h-5" />
-                        Jurisdiction
-                        {isJurisdictionRestricted && (
-                          <span className="text-xs text-muted-foreground font-normal italic ml-2">(restricted)</span>
-                        )}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-1">
-                      {regions.map((region) => (
-                        <button
-                          key={region.code}
-                          disabled={isJurisdictionRestricted}
-                          onClick={() => setSelectedRegion(region.code)}
-                          className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm rounded-md transition-colors ${
-                            isJurisdictionRestricted ? "opacity-60 cursor-not-allowed" : "hover:bg-muted/50"
-                          } ${selectedRegion === region.code ? "bg-muted" : ""}`}
-                        >
-                          <img
-                            src={`https://flagcdn.com/w40/${region.flagCode}.png`}
-                            srcSet={`https://flagcdn.com/w80/${region.flagCode}.png 2x`}
-                            alt={`${region.name} flag`}
-                            className="object-contain"
-                            style={{ height: 18, width: 'auto' }}
-                          />
-                          <span className="flex-1 text-left">{region.name}</span>
-                          {selectedRegion === region.code && (
-                            <Check className="h-4 w-4 text-primary" />
-                          )}
-                        </button>
-                      ))}
-                    </CardContent>
-                  </Card>
-
-                  {/* Advisor Filter Card */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg text-[hsl(180,70%,45%)] flex items-center gap-2">
-                        <Users className="w-5 h-5" />
-                        Advisors
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-1">
-                      {/* Toggle All */}
-                      <button
-                        onClick={() => {
-                          const allInitials = regionalData.advisors.map(a => a.initials);
-                          const allSelected = allInitials.every(i => selectedAdvisors.includes(i));
-                          setSelectedAdvisors(allSelected ? [] : allInitials);
-                        }}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm rounded-md transition-colors hover:bg-muted/50"
-                      >
-                        <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center">
-                          <Users className="h-3.5 w-3.5 text-muted-foreground" />
-                        </div>
-                        <span className="flex-1 text-left font-medium">
-                          {regionalData.advisors.every(a => selectedAdvisors.includes(a.initials)) ? "Deselect All" : "Select All"}
-                        </span>
-                        {regionalData.advisors.every(a => selectedAdvisors.includes(a.initials)) && (
-                          <Check className="h-4 w-4 text-primary" />
-                        )}
-                      </button>
-                      {regionalData.advisors.map((advisor) => {
-                        const isSelected = selectedAdvisors.includes(advisor.initials);
-                        return (
-                          <button
-                            key={advisor.initials}
-                            onClick={() => {
-                              setSelectedAdvisors(
-                                isSelected
-                                  ? selectedAdvisors.filter(i => i !== advisor.initials)
-                                  : [...selectedAdvisors, advisor.initials]
-                              );
-                            }}
-                            className="w-full flex items-center gap-3 px-3 py-2.5 text-sm rounded-md transition-colors hover:bg-muted/50"
-                          >
-                            <div className="h-7 w-7 rounded-full bg-[hsl(var(--sidebar-primary))] flex items-center justify-center text-[10px] font-bold text-primary-foreground">
-                              {advisor.initials}
-                            </div>
-                            <span className="flex-1 text-left">{advisor.name}</span>
-                            {isSelected && (
-                              <Check className="h-4 w-4 text-primary" />
-                            )}
-                          </button>
-                        );
-                      })}
-                    </CardContent>
-                  </Card>
-                </div>
-              )}
 
               {/* Profile Section */}
               {activeSection === "profile" && (
