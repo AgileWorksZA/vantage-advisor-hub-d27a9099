@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CalendarDays, Users, CheckSquare, BarChart3, Sparkles, Bell, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,10 @@ const tabs: { id: MobileTab; label: string; icon: typeof CalendarDays }[] = [
 const MobileAppContent = () => {
   const [activeTab, setActiveTab] = useState<MobileTab>("today");
   const [showSettings, setShowSettings] = useState(false);
+  const [voiceMemoVisible, setVoiceMemoVisible] = useState(() => {
+    const stored = localStorage.getItem("vantage-voice-memo-visible");
+    return stored !== "false";
+  });
   const [mobileNotifications, setMobileNotifications] = useState<Array<{id: string; type: string; title: string; description: string; isRead: boolean; date: string; link?: string}>>([]);
 
   const handleNotification = (n: { type: string; title: string; description: string; link?: string }) => {
@@ -34,6 +38,14 @@ const MobileAppContent = () => {
       date: new Date().toISOString().split("T")[0],
     }, ...prev]);
   };
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      setVoiceMemoVisible((e as CustomEvent).detail.visible);
+    };
+    window.addEventListener("voice-memo-toggle", handler);
+    return () => window.removeEventListener("voice-memo-toggle", handler);
+  }, []);
 
   const unreadNotifCount = 3 + mobileNotifications.filter(n => !n.isRead).length;
 
@@ -56,6 +68,7 @@ const MobileAppContent = () => {
     return (
       <div className="relative w-full h-full flex flex-col bg-background">
         <MobileSettingsMenu onBack={() => setShowSettings(false)} />
+        {voiceMemoVisible && <MobileVoiceMemo />}
       </div>
     );
   }
@@ -98,7 +111,7 @@ const MobileAppContent = () => {
       </main>
 
       {/* Voice Memo FAB */}
-      <MobileVoiceMemo />
+      {voiceMemoVisible && <MobileVoiceMemo />}
 
       {/* Bottom Tab Bar */}
       <nav className="sticky bottom-0 z-10 flex items-center justify-around h-14 bg-background border-t border-border shrink-0">
