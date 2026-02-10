@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, Settings, LogOut, Moon, Sun, Sparkles, Monitor, Smartphone, Globe, Users } from "lucide-react";
+import { ArrowLeft, Settings, LogOut, Moon, Sun, Sparkles, Monitor, Smartphone, Globe, Users, Mic } from "lucide-react";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -11,6 +11,7 @@ import { regions } from "@/components/dashboard/RegionSelector";
 import { supabase } from "@/integrations/supabase/client";
 
 const AI_CHAT_STORAGE_KEY = "vantage-ai-chat-enabled";
+const VOICE_MEMO_STORAGE_KEY = "vantage-voice-memo-visible";
 
 interface MobileSettingsMenuProps {
   onBack: () => void;
@@ -26,6 +27,10 @@ const MobileSettingsMenu = ({ onBack }: MobileSettingsMenuProps) => {
   const [userEmail, setUserEmail] = useState("");
   const [aiChatEnabled, setAiChatEnabled] = useState(() => {
     const stored = localStorage.getItem(AI_CHAT_STORAGE_KEY);
+    return stored !== "false";
+  });
+  const [voiceMemoVisible, setVoiceMemoVisible] = useState(() => {
+    const stored = localStorage.getItem(VOICE_MEMO_STORAGE_KEY);
     return stored !== "false";
   });
 
@@ -68,6 +73,15 @@ const MobileSettingsMenu = ({ onBack }: MobileSettingsMenuProps) => {
     localStorage.setItem(AI_CHAT_STORAGE_KEY, String(newValue));
     window.dispatchEvent(
       new CustomEvent("ai-chat-toggle", { detail: { enabled: newValue } })
+    );
+  };
+
+  const toggleVoiceMemo = () => {
+    const newValue = !voiceMemoVisible;
+    setVoiceMemoVisible(newValue);
+    localStorage.setItem(VOICE_MEMO_STORAGE_KEY, String(newValue));
+    window.dispatchEvent(
+      new CustomEvent("voice-memo-toggle", { detail: { visible: newValue } })
     );
   };
 
@@ -225,6 +239,18 @@ const MobileSettingsMenu = ({ onBack }: MobileSettingsMenuProps) => {
             <Switch
               checked={aiChatEnabled}
               onCheckedChange={toggleAiChat}
+              className="pointer-events-none"
+            />
+          </button>
+          <button
+            onClick={toggleVoiceMemo}
+            className="w-full flex items-center gap-3 px-4 py-3 text-sm transition-colors hover:bg-muted/50 active:bg-muted"
+          >
+            <Mic className="h-4 w-4 text-muted-foreground" />
+            <span className="flex-1 text-left">Voice Memo Button</span>
+            <Switch
+              checked={voiceMemoVisible}
+              onCheckedChange={toggleVoiceMemo}
               className="pointer-events-none"
             />
           </button>
