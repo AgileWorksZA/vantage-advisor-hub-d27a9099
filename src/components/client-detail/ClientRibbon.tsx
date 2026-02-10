@@ -11,6 +11,7 @@ import {
   Phone,
   Mail,
   Hash,
+  Users,
 } from "lucide-react";
 import {
   Select,
@@ -201,6 +202,15 @@ const ClientRibbon = ({ client, clientName, relatedEntities }: ClientRibbonProps
                 >
                   {client.profile_state}
                 </Badge>
+                {client.family_group && (
+                  <Badge
+                    variant="outline"
+                    className="border-purple-500 text-purple-600 bg-transparent dark:text-purple-400 dark:border-purple-400"
+                  >
+                    <Users className="w-3 h-3 mr-1" />
+                    {client.family_group}
+                  </Badge>
+                )}
               </div>
 
               {/* Bottom line: ID, phone, email */}
