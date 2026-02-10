@@ -1,12 +1,14 @@
-import { useMemo } from "react";
-import { useCalendarEvents } from "@/hooks/useCalendarEvents";
+import { useState, useMemo } from "react";
+import { useCalendarEvents, CalendarEvent } from "@/hooks/useCalendarEvents";
 import { useTasks } from "@/hooks/useTasks";
 import { useClients } from "@/hooks/useClients";
 import { useRegion } from "@/contexts/RegionContext";
 import { Clock, CheckSquare, AlertTriangle, Calendar } from "lucide-react";
 import { format, isToday, isBefore, startOfDay } from "date-fns";
+import MobileMeetingScreen from "./MobileMeetingScreen";
 
 const MobileTodayTab = () => {
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const today = useMemo(() => new Date(), []);
   const { events, loading: eventsLoading } = useCalendarEvents(today, "day");
   const { tasks, loading: tasksLoading } = useTasks();
@@ -47,6 +49,10 @@ const MobileTodayTab = () => {
   }, [filteredTasks, today]);
 
   const isLoading = eventsLoading || tasksLoading || clientsLoading;
+
+  if (selectedEvent) {
+    return <MobileMeetingScreen event={selectedEvent} onBack={() => setSelectedEvent(null)} />;
+  }
 
   return (
     <div className="p-4 space-y-5">
@@ -99,9 +105,10 @@ const MobileTodayTab = () => {
         ) : (
           <div className="space-y-2">
             {todayEvents.map((event) => (
-              <div
+              <button
                 key={event.id}
-                className="flex items-start gap-3 p-3 rounded-lg bg-card border border-border"
+                onClick={() => setSelectedEvent(event)}
+                className="w-full flex items-start gap-3 p-3 rounded-lg bg-card border border-border text-left hover:bg-accent/50 transition-colors"
               >
                 <div
                   className="w-1 self-stretch rounded-full shrink-0"
@@ -122,7 +129,7 @@ const MobileTodayTab = () => {
                 <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground shrink-0">
                   {event.eventType}
                 </span>
-              </div>
+              </button>
             ))}
           </div>
         )}
