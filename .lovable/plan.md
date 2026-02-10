@@ -1,69 +1,54 @@
 
 
-## Seed Calendar Events for All Advisors Across Jurisdictions
+## Seed Open Tasks for All Advisors
 
 ### Overview
-Create a new backend function `seed-calendar-events` that populates 20 meetings/calls per advisor per day across all 25 advisors (5 jurisdictions x 5 advisors) for 30 days starting today. Events will be linked to randomly selected clients belonging to each advisor. This generates approximately **15,000 calendar events** (25 advisors x 20 events/day x 30 days).
+Create a new edge function `seed-open-tasks` that generates 3-5 open tasks per advisor across all jurisdictions. These tasks will have "Not Started" or "In Progress" status with due dates near today, ensuring they appear in the mobile "Open Tasks" section.
 
-### New File: `supabase/functions/seed-calendar-events/index.ts`
+### New File: `supabase/functions/seed-open-tasks/index.ts`
 
-The edge function will:
+The function will:
 
-1. **Authenticate** the calling user and use their `user_id` for all inserted events
-2. **Query existing clients** grouped by advisor name
-3. **Delete existing seeded events** (to make the function idempotent) by removing events in the target date range before re-inserting
-4. **Generate 20 events per advisor per day** for 30 days (today through today + 29):
-   - Randomly select from client-linked event types: `Meeting`, `Annual Review`, `Portfolio Review`, `Compliance Review`, `Client Call`
-   - Schedule events between 7:00 AM and 9:00 PM in the advisor's jurisdiction timezone
-   - Duration: 30-90 minutes (randomized)
-   - Assign a random client from that advisor's book
-   - Set timezone per the jurisdiction default (e.g., `Africa/Johannesburg` for ZA, `Australia/Sydney` for AU)
-   - Set appropriate color values matching existing scheme
-   - Past events (before now) get status `Completed`; future events get `Scheduled`
-   - Generate realistic meeting titles (e.g., "Portfolio Review - Sarah Mitchell", "Annual Review - James Chen")
-   - Set location to a mix of "Office", "Zoom", "Client Premises", or null
-
-5. **Insert in batches** of 100 for performance
+1. **Authenticate** the calling user
+2. **Fetch team members** grouped by jurisdiction to get all advisor names
+3. **Fetch clients** and group by advisor name
+4. **Generate 3-5 tasks per advisor** with:
+   - Status: randomly "Not Started" or "In Progress" (never Completed/Cancelled so they show as open)
+   - Priority: mix of Medium, High, and Urgent
+   - Due dates: today through next 7 days (keeps them visible and relevant)
+   - Task types: varied from the existing enum (Follow-up, Portfolio Review, Annual Review, etc.)
+   - Linked to a random client from that advisor's book
+   - `assigned_to_name` set to the advisor's name
+5. **Insert in a single batch** (small dataset, ~75-125 tasks total for 25 advisors)
+6. **Create task_clients links** for each task
 
 ### Configuration
 
 Add to `supabase/config.toml`:
-```toml
-[functions.seed-calendar-events]
+```
+[functions.seed-open-tasks]
 verify_jwt = false
 ```
 
-### Data Generation Details
-
-**Timezone mapping (reuse from existing code):**
-| Jurisdiction | Timezone |
-|-------------|----------|
-| ZA | Africa/Johannesburg |
-| AU | Australia/Sydney |
-| CA | America/Toronto |
-| GB | Europe/London |
-| US | America/New_York |
-
-**Event type distribution and colors:**
-| Type | Weight | Color |
-|------|--------|-------|
-| Meeting | 35% | hsl(180,70%,45%) (teal) |
-| Client Call | 25% | hsl(171,70%,45%) (teal-400) |
-| Portfolio Review | 15% | hsl(270,60%,60%) (purple-400) |
-| Annual Review | 15% | hsl(270,70%,55%) (purple-500) |
-| Compliance Review | 10% | hsl(38,90%,55%) (amber-500) |
-
-**Time slot generation:** Events are spread across 7 AM - 9 PM (14 hours) with 20 events per day. A simple approach: divide the day into 20 roughly equal slots with small random offsets to avoid perfect alignment.
-
 ### Frontend Trigger
 
-Add a "Seed Calendar" button to the existing seeding UI or call the function from the Administration page, following the same pattern used by `seed-demo-clients`.
+Add a "Seed Open Tasks" button in `SystemSettingsSection.tsx` following the same pattern as the existing seed buttons.
+
+### Task Templates (subset for open tasks)
+
+| Type | Example Title |
+|------|--------------|
+| Follow-up | "Follow up on pending client documentation" |
+| Portfolio Review | "Quarterly investment review meeting" |
+| Annual Review | "Annual portfolio performance review" |
+| Compliance | "KYC documentation update" |
+| Document Request | "Request tax certificate" |
 
 ### Files Summary
 
 | File | Action |
 |------|--------|
-| `supabase/functions/seed-calendar-events/index.ts` | Create -- edge function to seed events |
+| `supabase/functions/seed-open-tasks/index.ts` | Create -- edge function |
 | `supabase/config.toml` | Update -- add function config |
-| Frontend trigger (Administration or existing seed UI) | Update -- add button to invoke the function |
+| `src/components/administration/system/SystemSettingsSection.tsx` | Update -- add trigger button |
 
