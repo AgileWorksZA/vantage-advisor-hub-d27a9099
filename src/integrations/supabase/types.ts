@@ -3610,6 +3610,33 @@ export type Database = {
           },
         ]
       }
+      task_type_standards: {
+        Row: {
+          created_at: string
+          id: string
+          sla_hours: number
+          standard_execution_minutes: number
+          task_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          sla_hours?: number
+          standard_execution_minutes?: number
+          task_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          sla_hours?: number
+          standard_execution_minutes?: number
+          task_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       tasks: {
         Row: {
           actual_hours: number | null
@@ -3638,6 +3665,7 @@ export type Database = {
           sla_deadline: string | null
           source: string | null
           source_reference: string | null
+          standard_execution_minutes: number | null
           status: Database["public"]["Enums"]["task_status"]
           subcategory: string | null
           tags: string[] | null
@@ -3675,6 +3703,7 @@ export type Database = {
           sla_deadline?: string | null
           source?: string | null
           source_reference?: string | null
+          standard_execution_minutes?: number | null
           status?: Database["public"]["Enums"]["task_status"]
           subcategory?: string | null
           tags?: string[] | null
@@ -3712,6 +3741,7 @@ export type Database = {
           sla_deadline?: string | null
           source?: string | null
           source_reference?: string | null
+          standard_execution_minutes?: number | null
           status?: Database["public"]["Enums"]["task_status"]
           subcategory?: string | null
           tags?: string[] | null

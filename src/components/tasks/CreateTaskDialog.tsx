@@ -37,6 +37,7 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useTaskTypes } from "@/hooks/useTaskTypes";
 import { useClients } from "@/hooks/useClients";
+import { useTaskTypeStandards } from "@/hooks/useTaskTypeStandards";
 import { EnhancedTask } from "@/hooks/useTasksEnhanced";
 
 interface CreateTaskDialogProps {
@@ -48,6 +49,7 @@ interface CreateTaskDialogProps {
 export function CreateTaskDialog({ open, onClose, onCreate }: CreateTaskDialogProps) {
   const { taskTypes, taskStatuses, taskPriorities, taskCategories } = useTaskTypes();
   const { clients } = useClients();
+  const { getStandardForType } = useTaskTypeStandards();
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -83,6 +85,11 @@ export function CreateTaskDialog({ open, onClose, onCreate }: CreateTaskDialogPr
 
     setIsSubmitting(true);
     try {
+      const standard = getStandardForType(taskType);
+      const slaDeadline = standard
+        ? new Date(Date.now() + standard.sla_hours * 60 * 60 * 1000).toISOString()
+        : undefined;
+
       await onCreate(
         {
           title,
@@ -93,7 +100,9 @@ export function CreateTaskDialog({ open, onClose, onCreate }: CreateTaskDialogPr
           category: category || undefined,
           due_date: dueDate?.toISOString().split("T")[0],
           client_id: selectedClients[0] || undefined,
-        },
+          standard_execution_minutes: standard?.standard_execution_minutes,
+          sla_deadline: slaDeadline,
+        } as Partial<EnhancedTask>,
         selectedClients
       );
       handleClose();
