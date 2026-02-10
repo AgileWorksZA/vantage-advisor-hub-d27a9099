@@ -1,125 +1,89 @@
 
-## Mobile Meeting Screen with 4-Step Progress Workflow
 
-### Overview
-When a user taps any item under "Today's Schedule" in the mobile Today tab, a full-screen meeting detail view opens with a time-stamped progress bar showing 4 steps: **Prep**, **Meet**, **Outcomes**, and **Follow-ups**. The default active step is determined by the meeting's current state relative to the current time.
+## Enhance Mobile Today Tab with Date Picker, Task Filters, and Task Detail View
 
-### Meeting Step Logic
-- **Before meeting start time** -- default to **Prep**
-- **During meeting window** (between start and end time) -- default to **Meet**
-- **After meeting end time** -- default to **Outcomes**
-- **If outcomes have been reviewed** -- default to **Follow-ups**
+### 1. Date Picker for Schedule Section
 
-### New Files to Create
+**File: `src/components/mobile/MobileTodayTab.tsx`**
 
-#### 1. `src/components/mobile/MobileMeetingScreen.tsx`
-Main container with:
-- Back button header showing meeting title
-- Client name and time range
-- Horizontal 4-step progress bar with timestamps (colored active/completed steps, muted future steps)
-- Renders the active step's content below the progress bar
+Add a calendar icon button next to the "Today's Schedule" heading that opens a date picker popover using the existing `Calendar` and `Popover` components.
 
-#### 2. `src/components/mobile/meeting-steps/MeetingProgressBar.tsx`
-Reusable progress bar component:
-- 4 circular step indicators connected by lines
-- Each step shows its label and the relevant timestamp (e.g., "Prep" with "T-30min", "Meet" with the start time)
-- Completed steps: teal filled circle with checkmark
-- Active step: teal ring with pulse animation
-- Future steps: muted outline
+- Add `selectedDate` state (defaults to today)
+- Replace the hardcoded `today` reference in `useCalendarEvents(selectedDate, "day")` so events reload for the chosen date
+- Update the section heading to show "Today's Schedule" when the selected date is today, otherwise show the formatted date (e.g., "Schedule for 12 Feb 2025")
+- Update the greeting section to reflect the selected date
+- Update the "No meetings scheduled" empty state text to reflect the selected date
+- The Calendar component inside the Popover allows month/year navigation out of the box via react-day-picker
+- Add `pointer-events-auto` to the Calendar className for popover interactivity
+- Filter events by the selected date using `isSameDay` instead of `isToday`
 
-#### 3. `src/components/mobile/meeting-steps/PrepStep.tsx`
-AI-generated prep note outlining:
-- **Previous Engagements**: Recent notes and communications fetched via `useClientMeetingPrep`, each rendered with clickable tags (e.g., `[Note]`, `[Email]`, `[Call]`) that navigate to a detail view
-- **Transactions**: Active products with current values, tagged with `[Product]` badges
-- **Opportunities for Growth**: Revenue opportunities with `[Opportunity]` tags
-- **Outstanding Actions**: Open tasks and documents with `[Task]` / `[Document]` tags
-- **Recommended Actions** section at the bottom with "Convert to Task" buttons
+### 2. Task Status Filter
 
-#### 4. `src/components/mobile/meeting-steps/MeetStep.tsx`
-During-meeting view:
-- Meeting timer showing elapsed time
-- Quick-note input field for live jotting
-- Key talking points derived from prep data (displayed as tags)
-- "Record Meeting" button (links to existing recording infrastructure)
-- Recommended actions bar at the bottom
+**File: `src/components/mobile/MobileTodayTab.tsx`**
 
-#### 5. `src/components/mobile/meeting-steps/OutcomesStep.tsx`
-Post-meeting outcomes:
-- AI summary section (if recording/transcription exists, shown from `useMeetingRecordings`)
-- Decisions made list with tags
-- Key topics as badge tags
-- Client facts/insights
-- Each item has a "Convert to Task" action button
+Add a filter icon (from lucide-react) next to the "Open Tasks" heading that opens a dropdown/popover with status options.
 
-#### 6. `src/components/mobile/meeting-steps/FollowUpsStep.tsx`
-Follow-up management:
-- Action items list with priority badges and "Create Task" buttons
-- Tagged outstanding actions with status update buttons
-- Tagged opportunities with "Create Follow-up" buttons
-- Suggested follow-up date
-- Summary of all tasks created from this meeting
+- Add `taskStatusFilter` state defaulting to `"open"`
+- Filter options: "Open" (default -- excludes Completed/Cancelled), "All", "Completed", "In Progress", "Not Started", "Pending Client"
+- Update the task list filtering logic based on the selected status
+- Update the heading to show the count for the filtered set
+- Use a Popover with a list of radio-style options for the filter
 
-#### 7. `src/components/mobile/meeting-steps/MobileContextDetailView.tsx`
-Mobile detail views for context items when tags are tapped:
-- **Note detail**: Subject, date, priority, interaction type, full content
-- **Communication detail**: Subject, channel, date, preview
-- **Task detail**: Title, type, priority, status, due date, description
-- **Document detail**: Name, status, expiry date, category
-- **Product detail**: Name, category, current value, status
-- **Opportunity detail**: Type, potential revenue, confidence, suggested action, reasoning
+### 3. Task Detail View
 
-Each detail view has a back button and a "Convert to Task" action where applicable.
+**File: `src/components/mobile/MobileTodayTab.tsx`**
 
-### Changes to Existing Files
+Create a new component `MobileTaskDetailView.tsx` that renders when a task row is tapped.
 
-#### `src/components/mobile/MobileTodayTab.tsx`
-- Add `onClick` handler to each schedule item that sets a `selectedEvent` state
-- When an event is selected, render `MobileMeetingScreen` instead of the Today tab content
-- Pass the event data and a `onBack` callback
+**New File: `src/components/mobile/MobileTaskDetailView.tsx`**
 
-### Data Flow
-- **Prep step** uses the existing `useClientMeetingPrep(clientId)` hook to fetch notes, communications, tasks, documents, opportunities, and products
-- **Meet step** shows prep-derived talking points and a timer
-- **Outcomes step** uses `useMeetingRecordings` filtered by the event to show AI summaries
-- **Follow-ups step** reuses the `ActionItemsList` pattern for task creation from action items
+A full-screen mobile view showing:
+- Back button header with task title
+- Status badge and priority badge
+- Client name
+- Task type
+- Due date (with overdue indicator if applicable)
+- Description (if available)
+- Assigned to
+- Created date
+- Action buttons: "Mark Complete" toggle
+
+Wire up task row clicks in MobileTodayTab to set a `selectedTask` state, rendering the detail view when set.
 
 ### Technical Details
 
-**Progress bar step detection:**
+**Date picker pattern (using existing shadcn components):**
 ```text
-function getActiveStep(event):
-  now = new Date()
-  if now < event.startTime:  return "prep"
-  if now <= event.endTime:   return "meet"
-  if no outcomes reviewed:   return "outcomes"
-  return "follow-ups"
+<Popover>
+  <PopoverTrigger>
+    <CalendarIcon />
+  </PopoverTrigger>
+  <PopoverContent>
+    <Calendar
+      mode="single"
+      selected={selectedDate}
+      onSelect={setSelectedDate}
+      className="pointer-events-auto"
+    />
+  </PopoverContent>
+</Popover>
 ```
 
-**Tag navigation pattern:**
+**Task status filter pattern:**
 ```text
-// Each tag is a clickable Badge that sets a detail view state
-<Badge onClick={() => setDetailView({ type: "note", id: note.id })}>
-  Note
-</Badge>
+const statusOptions = ["open", "all", "completed", "in-progress", "not-started", "pending-client"];
 
-// When detailView is set, render MobileContextDetailView
-// with a back button to return to the step
-```
-
-**Recommended actions pattern (used across all steps):**
-```text
-// Each step surfaces contextual recommended actions
-// e.g., Prep: "Review expiring documents", "Discuss consolidation opportunity"
-// Actions have a "+" button to convert into a task via useTasks().createTask()
+// Filter logic
+switch (taskStatusFilter) {
+  case "open": exclude Completed + Cancelled
+  case "all": show everything
+  case "completed": only Completed
+  case "in-progress": only In Progress
+  // etc.
+}
 ```
 
 | File | Action |
 |------|--------|
-| `src/components/mobile/MobileMeetingScreen.tsx` | Create - main meeting container |
-| `src/components/mobile/meeting-steps/MeetingProgressBar.tsx` | Create - 4-step progress bar |
-| `src/components/mobile/meeting-steps/PrepStep.tsx` | Create - AI prep note with tagged context |
-| `src/components/mobile/meeting-steps/MeetStep.tsx` | Create - live meeting view |
-| `src/components/mobile/meeting-steps/OutcomesStep.tsx` | Create - post-meeting outcomes |
-| `src/components/mobile/meeting-steps/FollowUpsStep.tsx` | Create - follow-up management |
-| `src/components/mobile/meeting-steps/MobileContextDetailView.tsx` | Create - detail views for tagged items |
-| `src/components/mobile/MobileTodayTab.tsx` | Modify - add event tap navigation |
+| `src/components/mobile/MobileTodayTab.tsx` | Add date picker, task status filter, task tap handler |
+| `src/components/mobile/MobileTaskDetailView.tsx` | Create - full-screen task detail view |
