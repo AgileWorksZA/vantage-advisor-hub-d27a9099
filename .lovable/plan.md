@@ -1,39 +1,38 @@
 
 
-## Move Jurisdiction & Advisor Selection to Account Settings
+## Move Jurisdiction & Advisor Settings to Mobile-Only with Scoped Context
 
 ### Overview
 
-Remove the jurisdiction and advisor selection sections from the mobile Settings menu and add them as a new "User Setup" section in the Account Settings page, accessible from both web and mobile.
+Remove the "User Setup" section from the web Account Settings page and add jurisdiction/advisor selection back into the mobile Settings menu. Crucially, changes made in mobile settings will only affect the mobile tabs (Today, Clients, Tasks, Insights, AI) -- they won't alter the web view's region or advisor filters.
+
+### How It Works
+
+The mobile app will get its own independent `RegionContext` provider that wraps all mobile content. This means when `useRegion()` is called inside any mobile tab or settings screen, it reads/writes mobile-specific state (stored under separate localStorage keys). The web app's global region and advisor selections remain untouched.
 
 ### Changes
 
-**File: `src/pages/AccountSettings.tsx`**
-
-1. Add a new settings section entry in the `settingsSections` array:
-   ```
-   { id: "setup", label: "User Setup", icon: Globe }
-   ```
-   Position it as the first item so it's prominent.
-
-2. Import `regions` from `@/components/dashboard/RegionSelector` and additional icons (`Check`, `Users` -- already has `Users` imported as icon).
-
-3. Pull `selectedRegion`, `setSelectedRegion`, `regionalData`, `selectedAdvisors`, `setSelectedAdvisors`, `isJurisdictionRestricted` from `useRegion()` (already partially imported).
-
-4. Add a new `activeSection === "setup"` block rendering:
-   - **Jurisdiction Card**: Lists the 5 regions with flag images and checkmarks, calls `setSelectedRegion` on tap. Disabled with a note when `isJurisdictionRestricted`.
-   - **Advisor Filter Card**: Lists advisors for the current region with initials badges. Includes a "Select All / Deselect All" toggle. Tapping toggles individual advisors via `setSelectedAdvisors`.
-
-**File: `src/components/mobile/MobileSettingsMenu.tsx`**
-
-5. Remove the Jurisdiction Selector section (the `border-b` block with Globe icon and region list).
-6. Remove the Advisor Filter section (the `border-b` block with Users icon and advisor list).
-7. Remove now-unused imports: `Globe`, `Users`, `Check`, `regions` from RegionSelector, and the `useRegion` destructured properties that are no longer used locally (`regionalData`, `selectedAdvisors`, `setSelectedAdvisors`, `isJurisdictionRestricted`). Keep `selectedRegion` and `setSelectedRegion` only if still used elsewhere in the file (they are not after removal), so clean those too.
-
-### Summary
-
 | File | Action |
 |------|--------|
-| `src/pages/AccountSettings.tsx` | Add "User Setup" section with jurisdiction & advisor selectors |
-| `src/components/mobile/MobileSettingsMenu.tsx` | Remove jurisdiction & advisor sections and unused imports |
+| `src/contexts/RegionContext.tsx` | Export the raw `RegionContext` so it can be re-provided |
+| `src/contexts/MobileRegionProvider.tsx` | **New file** -- a lightweight provider that supplies mobile-scoped region/advisor state using the same `RegionContext`, with its own localStorage keys (`vantage-mobile-region`, `vantage-mobile-advisor-selections`) |
+| `src/components/mobile/MobileApp.tsx` | Wrap entire component tree with `MobileRegionProvider` |
+| `src/components/mobile/MobileSettingsMenu.tsx` | Add back jurisdiction selector (flags + checkmarks) and advisor multi-select filter, styled for mobile layout |
+| `src/pages/AccountSettings.tsx` | Remove the "User Setup" section (id `"setup"`) from `settingsSections` array, remove the `activeSection === "setup"` rendering block, and clean up unused imports |
 
+### Technical Details
+
+**MobileRegionProvider** (`src/contexts/MobileRegionProvider.tsx`):
+- Provides the same `RegionContextType` interface as the global provider
+- Uses independent localStorage keys so mobile and web don't interfere
+- Includes all derived values: `regionalData`, `filteredRegionalData`, `currencySymbol`, `formatCurrency`, `opportunities`
+- Reuses helper functions (`getRegionalData`, `getFilteredRegionalData`, `getRegionalOpportunities`) from `regionalData.ts`
+- Defaults to "ZA" with all advisors selected, same as the global provider
+
+**MobileSettingsMenu** additions:
+- Jurisdiction section: flag icons with country names, checkmark on selected, calls `setSelectedRegion` from context
+- Advisor section: initials badges with full names, "Select All / Deselect All" toggle, checkmarks on selected advisors
+- Both sections appear between the user info block and the existing menu items (Dark Mode, AI, etc.)
+- Respects `isJurisdictionRestricted` by disabling jurisdiction rows when restricted
+
+**Scoping guarantee**: Since React uses the nearest context provider, all `useRegion()` calls inside `MobileApp` will resolve to the mobile provider. The web app's `RegionProvider` at the app root remains unaffected.
