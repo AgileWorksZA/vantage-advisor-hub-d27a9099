@@ -79,6 +79,16 @@ function calculateAge(dob: string | null): number {
   return age;
 }
 
+function getIdTypeForJurisdiction(jurisdiction: string): string {
+  const normalized = jurisdiction.toLowerCase().trim();
+  if (normalized === "south africa") return "SA ID";
+  if (normalized === "australia") return "National ID";
+  if (normalized === "canada") return "SIN";
+  if (normalized === "united kingdom") return "NI Number";
+  if (normalized === "united states") return "SSN";
+  return "National ID";
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -166,7 +176,7 @@ Deno.serve(async (req) => {
             name: `${wife.first_name} ${wife.surname}`,
             entity_type: "Individual",
             identification: wife.id_number || wife.passport_number || null,
-            id_type: wife.id_number ? "SA ID" : "Passport",
+            id_type: wife.id_number ? getIdTypeForJurisdiction(jurisdiction) : "Passport",
             relationship_type: "Spouse",
             family_name: familyGroupName,
           });
@@ -177,7 +187,7 @@ Deno.serve(async (req) => {
             name: `${husband.first_name} ${husband.surname}`,
             entity_type: "Individual",
             identification: husband.id_number || husband.passport_number || null,
-            id_type: husband.id_number ? "SA ID" : "Passport",
+            id_type: husband.id_number ? getIdTypeForJurisdiction(jurisdiction) : "Passport",
             relationship_type: "Spouse",
             family_name: familyGroupName,
           });
@@ -208,7 +218,7 @@ Deno.serve(async (req) => {
               name: `${child.first_name} ${child.surname}`,
               entity_type: "Individual",
               identification: child.id_number || child.passport_number || null,
-              id_type: child.id_number ? "SA ID" : "Passport",
+              id_type: child.id_number ? getIdTypeForJurisdiction(jurisdiction) : "Passport",
               relationship_type: "Child",
               family_name: familyGroupName,
             });
@@ -220,7 +230,7 @@ Deno.serve(async (req) => {
               name: `${parent.first_name} ${parent.surname}`,
               entity_type: "Individual",
               identification: parent.id_number || parent.passport_number || null,
-              id_type: parent.id_number ? "SA ID" : "Passport",
+              id_type: parent.id_number ? getIdTypeForJurisdiction(jurisdiction) : "Passport",
               relationship_type: "Parent",
               family_name: familyGroupName,
             });
@@ -233,7 +243,7 @@ Deno.serve(async (req) => {
               name: `${child.first_name} ${child.surname}`,
               entity_type: "Individual",
               identification: child.id_number || child.passport_number || null,
-              id_type: child.id_number ? "SA ID" : "Passport",
+              id_type: child.id_number ? getIdTypeForJurisdiction(jurisdiction) : "Passport",
               relationship_type: "Child",
               family_name: familyGroupName,
             });
@@ -244,7 +254,7 @@ Deno.serve(async (req) => {
               name: `${mother.first_name} ${mother.surname}`,
               entity_type: "Individual",
               identification: mother.id_number || mother.passport_number || null,
-              id_type: mother.id_number ? "SA ID" : "Passport",
+              id_type: mother.id_number ? getIdTypeForJurisdiction(jurisdiction) : "Passport",
               relationship_type: "Parent",
               family_name: familyGroupName,
             });
@@ -281,7 +291,7 @@ Deno.serve(async (req) => {
             name: `${individual.first_name} ${individual.surname}`,
             entity_type: "Individual",
             identification: individual.id_number || individual.passport_number || null,
-            id_type: individual.id_number ? "SA ID" : "Passport",
+            id_type: individual.id_number ? getIdTypeForJurisdiction(jurisdiction) : "Passport",
             relationship_type: reverseType,
             share_percentage: reverseType === "Shareholder" ? 50 : null,
           });
