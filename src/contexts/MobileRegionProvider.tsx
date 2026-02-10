@@ -31,9 +31,9 @@ function getAdvisorsForRegion(region: string, map: Record<string, string[]>): st
   const allInitials = regionData.advisors.map((a) => a.initials);
   if (map[region]) {
     const valid = map[region].filter((i) => allInitials.includes(i));
-    if (valid.length > 0) return valid;
+    if (valid.length > 0) return [valid[0]];
   }
-  return allInitials;
+  return [allInitials[0]];
 }
 
 export function MobileRegionProvider({ children }: { children: ReactNode }) {
