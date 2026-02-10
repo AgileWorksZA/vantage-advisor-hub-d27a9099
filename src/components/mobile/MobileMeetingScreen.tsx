@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
-import { ArrowLeft, Clock } from "lucide-react";
+import { ArrowLeft, CalendarDays, CalendarClock } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { CalendarEvent } from "@/hooks/useCalendarEvents";
@@ -10,6 +10,7 @@ import MeetStep from "./meeting-steps/MeetStep";
 import OutcomesStep from "./meeting-steps/OutcomesStep";
 import FollowUpsStep from "./meeting-steps/FollowUpsStep";
 import MobileContextDetailView from "./meeting-steps/MobileContextDetailView";
+import RescheduleDialog from "./meeting-steps/RescheduleDialog";
 
 export interface KeyOutcome {
   id: string;
@@ -32,6 +33,7 @@ export default function MobileMeetingScreen({ event, onBack, onNotification }: M
     getDefaultStep(event.startTime, event.endTime)
   );
   const [detailView, setDetailView] = useState<DetailView | null>(null);
+  const [rescheduleOpen, setRescheduleOpen] = useState(false);
   const { toast } = useToast();
 
   // Derive talking points from prep data
@@ -121,23 +123,26 @@ export default function MobileMeetingScreen({ event, onBack, onNotification }: M
     <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border">
-        <div className="px-4 py-3 flex items-center gap-3">
-          <button onClick={onBack} className="p-1">
+        <div className="px-4 py-3 flex items-start gap-3">
+          <button onClick={onBack} className="p-1 mt-0.5">
             <ArrowLeft className="h-5 w-5 text-foreground" />
           </button>
           <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-0.5">
+              <CalendarDays className="h-3 w-3 shrink-0" />
+              <span>{format(event.startTime, "EEE, d MMM yyyy")} | {format(event.startTime, "HH:mm")} – {format(event.endTime, "HH:mm")}</span>
+            </div>
             <h1 className="text-base font-semibold text-foreground truncate">{event.title}</h1>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
               {event.clientName && <span>{event.clientName}</span>}
-              <span className="flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                {format(event.startTime, "HH:mm")} – {format(event.endTime, "HH:mm")}
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                {event.eventType}
               </span>
             </div>
           </div>
-          <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground shrink-0">
-            {event.eventType}
-          </span>
+          <button onClick={() => setRescheduleOpen(true)} className="p-1 mt-0.5" title="Reschedule">
+            <CalendarClock className="h-4.5 w-4.5 text-muted-foreground" />
+          </button>
         </div>
 
         {/* Progress Bar */}
@@ -197,6 +202,7 @@ export default function MobileMeetingScreen({ event, onBack, onNotification }: M
           />
         )}
       </div>
+      <RescheduleDialog open={rescheduleOpen} onOpenChange={setRescheduleOpen} event={event} />
     </div>
   );
 }
