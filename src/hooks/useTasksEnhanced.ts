@@ -218,7 +218,7 @@ export const useTasksEnhanced = (filters?: TaskFilters) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      const insertData = {
+      const insertData: any = {
         user_id: user.id,
         title: taskData.title || "New Task",
         description: taskData.description,
@@ -233,6 +233,14 @@ export const useTasksEnhanced = (filters?: TaskFilters) => {
         notes: taskData.notes || [],
         source: taskData.source || "Manual",
       };
+
+      // Include SLA and execution time if provided
+      if ((taskData as any).standard_execution_minutes != null) {
+        insertData.standard_execution_minutes = (taskData as any).standard_execution_minutes;
+      }
+      if ((taskData as any).sla_deadline) {
+        insertData.sla_deadline = (taskData as any).sla_deadline;
+      }
 
       const { data, error } = await supabase
         .from("tasks")

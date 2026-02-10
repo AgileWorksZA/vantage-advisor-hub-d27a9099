@@ -16,6 +16,7 @@ import {
   Plus,
   BarChart3,
   Table as TableIcon,
+  TrendingUp,
 } from "lucide-react";
 import commandCenterIcon from "@/assets/command-center-icon.png";
 import vantageLogo from "@/assets/vantage-logo.png";
@@ -26,6 +27,7 @@ import { TaskTable } from "@/components/tasks/TaskTable";
 import { TaskFilters as TaskFiltersComponent } from "@/components/tasks/TaskFilters";
 import { TaskDetailSheet } from "@/components/tasks/TaskDetailSheet";
 import { CreateTaskDialog } from "@/components/tasks/CreateTaskDialog";
+import { TaskAnalyticsTab } from "@/components/tasks/TaskAnalyticsTab";
 import GlobalAIChat from "@/components/ai-assistant/GlobalAIChat";
 
 const sidebarItems = [
@@ -50,8 +52,9 @@ const Tasks = () => {
   const urlStatus = searchParams.get("status");
   const urlDueBucket = searchParams.get("dueBucket");
 
-  const [view, setView] = useState<"dashboard" | "detail">(() => {
+  const [view, setView] = useState<"dashboard" | "analytics" | "detail">(() => {
     if (urlTaskType || searchParams.get("view") === "detail") return "detail";
+    if (searchParams.get("view") === "analytics") return "analytics";
     return "dashboard";
   });
 
@@ -180,9 +183,9 @@ const Tasks = () => {
     navigate("/auth");
   };
 
-  const handleViewChange = (newView: "dashboard" | "detail", newFilters?: TaskFilters) => {
+  const handleViewChange = (newView: "dashboard" | "analytics" | "detail", newFilters?: TaskFilters) => {
     setView(newView);
-    setSearchParams(newView === "detail" ? { view: "detail" } : {});
+    setSearchParams(newView === "dashboard" ? {} : { view: newView });
     if (newFilters) {
       setFilters(newFilters);
     }
@@ -228,6 +231,9 @@ const Tasks = () => {
             <Button variant={view === "dashboard" ? "default" : "outline"} size="sm" onClick={() => handleViewChange("dashboard")} className="gap-2">
               <BarChart3 className="h-4 w-4" />Dashboard
             </Button>
+            <Button variant={view === "analytics" ? "default" : "outline"} size="sm" onClick={() => handleViewChange("analytics")} className="gap-2">
+              <TrendingUp className="h-4 w-4" />Analytics
+            </Button>
             <Button variant={view === "detail" ? "default" : "outline"} size="sm" onClick={() => handleViewChange("detail")} className="gap-2">
               <TableIcon className="h-4 w-4" />All Tasks
             </Button>
@@ -240,6 +246,8 @@ const Tasks = () => {
         <main className="flex-1 overflow-y-auto">
           {view === "dashboard" ? (
             <TaskDashboard stats={stats} onViewDetail={(filters) => handleViewChange("detail", filters)} />
+          ) : view === "analytics" ? (
+            <TaskAnalyticsTab tasks={tasks} onDrillDown={(f) => handleViewChange("detail", f)} />
           ) : (
             <div className="p-6 space-y-4">
               <TaskFiltersComponent filters={filters} onFiltersChange={setFilters} />
