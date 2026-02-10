@@ -117,7 +117,7 @@ Deno.serve(async (req) => {
     for (const uid of userIds) {
       await supabase.from("client_relationships").delete().eq("user_id", uid);
       await supabase.from("client_contacts").delete().eq("user_id", uid);
-      await supabase.from("clients").update({ family_group: null }).eq("user_id", uid);
+      await supabase.from("clients").update({ household_group: null }).eq("user_id", uid);
     }
 
     // Group clients by user_id -> country_of_issue
@@ -132,7 +132,7 @@ Deno.serve(async (req) => {
 
     const relationshipsToInsert: any[] = [];
     const contactsToInsert: any[] = [];
-    const familyGroupUpdates: Array<{ id: string; family_group: string }> = [];
+    const familyGroupUpdates: Array<{ id: string; household_group: string }> = [];
 
     for (const userId of Object.keys(grouped)) {
       for (const jurisdiction of Object.keys(grouped[userId])) {
@@ -162,11 +162,11 @@ Deno.serve(async (req) => {
           usedForSpouse.add(wife.id);
 
           const familySurname = husband.surname;
-          const familyGroupName = `The ${familySurname} Family`;
+          const familyGroupName = `The ${familySurname} Household`;
 
           familyGroups.push({ surname: familySurname, members: [husband, wife] });
-          familyGroupUpdates.push({ id: husband.id, family_group: familyGroupName });
-          familyGroupUpdates.push({ id: wife.id, family_group: familyGroupName });
+          familyGroupUpdates.push({ id: husband.id, household_group: familyGroupName });
+          familyGroupUpdates.push({ id: wife.id, household_group: familyGroupName });
 
           // Bi-directional spouse
           relationshipsToInsert.push({
@@ -205,9 +205,9 @@ Deno.serve(async (req) => {
           for (let j = 0; j < childrenToAdd; j++) {
             const child = availableChildren[childIdx++];
             const parent = fg.members[0]; // husband as parent
-            const familyGroupName = `The ${fg.surname} Family`;
+            const familyGroupName = `The ${fg.surname} Household`;
 
-            familyGroupUpdates.push({ id: child.id, family_group: familyGroupName });
+            familyGroupUpdates.push({ id: child.id, household_group: familyGroupName });
             fg.members.push(child);
 
             // Parent -> Child
@@ -339,7 +339,7 @@ Deno.serve(async (req) => {
 
     // Update family_group on clients
     for (const update of familyGroupUpdates) {
-      await supabase.from("clients").update({ family_group: update.family_group }).eq("id", update.id);
+      await supabase.from("clients").update({ household_group: update.household_group }).eq("id", update.id);
     }
 
     return new Response(

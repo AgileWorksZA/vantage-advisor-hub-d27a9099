@@ -63,7 +63,7 @@ const ClientRelationshipsTab = () => {
           <div className="flex items-center justify-between px-4 py-3 border-b border-border">
             <CollapsibleTrigger className="flex items-center gap-2 font-medium">
               {familyOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-              FAMILY MEMBERS ({familyMembers.length})
+              HOUSEHOLD MEMBERS ({familyMembers.length})
             </CollapsibleTrigger>
             <Button 
               size="sm" 
@@ -71,7 +71,7 @@ const ClientRelationshipsTab = () => {
               onClick={() => setShowAddFamily(true)}
             >
               <Plus className="w-4 h-4" />
-              Add Family
+              Add Member
             </Button>
           </div>
           <CollapsibleContent>
@@ -90,7 +90,7 @@ const ClientRelationshipsTab = () => {
                 {familyMembers.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                      No family members found. Click "Add Family" to add a family member.
+                      No household members found. Click "Add Member" to add a household member.
                     </TableCell>
                   </TableRow>
                 ) : (

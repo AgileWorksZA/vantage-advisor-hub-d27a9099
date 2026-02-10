@@ -249,6 +249,7 @@ const ClientDetail = () => {
               client={client}
               clientName={clientName}
               relatedEntities={relatedEntities}
+              onTabChange={setActiveTab}
             />
             <TabsList className="w-full justify-start h-auto p-0 bg-transparent rounded-none gap-0 flex-wrap px-6 mt-1">
               {[

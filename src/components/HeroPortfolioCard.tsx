@@ -349,10 +349,10 @@ function FamilyGroupCard({
   let cumulativePercent = 0;
   return <div className="bg-card/90 backdrop-blur-xl border border-border/50 rounded-2xl p-5 shadow-2xl h-full cursor-pointer transition-all duration-300 hover:border-[hsl(var(--brand-blue))]/50 flex flex-col" onClick={onClick}>
       <div className="flex items-center justify-between mb-1">
-        <h3 className="text-base font-semibold text-foreground">Family Grouping</h3>
+        <h3 className="text-base font-semibold text-foreground">Household</h3>
         <Users className="w-5 h-5 text-[hsl(var(--brand-blue))]" />
       </div>
-      <p className="text-xs text-muted-foreground mb-3">Smith Family Group</p>
+      <p className="text-xs text-muted-foreground mb-3">Smith Household</p>
 
       {/* Family total and mini chart */}
       <div className="flex items-center gap-4 mb-4 pb-3 border-b border-border/30">

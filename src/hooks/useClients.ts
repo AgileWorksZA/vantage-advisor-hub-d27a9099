@@ -54,7 +54,7 @@ export interface Client {
   otp_delivery_method: string | null;
   advisor: string | null;
   wealth_manager: string | null;
-  family_group: string | null;
+  household_group: string | null;
   relationship: string | null;
   rating: number | null;
   sports_interests: string[] | null;
@@ -125,7 +125,7 @@ const transformClientToListItem = (client: Client): ClientListItem => {
     phone: client.cell_number || client.work_number || "",
     email: client.email || "",
     advisor: client.advisor || "",
-    familyGroup: client.family_group || "",
+    familyGroup: client.household_group || "",
     language: client.language || "",
     dateCreated: formatDate(client.created_at),
     countryOfIssue: client.country_of_issue || "",
