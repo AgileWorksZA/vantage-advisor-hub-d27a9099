@@ -53,6 +53,16 @@ const ClientSummaryTab = ({ client, clientId, onShowMoreActivity, onTabChange }:
 
   const [meetingPrepOpen, setMeetingPrepOpen] = useState(false);
   const [selectedMeetingEvent, setSelectedMeetingEvent] = useState<ClientCalendarEvent | null>(null);
+  const [hasScanned, setHasScanned] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
+
+  const handleOptimise = () => {
+    setIsScanning(true);
+    setTimeout(() => {
+      setIsScanning(false);
+      setHasScanned(true);
+    }, 1500);
+  };
 
   const activeOpps = householdView ? householdData.opportunities : prepData.opportunities;
   const activeProducts = householdView ? householdData.products : prepData.products;
@@ -160,7 +170,10 @@ const ClientSummaryTab = ({ client, clientId, onShowMoreActivity, onTabChange }:
         <Card className="flex-1 flex flex-col">
           <CardHeader className="py-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">Next Best Action</CardTitle>
+              <CardTitle className="text-lg flex items-center gap-2">
+                Next Best Action
+                <span className="px-1.5 py-0.5 text-[10px] font-bold bg-gradient-to-r from-violet-500 to-cyan-500 text-white rounded-full animate-pulse">AI</span>
+              </CardTitle>
               {client.household_group && (
                 <div className="flex items-center gap-1.5">
                   <Users className="h-3.5 w-3.5 text-muted-foreground" />
@@ -188,7 +201,7 @@ const ClientSummaryTab = ({ client, clientId, onShowMoreActivity, onTabChange }:
                 </TabsTrigger>
               </TabsList>
               <TabsContent value="opportunities" className="mt-0 flex-1">
-                <OpportunitiesTab opportunities={activeOpps} products={activeProducts} householdView={householdView} />
+                <OpportunitiesTab opportunities={activeOpps} products={activeProducts} householdView={householdView} onOptimise={handleOptimise} hasScanned={hasScanned} isScanning={isScanning} />
               </TabsContent>
               <TabsContent value="outstanding" className="mt-0 flex-1">
                 <OutstandingTab tasks={activeTasks} documents={activeDocs} householdView={householdView} />
