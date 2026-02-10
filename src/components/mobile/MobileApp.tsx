@@ -9,6 +9,7 @@ import MobileInsightsTab from "./MobileInsightsTab";
 import MobileAITab from "./MobileAITab";
 import MobileSettingsMenu from "./MobileSettingsMenu";
 import MobileVoiceMemo from "./MobileVoiceMemo";
+import MobileNotificationBanner from "./MobileNotificationBanner";
 import { MobileRegionProvider } from "@/contexts/MobileRegionProvider";
 
 type MobileTab = "today" | "clients" | "tasks" | "insights" | "ai";
@@ -69,6 +70,7 @@ const MobileAppContent = () => {
       <div className="relative w-full h-full flex flex-col bg-background">
         <MobileSettingsMenu onBack={() => setShowSettings(false)} />
         {voiceMemoVisible && <MobileVoiceMemo />}
+        <MobileNotificationBanner />
       </div>
     );
   }
@@ -112,6 +114,7 @@ const MobileAppContent = () => {
 
       {/* Voice Memo FAB */}
       {voiceMemoVisible && <MobileVoiceMemo />}
+      <MobileNotificationBanner />
 
       {/* Bottom Tab Bar */}
       <nav className="sticky bottom-0 z-10 flex items-center justify-around h-14 bg-background border-t border-border shrink-0">
