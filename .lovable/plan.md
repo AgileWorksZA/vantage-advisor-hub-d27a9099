@@ -1,52 +1,83 @@
 
 
-## Fix Voice Memo FAB & Notifications to Stay Within Mobile Screen Boundaries
+## Today Tab: Auto-Scroll, Growth Opportunities & Compact Layout
 
-### Problem
-The mobile app is rendered inside a fixed-size container (`393x852px` with `overflow-hidden` and `rounded-[40px]`) in `App.tsx`. However, the voice memo FAB and its overlays use CSS `fixed` positioning, which positions elements relative to the **browser viewport** -- not the mobile container. This causes them to appear outside the phone frame.
-
-Similarly, toast notifications (sonner) render at the viewport level and overflow the mobile container.
-
-### Solution
-
-#### 1. `src/components/mobile/MobileVoiceMemo.tsx` -- Switch from `fixed` to `absolute` positioning
-
-The parent container in `MobileApp.tsx` already has `relative` on its root div. Change all `fixed` classes to `absolute` so they position within the mobile container:
-
-- **Idle FAB** (line 254): Change `fixed bottom-[4.5rem] right-4 z-20` to `absolute bottom-[4.5rem] right-4 z-20` -- this places the mic button above the bottom nav bar (which is `h-14` = 3.5rem, so `4.5rem` sits just above the AI tab icon on the right)
-- **Recording overlay** (line 145): Change `fixed inset-0 z-50` to `absolute inset-0 z-50`
-- **Done overlay** (line 184): Change `fixed inset-0 z-50` to `absolute inset-0 z-50`
-
-#### 2. `src/components/mobile/MobileApp.tsx` -- Add mobile-scoped toast notifications
-
-Replace the header bell icon with a proper mobile notification system that renders **inside** the mobile container:
-
-- Create a notification toast/banner component that shows above the bottom nav bar using `absolute` positioning
-- Notifications appear as compact banners with status icons:
-  - Success/Done: green check icon
-  - Warning: amber warning icon  
-  - Error: red alert icon
-- Auto-dismiss after 4 seconds with manual dismiss option
-- Stack up to 3 visible notifications at once
-- Position: `absolute bottom-16 left-3 right-3 z-30` (above the nav bar, within the container)
-
-Add a `MobileNotificationBanner` inline component (or section in the JSX) that renders active notification toasts as small cards inside the mobile frame, rather than relying on sonner's viewport-level toasts.
-
-#### 3. `src/components/mobile/MobileApp.tsx` -- Ensure settings screen also uses `relative`
-
-The settings branch div (line 69) already has `relative`, so no change needed there. The voice memo `absolute` positioning will work correctly in both branches.
+### Overview
+Three changes to the mobile Today tab:
+1. Replace the 3 stat boxes (Due Today, Overdue, Meetings) with growth opportunities linked to today's scheduled meetings
+2. Keep the greeting and "Today's Schedule" header static (non-scrolling)
+3. Auto-scroll the schedule list to the current/next upcoming meeting on load
 
 ---
+
+### Changes (single file: `src/components/mobile/MobileTodayTab.tsx`)
+
+#### 1. Replace Stat Cards with Growth Opportunities
+
+Remove the `grid grid-cols-3` stat cards section (lines 142-147) and replace with a compact horizontal-scrolling row of growth opportunity cards derived from today's meetings:
+
+- Import `getRegionalOpportunities` from `@/data/regionalData`
+- Match today's meeting client names against regional opportunities
+- Display as a horizontally scrollable row of compact cards showing:
+  - Client name (from the meeting)
+  - Opportunity type badge (Upsell, Cross-sell, Migration, Platform) with colour coding
+  - Potential revenue value
+  - Suggested action (truncated)
+- Each card is compact: ~140px wide, fitting 2.5 cards on screen to hint at scrolling
+- If no opportunities match today's meetings, show a single "No opportunities" placeholder card
+
+#### 2. Sticky Header with Scrollable Content
+
+Restructure the component layout:
+- **Static top section** (no scroll): Greeting (day name + date) and "Today's Schedule" header with calendar picker -- stays pinned at top
+- **Scrollable content below**: Schedule list, growth opportunities cards, and tasks section all scroll together beneath the static header
+- Use `flex flex-col h-full` on the outer container with `overflow-y-auto` on the scrollable portion
+
+#### 3. Auto-Scroll to Current Meeting
+
+- Add a `useRef` for the schedule list container
+- Add a `useEffect` that runs after events load: find the first "in-progress" or "upcoming" event, and call `scrollIntoView({ behavior: "smooth", block: "nearest" })` on its DOM element
+- Each event button gets a `ref` callback that stores refs by event ID
+- If an event is "in-progress", scroll to it; otherwise scroll to the first "upcoming" event
+
+#### 4. Remove StatCard Component
+
+The `StatCard` helper function (lines 295-302) is no longer needed and will be removed.
+
+---
+
+### Layout Structure
+
+```text
++----------------------------------+
+| Friday              [static]     |
+| 10 February 2026    [static]     |
+|                                  |
+| TODAY'S SCHEDULE     [cal icon]  |
+|----------------------------------|  <-- scroll boundary
+| [Growth Opp 1] [Growth Opp 2] > |  <-- horizontal scroll
+|                                  |
+| 09:00 Meeting - Johan v/d Merwe |
+| 10:30 Review - Thandi Nkosi     |  <-- auto-scrolled to current
+| 14:00 Call - Pieter du Plessis  |
+|                                  |
+| OPEN TASKS (12)      [filter]   |
+| Task 1...                        |
+| Task 2...                        |
++----------------------------------+
+```
+
+### Opportunity Card Design
+
+Each card is a compact rounded box:
+- Background: `bg-card border border-border`
+- Width: `min-w-[140px]` in a `flex overflow-x-auto gap-2` container
+- Opportunity type shown as a tiny coloured badge: teal for upsell, blue for migration, orange for cross-sell, purple for platform
+- Revenue in bold, suggested action in 1-line truncated text
 
 ### Files Summary
 
 | File | Action |
 |------|--------|
-| `src/components/mobile/MobileVoiceMemo.tsx` | Update -- change `fixed` to `absolute` on FAB, recording overlay, and done overlay |
-| `src/components/mobile/MobileApp.tsx` | Update -- add mobile-scoped notification banners positioned above nav bar with status icons |
+| `src/components/mobile/MobileTodayTab.tsx` | Update -- replace stats with growth opportunities, add sticky header, auto-scroll to current meeting |
 
-### Technical Notes
-- The mobile container div has `relative` and `overflow-hidden`, so `absolute` positioning will be clipped to the phone frame
-- The bottom nav is `h-14` (3.5rem) with `sticky bottom-0`, so the FAB at `bottom-[4.5rem]` sits just above it, aligned to the right near the AI tab
-- Recording and done overlays use `absolute inset-0` to fill the entire mobile container without escaping it
-- Mobile notification banners use a local state array with auto-dismiss timers, independent of sonner toasts
