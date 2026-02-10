@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, Settings, LogOut, Moon, Sun, Sparkles, Monitor, Smartphone, Globe, Users, Check } from "lucide-react";
+import { ArrowLeft, Settings, LogOut, Moon, Sun, Sparkles, Monitor, Smartphone, Globe, Users } from "lucide-react";
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
@@ -131,87 +132,59 @@ const MobileSettingsMenu = ({ onBack }: MobileSettingsMenuProps) => {
         </div>
 
         {/* Jurisdiction Selector */}
-        <div className="py-2 border-b border-border">
-          <div className="flex items-center gap-2 px-4 py-2">
+        <div className="py-3 px-4 border-b border-border space-y-1.5">
+          <div className="flex items-center gap-2">
             <Globe className="h-4 w-4 text-muted-foreground" />
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Jurisdiction</span>
             {isJurisdictionRestricted && (
               <span className="text-[10px] text-muted-foreground italic ml-auto">restricted</span>
             )}
           </div>
-          {regions.map((region) => (
-            <button
-              key={region.code}
-              disabled={isJurisdictionRestricted}
-              onClick={() => setSelectedRegion(region.code)}
-              className={cn(
-                "w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors",
-                isJurisdictionRestricted ? "opacity-60 cursor-not-allowed" : "hover:bg-muted/50 active:bg-muted",
-                selectedRegion === region.code && "bg-muted/50"
-              )}
-            >
-              <img
-                src={`https://flagcdn.com/w40/${region.flagCode}.png`}
-                srcSet={`https://flagcdn.com/w80/${region.flagCode}.png 2x`}
-                alt={`${region.name} flag`}
-                className="object-contain"
-                style={{ height: 18, width: "auto" }}
-              />
-              <span className="flex-1 text-left">{region.name}</span>
-              {selectedRegion === region.code && (
-                <Check className="h-4 w-4 text-primary" />
-              )}
-            </button>
-          ))}
+          <Select value={selectedRegion} onValueChange={setSelectedRegion} disabled={isJurisdictionRestricted}>
+            <SelectTrigger className="w-full h-9 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="z-[9999] bg-popover">
+              {regions.map((region) => (
+                <SelectItem key={region.code} value={region.code}>
+                  <span className="flex items-center gap-2">
+                    <img
+                      src={`https://flagcdn.com/w40/${region.flagCode}.png`}
+                      alt={`${region.name} flag`}
+                      className="object-contain"
+                      style={{ height: 14, width: "auto" }}
+                    />
+                    {region.name}
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Advisor Filter */}
-        <div className="py-2 border-b border-border">
-          <div className="flex items-center gap-2 px-4 py-2">
+        <div className="py-3 px-4 border-b border-border space-y-1.5">
+          <div className="flex items-center gap-2">
             <Users className="h-4 w-4 text-muted-foreground" />
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Advisors</span>
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Advisor</span>
           </div>
-          {/* Toggle All */}
-          <button
-            onClick={() => {
-              const allInitials = regionalData.advisors.map((a) => a.initials);
-              const allSelected = allInitials.every((i) => selectedAdvisors.includes(i));
-              setSelectedAdvisors(allSelected ? [] : allInitials);
-            }}
-            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors hover:bg-muted/50 active:bg-muted"
-          >
-            <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center">
-              <Users className="h-3 w-3 text-muted-foreground" />
-            </div>
-            <span className="flex-1 text-left font-medium">
-              {regionalData.advisors.every((a) => selectedAdvisors.includes(a.initials)) ? "Deselect All" : "Select All"}
-            </span>
-            {regionalData.advisors.every((a) => selectedAdvisors.includes(a.initials)) && (
-              <Check className="h-4 w-4 text-primary" />
-            )}
-          </button>
-          {regionalData.advisors.map((advisor) => {
-            const isSelected = selectedAdvisors.includes(advisor.initials);
-            return (
-              <button
-                key={advisor.initials}
-                onClick={() => {
-                  setSelectedAdvisors(
-                    isSelected
-                      ? selectedAdvisors.filter((i) => i !== advisor.initials)
-                      : [...selectedAdvisors, advisor.initials]
-                  );
-                }}
-                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors hover:bg-muted/50 active:bg-muted"
-              >
-                <div className="h-6 w-6 rounded-full bg-[hsl(180,25%,25%)] flex items-center justify-center text-[9px] font-bold text-white">
-                  {advisor.initials}
-                </div>
-                <span className="flex-1 text-left">{advisor.name}</span>
-                {isSelected && <Check className="h-4 w-4 text-primary" />}
-              </button>
-            );
-          })}
+          <Select value={selectedAdvisors[0] || ""} onValueChange={(val) => setSelectedAdvisors([val])}>
+            <SelectTrigger className="w-full h-9 text-sm">
+              <SelectValue placeholder="Select Advisor" />
+            </SelectTrigger>
+            <SelectContent className="z-[9999] bg-popover">
+              {regionalData.advisors.map((advisor) => (
+                <SelectItem key={advisor.initials} value={advisor.initials}>
+                  <span className="flex items-center gap-2">
+                    <span className="h-5 w-5 rounded-full bg-[hsl(180,25%,25%)] flex items-center justify-center text-[8px] font-bold text-white shrink-0">
+                      {advisor.initials}
+                    </span>
+                    {advisor.name}
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Menu Items */}
