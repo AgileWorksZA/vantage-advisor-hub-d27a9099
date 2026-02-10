@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { CalendarIcon, Loader2 } from "lucide-react";
+import { CalendarIcon, Loader2, ListChecks } from "lucide-react";
 import { useAdminData } from "@/hooks/useAdminData";
 import { AdminSectionHeader } from "../AdminSectionHeader";
 import { AdminDataTable, ColumnDef } from "../AdminDataTable";
@@ -156,6 +156,7 @@ export function SystemSettingsSection() {
   };
 
   const [seedingCalendar, setSeedingCalendar] = useState(false);
+  const [seedingOpenTasks, setSeedingOpenTasks] = useState(false);
 
   const handleSeedCalendar = async () => {
     setSeedingCalendar(true);
@@ -186,6 +187,38 @@ export function SystemSettingsSection() {
       console.error(error);
     } finally {
       setSeedingCalendar(false);
+    }
+  };
+
+  const handleSeedOpenTasks = async () => {
+    setSeedingOpenTasks(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        toast.error("Not authenticated");
+        return;
+      }
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/seed-open-tasks`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      const result = await response.json();
+      if (result.success) {
+        toast.success(`Seeded ${result.totalTasks} open tasks across ${result.advisors} advisors`);
+      } else {
+        toast.error(result.error || "Failed to seed open tasks");
+      }
+    } catch (error: any) {
+      toast.error("Failed to seed open tasks");
+      console.error(error);
+    } finally {
+      setSeedingOpenTasks(false);
     }
   };
 
@@ -226,6 +259,19 @@ export function SystemSettingsSection() {
                 <CalendarIcon className="w-4 h-4 mr-2" />
               )}
               {seedingCalendar ? "Seeding Calendar..." : "Seed Calendar Events"}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSeedOpenTasks}
+              disabled={seedingOpenTasks}
+            >
+              {seedingOpenTasks ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <ListChecks className="w-4 h-4 mr-2" />
+              )}
+              {seedingOpenTasks ? "Seeding Tasks..." : "Seed Open Tasks"}
             </Button>
           </div>
 
