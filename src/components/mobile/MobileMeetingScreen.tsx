@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { ArrowLeft, CalendarDays } from "lucide-react";
 import { format } from "date-fns";
-import { useToast } from "@/hooks/use-toast";
+import { showMobileNotification } from "./MobileNotificationBanner";
 import { CalendarEvent } from "@/hooks/useCalendarEvents";
 import { useClientMeetingPrep } from "@/hooks/useClientMeetingPrep";
 import MeetingProgressBar, { getDefaultStep, type MeetingStep } from "./meeting-steps/MeetingProgressBar";
@@ -34,7 +34,7 @@ export default function MobileMeetingScreen({ event, onBack, onNotification }: M
   );
   const [detailView, setDetailView] = useState<DetailView | null>(null);
   const [rescheduleOpen, setRescheduleOpen] = useState(false);
-  const { toast } = useToast();
+  
 
   // Derive talking points from prep data
   const { opportunities, tasks, documents } = useClientMeetingPrep(event.clientId);
@@ -89,10 +89,7 @@ export default function MobileMeetingScreen({ event, onBack, onNotification }: M
   }, [opportunities, tasks, documents]);
 
   const handleConvertToTask = (title: string, description: string) => {
-    toast({
-      title: "Task created",
-      description: title,
-    });
+    showMobileNotification("success", "Task created", title);
   };
 
   const handleMessageSent = (channel: string, sentAt: string, clientName: string) => {

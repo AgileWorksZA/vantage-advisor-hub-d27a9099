@@ -2,7 +2,7 @@ import { useState } from "react";
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useToast } from "@/hooks/use-toast";
+import { showMobileNotification } from "../MobileNotificationBanner";
 import { CalendarEvent } from "@/hooks/useCalendarEvents";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,7 @@ interface RescheduleDialogProps {
 const EVENT_TYPES = ["Meeting", "Review", "Call", "Follow-up", "Presentation", "Workshop", "Other"];
 
 export default function RescheduleDialog({ open, onOpenChange, event }: RescheduleDialogProps) {
-  const { toast } = useToast();
+  
   const [subject, setSubject] = useState(event.title);
   const [date, setDate] = useState<Date>(event.startTime);
   const [startTime, setStartTime] = useState(format(event.startTime, "HH:mm"));
@@ -35,7 +35,7 @@ export default function RescheduleDialog({ open, onOpenChange, event }: Reschedu
   const [note, setNote] = useState("");
 
   const handleConfirm = () => {
-    toast({ title: "Meeting rescheduled", description: `${subject} moved to ${format(date, "EEE, d MMM yyyy")} at ${startTime}` });
+    showMobileNotification("success", "Meeting rescheduled", `${subject} moved to ${format(date, "EEE, d MMM yyyy")} at ${startTime}`);
     onOpenChange(false);
   };
 

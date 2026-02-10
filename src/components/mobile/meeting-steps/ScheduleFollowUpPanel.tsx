@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useCalendarEvents } from "@/hooks/useCalendarEvents";
-import { useToast } from "@/hooks/use-toast";
+import { showMobileNotification } from "../MobileNotificationBanner";
 import { format } from "date-fns";
 
 interface TaskItem {
@@ -46,7 +46,7 @@ export default function ScheduleFollowUpPanel({
   const [scheduling, setScheduling] = useState(false);
 
   const { createEvent } = useCalendarEvents();
-  const { toast } = useToast();
+  
 
   const allTasks = [...tasks, ...customTasks];
 
@@ -66,7 +66,7 @@ export default function ScheduleFollowUpPanel({
 
   const handleSchedule = async () => {
     if (selectedTaskIds.length === 0) {
-      toast({ title: "Select at least one task", variant: "destructive" });
+      showMobileNotification("error", "Select at least one task");
       return;
     }
 
