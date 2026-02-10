@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Mic, Square, X, CheckSquare, Clock, Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/use-toast";
+import { showMobileNotification } from "./MobileNotificationBanner";
 
 interface SuggestedAction {
   id: string;
@@ -59,7 +59,7 @@ export default function MobileVoiceMemo() {
 
   const recognitionRef = useRef<any>(null);
   const timerRef = useRef<ReturnType<typeof setInterval>>();
-  const { toast } = useToast();
+  
 
   useEffect(() => {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -131,7 +131,7 @@ export default function MobileVoiceMemo() {
   };
 
   const handleCreateTask = (action: SuggestedAction) => {
-    toast({ title: "Task created", description: action.text });
+    showMobileNotification("success", "Task created", action.text);
     setActions(prev => prev.filter(a => a.id !== action.id));
   };
 

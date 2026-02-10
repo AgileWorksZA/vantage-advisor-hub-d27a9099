@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { CommunicationTypeSelector } from "@/components/email/CommunicationTypeSelector";
 import { useCommunicationCampaigns, CommunicationChannel } from "@/hooks/useCommunicationCampaigns";
-import { useToast } from "@/hooks/use-toast";
+import { showMobileNotification } from "../MobileNotificationBanner";
 
 interface MobileComposeMessageSheetProps {
   clientId: string;
@@ -32,7 +32,7 @@ export default function MobileComposeMessageSheet({
   const [sending, setSending] = useState(false);
 
   const { createCampaign } = useCommunicationCampaigns();
-  const { toast } = useToast();
+  
 
   const handleSend = async () => {
     setSending(true);
@@ -63,10 +63,10 @@ export default function MobileComposeMessageSheet({
         failed_count: 0,
       });
 
-      toast({ title: "Message sent", description: `${channel} sent to ${clientName}` });
+      showMobileNotification("success", "Message sent", `${channel} sent to ${clientName}`);
       onSent(channel, sentAt);
     } catch {
-      toast({ title: "Failed to send", variant: "destructive" });
+      showMobileNotification("error", "Failed to send");
     } finally {
       setSending(false);
     }

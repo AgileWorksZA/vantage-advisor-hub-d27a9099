@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Plus, Sparkles, CalendarDays, CheckSquare, TrendingUp, Loader2, ChevronRight, Target, ChevronDown, ChevronUp, Mail, AlertTriangle, Check } from "lucide-react";
 import { format, addDays, isPast } from "date-fns";
-import { useToast } from "@/hooks/use-toast";
+import { showMobileNotification } from "../MobileNotificationBanner";
 import type { DetailView } from "./PrepStep";
 import type { KeyOutcome } from "../MobileMeetingScreen";
 import ScheduleFollowUpPanel from "./ScheduleFollowUpPanel";
@@ -57,7 +57,7 @@ const originConfig: Record<string, { label: string; className: string }> = {
 export default function FollowUpsStep({ eventId, clientId, clientName, meetingTitle, onConvertToTask, onTagClick, keyOutcomes = [], transcription = null, onMessageSent }: FollowUpsStepProps) {
   const { recordings, loading: recLoading } = useMeetingRecordings(eventId, clientId || undefined);
   const { tasks, opportunities, loading: prepLoading } = useClientMeetingPrep(clientId);
-  const { toast } = useToast();
+  
 
   const [followUpExpanded, setFollowUpExpanded] = useState(false);
   const [scheduledTaskIds, setScheduledTaskIds] = useState<string[]>([]);
@@ -86,7 +86,7 @@ export default function FollowUpsStep({ eventId, clientId, clientName, meetingTi
 
   const handleResolveTask = (taskId: string, taskTitle: string) => {
     setScheduledTaskIds(prev => [...prev, taskId]);
-    toast({ title: "Task resolved", description: taskTitle });
+    showMobileNotification("success", "Task resolved", taskTitle);
   };
 
   const handleAddToFollowUp = (taskId: string) => {
