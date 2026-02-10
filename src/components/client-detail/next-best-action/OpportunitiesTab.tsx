@@ -6,6 +6,7 @@ import type { PrepOpportunity, PrepProduct } from "@/hooks/useClientMeetingPrep"
 interface OpportunitiesTabProps {
   opportunities: PrepOpportunity[];
   products: PrepProduct[];
+  householdView?: boolean;
 }
 
 interface GapOpportunity {
@@ -13,6 +14,7 @@ interface GapOpportunity {
   type: string;
   description: string;
   suggestedAction: string;
+  clientName?: string;
 }
 
 const typeConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
@@ -56,7 +58,11 @@ export function getOpportunitiesCount(opportunities: PrepOpportunity[], products
   return opportunities.length > 0 ? opportunities.length : buildGapOpportunities(products).length;
 }
 
-const OpportunitiesTab = ({ opportunities, products }: OpportunitiesTabProps) => {
+const ClientNameTag = ({ name }: { name: string }) => (
+  <span className="text-[10px] px-1.5 py-0 rounded bg-muted text-muted-foreground font-medium">{name}</span>
+);
+
+const OpportunitiesTab = ({ opportunities, products, householdView }: OpportunitiesTabProps) => {
   const gaps = opportunities.length === 0 ? buildGapOpportunities(products) : [];
   const items = opportunities.length > 0 ? opportunities : null;
 
@@ -76,6 +82,7 @@ const OpportunitiesTab = ({ opportunities, products }: OpportunitiesTabProps) =>
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-1.5">
                     <Badge variant="outline" className={`${cfg.color} text-[10px] px-1.5 py-0 font-medium`}>{cfg.label}</Badge>
+                    {householdView && opp.clientName && <ClientNameTag name={opp.clientName} />}
                     {opp.potentialRevenue && (
                       <span className="text-[10px] font-semibold text-emerald-600">{formatCurrency(opp.potentialRevenue)}</span>
                     )}
@@ -103,6 +110,7 @@ const OpportunitiesTab = ({ opportunities, products }: OpportunitiesTabProps) =>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5">
                 <Badge variant="outline" className={`${cfg.color} text-[10px] px-1.5 py-0 font-medium`}>{cfg.label}</Badge>
+                {householdView && gap.clientName && <ClientNameTag name={gap.clientName} />}
               </div>
               <p className="text-xs text-muted-foreground truncate">{gap.description}</p>
               <p className="text-xs text-[hsl(180,70%,45%)]">{gap.suggestedAction}</p>
