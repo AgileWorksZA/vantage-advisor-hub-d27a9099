@@ -185,14 +185,6 @@ const ClientRibbon = ({ client, clientName, relatedEntities, onTabChange }: Clie
                 <div className="flex items-center gap-1.5 text-sm font-medium">
                   <UserRound className="w-4 h-4 text-muted-foreground shrink-0" />
                   <span>{formatRibbonName(client)}</span>
-                  {client.household_group?.includes(client.surname) && (
-                    <Badge
-                      variant="outline"
-                      className="border-amber-500 text-amber-600 bg-transparent dark:text-amber-400 dark:border-amber-400 text-[10px] px-1.5 py-0"
-                    >
-                      Main Member
-                    </Badge>
-                  )}
                 </div>
                 <span className="text-muted-foreground">|</span>
                 <span className="text-sm text-muted-foreground">
@@ -219,6 +211,14 @@ const ClientRibbon = ({ client, clientName, relatedEntities, onTabChange }: Clie
                   >
                     <Users className="w-3 h-3 mr-1" />
                     {client.household_group}
+                  </Badge>
+                )}
+                {client.household_group?.includes(client.surname) && (
+                  <Badge
+                    variant="outline"
+                    className="border-amber-500 text-amber-600 bg-transparent dark:text-amber-400 dark:border-amber-400 text-[10px] px-1.5 py-0"
+                  >
+                    Main Member
                   </Badge>
                 )}
               </div>
