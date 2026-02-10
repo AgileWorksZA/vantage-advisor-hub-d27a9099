@@ -78,33 +78,6 @@ const ClientSummaryTab = ({ client, clientId, onShowMoreActivity }: ClientSummar
           </CardContent>
         </Card>
 
-        {/* Contact Details */}
-        <Card>
-          <CardHeader className="py-2">
-            <CardTitle className="text-lg">Contact details</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-1">
-              {[
-                { label: "Work number", value: client.work_number || "-" },
-                { label: "Work extension", value: client.work_extension || "-" },
-                { label: "Work number secondary", value: "-" },
-                { label: "Home number", value: client.home_number || "-" },
-                { label: "Cell number", value: client.cell_number || "-" },
-                { label: "Email", value: client.email || "-" },
-              ].map((item) => (
-                <div key={item.label} className="flex justify-between items-center py-0.5 border-b border-border/50 last:border-0">
-                  <span className="text-sm text-muted-foreground">{item.label}</span>
-                  <span className="text-sm font-medium">{item.value}</span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Right Column */}
-      <div className="space-y-4">
         {/* Current Advisor and Accounts */}
         <Card>
           <CardHeader className="py-2">
@@ -139,48 +112,6 @@ const ClientSummaryTab = ({ client, clientId, onShowMoreActivity }: ClientSummar
           </CardContent>
         </Card>
 
-        {/* Next Best Action */}
-        <Card>
-          <CardHeader className="py-2">
-            <CardTitle className="text-lg">Next Best Action</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <Tabs defaultValue="opportunities" className="w-full">
-              <TabsList className="w-full h-8 mb-2">
-                <TabsTrigger value="opportunities" className="text-xs flex-1">
-                  Opportunities ({oppsCount})
-                </TabsTrigger>
-                <TabsTrigger value="outstanding" className="text-xs flex-1">
-                  Outstanding ({outstandingCount})
-                </TabsTrigger>
-                <TabsTrigger value="recent" className="text-xs flex-1">
-                  Recent Activity ({RECENT_ACTIVITY_COUNT})
-                </TabsTrigger>
-              </TabsList>
-              <TabsContent value="opportunities" className="mt-0">
-                <OpportunitiesTab opportunities={prepData.opportunities} products={prepData.products} />
-              </TabsContent>
-              <TabsContent value="outstanding" className="mt-0">
-                <OutstandingTab tasks={prepData.tasks} documents={prepData.documents} />
-              </TabsContent>
-              <TabsContent value="recent" className="mt-0">
-                <RecentActivityTab />
-              </TabsContent>
-            </Tabs>
-
-            {/* Show more link */}
-            <div className="pt-1 border-t mt-1">
-              <Button
-                variant="link"
-                className="p-0 h-auto text-[hsl(180,70%,45%)] hover:text-[hsl(180,70%,35%)]"
-                onClick={onShowMoreActivity}
-              >
-                Show more
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Outstanding Documents */}
         <Card>
           <CardHeader className="py-2">
@@ -203,6 +134,49 @@ const ClientSummaryTab = ({ client, clientId, onShowMoreActivity }: ClientSummar
                 ))}
               </TableBody>
             </Table>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Right Column */}
+      <div className="flex flex-col">
+        <Card className="flex-1 flex flex-col">
+          <CardHeader className="py-2">
+            <CardTitle className="text-lg">Next Best Action</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0 flex-1 flex flex-col">
+            <Tabs defaultValue="opportunities" className="w-full flex-1 flex flex-col">
+              <TabsList className="w-full h-8 mb-2">
+                <TabsTrigger value="opportunities" className="text-xs flex-1">
+                  Opportunities ({oppsCount})
+                </TabsTrigger>
+                <TabsTrigger value="outstanding" className="text-xs flex-1">
+                  Outstanding ({outstandingCount})
+                </TabsTrigger>
+                <TabsTrigger value="recent" className="text-xs flex-1">
+                  Recent Activity ({RECENT_ACTIVITY_COUNT})
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent value="opportunities" className="mt-0 flex-1">
+                <OpportunitiesTab opportunities={prepData.opportunities} products={prepData.products} />
+              </TabsContent>
+              <TabsContent value="outstanding" className="mt-0 flex-1">
+                <OutstandingTab tasks={prepData.tasks} documents={prepData.documents} />
+              </TabsContent>
+              <TabsContent value="recent" className="mt-0 flex-1">
+                <RecentActivityTab />
+              </TabsContent>
+            </Tabs>
+
+            <div className="pt-1 border-t mt-1">
+              <Button
+                variant="link"
+                className="p-0 h-auto text-[hsl(180,70%,45%)] hover:text-[hsl(180,70%,35%)]"
+                onClick={onShowMoreActivity}
+              >
+                Show more
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
