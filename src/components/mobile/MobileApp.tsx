@@ -8,6 +8,7 @@ import MobileTasksTab from "./MobileTasksTab";
 import MobileInsightsTab from "./MobileInsightsTab";
 import MobileAITab from "./MobileAITab";
 import MobileSettingsMenu from "./MobileSettingsMenu";
+import { MobileRegionProvider } from "@/contexts/MobileRegionProvider";
 
 type MobileTab = "today" | "clients" | "tasks" | "insights" | "ai";
 
@@ -19,7 +20,7 @@ const tabs: { id: MobileTab; label: string; icon: typeof CalendarDays }[] = [
   { id: "ai", label: "AI", icon: Sparkles },
 ];
 
-const MobileApp = () => {
+const MobileAppContent = () => {
   const [activeTab, setActiveTab] = useState<MobileTab>("today");
   const [showSettings, setShowSettings] = useState(false);
 
@@ -108,5 +109,11 @@ const MobileApp = () => {
     </div>
   );
 };
+
+const MobileApp = () => (
+  <MobileRegionProvider>
+    <MobileAppContent />
+  </MobileRegionProvider>
+);
 
 export default MobileApp;

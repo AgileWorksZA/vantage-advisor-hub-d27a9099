@@ -3,7 +3,7 @@ import { getRegionalData, getFilteredRegionalData, getRegionalOpportunities, Reg
 import { ClientOpportunity } from "@/components/ai-assistant/OpportunityCard";
 import { useUserJurisdictions } from "@/hooks/useUserJurisdictions";
 
-interface RegionContextType {
+export interface RegionContextType {
   selectedRegion: string;
   setSelectedRegion: (region: string) => void;
   regionalData: RegionalData;
@@ -18,7 +18,7 @@ interface RegionContextType {
   allowedJurisdictions: string[];
 }
 
-const RegionContext = createContext<RegionContextType | undefined>(undefined);
+export const RegionContext = createContext<RegionContextType | undefined>(undefined);
 
 const STORAGE_KEY = "vantage-selected-region";
 const ADVISORS_MAP_STORAGE_KEY = "vantage-advisor-selections";
