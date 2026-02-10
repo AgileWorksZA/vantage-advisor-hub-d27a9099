@@ -24,9 +24,10 @@ export interface KeyOutcome {
 interface MobileMeetingScreenProps {
   event: CalendarEvent;
   onBack: () => void;
+  onNotification?: (notification: { type: "communication"; title: string; description: string; link?: string }) => void;
 }
 
-export default function MobileMeetingScreen({ event, onBack }: MobileMeetingScreenProps) {
+export default function MobileMeetingScreen({ event, onBack, onNotification }: MobileMeetingScreenProps) {
   const [activeStep, setActiveStep] = useState<MeetingStep>(
     getDefaultStep(event.startTime, event.endTime)
   );
@@ -90,6 +91,20 @@ export default function MobileMeetingScreen({ event, onBack }: MobileMeetingScre
       title: "Task created",
       description: title,
     });
+  };
+
+  const handleMessageSent = (channel: string, sentAt: string, clientName: string) => {
+    // Simulate a reply notification after 10 seconds
+    if (onNotification) {
+      setTimeout(() => {
+        onNotification({
+          type: "communication",
+          title: `Reply from ${clientName}`,
+          description: `${clientName} replied to your follow-up ${channel.toLowerCase()}.`,
+          link: "/email",
+        });
+      }, 10000);
+    }
   };
 
   if (detailView) {
@@ -174,9 +189,11 @@ export default function MobileMeetingScreen({ event, onBack }: MobileMeetingScre
             eventId={event.id}
             clientId={event.clientId}
             clientName={event.clientName}
+            meetingTitle={event.title}
             onConvertToTask={handleConvertToTask}
             onTagClick={setDetailView}
             keyOutcomes={keyOutcomes}
+            onMessageSent={handleMessageSent}
           />
         )}
       </div>
