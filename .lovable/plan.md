@@ -1,107 +1,51 @@
 
 
-## Add Date Range Selector, Team Grouping, and Seed Teams/Users for Analytics
+## Add Filter Tags, Reset, and Saved Filter Views to Analytics Tab
 
 ### Overview
 
-Enhance the Analytics tab with a date range selector and team-based filtering. Create a seeding edge function that populates team members linked to each jurisdiction's advisors, organized into realistic practice teams.
+Add the same filter persistence UX from the All Tasks view into the Analytics tab: active filter tags displayed as removable badges, a "Reset Filters" link, and a "Save Filter" / "Saved Views" dropdown with searchable selection.
 
----
-
-### 1. Database Changes
-
-**Extend `team_members` table** with two new columns:
-- `team_name` (text, nullable) -- groups members into named teams (e.g., "Jordaan Financial Planning", "PSG Wealth Tygervalley")
-- `jurisdiction` (text, nullable) -- links the team member to a region (ZA, AU, CA, GB, US)
-
-No new tables needed. The existing `team_members` table already has `name`, `role`, `is_primary_adviser`, and `is_active`.
-
----
-
-### 2. Seed Edge Function: `seed-team-members`
-
-**New file: `supabase/functions/seed-team-members/index.ts`**
-
-Creates realistic team members for each jurisdiction, organized into teams per advisor. For each of the 5 jurisdictions (5 advisors each = 25 advisors total), seed:
-
-- **The advisor** as a team member with `is_primary_adviser = true` and `role = "Financial Adviser"`
-- **2-3 support staff** per advisor team (Assistant, Paraplanner, Administrator)
-
-This produces approximately 75-100 team members across 25 teams. Each record includes the `jurisdiction` and `team_name` fields.
-
-The function is idempotent -- it deletes existing team members before re-seeding.
-
-**Sample data structure per jurisdiction:**
-
-| Team Name | Member | Role | Jurisdiction |
-|-----------|--------|------|-------------|
-| Jordaan Financial Planning | Johan Botha | Financial Adviser | ZA |
-| Jordaan Financial Planning | Anele Mkhize | Paraplanner | ZA |
-| Jordaan Financial Planning | Zanele Dlamini | Administrator | ZA |
-| Mostert Advisory | Sarah Mostert | Financial Adviser | ZA |
-| Mostert Advisory | Thabo Mokoena | Assistant | ZA |
-
----
-
-### 3. Analytics Tab Enhancements
+### Changes
 
 **File: `src/components/tasks/TaskAnalyticsTab.tsx`**
 
-#### A. Date Range Selector
-Add a date range picker at the top toolbar (next to the sub-view tabs) with preset options:
-- This Week (default)
-- Last Week
-- This Month
-- Last Month
-- Custom Range (using two date inputs)
+#### 1. Integrate `useSavedTaskFilters` hook
+- Import and use the existing `useSavedTaskFilters` hook to load, save, and delete analytics filter configurations.
+- Define an `AnalyticsFilterState` object that captures `datePreset`, `customFrom`, `customTo`, `selectedTeams`, and `subView` so the full analytics filter context can be saved and restored.
 
-The selected range replaces the hardcoded "this week / last week" logic in `computeRows`. The "Completed this week" and "Completed last week" columns become "Completed in period" and "Completed prior period" (the prior period being the same length immediately before the selected range).
+#### 2. Active Filter Tags Row
+Below the toolbar, when any filter is active (non-default date preset, selected teams, or specific sub-view), render a row of removable Badge tags showing:
+- **Date preset**: e.g., "Last Week", "This Month", or "10 Feb – 15 Feb 2026" for custom ranges
+- **Each selected team**: e.g., "Jordaan Financial Planning" with an X to remove
+- A **"Reset Filters"** link that resets all filters to defaults (This Week, no team filter, By User view)
 
-Utilisation % recalculates based on the working days in the selected period.
+#### 3. Save Filter Button
+- Show a "Save Filter" button (with Save icon) in the filter tags row when filters are active
+- Clicking opens a small Dialog to name and save the current filter configuration
+- Reuses the same `useSavedTaskFilters.saveFilter()` method, storing the analytics-specific filter state in the existing `saved_task_filters` table with a JSON payload
 
-#### B. Team Filter (By User view only)
-When in "By User" view, add a team multi-select dropdown filter. This:
-- Fetches team members from the database via `useTeamMembers` (extended to include `team_name` and `jurisdiction`)
-- Filters the displayed rows to only show users belonging to selected teams
-- Automatically filters by current jurisdiction from `RegionContext`
+#### 4. Saved Views Dropdown
+- Add a "Saved Views" button (with BookmarkCheck icon) to the toolbar, visible when saved filters exist
+- Uses a `DropdownMenu` with a searchable input at the top (using a text Input for filtering the list)
+- Each item shows the filter name, with a delete (Trash2) icon
+- Clicking a saved view restores the full analytics filter state (date preset, teams, sub-view)
 
-#### C. Collapsible Team Grouping
-In "By User" view, rows are grouped under collapsible team name headers. Each team header shows aggregated totals for that team. Individual member rows are indented beneath.
+### Technical Details
 
----
+- The saved filter payload will include an `analyticsContext` flag so the hook can differentiate between All Tasks filters and Analytics filters if needed, though both use the same DB table
+- Filter state serialized as: `{ type: "analytics", subView, datePreset, customFrom, customTo, selectedTeams }`
+- The searchable dropdown uses a local `searchTerm` state to filter the `savedFilters` list by name
+- All icons and patterns (Badge, X, Save, BookmarkCheck, Trash2) match the existing TaskFilters component exactly
 
-### 4. Hook Changes
+### Visual Layout
 
-**File: `src/hooks/useTeamMembers.ts`**
+The toolbar area will look like:
 
-Extend the `TeamMember` interface to include:
-- `team_name: string | null`
-- `jurisdiction: string | null`
+```text
+Row 1: [By User | By Task Type]  [This Week v]  [Custom dates]  [Filter by team...]  [Saved Views v]  [Export Report]
+Row 2: Filtered by:  [Last Month x]  [Team A x]  [Team B x]   Reset Filters   |  Save Filter
+```
 
-Update the query to fetch these new columns.
-
----
-
-### 5. Update Task Seeding
-
-**File: `supabase/functions/seed-demo-tasks/index.ts`**
-
-Update to assign `assigned_to_user_id` values by looking up seeded team members, so that analytics shows realistic per-user distribution. Currently all tasks show "Current User" -- after this change, tasks will be distributed across team members for the analytics view.
-
-Since `assigned_to_user_id` references UUIDs but team members share the same `user_id`, we will instead use `assigned_to_name` as a text field on the tasks table to store the team member's display name. This avoids auth coupling while enabling per-person analytics.
-
-**New column on `tasks` table:** `assigned_to_name` (text, nullable) -- stores the display name of the person the task is assigned to, populated during seeding.
-
----
-
-### Technical Summary
-
-| Item | Detail |
-|------|--------|
-| DB migration | Add `team_name`, `jurisdiction` to `team_members`; add `assigned_to_name` to `tasks` |
-| New edge function | `seed-team-members` (creates ~75-100 members across 5 jurisdictions) |
-| Modified edge function | `seed-demo-tasks` (assigns tasks to team member names) |
-| Modified component | `TaskAnalyticsTab.tsx` (date range, team filter, team grouping) |
-| Modified hook | `useTeamMembers.ts` (new fields) |
-| Modified hook | `useTasksEnhanced.ts` (use `assigned_to_name` from DB instead of hardcoded "Current User") |
+Row 2 only appears when filters differ from defaults.
 
