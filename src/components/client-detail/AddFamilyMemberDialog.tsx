@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { extractDateOfBirthFromId } from "@/lib/utils";
+import { getIdTypeForJurisdiction } from "@/lib/jurisdiction-utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useNavigate } from "react-router-dom";
@@ -56,6 +57,7 @@ interface AddFamilyMemberDialogProps {
 
 const AddFamilyMemberDialog = ({ open, onOpenChange, clientId, onSuccess }: AddFamilyMemberDialogProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [parentCountry, setParentCountry] = useState<string | null>(null);
   const [duplicateClient, setDuplicateClient] = useState<{
     id: string;
     name: string;
@@ -77,6 +79,20 @@ const AddFamilyMemberDialog = ({ open, onOpenChange, clientId, onSuccess }: AddF
       product_viewing_level: "Full",
     },
   });
+
+  // Fetch parent client's country for jurisdiction-aware ID type
+  useEffect(() => {
+    if (!open || !clientId) return;
+    const fetchParentCountry = async () => {
+      const { data } = await supabase
+        .from("clients")
+        .select("country_of_issue")
+        .eq("id", clientId)
+        .single();
+      setParentCountry(data?.country_of_issue || null);
+    };
+    fetchParentCountry();
+  }, [open, clientId]);
 
   // Watch ID number for auto-populating date of birth
   const watchIdNumber = form.watch("id_number");
@@ -180,7 +196,7 @@ const AddFamilyMemberDialog = ({ open, onOpenChange, clientId, onSuccess }: AddF
           entity_type: "Individual",
           relationship_type: data.relationship_type,
           identification: data.id_number || null,
-          id_type: "SA ID",
+          id_type: getIdTypeForJurisdiction(parentCountry),
           product_viewing_level: data.product_viewing_level || "Full",
         });
 
@@ -198,7 +214,7 @@ const AddFamilyMemberDialog = ({ open, onOpenChange, clientId, onSuccess }: AddF
           entity_type: "Individual",
           relationship_type: reciprocalType,
           identification: originalClient.id_number || null,
-          id_type: "SA ID",
+          id_type: getIdTypeForJurisdiction(parentCountry),
           product_viewing_level: data.product_viewing_level || "Full",
         });
 
