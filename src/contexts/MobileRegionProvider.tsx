@@ -40,7 +40,9 @@ export function MobileRegionProvider({ children }: { children: ReactNode }) {
   const { allowedJurisdictions, isRestricted } = useUserJurisdictions();
 
   const [selectedRegion, setSelectedRegionState] = useState<string>(() => {
-    return localStorage.getItem(MOBILE_REGION_KEY) || "ZA";
+    return localStorage.getItem(MOBILE_REGION_KEY) 
+      || localStorage.getItem("vantage-selected-region") 
+      || "ZA";
   });
 
   const [advisorMap, setAdvisorMapState] = useState<Record<string, string[]>>(() => loadMobileAdvisorMap());
