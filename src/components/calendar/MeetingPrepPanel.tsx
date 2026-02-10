@@ -22,6 +22,7 @@ import { format } from "date-fns";
 
 interface MeetingPrepPanelProps {
   clientId: string;
+  onNavigate?: (type: string, id?: string) => void;
 }
 
 const priorityColor = (p: string) => {
@@ -63,7 +64,7 @@ const getActionLabel = (type: string) => {
   return map[type] || type;
 };
 
-export function MeetingPrepPanel({ clientId }: MeetingPrepPanelProps) {
+export function MeetingPrepPanel({ clientId, onNavigate }: MeetingPrepPanelProps) {
   const { notes, communications, tasks, documents, opportunities, products, loading } = useClientMeetingPrep(clientId);
 
   if (loading) {
@@ -106,9 +107,14 @@ export function MeetingPrepPanel({ clientId }: MeetingPrepPanelProps) {
                 </p>
                 <div className="space-y-1.5">
                   {notes.map(n => (
-                    <div key={n.id} className="flex items-center justify-between text-xs p-1.5 rounded bg-muted/50">
+                    <div 
+                      key={n.id} 
+                      className={`flex items-center justify-between text-xs p-1.5 rounded bg-muted/50 ${onNavigate ? 'cursor-pointer hover:bg-muted transition-colors' : ''}`}
+                      onClick={() => onNavigate?.('note', n.id)}
+                    >
                       <span className="truncate flex-1 mr-2">{n.subject}</span>
                       <div className="flex items-center gap-1.5 shrink-0">
+                        {onNavigate && <Badge className="text-[10px] bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 border-0">Note</Badge>}
                         <Badge variant="outline" className={`text-[10px] ${priorityColor(n.priority)}`}>{n.priority}</Badge>
                         <span className="text-muted-foreground">{formatDate(n.date)}</span>
                       </div>
@@ -126,9 +132,14 @@ export function MeetingPrepPanel({ clientId }: MeetingPrepPanelProps) {
                 </p>
                 <div className="space-y-1.5">
                   {communications.map(c => (
-                    <div key={c.id} className="flex items-center justify-between text-xs p-1.5 rounded bg-muted/50">
+                    <div 
+                      key={c.id} 
+                      className={`flex items-center justify-between text-xs p-1.5 rounded bg-muted/50 ${onNavigate ? 'cursor-pointer hover:bg-muted transition-colors' : ''}`}
+                      onClick={() => onNavigate?.('communication', c.id)}
+                    >
                       <span className="truncate flex-1 mr-2">{c.subject}</span>
                       <div className="flex items-center gap-1.5 shrink-0">
+                        {onNavigate && <Badge className="text-[10px] bg-[hsl(180,50%,90%)] text-[hsl(180,70%,30%)] dark:bg-[hsl(180,50%,15%)] dark:text-[hsl(180,70%,60%)] border-0">Comms</Badge>}
                         <Badge variant="outline" className="text-[10px]">{c.channel}</Badge>
                         <span className="text-muted-foreground">{formatDate(c.date)}</span>
                       </div>
@@ -194,9 +205,14 @@ export function MeetingPrepPanel({ clientId }: MeetingPrepPanelProps) {
                 </p>
                 <div className="space-y-1.5">
                   {documents.map(d => (
-                    <div key={d.id} className="flex items-center justify-between text-xs p-1.5 rounded bg-muted/50">
+                    <div 
+                      key={d.id} 
+                      className={`flex items-center justify-between text-xs p-1.5 rounded bg-muted/50 ${onNavigate ? 'cursor-pointer hover:bg-muted transition-colors' : ''}`}
+                      onClick={() => onNavigate?.('document', d.id)}
+                    >
                       <span className="truncate flex-1 mr-2">{d.name}</span>
                       <div className="flex items-center gap-1.5 shrink-0">
+                        {onNavigate && <Badge className="text-[10px] bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300 border-0">Doc</Badge>}
                         <Badge variant="outline" className={`text-[10px] ${d.status === "Expired" ? "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300" : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300"}`}>
                           {d.status}
                         </Badge>

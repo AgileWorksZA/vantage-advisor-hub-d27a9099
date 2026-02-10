@@ -284,6 +284,7 @@ const ClientDetail = () => {
                 client={client} 
                 clientId={clientId!} 
                 onShowMoreActivity={() => setActiveTab("recent-activity")}
+                onTabChange={setActiveTab}
               />
             </TabsContent>
             <TabsContent value="360-view" className="mt-0">
