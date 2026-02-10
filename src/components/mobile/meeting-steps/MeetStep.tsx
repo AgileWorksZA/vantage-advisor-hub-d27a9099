@@ -1,19 +1,25 @@
 import { useState, useEffect, useRef } from "react";
-import { Mic, Play, Pause, Plus, Sparkles, MessageSquare } from "lucide-react";
+import { Mic, Plus, Sparkles, MessageSquare, Target, ChevronDown, ChevronUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { KeyOutcome } from "../MobileMeetingScreen";
 
 interface MeetStepProps {
   startTime: Date;
   endTime: Date;
   talkingPoints: string[];
   onConvertToTask: (title: string, description: string) => void;
+  keyOutcomes: KeyOutcome[];
+  onAddOutcome: (text: string) => void;
 }
 
-export default function MeetStep({ startTime, endTime, talkingPoints, onConvertToTask }: MeetStepProps) {
+export default function MeetStep({ startTime, endTime, talkingPoints, onConvertToTask, keyOutcomes, onAddOutcome }: MeetStepProps) {
   const [elapsed, setElapsed] = useState(0);
   const [quickNote, setQuickNote] = useState("");
   const [notes, setNotes] = useState<string[]>([]);
+  const [newOutcome, setNewOutcome] = useState("");
+  const [outcomesOpen, setOutcomesOpen] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -36,6 +42,13 @@ export default function MeetStep({ startTime, endTime, talkingPoints, onConvertT
     if (quickNote.trim()) {
       setNotes(prev => [...prev, quickNote.trim()]);
       setQuickNote("");
+    }
+  };
+
+  const handleAddOutcome = () => {
+    if (newOutcome.trim()) {
+      onAddOutcome(newOutcome.trim());
+      setNewOutcome("");
     }
   };
 
@@ -80,6 +93,51 @@ export default function MeetStep({ startTime, endTime, talkingPoints, onConvertT
                 <span className="text-sm text-foreground">{note}</span>
               </div>
             ))}
+          </div>
+        )}
+      </div>
+
+      {/* Key Outcomes (collapsible) */}
+      <div className="space-y-2">
+        <button
+          onClick={() => setOutcomesOpen(!outcomesOpen)}
+          className="flex items-center gap-2 w-full px-1"
+        >
+          <Target className="h-3.5 w-3.5 text-[hsl(180,70%,45%)]" />
+          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex-1 text-left">
+            Key Outcomes ({keyOutcomes.length})
+          </h3>
+          {outcomesOpen ? <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />}
+        </button>
+        {outcomesOpen && (
+          <div className="space-y-1.5">
+            {keyOutcomes.map((outcome) => (
+              <div key={outcome.id} className="flex items-center gap-2 p-2 rounded-lg bg-card border border-border">
+                <Badge variant="secondary" className={`text-[10px] px-1.5 py-0 shrink-0 ${
+                  outcome.origin === "prep" ? "bg-blue-500/10 text-blue-600" :
+                  outcome.origin === "meeting" ? "bg-[hsl(180,70%,45%)]/10 text-[hsl(180,70%,45%)]" :
+                  "bg-amber-500/10 text-amber-600"
+                }`}>
+                  {outcome.origin === "prep" ? "Prep" : outcome.origin === "meeting" ? "Meeting" : "Post"}
+                </Badge>
+                <span className="text-sm text-foreground flex-1 truncate">{outcome.text}</span>
+              </div>
+            ))}
+            <div className="flex gap-2">
+              <Input
+                value={newOutcome}
+                onChange={(e) => setNewOutcome(e.target.value)}
+                placeholder="Add outcome..."
+                className="text-sm h-9"
+                onKeyDown={(e) => e.key === "Enter" && handleAddOutcome()}
+              />
+              <button
+                onClick={handleAddOutcome}
+                className="shrink-0 p-2 rounded-lg bg-[hsl(180,70%,45%)] text-white"
+              >
+                <Plus className="h-4 w-4" />
+              </button>
+            </div>
           </div>
         )}
       </div>

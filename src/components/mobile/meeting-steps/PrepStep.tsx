@@ -1,7 +1,10 @@
+import { useState } from "react";
 import { useClientMeetingPrep, PrepNote, PrepComm, PrepTask, PrepDocument, PrepOpportunity, PrepProduct } from "@/hooks/useClientMeetingPrep";
 import { Badge } from "@/components/ui/badge";
-import { Plus, FileText, Mail, Phone, Package, TrendingUp, ListTodo, File, Sparkles, Loader2 } from "lucide-react";
+import { Plus, FileText, Mail, Phone, Package, TrendingUp, ListTodo, File, Sparkles, Loader2, X, Target } from "lucide-react";
 import { format } from "date-fns";
+import { Input } from "@/components/ui/input";
+import { KeyOutcome } from "../MobileMeetingScreen";
 
 export interface DetailView {
   type: "note" | "communication" | "task" | "document" | "product" | "opportunity";
@@ -14,10 +17,14 @@ interface PrepStepProps {
   clientName?: string;
   onTagClick: (view: DetailView) => void;
   onConvertToTask: (title: string, description: string) => void;
+  keyOutcomes: KeyOutcome[];
+  onAddOutcome: (text: string) => void;
+  onRemoveOutcome: (id: string) => void;
 }
 
-export default function PrepStep({ clientId, clientName, onTagClick, onConvertToTask }: PrepStepProps) {
+export default function PrepStep({ clientId, clientName, onTagClick, onConvertToTask, keyOutcomes, onAddOutcome, onRemoveOutcome }: PrepStepProps) {
   const { notes, communications, tasks, documents, opportunities, products, loading } = useClientMeetingPrep(clientId);
+  const [newOutcome, setNewOutcome] = useState("");
 
   if (loading) {
     return (
@@ -31,6 +38,13 @@ export default function PrepStep({ clientId, clientName, onTagClick, onConvertTo
     Email: Mail,
     Call: Phone,
     Note: FileText,
+  };
+
+  const handleAddOutcome = () => {
+    if (newOutcome.trim()) {
+      onAddOutcome(newOutcome.trim());
+      setNewOutcome("");
+    }
   };
 
   return (
@@ -172,6 +186,50 @@ export default function PrepStep({ clientId, clientName, onTagClick, onConvertTo
         {opportunities.length === 0 && documents.filter(d => d.status === "Expired").length === 0 && tasks.filter(t => t.isOverdue).length === 0 && (
           <p className="text-xs text-muted-foreground py-2">No urgent actions identified. All looking good!</p>
         )}
+      </Section>
+
+      {/* Key Outcomes */}
+      <Section title="Key Outcomes">
+        <div className="flex items-center gap-2 px-1 mb-1">
+          <Target className="h-3.5 w-3.5 text-[hsl(180,70%,45%)]" />
+          <span className="text-xs text-muted-foreground">Define desired outcomes for this meeting</span>
+        </div>
+        {keyOutcomes.filter(o => o.origin === "prep").map((outcome) => (
+          <div key={outcome.id} className="flex items-center gap-2 p-2.5 rounded-lg bg-card border border-border">
+            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-blue-500/10 text-blue-600 shrink-0">Prep</Badge>
+            <span className="text-sm text-foreground flex-1 truncate">{outcome.text}</span>
+            <button onClick={() => onRemoveOutcome(outcome.id)} className="p-0.5 rounded text-muted-foreground hover:text-destructive transition-colors">
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        ))}
+        {/* Also show meeting/post-meeting outcomes if any already exist */}
+        {keyOutcomes.filter(o => o.origin !== "prep").map((outcome) => (
+          <div key={outcome.id} className="flex items-center gap-2 p-2.5 rounded-lg bg-card border border-border">
+            <Badge variant="secondary" className={`text-[10px] px-1.5 py-0 shrink-0 ${outcome.origin === "meeting" ? "bg-[hsl(180,70%,45%)]/10 text-[hsl(180,70%,45%)]" : "bg-amber-500/10 text-amber-600"}`}>
+              {outcome.origin === "meeting" ? "Meeting" : "Post"}
+            </Badge>
+            <span className="text-sm text-foreground flex-1 truncate">{outcome.text}</span>
+            <button onClick={() => onRemoveOutcome(outcome.id)} className="p-0.5 rounded text-muted-foreground hover:text-destructive transition-colors">
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        ))}
+        <div className="flex gap-2">
+          <Input
+            value={newOutcome}
+            onChange={(e) => setNewOutcome(e.target.value)}
+            placeholder="Add an outcome..."
+            className="text-sm h-9"
+            onKeyDown={(e) => e.key === "Enter" && handleAddOutcome()}
+          />
+          <button
+            onClick={handleAddOutcome}
+            className="shrink-0 p-2 rounded-lg bg-[hsl(180,70%,45%)] text-white"
+          >
+            <Plus className="h-4 w-4" />
+          </button>
+        </div>
       </Section>
     </div>
   );
