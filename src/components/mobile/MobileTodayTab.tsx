@@ -3,6 +3,9 @@ import { useCalendarEvents, CalendarEvent } from "@/hooks/useCalendarEvents";
 import { useTasks, TaskListItem } from "@/hooks/useTasks";
 import { useClients } from "@/hooks/useClients";
 import { useRegion } from "@/contexts/RegionContext";
+import { useUserSettings } from "@/hooks/useUserSettings";
+import { getActiveTimezone, convertToTimezone } from "@/lib/timezone-utils";
+import { cn } from "@/lib/utils";
 import { Clock, CheckSquare, AlertTriangle, Calendar as CalendarIcon, Filter } from "lucide-react";
 import { format, isSameDay, isBefore, startOfDay, isToday } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
@@ -33,7 +36,22 @@ const MobileTodayTab = () => {
   const { events, loading: eventsLoading } = useCalendarEvents(selectedDate, "day");
   const { tasks, loading: tasksLoading, updateTask } = useTasks();
   const { clients, loading: clientsLoading } = useClients();
-  const { selectedAdvisors, regionalData } = useRegion();
+  const { selectedAdvisors, regionalData, selectedRegion } = useRegion();
+  const { settings } = useUserSettings();
+
+  const activeTimezone = useMemo(
+    () => getActiveTimezone(settings?.timezone, selectedRegion),
+    [settings?.timezone, selectedRegion]
+  );
+
+  const getEventTimeStatus = (event: CalendarEvent): "in-progress" | "past" | "upcoming" => {
+    const now = convertToTimezone(new Date(), activeTimezone);
+    const start = convertToTimezone(event.startTime, activeTimezone);
+    const end = convertToTimezone(event.endTime, activeTimezone);
+    if (now >= start && now <= end) return "in-progress";
+    if (now > end) return "past";
+    return "upcoming";
+  };
 
   const selectedAdvisorNames = useMemo(
     () => regionalData.advisors.filter((a) => selectedAdvisors.includes(a.initials)).map((a) => a.name),
@@ -136,7 +154,7 @@ const MobileTodayTab = () => {
           </h2>
           <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
             <PopoverTrigger asChild>
-              <button className="p-1.5 rounded-md hover:bg-accent/50 transition-colors">
+              <button type="button" className="p-1.5 rounded-md hover:bg-accent/50 transition-colors cursor-pointer relative z-10">
                 <CalendarIcon className="h-4 w-4 text-muted-foreground" />
               </button>
             </PopoverTrigger>
@@ -164,24 +182,49 @@ const MobileTodayTab = () => {
           </div>
         ) : (
           <div className="space-y-2">
-            {dateEvents.map((event) => (
-              <button
-                key={event.id}
-                onClick={() => setSelectedEvent(event)}
-                className="w-full flex items-start gap-3 p-3 rounded-lg bg-card border border-border text-left hover:bg-accent/50 transition-colors"
-              >
-                <div className="w-1 self-stretch rounded-full shrink-0" style={{ backgroundColor: event.color || "hsl(180, 70%, 45%)" }} />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">{event.title}</p>
-                  {event.clientName && <p className="text-xs text-muted-foreground truncate">{event.clientName}</p>}
-                  <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
-                    <Clock className="h-3 w-3" />
-                    <span>{format(event.startTime, "HH:mm")} – {format(event.endTime, "HH:mm")}</span>
+            {dateEvents.map((event) => {
+              const status = getEventTimeStatus(event);
+              return (
+                <button
+                  key={event.id}
+                  onClick={() => setSelectedEvent(event)}
+                  className={cn(
+                    "w-full flex items-start gap-3 p-3 rounded-lg text-left transition-colors",
+                    status === "in-progress" && "bg-[hsl(180,70%,45%)]/5 border border-[hsl(180,70%,45%)]/30 ring-1 ring-[hsl(180,70%,45%)]/20",
+                    status === "past" && "bg-card/60 border border-border opacity-60",
+                    status === "upcoming" && "bg-card border border-border hover:bg-accent/50"
+                  )}
+                >
+                  <div
+                    className={cn(
+                      "self-stretch rounded-full shrink-0",
+                      status === "in-progress" ? "w-1.5" : "w-1"
+                    )}
+                    style={{ backgroundColor: status === "past" ? "hsl(var(--muted-foreground))" : (event.color || "hsl(180, 70%, 45%)") }}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className={cn(
+                      "text-sm text-foreground truncate",
+                      status === "in-progress" ? "font-semibold" : "font-medium",
+                      status === "past" && "text-muted-foreground"
+                    )}>{event.title}</p>
+                    {event.clientName && <p className="text-xs text-muted-foreground truncate">{event.clientName}</p>}
+                    <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
+                      <Clock className="h-3 w-3" />
+                      <span>{format(event.startTime, "HH:mm")} – {format(event.endTime, "HH:mm")}</span>
+                    </div>
                   </div>
-                </div>
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground shrink-0">{event.eventType}</span>
-              </button>
-            ))}
+                  {status === "in-progress" ? (
+                    <span className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-[hsl(180,70%,45%)]/10 text-[hsl(180,70%,45%)] font-medium shrink-0">
+                      <span className="h-1.5 w-1.5 rounded-full bg-[hsl(180,70%,45%)] animate-pulse" />
+                      Live
+                    </span>
+                  ) : (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground shrink-0">{event.eventType}</span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         )}
       </section>
@@ -194,7 +237,7 @@ const MobileTodayTab = () => {
           </h2>
           <Popover open={filterOpen} onOpenChange={setFilterOpen}>
             <PopoverTrigger asChild>
-              <button className="p-1.5 rounded-md hover:bg-accent/50 transition-colors relative">
+              <button type="button" className="p-1.5 rounded-md hover:bg-accent/50 transition-colors cursor-pointer relative z-10">
                 <Filter className="h-4 w-4 text-muted-foreground" />
                 {taskStatusFilter !== "open" && (
                   <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-[hsl(180,70%,45%)]" />
