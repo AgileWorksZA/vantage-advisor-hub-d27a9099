@@ -1,9 +1,11 @@
 import { useMeetingRecordings } from "@/hooks/useMeetingRecordings";
 import { useClientMeetingPrep } from "@/hooks/useClientMeetingPrep";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Sparkles, CalendarDays, CheckSquare, TrendingUp, Loader2 } from "lucide-react";
-import { format, addDays } from "date-fns";
+import { Progress } from "@/components/ui/progress";
+import { Plus, Sparkles, CalendarDays, CheckSquare, TrendingUp, Loader2, ChevronRight, Target } from "lucide-react";
+import { format, addDays, isPast } from "date-fns";
 import type { DetailView } from "./PrepStep";
+import type { KeyOutcome } from "../MobileMeetingScreen";
 
 interface FollowUpsStepProps {
   eventId: string;
@@ -11,9 +13,42 @@ interface FollowUpsStepProps {
   clientName?: string;
   onConvertToTask: (title: string, description: string) => void;
   onTagClick: (view: DetailView) => void;
+  keyOutcomes?: KeyOutcome[];
+  transcription?: string | null;
 }
 
-export default function FollowUpsStep({ eventId, clientId, clientName, onConvertToTask, onTagClick }: FollowUpsStepProps) {
+const statusToProgress: Record<string, number> = {
+  "Not Started": 0,
+  "In Progress": 50,
+  "Completed": 100,
+  "Cancelled": 0,
+};
+
+const statusColors: Record<string, string> = {
+  "Not Started": "bg-muted-foreground",
+  "In Progress": "bg-[hsl(180,70%,45%)]",
+  "Completed": "bg-emerald-500",
+  "Cancelled": "bg-muted-foreground",
+};
+
+function findLinkedOutcome(taskTitle: string, keyOutcomes: KeyOutcome[]): KeyOutcome | null {
+  if (!keyOutcomes.length) return null;
+  const taskWords = taskTitle.toLowerCase().split(/\s+/).filter(w => w.length > 3);
+  for (const outcome of keyOutcomes) {
+    const outcomeWords = outcome.text.toLowerCase().split(/\s+/).filter(w => w.length > 3);
+    const overlap = taskWords.filter(w => outcomeWords.some(ow => ow.includes(w) || w.includes(ow)));
+    if (overlap.length >= 1) return outcome;
+  }
+  return null;
+}
+
+const originConfig: Record<string, { label: string; className: string }> = {
+  prep: { label: "Prep", className: "bg-blue-500/10 text-blue-600" },
+  meeting: { label: "Meeting", className: "bg-[hsl(180,70%,45%)]/10 text-[hsl(180,70%,45%)]" },
+  "post-meeting": { label: "Post", className: "bg-amber-500/10 text-amber-600" },
+};
+
+export default function FollowUpsStep({ eventId, clientId, clientName, onConvertToTask, onTagClick, keyOutcomes = [], transcription = null }: FollowUpsStepProps) {
   const { recordings, loading: recLoading } = useMeetingRecordings(eventId, clientId || undefined);
   const { tasks, opportunities, loading: prepLoading } = useClientMeetingPrep(clientId);
 
@@ -23,6 +58,8 @@ export default function FollowUpsStep({ eventId, clientId, clientName, onConvert
   const followUpDate = summary?.follow_up_date
     ? format(new Date(summary.follow_up_date), "dd MMMM yyyy")
     : format(addDays(new Date(), 14), "dd MMMM yyyy");
+
+  const recTranscription = recording?.transcription || transcription;
 
   const loading = recLoading || prepLoading;
 
@@ -79,23 +116,69 @@ export default function FollowUpsStep({ eventId, clientId, clientName, onConvert
         </div>
       )}
 
-      {/* Outstanding Tasks */}
+      {/* Outstanding Tasks - Enhanced */}
       {tasks.length > 0 && (
         <div className="space-y-2">
           <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">Outstanding Tasks</h3>
-          {tasks.slice(0, 5).map((t) => (
-            <button
-              key={t.id}
-              onClick={() => onTagClick({ type: "task", id: t.id, data: t })}
-              className="w-full flex items-center gap-2 p-2.5 rounded-lg bg-card border border-border text-left hover:bg-accent/50 transition-colors"
-            >
-              <Badge variant="secondary" className={`text-[10px] px-1.5 py-0 shrink-0 ${t.isOverdue ? "bg-destructive/10 text-destructive" : "bg-orange-500/10 text-orange-600"}`}>
-                <CheckSquare className="h-3 w-3 mr-0.5" />
-                Task
-              </Badge>
-              <span className="text-sm text-foreground truncate flex-1">{t.title}</span>
-            </button>
-          ))}
+          {tasks.slice(0, 5).map((t) => {
+            const progress = statusToProgress[t.status] ?? 0;
+            const progressColor = statusColors[t.status] ?? "bg-muted-foreground";
+            const isOverdue = t.isOverdue || (t.dueDate && isPast(new Date(t.dueDate)));
+            const linkedOutcome = findLinkedOutcome(t.title, keyOutcomes);
+
+            return (
+              <button
+                key={t.id}
+                onClick={() => onTagClick({
+                  type: "task",
+                  id: t.id,
+                  data: { ...t, transcription: recTranscription, keyOutcomes }
+                })}
+                className="w-full text-left rounded-lg bg-card border border-border overflow-hidden hover:bg-accent/50 transition-colors"
+              >
+                {/* Progress bar at top */}
+                <div className="h-1.5 w-full bg-muted">
+                  <div
+                    className={`h-full transition-all ${progressColor}`}
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+
+                <div className="p-2.5 space-y-1.5">
+                  {/* Title row */}
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary" className={`text-[10px] px-1.5 py-0 shrink-0 ${isOverdue ? "bg-destructive/10 text-destructive" : "bg-orange-500/10 text-orange-600"}`}>
+                      <CheckSquare className="h-3 w-3 mr-0.5" />
+                      {t.status || "Task"}
+                    </Badge>
+                    <span className="text-sm font-medium text-foreground truncate flex-1">{t.title}</span>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                  </div>
+
+                  {/* Due date row */}
+                  <div className="flex items-center gap-2">
+                    {t.dueDate && (
+                      <span className={`text-xs ${isOverdue ? "text-destructive font-medium" : "text-muted-foreground"}`}>
+                        Due: {format(new Date(t.dueDate), "dd MMM yyyy")}
+                        {isOverdue && " • Overdue"}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Linked outcome */}
+                  {linkedOutcome && (
+                    <div className="flex items-center gap-1.5">
+                      <Target className="h-3 w-3 text-[hsl(180,70%,45%)] shrink-0" />
+                      <span className="text-xs text-muted-foreground truncate flex-1">{linkedOutcome.text}</span>
+                      <Badge variant="secondary" className={`text-[9px] px-1 py-0 ${originConfig[linkedOutcome.origin]?.className || ""}`}>
+                        {originConfig[linkedOutcome.origin]?.label || linkedOutcome.origin}
+                      </Badge>
+                    </div>
+                  )}
+                </div>
+              </button>
+            );
+          })}
         </div>
       )}
 

@@ -176,6 +176,7 @@ export default function MobileMeetingScreen({ event, onBack }: MobileMeetingScre
             clientName={event.clientName}
             onConvertToTask={handleConvertToTask}
             onTagClick={setDetailView}
+            keyOutcomes={keyOutcomes}
           />
         )}
       </div>
