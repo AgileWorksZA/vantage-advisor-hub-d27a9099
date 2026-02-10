@@ -96,7 +96,6 @@ export function AppHeader({
           userName={userName}
           userEmail={userEmail}
           onSignOut={onSignOut}
-          onAccountSettings={onAccountSettings}
         />
       </div>
     </header>
