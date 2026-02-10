@@ -3640,6 +3640,7 @@ export type Database = {
       tasks: {
         Row: {
           actual_hours: number | null
+          assigned_to_name: string | null
           assigned_to_user_id: string | null
           category: string | null
           client_id: string | null
@@ -3678,6 +3679,7 @@ export type Database = {
         }
         Insert: {
           actual_hours?: number | null
+          assigned_to_name?: string | null
           assigned_to_user_id?: string | null
           category?: string | null
           client_id?: string | null
@@ -3716,6 +3718,7 @@ export type Database = {
         }
         Update: {
           actual_hours?: number | null
+          assigned_to_name?: string | null
           assigned_to_user_id?: string | null
           category?: string | null
           client_id?: string | null
@@ -3769,8 +3772,10 @@ export type Database = {
           id: string
           is_active: boolean
           is_primary_adviser: boolean
+          jurisdiction: string | null
           name: string
           role: string | null
+          team_name: string | null
           updated_at: string
           user_id: string
         }
@@ -3780,8 +3785,10 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_primary_adviser?: boolean
+          jurisdiction?: string | null
           name: string
           role?: string | null
+          team_name?: string | null
           updated_at?: string
           user_id: string
         }
@@ -3791,8 +3798,10 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_primary_adviser?: boolean
+          jurisdiction?: string | null
           name?: string
           role?: string | null
+          team_name?: string | null
           updated_at?: string
           user_id?: string
         }

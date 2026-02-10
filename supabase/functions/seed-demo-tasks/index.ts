@@ -314,11 +314,31 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`Found ${clients.length} clients for task distribution`);
+    // Fetch team members for assigning tasks
+    const { data: teamMembers } = await supabase
+      .from("team_members")
+      .select("name, team_name, jurisdiction")
+      .eq("user_id", userId)
+      .eq("is_active", true);
+
+    const memberNames = teamMembers?.map((m: any) => m.name) || [];
+
+    console.log(`Found ${clients.length} clients, ${memberNames.length} team members for task distribution`);
 
     // Generate 500 tasks
     const tasks = [];
     const TOTAL_TASKS = 500;
+
+    // Standard execution minutes by type
+    const execMinutesByType: Record<string, number> = {
+      "Client Complaint": 90,
+      "Follow-up": 30,
+      "Annual Review": 120,
+      "Portfolio Review": 60,
+      "Compliance": 45,
+      "Onboarding": 180,
+      "Document Request": 20,
+    };
 
     for (let i = 0; i < TOTAL_TASKS; i++) {
       const taskType = weightedRandom(typeWeights).type;
@@ -329,7 +349,12 @@ Deno.serve(async (req) => {
       const dueDate = generateDueDate(i);
       const clientId = clients[i % clients.length].id;
 
-      const task = {
+      // Assign to a team member name if available
+      const assignedToName = memberNames.length > 0
+        ? memberNames[i % memberNames.length]
+        : null;
+
+      const task: any = {
         user_id: userId,
         client_id: clientId,
         title: template.title,
@@ -344,8 +369,10 @@ Deno.serve(async (req) => {
         source: randomFromArray(sourceOptions),
         tags: generateTags(),
         notes: generateNotes(userId),
-        estimated_hours: Math.round(Math.random() * 7.5 * 2 + 1) / 2, // 0.5 to 8 in 0.5 increments
-        completed_at: status === "Completed" ? new Date().toISOString() : null,
+        estimated_hours: Math.round(Math.random() * 7.5 * 2 + 1) / 2,
+        standard_execution_minutes: execMinutesByType[taskType] || 60,
+        assigned_to_name: assignedToName,
+        completed_at: status === "Completed" ? new Date(Date.now() - randomInt(0, 14) * 86400000).toISOString() : null,
       };
 
       tasks.push(task);

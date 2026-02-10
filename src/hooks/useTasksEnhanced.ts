@@ -173,7 +173,7 @@ export const useTasksEnhanced = (filters?: TaskFilters) => {
           ? `${task.clients.first_name} ${task.clients.surname}`
           : null,
         client_advisor: task.clients?.advisor || null,
-        assigned_to_name: "Current User",
+        assigned_to_name: task.assigned_to_name || "Current User",
         linked_clients: linkedClientsMap[task.id] || [],
         notes: Array.isArray(task.notes) ? task.notes : [],
         internal_notes: Array.isArray(task.internal_notes) ? task.internal_notes : [],
