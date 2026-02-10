@@ -1,73 +1,69 @@
 
 
-## Enhance Mobile Schedule with Meeting Status Indicators and Fix Icon Clickability
+## Seed Calendar Events for All Advisors Across Jurisdictions
 
 ### Overview
-Three changes to the Mobile Today tab:
-1. Highlight the currently in-progress meeting with a teal/accent border and subtle "In Progress" badge
-2. Grey out past meetings while keeping them clickable
-3. Fix the calendar and filter icon buttons so they reliably trigger their popovers (add explicit `type="button"` and ensure z-index/pointer-events are correct)
+Create a new backend function `seed-calendar-events` that populates 20 meetings/calls per advisor per day across all 25 advisors (5 jurisdictions x 5 advisors) for 30 days starting today. Events will be linked to randomly selected clients belonging to each advisor. This generates approximately **15,000 calendar events** (25 advisors x 20 events/day x 30 days).
 
-### Changes
+### New File: `supabase/functions/seed-calendar-events/index.ts`
 
-**File: `src/components/mobile/MobileTodayTab.tsx`**
+The edge function will:
 
-#### 1. Meeting time-awareness logic
+1. **Authenticate** the calling user and use their `user_id` for all inserted events
+2. **Query existing clients** grouped by advisor name
+3. **Delete existing seeded events** (to make the function idempotent) by removing events in the target date range before re-inserting
+4. **Generate 20 events per advisor per day** for 30 days (today through today + 29):
+   - Randomly select from client-linked event types: `Meeting`, `Annual Review`, `Portfolio Review`, `Compliance Review`, `Client Call`
+   - Schedule events between 7:00 AM and 9:00 PM in the advisor's jurisdiction timezone
+   - Duration: 30-90 minutes (randomized)
+   - Assign a random client from that advisor's book
+   - Set timezone per the jurisdiction default (e.g., `Africa/Johannesburg` for ZA, `Australia/Sydney` for AU)
+   - Set appropriate color values matching existing scheme
+   - Past events (before now) get status `Completed`; future events get `Scheduled`
+   - Generate realistic meeting titles (e.g., "Portfolio Review - Sarah Mitchell", "Annual Review - James Chen")
+   - Set location to a mix of "Office", "Zoom", "Client Premises", or null
 
-Add a helper function to determine each event's temporal status relative to "now":
+5. **Insert in batches** of 100 for performance
 
-```text
-function getEventTimeStatus(event):
-  now = new Date()
-  if now >= event.startTime AND now <= event.endTime:  return "in-progress"
-  if now > event.endTime:                               return "past"
-  return "upcoming"
+### Configuration
+
+Add to `supabase/config.toml`:
+```toml
+[functions.seed-calendar-events]
+verify_jwt = false
 ```
 
-This uses the advisor's timezone context via `useUserSettings` and `getActiveTimezone` from the existing timezone utility to ensure the comparison is timezone-aware. If the user has a configured timezone, event times are compared accordingly.
+### Data Generation Details
 
-#### 2. Visual treatment per status
+**Timezone mapping (reuse from existing code):**
+| Jurisdiction | Timezone |
+|-------------|----------|
+| ZA | Africa/Johannesburg |
+| AU | Australia/Sydney |
+| CA | America/Toronto |
+| GB | Europe/London |
+| US | America/New_York |
 
-Apply conditional classes to each event card:
+**Event type distribution and colors:**
+| Type | Weight | Color |
+|------|--------|-------|
+| Meeting | 35% | hsl(180,70%,45%) (teal) |
+| Client Call | 25% | hsl(171,70%,45%) (teal-400) |
+| Portfolio Review | 15% | hsl(270,60%,60%) (purple-400) |
+| Annual Review | 15% | hsl(270,70%,55%) (purple-500) |
+| Compliance Review | 10% | hsl(38,90%,55%) (amber-500) |
 
-| Status | Visual Treatment |
-|--------|-----------------|
-| **In Progress** | Teal left border accent (thicker, 3px), teal-tinted background, pulsing "LIVE" dot badge, bold title |
-| **Past** | Reduced opacity (opacity-60), muted text colors, slight grey tint on background |
-| **Upcoming** | Current default styling (no change) |
+**Time slot generation:** Events are spread across 7 AM - 9 PM (14 hours) with 20 events per day. A simple approach: divide the day into 20 roughly equal slots with small random offsets to avoid perfect alignment.
 
-All states remain fully clickable and navigate to the meeting screen.
+### Frontend Trigger
 
-#### 3. Fix icon button clickability
+Add a "Seed Calendar" button to the existing seeding UI or call the function from the Administration page, following the same pattern used by `seed-demo-clients`.
 
-Both the calendar icon (schedule section) and filter icon (tasks section) buttons will be updated:
-- Add `type="button"` attribute to prevent any form-submission interference
-- Ensure `z-index` is adequate relative to the scroll container
-- Add `cursor-pointer` class for visual feedback
-
-### Technical Details
-
-**Timezone-aware comparison:**
-- Import `useUserSettings` and `getActiveTimezone` from existing utilities
-- Import `useRegion` to get the region code
-- Compute the active timezone and use `convertToTimezone` to shift "now" for accurate comparison against event times stored in UTC
-
-**Event card class logic (pseudo-code):**
-```text
-const status = getEventTimeStatus(event);
-
-const cardClasses = cn(
-  "w-full flex items-start gap-3 p-3 rounded-lg text-left transition-colors",
-  status === "in-progress" && "bg-[hsl(180,70%,45%)]/5 border-[hsl(180,70%,45%)]/30 border ring-1 ring-[hsl(180,70%,45%)]/20",
-  status === "past" && "bg-card/60 border border-border opacity-60",
-  status === "upcoming" && "bg-card border border-border hover:bg-accent/50"
-);
-```
-
-**"LIVE" indicator for in-progress meetings:**
-A small pulsing teal dot with "Live" text replaces the event type badge when the meeting is currently active.
+### Files Summary
 
 | File | Action |
 |------|--------|
-| `src/components/mobile/MobileTodayTab.tsx` | Add time-status logic, conditional card styling, fix button attributes |
+| `supabase/functions/seed-calendar-events/index.ts` | Create -- edge function to seed events |
+| `supabase/config.toml` | Update -- add function config |
+| Frontend trigger (Administration or existing seed UI) | Update -- add button to invoke the function |
 
