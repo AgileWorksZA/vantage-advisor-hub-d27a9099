@@ -17,3 +17,6 @@ verify_jwt = false
 [functions.seed-team-members]
 verify_jwt = false
 
+[functions.seed-demo-relationships]
+verify_jwt = false
+

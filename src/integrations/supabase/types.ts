@@ -1400,6 +1400,7 @@ export type Database = {
           email: string | null
           employer: string | null
           facebook: string | null
+          family_group: string | null
           fax_number: string | null
           first_name: string
           gender: string | null
@@ -1458,6 +1459,7 @@ export type Database = {
           email?: string | null
           employer?: string | null
           facebook?: string | null
+          family_group?: string | null
           fax_number?: string | null
           first_name: string
           gender?: string | null
@@ -1516,6 +1518,7 @@ export type Database = {
           email?: string | null
           employer?: string | null
           facebook?: string | null
+          family_group?: string | null
           fax_number?: string | null
           first_name?: string
           gender?: string | null

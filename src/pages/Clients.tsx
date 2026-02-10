@@ -505,7 +505,7 @@ const Clients = () => {
                     )}
                     <TableHead className="text-xs font-normal text-muted-foreground">Contact Details</TableHead>
                     <TableHead className="text-xs font-normal text-muted-foreground">Advisor</TableHead>
-                    <TableHead className="text-xs font-normal text-muted-foreground">Wealth Manager</TableHead>
+                    <TableHead className="text-xs font-normal text-muted-foreground">Family Group</TableHead>
                     {selectedRegion === "ZA" && (
                       <TableHead className="text-xs font-normal text-muted-foreground">Language</TableHead>
                     )}
@@ -547,7 +547,7 @@ const Clients = () => {
                         </div>
                       </TableCell>
                       <TableCell className="text-sm">{client.advisor}</TableCell>
-                      <TableCell className="text-sm">{client.wealthManager}</TableCell>
+                      <TableCell className="text-sm">{client.familyGroup}</TableCell>
                       {selectedRegion === "ZA" && (
                         <TableCell className="text-sm">{client.language}</TableCell>
                       )}
