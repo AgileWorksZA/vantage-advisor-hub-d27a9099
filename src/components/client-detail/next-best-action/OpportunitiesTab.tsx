@@ -1,12 +1,16 @@
 import React from "react";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, ArrowRightLeft, Layers, Building2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { TrendingUp, ArrowRightLeft, Layers, Building2, Zap, Loader2 } from "lucide-react";
 import type { PrepOpportunity, PrepProduct } from "@/hooks/useClientMeetingPrep";
 
 interface OpportunitiesTabProps {
   opportunities: PrepOpportunity[];
   products: PrepProduct[];
   householdView?: boolean;
+  onOptimise?: () => void;
+  hasScanned?: boolean;
+  isScanning?: boolean;
 }
 
 interface GapOpportunity {
@@ -62,12 +66,28 @@ const ClientNameTag = ({ name }: { name: string }) => (
   <span className="text-[10px] px-1.5 py-0 rounded bg-muted text-muted-foreground font-medium">{name}</span>
 );
 
-const OpportunitiesTab = ({ opportunities, products, householdView }: OpportunitiesTabProps) => {
-  const gaps = opportunities.length === 0 ? buildGapOpportunities(products) : [];
+const OpportunitiesTab = ({ opportunities, products, householdView, onOptimise, hasScanned, isScanning }: OpportunitiesTabProps) => {
+  const gaps = (opportunities.length === 0 && hasScanned) ? buildGapOpportunities(products) : (opportunities.length === 0 ? [] : []);
   const items = opportunities.length > 0 ? opportunities : null;
 
   if (!items && gaps.length === 0) {
-    return <p className="text-xs text-muted-foreground py-4 text-center">No opportunities identified yet.</p>;
+    return (
+      <div className="flex flex-col items-center py-4 gap-2">
+        {onOptimise && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onOptimise}
+            disabled={isScanning}
+            className="border-[hsl(180,70%,45%)] text-[hsl(180,70%,45%)] hover:bg-[hsl(180,70%,45%)]/10"
+          >
+            {isScanning ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Zap className="h-3.5 w-3.5 mr-1.5" />}
+            {isScanning ? "Scanning..." : "Optimise"}
+          </Button>
+        )}
+        <p className="text-xs text-muted-foreground text-center">No opportunities identified yet.</p>
+      </div>
+    );
   }
 
   if (items) {
