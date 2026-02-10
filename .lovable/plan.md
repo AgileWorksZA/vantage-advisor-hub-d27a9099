@@ -1,38 +1,35 @@
 
 
-## Move Jurisdiction & Advisor Settings to Mobile-Only with Scoped Context
+## Replace Jurisdiction & Advisor Lists with Dropdown Selects
 
-### Overview
+### What Changes
 
-Remove the "User Setup" section from the web Account Settings page and add jurisdiction/advisor selection back into the mobile Settings menu. Crucially, changes made in mobile settings will only affect the mobile tabs (Today, Clients, Tasks, Insights, AI) -- they won't alter the web view's region or advisor filters.
+Replace the long scrollable lists for jurisdiction and advisor selection with compact single-select dropdown boxes. This keeps the settings screen clean and prevents excessive scrolling.
 
-### How It Works
+- **Jurisdiction**: A single `<Select>` dropdown showing the current country with its flag. Selecting a different country switches the region.
+- **Advisor**: A single `<Select>` dropdown listing all advisors for the current jurisdiction. Selecting an advisor sets only that advisor as the active filter (single-select replaces multi-select).
 
-The mobile app will get its own independent `RegionContext` provider that wraps all mobile content. This means when `useRegion()` is called inside any mobile tab or settings screen, it reads/writes mobile-specific state (stored under separate localStorage keys). The web app's global region and advisor selections remain untouched.
+### Design
 
-### Changes
-
-| File | Action |
-|------|--------|
-| `src/contexts/RegionContext.tsx` | Export the raw `RegionContext` so it can be re-provided |
-| `src/contexts/MobileRegionProvider.tsx` | **New file** -- a lightweight provider that supplies mobile-scoped region/advisor state using the same `RegionContext`, with its own localStorage keys (`vantage-mobile-region`, `vantage-mobile-advisor-selections`) |
-| `src/components/mobile/MobileApp.tsx` | Wrap entire component tree with `MobileRegionProvider` |
-| `src/components/mobile/MobileSettingsMenu.tsx` | Add back jurisdiction selector (flags + checkmarks) and advisor multi-select filter, styled for mobile layout |
-| `src/pages/AccountSettings.tsx` | Remove the "User Setup" section (id `"setup"`) from `settingsSections` array, remove the `activeSection === "setup"` rendering block, and clean up unused imports |
+Both dropdowns will use the existing Shadcn `Select` component (`@/components/ui/select`) and sit in a compact row layout with labels and icons, replacing the current full-height list blocks.
 
 ### Technical Details
 
-**MobileRegionProvider** (`src/contexts/MobileRegionProvider.tsx`):
-- Provides the same `RegionContextType` interface as the global provider
-- Uses independent localStorage keys so mobile and web don't interfere
-- Includes all derived values: `regionalData`, `filteredRegionalData`, `currencySymbol`, `formatCurrency`, `opportunities`
-- Reuses helper functions (`getRegionalData`, `getFilteredRegionalData`, `getRegionalOpportunities`) from `regionalData.ts`
-- Defaults to "ZA" with all advisors selected, same as the global provider
+**File: `src/components/mobile/MobileSettingsMenu.tsx`**
 
-**MobileSettingsMenu** additions:
-- Jurisdiction section: flag icons with country names, checkmark on selected, calls `setSelectedRegion` from context
-- Advisor section: initials badges with full names, "Select All / Deselect All" toggle, checkmarks on selected advisors
-- Both sections appear between the user info block and the existing menu items (Dark Mode, AI, etc.)
-- Respects `isJurisdictionRestricted` by disabling jurisdiction rows when restricted
+1. Import `Select, SelectTrigger, SelectContent, SelectItem, SelectValue` from `@/components/ui/select`.
+2. Remove unused `Check` icon import.
+3. Replace the **Jurisdiction Selector** block (lines 133-166) with a labeled row containing a `<Select>` dropdown:
+   - `value={selectedRegion}`, `onValueChange={setSelectedRegion}`
+   - Each `<SelectItem>` shows the flag image + country name
+   - Disabled when `isJurisdictionRestricted`
+4. Replace the **Advisor Filter** block (lines 168-215) with a labeled row containing a `<Select>` dropdown:
+   - `value={selectedAdvisors[0] || ""}`, `onValueChange={(val) => setSelectedAdvisors([val])}`
+   - Each `<SelectItem>` shows the advisor initials badge + full name
+   - Single-select only (one advisor at a time)
+5. Remove "Select All / Deselect All" toggle (no longer needed for single-select).
 
-**Scoping guarantee**: Since React uses the nearest context provider, all `useRegion()` calls inside `MobileApp` will resolve to the mobile provider. The web app's `RegionProvider` at the app root remains unaffected.
+| File | Action |
+|------|--------|
+| `src/components/mobile/MobileSettingsMenu.tsx` | Replace list selectors with `<Select>` dropdowns |
+
