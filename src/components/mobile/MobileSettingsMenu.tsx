@@ -1,12 +1,10 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, Settings, LogOut, Moon, Sun, Sparkles, Monitor, Smartphone, Globe, Users, Check } from "lucide-react";
+import { ArrowLeft, Settings, LogOut, Moon, Sun, Sparkles, Monitor, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
 import { useAppMode } from "@/contexts/AppModeContext";
-import { useRegion } from "@/contexts/RegionContext";
-import { regions } from "@/components/dashboard/RegionSelector";
 import { supabase } from "@/integrations/supabase/client";
 
 const AI_CHAT_STORAGE_KEY = "vantage-ai-chat-enabled";
@@ -18,7 +16,6 @@ interface MobileSettingsMenuProps {
 const MobileSettingsMenu = ({ onBack }: MobileSettingsMenuProps) => {
   const { resolvedTheme, setTheme } = useTheme();
   const { mode, setMode } = useAppMode();
-  const { selectedRegion, setSelectedRegion, regionalData, selectedAdvisors, setSelectedAdvisors, isJurisdictionRestricted } = useRegion();
 
   const [mounted, setMounted] = useState(false);
   const [userName, setUserName] = useState("");
@@ -127,96 +124,6 @@ const MobileSettingsMenu = ({ onBack }: MobileSettingsMenuProps) => {
               <Smartphone className="h-3 w-3" />
               Mobile
             </button>
-          </div>
-        </div>
-
-        {/* Jurisdiction Selector */}
-        <div className="border-b border-border">
-          <div className="flex items-center gap-2 px-4 pt-3 pb-1">
-            <Globe className="h-4 w-4 text-muted-foreground" />
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Jurisdiction</span>
-            {isJurisdictionRestricted && (
-              <span className="text-[10px] text-muted-foreground italic">(restricted)</span>
-            )}
-          </div>
-          <div className="py-1">
-            {regions.map((region) => (
-              <button
-                key={region.code}
-                disabled={isJurisdictionRestricted}
-                onClick={() => setSelectedRegion(region.code)}
-                className={cn(
-                  "w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors",
-                  isJurisdictionRestricted ? "opacity-60 cursor-not-allowed" : "hover:bg-muted/50 active:bg-muted",
-                  selectedRegion === region.code && "bg-muted/50"
-                )}
-              >
-                <img
-                  src={`https://flagcdn.com/w40/${region.flagCode}.png`}
-                  srcSet={`https://flagcdn.com/w80/${region.flagCode}.png 2x`}
-                  alt={`${region.name} flag`}
-                  className="object-contain"
-                  style={{ height: 18, width: 'auto' }}
-                />
-                <span className="flex-1 text-left">{region.name}</span>
-                {selectedRegion === region.code && (
-                  <Check className="h-4 w-4 text-primary" />
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Advisor Filter */}
-        <div className="border-b border-border">
-          <div className="flex items-center gap-2 px-4 pt-3 pb-1">
-            <Users className="h-4 w-4 text-muted-foreground" />
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Advisors</span>
-          </div>
-          <div className="py-1">
-            {/* Toggle All */}
-            <button
-              onClick={() => {
-                const allInitials = regionalData.advisors.map(a => a.initials);
-                const allSelected = allInitials.every(i => selectedAdvisors.includes(i));
-                setSelectedAdvisors(allSelected ? [] : allInitials);
-              }}
-              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors hover:bg-muted/50 active:bg-muted"
-            >
-              <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center">
-                <Users className="h-3 w-3 text-muted-foreground" />
-              </div>
-              <span className="flex-1 text-left font-medium">
-                {regionalData.advisors.every(a => selectedAdvisors.includes(a.initials)) ? "Deselect All" : "Select All"}
-              </span>
-              {regionalData.advisors.every(a => selectedAdvisors.includes(a.initials)) && (
-                <Check className="h-4 w-4 text-primary" />
-              )}
-            </button>
-            {regionalData.advisors.map((advisor) => {
-              const isSelected = selectedAdvisors.includes(advisor.initials);
-              return (
-                <button
-                  key={advisor.initials}
-                  onClick={() => {
-                    setSelectedAdvisors(
-                      isSelected
-                        ? selectedAdvisors.filter(i => i !== advisor.initials)
-                        : [...selectedAdvisors, advisor.initials]
-                    );
-                  }}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors hover:bg-muted/50 active:bg-muted"
-                >
-                  <div className="h-6 w-6 rounded-full bg-[hsl(var(--sidebar-primary))] flex items-center justify-center text-[10px] font-bold text-primary-foreground">
-                    {advisor.initials}
-                  </div>
-                  <span className="flex-1 text-left">{advisor.name}</span>
-                  {isSelected && (
-                    <Check className="h-4 w-4 text-primary" />
-                  )}
-                </button>
-              );
-            })}
           </div>
         </div>
 
