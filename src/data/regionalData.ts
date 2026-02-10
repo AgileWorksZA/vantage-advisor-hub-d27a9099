@@ -35,6 +35,8 @@ export interface AdvisorData {
   name: string;
   aum: number; // Their portion of totalAUM
   clientCount: number; // Number of clients they manage
+  gender: "male" | "female";
+  photoUrl?: string;
 }
 
 export interface TaskData {
@@ -159,11 +161,11 @@ const southAfricaData: RegionalData = {
     { range: "> R10M", value: "R 947,490,312", investors: 52 },
   ],
   advisors: [
-    { initials: "JB", name: "Johan Botha", aum: 980000000, clientCount: 425 },
-    { initials: "SM", name: "Sarah Mostert", aum: 850000000, clientCount: 380 },
-    { initials: "PN", name: "Pieter Naudé", aum: 720000000, clientCount: 340 },
-    { initials: "LV", name: "Linda van Wyk", aum: 650000000, clientCount: 310 },
-    { initials: "DG", name: "David Greenberg", aum: 467726572.38, clientCount: 270 },
+    { initials: "JB", name: "Johan Botha", aum: 980000000, clientCount: 425, gender: "male" },
+    { initials: "SM", name: "Sarah Mostert", aum: 850000000, clientCount: 380, gender: "female" },
+    { initials: "PN", name: "Pieter Naudé", aum: 720000000, clientCount: 340, gender: "male" },
+    { initials: "LV", name: "Linda van Wyk", aum: 650000000, clientCount: 310, gender: "female" },
+    { initials: "DG", name: "David Greenberg", aum: 467726572.38, clientCount: 270, gender: "male" },
   ],
   corporateActions: [
     { id: "CA-10234", investmentCode: "NPN.XJSE", eventType: "Dividend", affectedAccounts: 42, exDate: "15/03/2026", type: "mandatory" },
@@ -293,11 +295,11 @@ const australiaData: RegionalData = {
     { range: "> A$5M", value: "A$ 1,626,245,730", investors: 89 },
   ],
   advisors: [
-    { initials: "JM", name: "James Mitchell", aum: 1100000000, clientCount: 512 },
-    { initials: "ST", name: "Sarah Thompson", aum: 950000000, clientCount: 480 },
-    { initials: "MO", name: "Michael O'Brien", aum: 820000000, clientCount: 445 },
-    { initials: "EA", name: "Emily Anderson", aum: 780000000, clientCount: 420 },
-    { initials: "TM", name: "Thomas Murphy", aum: 739625872, clientCount: 367 },
+    { initials: "JM", name: "James Mitchell", aum: 1100000000, clientCount: 512, gender: "male" },
+    { initials: "ST", name: "Sarah Thompson", aum: 950000000, clientCount: 480, gender: "female" },
+    { initials: "MO", name: "Michael O'Brien", aum: 820000000, clientCount: 445, gender: "male" },
+    { initials: "EA", name: "Emily Anderson", aum: 780000000, clientCount: 420, gender: "female" },
+    { initials: "TM", name: "Thomas Murphy", aum: 739625872, clientCount: 367, gender: "male" },
   ],
   corporateActions: [
     { id: "CA-20301", investmentCode: "CBA.XASX", eventType: "Dividend", affectedAccounts: 55, exDate: "10/03/2026", type: "mandatory" },
@@ -426,11 +428,11 @@ const canadaData: RegionalData = {
     { range: "> C$5M", value: "C$ 2,318,222,396", investors: 142 },
   ],
   advisors: [
-    { initials: "PT", name: "Pierre Tremblay", aum: 1400000000, clientCount: 578 },
-    { initials: "MB", name: "Marie Bouchard", aum: 1200000000, clientCount: 534 },
-    { initials: "JM", name: "James MacDonald", aum: 1100000000, clientCount: 512 },
-    { initials: "SG", name: "Sophie Gagnon", aum: 950000000, clientCount: 467 },
-    { initials: "RS", name: "Robert Singh", aum: 922649990, clientCount: 376 },
+    { initials: "PT", name: "Pierre Tremblay", aum: 1400000000, clientCount: 578, gender: "male" },
+    { initials: "MB", name: "Marie Bouchard", aum: 1200000000, clientCount: 534, gender: "female" },
+    { initials: "JM", name: "James MacDonald", aum: 1100000000, clientCount: 512, gender: "male" },
+    { initials: "SG", name: "Sophie Gagnon", aum: 950000000, clientCount: 467, gender: "female" },
+    { initials: "RS", name: "Robert Singh", aum: 922649990, clientCount: 376, gender: "male" },
   ],
   corporateActions: [
     { id: "CA-30401", investmentCode: "RY.XTSE", eventType: "Dividend", affectedAccounts: 62, exDate: "12/03/2026", type: "mandatory" },
@@ -558,11 +560,11 @@ const unitedKingdomData: RegionalData = {
     { range: "> £2M", value: "£ 1,096,245,980", investors: 76 },
   ],
   advisors: [
-    { initials: "WS", name: "William Smith", aum: 710000000, clientCount: 430 },
-    { initials: "EJ", name: "Elizabeth Jones", aum: 620000000, clientCount: 412 },
-    { initials: "TW", name: "Thomas Williams", aum: 580000000, clientCount: 398 },
-    { initials: "VB", name: "Victoria Brown", aum: 520000000, clientCount: 378 },
-    { initials: "JT", name: "James Taylor", aum: 417392156, clientCount: 308 },
+    { initials: "WS", name: "William Smith", aum: 710000000, clientCount: 430, gender: "male" },
+    { initials: "EJ", name: "Elizabeth Jones", aum: 620000000, clientCount: 412, gender: "female" },
+    { initials: "TW", name: "Thomas Williams", aum: 580000000, clientCount: 398, gender: "male" },
+    { initials: "VB", name: "Victoria Brown", aum: 520000000, clientCount: 378, gender: "female" },
+    { initials: "JT", name: "James Taylor", aum: 417392156, clientCount: 308, gender: "male" },
   ],
   corporateActions: [
     { id: "CA-40501", investmentCode: "SHEL.XLON", eventType: "Dividend", affectedAccounts: 58, exDate: "11/03/2026", type: "mandatory" },
@@ -691,11 +693,11 @@ const unitedStatesData: RegionalData = {
     { range: "> $5M", value: "$ 2,318,222,396", investors: 118 },
   ],
   advisors: [
-    { initials: "MJ", name: "Michael Johnson", aum: 1400000000, clientCount: 534 },
-    { initials: "JW", name: "Jennifer Williams", aum: 1200000000, clientCount: 498 },
-    { initials: "RB", name: "Robert Brown", aum: 1100000000, clientCount: 467 },
-    { initials: "MG", name: "Maria Garcia", aum: 950000000, clientCount: 412 },
-    { initials: "WD", name: "William Davis", aum: 922649990, clientCount: 392 },
+    { initials: "MJ", name: "Michael Johnson", aum: 1400000000, clientCount: 534, gender: "male" },
+    { initials: "JW", name: "Jennifer Williams", aum: 1200000000, clientCount: 498, gender: "female" },
+    { initials: "RB", name: "Robert Brown", aum: 1100000000, clientCount: 467, gender: "male" },
+    { initials: "MG", name: "Maria Garcia", aum: 950000000, clientCount: 412, gender: "female" },
+    { initials: "WD", name: "William Davis", aum: 922649990, clientCount: 392, gender: "male" },
   ],
   corporateActions: [
     { id: "CA-50601", investmentCode: "AAPL.XNAS", eventType: "Dividend", affectedAccounts: 72, exDate: "13/03/2026", type: "mandatory" },

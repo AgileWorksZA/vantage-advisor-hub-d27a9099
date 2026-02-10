@@ -517,6 +517,48 @@ export type Database = {
           },
         ]
       }
+      advisor_posts: {
+        Row: {
+          advisor_initials: string
+          advisor_name: string
+          comments_count: number
+          content: string
+          created_at: string
+          id: string
+          jurisdiction: string
+          likes_count: number
+          post_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          advisor_initials: string
+          advisor_name: string
+          comments_count?: number
+          content: string
+          created_at?: string
+          id?: string
+          jurisdiction?: string
+          likes_count?: number
+          post_type?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          advisor_initials?: string
+          advisor_name?: string
+          comments_count?: number
+          content?: string
+          created_at?: string
+          id?: string
+          jurisdiction?: string
+          likes_count?: number
+          post_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       bucket_allocations: {
         Row: {
           bucket_type: string
