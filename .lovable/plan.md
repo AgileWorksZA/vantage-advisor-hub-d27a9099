@@ -1,89 +1,73 @@
 
 
-## Enhance Mobile Today Tab with Date Picker, Task Filters, and Task Detail View
+## Enhance Mobile Schedule with Meeting Status Indicators and Fix Icon Clickability
 
-### 1. Date Picker for Schedule Section
+### Overview
+Three changes to the Mobile Today tab:
+1. Highlight the currently in-progress meeting with a teal/accent border and subtle "In Progress" badge
+2. Grey out past meetings while keeping them clickable
+3. Fix the calendar and filter icon buttons so they reliably trigger their popovers (add explicit `type="button"` and ensure z-index/pointer-events are correct)
 
-**File: `src/components/mobile/MobileTodayTab.tsx`**
-
-Add a calendar icon button next to the "Today's Schedule" heading that opens a date picker popover using the existing `Calendar` and `Popover` components.
-
-- Add `selectedDate` state (defaults to today)
-- Replace the hardcoded `today` reference in `useCalendarEvents(selectedDate, "day")` so events reload for the chosen date
-- Update the section heading to show "Today's Schedule" when the selected date is today, otherwise show the formatted date (e.g., "Schedule for 12 Feb 2025")
-- Update the greeting section to reflect the selected date
-- Update the "No meetings scheduled" empty state text to reflect the selected date
-- The Calendar component inside the Popover allows month/year navigation out of the box via react-day-picker
-- Add `pointer-events-auto` to the Calendar className for popover interactivity
-- Filter events by the selected date using `isSameDay` instead of `isToday`
-
-### 2. Task Status Filter
+### Changes
 
 **File: `src/components/mobile/MobileTodayTab.tsx`**
 
-Add a filter icon (from lucide-react) next to the "Open Tasks" heading that opens a dropdown/popover with status options.
+#### 1. Meeting time-awareness logic
 
-- Add `taskStatusFilter` state defaulting to `"open"`
-- Filter options: "Open" (default -- excludes Completed/Cancelled), "All", "Completed", "In Progress", "Not Started", "Pending Client"
-- Update the task list filtering logic based on the selected status
-- Update the heading to show the count for the filtered set
-- Use a Popover with a list of radio-style options for the filter
+Add a helper function to determine each event's temporal status relative to "now":
 
-### 3. Task Detail View
+```text
+function getEventTimeStatus(event):
+  now = new Date()
+  if now >= event.startTime AND now <= event.endTime:  return "in-progress"
+  if now > event.endTime:                               return "past"
+  return "upcoming"
+```
 
-**File: `src/components/mobile/MobileTodayTab.tsx`**
+This uses the advisor's timezone context via `useUserSettings` and `getActiveTimezone` from the existing timezone utility to ensure the comparison is timezone-aware. If the user has a configured timezone, event times are compared accordingly.
 
-Create a new component `MobileTaskDetailView.tsx` that renders when a task row is tapped.
+#### 2. Visual treatment per status
 
-**New File: `src/components/mobile/MobileTaskDetailView.tsx`**
+Apply conditional classes to each event card:
 
-A full-screen mobile view showing:
-- Back button header with task title
-- Status badge and priority badge
-- Client name
-- Task type
-- Due date (with overdue indicator if applicable)
-- Description (if available)
-- Assigned to
-- Created date
-- Action buttons: "Mark Complete" toggle
+| Status | Visual Treatment |
+|--------|-----------------|
+| **In Progress** | Teal left border accent (thicker, 3px), teal-tinted background, pulsing "LIVE" dot badge, bold title |
+| **Past** | Reduced opacity (opacity-60), muted text colors, slight grey tint on background |
+| **Upcoming** | Current default styling (no change) |
 
-Wire up task row clicks in MobileTodayTab to set a `selectedTask` state, rendering the detail view when set.
+All states remain fully clickable and navigate to the meeting screen.
+
+#### 3. Fix icon button clickability
+
+Both the calendar icon (schedule section) and filter icon (tasks section) buttons will be updated:
+- Add `type="button"` attribute to prevent any form-submission interference
+- Ensure `z-index` is adequate relative to the scroll container
+- Add `cursor-pointer` class for visual feedback
 
 ### Technical Details
 
-**Date picker pattern (using existing shadcn components):**
+**Timezone-aware comparison:**
+- Import `useUserSettings` and `getActiveTimezone` from existing utilities
+- Import `useRegion` to get the region code
+- Compute the active timezone and use `convertToTimezone` to shift "now" for accurate comparison against event times stored in UTC
+
+**Event card class logic (pseudo-code):**
 ```text
-<Popover>
-  <PopoverTrigger>
-    <CalendarIcon />
-  </PopoverTrigger>
-  <PopoverContent>
-    <Calendar
-      mode="single"
-      selected={selectedDate}
-      onSelect={setSelectedDate}
-      className="pointer-events-auto"
-    />
-  </PopoverContent>
-</Popover>
+const status = getEventTimeStatus(event);
+
+const cardClasses = cn(
+  "w-full flex items-start gap-3 p-3 rounded-lg text-left transition-colors",
+  status === "in-progress" && "bg-[hsl(180,70%,45%)]/5 border-[hsl(180,70%,45%)]/30 border ring-1 ring-[hsl(180,70%,45%)]/20",
+  status === "past" && "bg-card/60 border border-border opacity-60",
+  status === "upcoming" && "bg-card border border-border hover:bg-accent/50"
+);
 ```
 
-**Task status filter pattern:**
-```text
-const statusOptions = ["open", "all", "completed", "in-progress", "not-started", "pending-client"];
-
-// Filter logic
-switch (taskStatusFilter) {
-  case "open": exclude Completed + Cancelled
-  case "all": show everything
-  case "completed": only Completed
-  case "in-progress": only In Progress
-  // etc.
-}
-```
+**"LIVE" indicator for in-progress meetings:**
+A small pulsing teal dot with "Live" text replaces the event type badge when the meeting is currently active.
 
 | File | Action |
 |------|--------|
-| `src/components/mobile/MobileTodayTab.tsx` | Add date picker, task status filter, task tap handler |
-| `src/components/mobile/MobileTaskDetailView.tsx` | Create - full-screen task detail view |
+| `src/components/mobile/MobileTodayTab.tsx` | Add time-status logic, conditional card styling, fix button attributes |
+
