@@ -10,7 +10,10 @@ import MobileAITab from "./MobileAITab";
 import MobileSettingsMenu from "./MobileSettingsMenu";
 import MobileVoiceMemo from "./MobileVoiceMemo";
 import MobileNotificationBanner from "./MobileNotificationBanner";
+import MobileAdvisorProfile from "./MobileAdvisorProfile";
+import AdvisorAvatar from "./AdvisorAvatar";
 import { MobileRegionProvider } from "@/contexts/MobileRegionProvider";
+import { useRegion } from "@/contexts/RegionContext";
 
 type MobileTab = "today" | "clients" | "tasks" | "insights" | "ai";
 
@@ -25,6 +28,9 @@ const tabs: { id: MobileTab; label: string; icon: typeof CalendarDays }[] = [
 const MobileAppContent = () => {
   const [activeTab, setActiveTab] = useState<MobileTab>("today");
   const [showSettings, setShowSettings] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
+  const { regionalData, selectedAdvisors } = useRegion();
+  const currentAdvisor = regionalData.advisors.find(a => a.initials === selectedAdvisors[0]) || regionalData.advisors[0];
   const [voiceMemoVisible, setVoiceMemoVisible] = useState(() => {
     const stored = localStorage.getItem("vantage-voice-memo-visible");
     return stored !== "false";
@@ -65,6 +71,14 @@ const MobileAppContent = () => {
     }
   };
 
+  if (showProfile && currentAdvisor) {
+    return (
+      <div className="relative w-full h-full flex flex-col bg-background">
+        <MobileAdvisorProfile advisor={currentAdvisor} onBack={() => setShowProfile(false)} />
+      </div>
+    );
+  }
+
   if (showSettings) {
     return (
       <div className="relative w-full h-full flex flex-col bg-background">
@@ -79,21 +93,26 @@ const MobileAppContent = () => {
     <div className="relative w-full h-full flex flex-col bg-background">
       {/* Header */}
       <header className="sticky top-0 z-10 flex items-center justify-between px-4 h-12 bg-background border-b border-border shrink-0">
-        <div className="flex items-baseline gap-0">
-          <span className="text-lg font-extrabold tracking-tight text-foreground">
-            Advisor
-          </span>
-          <span
-            className="text-lg font-extrabold tracking-tight"
-            style={{
-              background: "linear-gradient(135deg, hsl(180, 80%, 55%) 0%, hsl(18, 86%, 56%) 100%)",
-              WebkitBackgroundClip: "text",
-              backgroundClip: "text",
-              color: "transparent",
-            }}
-          >
-            First
-          </span>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setShowProfile(true)} className="shrink-0">
+            <AdvisorAvatar advisor={currentAdvisor} size="sm" />
+          </button>
+          <div className="flex items-baseline gap-0">
+            <span className="text-lg font-extrabold tracking-tight text-foreground">
+              Advisor
+            </span>
+            <span
+              className="text-lg font-extrabold tracking-tight"
+              style={{
+                background: "linear-gradient(135deg, hsl(180, 80%, 55%) 0%, hsl(18, 86%, 56%) 100%)",
+                WebkitBackgroundClip: "text",
+                backgroundClip: "text",
+                color: "transparent",
+              }}
+            >
+              First
+            </span>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon" className="h-8 w-8 relative">
