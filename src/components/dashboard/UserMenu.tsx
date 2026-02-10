@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Settings, LogOut, Moon, Sun, Sparkles, Monitor, Smartphone } from "lucide-react";
+import { LogOut, Moon, Sun, Sparkles, Monitor, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -17,10 +17,9 @@ interface UserMenuProps {
   userName: string;
   userEmail?: string;
   onSignOut: () => void;
-  onAccountSettings?: () => void;
 }
 
-export function UserMenu({ userName, userEmail, onSignOut, onAccountSettings }: UserMenuProps) {
+export function UserMenu({ userName, userEmail, onSignOut }: UserMenuProps) {
   const [open, setOpen] = useState(false);
   const { theme, setTheme, resolvedTheme } = useTheme();
   const { mode, setMode } = useAppMode();
@@ -45,10 +44,7 @@ export function UserMenu({ userName, userEmail, onSignOut, onAccountSettings }: 
     onSignOut();
   };
 
-  const handleAccountSettings = () => {
-    setOpen(false);
-    onAccountSettings?.();
-  };
+
 
   const toggleTheme = () => {
     setTheme(resolvedTheme === "dark" ? "light" : "dark");
@@ -120,16 +116,6 @@ export function UserMenu({ userName, userEmail, onSignOut, onAccountSettings }: 
 
         {/* Menu Items */}
         <div className="py-2">
-          <button
-            onClick={handleAccountSettings}
-            className={cn(
-              "w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors",
-              "hover:bg-muted/50"
-            )}
-          >
-            <Settings className="h-4 w-4 text-muted-foreground" />
-            <span className="flex-1 text-left">Account Settings</span>
-          </button>
           <button
             onClick={toggleTheme}
             className={cn(
