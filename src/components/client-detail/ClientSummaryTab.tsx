@@ -20,11 +20,14 @@ import { useHouseholdMeetingPrep } from "@/hooks/useHouseholdMeetingPrep";
 import OpportunitiesTab, { getOpportunitiesCount } from "./next-best-action/OpportunitiesTab";
 import OutstandingTab from "./next-best-action/OutstandingTab";
 import RecentActivityTab, { RECENT_ACTIVITY_COUNT } from "./next-best-action/RecentActivityTab";
+import { MeetingPrepSheet } from "./MeetingPrepSheet";
+import { ClientCalendarEvent } from "@/hooks/useClientCalendarEvents";
 
 interface ClientSummaryTabProps {
   client: Client;
   clientId: string;
   onShowMoreActivity?: () => void;
+  onTabChange?: (tab: string) => void;
 }
 
 const advisorData = [
@@ -38,7 +41,7 @@ const outstandingDocs = [
   { document: "Risk profile questionnaire", workflow: "Advice Cycle" },
 ];
 
-const ClientSummaryTab = ({ client, clientId, onShowMoreActivity }: ClientSummaryTabProps) => {
+const ClientSummaryTab = ({ client, clientId, onShowMoreActivity, onTabChange }: ClientSummaryTabProps) => {
   const displayName = getDisplayName(client);
   const initials = getInitials(client);
   const age = calculateAge(client.date_of_birth);
@@ -47,6 +50,9 @@ const ClientSummaryTab = ({ client, clientId, onShowMoreActivity }: ClientSummar
 
   const [householdView, setHouseholdView] = useState(false);
   const householdData = useHouseholdMeetingPrep(client.household_group, householdView);
+
+  const [meetingPrepOpen, setMeetingPrepOpen] = useState(false);
+  const [selectedMeetingEvent, setSelectedMeetingEvent] = useState<ClientCalendarEvent | null>(null);
 
   const activeOpps = householdView ? householdData.opportunities : prepData.opportunities;
   const activeProducts = householdView ? householdData.products : prepData.products;
@@ -188,7 +194,15 @@ const ClientSummaryTab = ({ client, clientId, onShowMoreActivity }: ClientSummar
                 <OutstandingTab tasks={activeTasks} documents={activeDocs} householdView={householdView} />
               </TabsContent>
               <TabsContent value="recent" className="mt-0 flex-1">
-                <RecentActivityTab householdView={householdView} />
+                <RecentActivityTab
+                  householdView={householdView}
+                  clientId={clientId}
+                  onCalendarEventClick={(event) => {
+                    setSelectedMeetingEvent(event);
+                    setMeetingPrepOpen(true);
+                  }}
+                  onActivityClick={(type) => onTabChange?.(type)}
+                />
               </TabsContent>
             </Tabs>
 
@@ -204,6 +218,17 @@ const ClientSummaryTab = ({ client, clientId, onShowMoreActivity }: ClientSummar
           </CardContent>
         </Card>
       </div>
+
+      <MeetingPrepSheet
+        open={meetingPrepOpen}
+        onOpenChange={setMeetingPrepOpen}
+        event={selectedMeetingEvent}
+        clientId={clientId}
+        onNavigate={(type) => {
+          setMeetingPrepOpen(false);
+          onTabChange?.(type === "note" ? "notes" : type === "communication" ? "communication" : type === "document" ? "documents" : type);
+        }}
+      />
     </div>
   );
 };
