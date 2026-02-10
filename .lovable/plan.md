@@ -1,78 +1,57 @@
 
 
-## Replace "Wealth Manager" with "Family Group" and Seed Relationships
+## Update ID Type to be Jurisdiction-Aware
 
 ### Overview
 
-Two changes: (1) Replace the "Wealth Manager" column in the client search results table with a "Family Group" column, and (2) create a new edge function that seeds relationships (family members, businesses, and professional contacts) for existing clients, restricted to same-jurisdiction pairings. The relationships will display on each client's Relationships tab.
+Currently, the `id_type` field for family member relationships is hardcoded to "SA ID" in all places -- the seed function, the add dialog, the edit dialog, and the hook default. This needs to use jurisdiction-appropriate ID type labels (e.g., "National ID" for Australia, "SIN" for Canada, "NI Number" for UK, "SSN" for US).
 
----
+### Jurisdiction-to-ID-Type Mapping
 
-### Part 1: Replace "Wealth Manager" with "Family Group"
+| Country of Issue | ID Type Label |
+|---|---|
+| South Africa | SA ID |
+| Australia | National ID |
+| Canada | SIN |
+| United Kingdom | NI Number |
+| United States | SSN |
+| (fallback) | National ID |
 
-**Database Migration**
+### Changes
 
-Add a `family_group` column to the `clients` table:
+**1. Create a shared utility: `src/lib/jurisdiction-utils.ts`** (or add to existing utils)
 
-```sql
-ALTER TABLE public.clients ADD COLUMN family_group text;
-```
+Add a helper function `getIdTypeForJurisdiction(countryOfIssue: string): string` that maps country names to the appropriate ID type label. This will be reused across all files.
 
-The seed function (Part 2) will populate this field for clients that belong to a family group.
+**2. File: `src/components/client-detail/AddFamilyMemberDialog.tsx`**
 
-**File: `src/hooks/useClients.ts`**
+- Fetch the parent client's `country_of_issue` when the dialog opens
+- Replace the two hardcoded `id_type: "SA ID"` values (lines 183, 201) with the result of `getIdTypeForJurisdiction(parentClient.country_of_issue)`
 
-- Add `family_group` to the `Client` interface
-- Replace `wealthManager` with `familyGroup` in `ClientListItem`
-- Update `transformClientToListItem` to map `family_group` instead of `wealth_manager`
+**3. File: `src/hooks/useClientRelationships.ts`**
 
-**File: `src/pages/Clients.tsx`**
+- Change the fallback default on line 82 from `"SA ID"` to `"National ID"` (the data itself will already have the correct value from the seed/create)
+- Change the default on line 127 from `"SA ID"` to `"National ID"`
 
-- Change the table header from "Wealth Manager" to "Family Group"
-- Change the table cell from `client.wealthManager` to `client.familyGroup`
+**4. File: `supabase/functions/seed-demo-relationships/index.ts`**
 
----
+- Add the same jurisdiction mapping function inside the edge function
+- Replace all instances of `id_type: client.id_number ? "SA ID" : "Passport"` with `id_type: client.id_number ? getIdTypeForJurisdiction(jurisdiction) : "Passport"` (approximately 8 occurrences)
 
-### Part 2: Seed Relationships Edge Function
+**5. File: `src/components/client-detail/EditFamilyMemberDialog.tsx`**
 
-**New file: `supabase/functions/seed-demo-relationships/index.ts`**
+- If any hardcoded "SA ID" references exist in this file, update them similarly
 
-Creates a new edge function that populates all three relationship types for existing demo clients. The function:
+**6. Update existing seeded data**
 
-1. Fetches all existing clients grouped by advisor and jurisdiction
-2. For each advisor's book, pairs clients into family groups (spouse pairs, parent-child links, siblings) -- all within the same jurisdiction
-3. Creates business entity relationships (Director, Shareholder, Trustee) between individual clients and business/trust-type clients in the same jurisdiction
-4. Creates professional contacts (Accountant, Attorney, Financial Planner) for a subset of clients, using jurisdiction-appropriate names and companies
-5. Sets the `family_group` field on the `clients` table for clients that are grouped into a family
-6. All relationships are bi-directional (e.g., Spouse<->Spouse, Parent<->Child)
-
-**Relationship seeding logic per advisor (within one jurisdiction):**
-
-| Relationship Type | Logic | Count per advisor |
-|---|---|---|
-| Spouse pairs | Pair male+female individual clients (2 per pair) | ~3-4 pairs |
-| Parent-Child | Link older clients as Parent to younger clients | ~4-6 links |
-| Business entities | Link individual clients as Director/Shareholder to business/trust clients | ~2-3 links |
-| Professional Contacts | Create contact records (Accountant, Attorney, etc.) for ~5 clients | ~5 contacts |
-
-**Jurisdiction constraint:** Every `related_client_id` must point to a client with the same `country_of_issue` as the source client. Professional contacts are created as `client_contacts` records (not linked to other client profiles), so they are inherently scoped to the client's own context.
-
-**Family Group naming:** Each spouse pair and their children get a shared `family_group` label (e.g., "The Van Niekerk Family" for ZA, "The Mitchell Family" for AU). This value is written to the `clients.family_group` column for display in the search table.
-
-**Config update: `supabase/config.toml`**
-
-Add the new function with `verify_jwt = false` so it can be called from the admin seeding flow.
-
----
+- After deploying the updated seed function, run it again (or use a targeted UPDATE query) to fix the `id_type` on already-seeded relationship records so existing data reflects the correct labels
 
 ### Technical Summary
 
 | Item | Detail |
 |------|--------|
-| DB migration | Add `family_group` text column to `clients` |
-| Modified files | `src/hooks/useClients.ts`, `src/pages/Clients.tsx` |
-| New file | `supabase/functions/seed-demo-relationships/index.ts` |
-| Config update | `supabase/config.toml` -- add function entry |
-| Tables written to | `clients` (family_group), `client_relationships`, `client_contacts` |
-| Jurisdiction rule | All relationships constrained to same `country_of_issue` |
+| New file | `src/lib/jurisdiction-utils.ts` (shared mapping function) |
+| Modified files | `AddFamilyMemberDialog.tsx`, `useClientRelationships.ts`, `seed-demo-relationships/index.ts`, `EditFamilyMemberDialog.tsx` |
+| No DB schema changes | Data update only (fix existing `id_type` values) |
+| Jurisdictions covered | South Africa, Australia, Canada, United Kingdom, United States |
 
