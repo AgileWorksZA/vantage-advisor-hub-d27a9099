@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { ArrowLeft, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -10,6 +10,16 @@ import MeetStep from "./meeting-steps/MeetStep";
 import OutcomesStep from "./meeting-steps/OutcomesStep";
 import FollowUpsStep from "./meeting-steps/FollowUpsStep";
 import MobileContextDetailView from "./meeting-steps/MobileContextDetailView";
+
+export interface KeyOutcome {
+  id: string;
+  text: string;
+  completed: boolean;
+  origin: "prep" | "meeting" | "post-meeting";
+  note: string | null;
+  transcriptTimestamp: string | null;
+  transcriptSnippet: string | null;
+}
 
 interface MobileMeetingScreenProps {
   event: CalendarEvent;
@@ -25,6 +35,45 @@ export default function MobileMeetingScreen({ event, onBack }: MobileMeetingScre
 
   // Derive talking points from prep data
   const { opportunities, tasks, documents } = useClientMeetingPrep(event.clientId);
+
+  // Key outcomes state — seeded from prep data
+  const [keyOutcomes, setKeyOutcomes] = useState<KeyOutcome[]>([]);
+  const [outcomesSeeded, setOutcomesSeeded] = useState(false);
+
+  // Seed initial outcomes from prep data once loaded
+  useMemo(() => {
+    if (outcomesSeeded) return;
+    const initial: KeyOutcome[] = [];
+    opportunities.forEach((o) => {
+      initial.push({ id: crypto.randomUUID(), text: `Discuss ${o.opportunityType.toLowerCase()} opportunity`, completed: false, origin: "prep", note: null, transcriptTimestamp: null, transcriptSnippet: null });
+    });
+    if (tasks.filter(t => t.isOverdue).length > 0) {
+      initial.push({ id: crypto.randomUUID(), text: `Address ${tasks.filter(t => t.isOverdue).length} overdue task(s)`, completed: false, origin: "prep", note: null, transcriptTimestamp: null, transcriptSnippet: null });
+    }
+    if (documents.filter(d => d.status === "Expired").length > 0) {
+      initial.push({ id: crypto.randomUUID(), text: "Review expiring documents", completed: false, origin: "prep", note: null, transcriptTimestamp: null, transcriptSnippet: null });
+    }
+    if (initial.length > 0) {
+      setKeyOutcomes(initial);
+      setOutcomesSeeded(true);
+    }
+  }, [opportunities, tasks, documents, outcomesSeeded]);
+
+  const handleAddOutcome = useCallback((text: string, origin: KeyOutcome["origin"]) => {
+    setKeyOutcomes(prev => [...prev, { id: crypto.randomUUID(), text, completed: false, origin, note: null, transcriptTimestamp: null, transcriptSnippet: null }]);
+  }, []);
+
+  const handleRemoveOutcome = useCallback((id: string) => {
+    setKeyOutcomes(prev => prev.filter(o => o.id !== id));
+  }, []);
+
+  const handleToggleOutcome = useCallback((id: string) => {
+    setKeyOutcomes(prev => prev.map(o => o.id === id ? { ...o, completed: !o.completed } : o));
+  }, []);
+
+  const handleUpdateOutcomeNote = useCallback((id: string, note: string) => {
+    setKeyOutcomes(prev => prev.map(o => o.id === id ? { ...o, note } : o));
+  }, []);
 
   const talkingPoints = useMemo(() => {
     const points: string[] = [];
@@ -93,6 +142,9 @@ export default function MobileMeetingScreen({ event, onBack }: MobileMeetingScre
             clientName={event.clientName}
             onTagClick={setDetailView}
             onConvertToTask={handleConvertToTask}
+            keyOutcomes={keyOutcomes}
+            onAddOutcome={(text) => handleAddOutcome(text, "prep")}
+            onRemoveOutcome={handleRemoveOutcome}
           />
         )}
         {activeStep === "meet" && (
@@ -101,6 +153,8 @@ export default function MobileMeetingScreen({ event, onBack }: MobileMeetingScre
             endTime={event.endTime}
             talkingPoints={talkingPoints}
             onConvertToTask={handleConvertToTask}
+            keyOutcomes={keyOutcomes}
+            onAddOutcome={(text) => handleAddOutcome(text, "meeting")}
           />
         )}
         {activeStep === "outcomes" && (
@@ -108,6 +162,11 @@ export default function MobileMeetingScreen({ event, onBack }: MobileMeetingScre
             eventId={event.id}
             clientId={event.clientId}
             onConvertToTask={handleConvertToTask}
+            keyOutcomes={keyOutcomes}
+            onAddOutcome={(text) => handleAddOutcome(text, "post-meeting")}
+            onToggleOutcome={handleToggleOutcome}
+            onUpdateOutcomeNote={handleUpdateOutcomeNote}
+            setKeyOutcomes={setKeyOutcomes}
           />
         )}
         {activeStep === "follow-ups" && (
