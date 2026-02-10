@@ -81,7 +81,7 @@ const OpportunitiesTab = ({ opportunities, products, householdView, onOptimise, 
             disabled={isScanning}
             className="border-[hsl(180,70%,45%)] text-[hsl(180,70%,45%)] hover:bg-[hsl(180,70%,45%)]/10"
           >
-            {isScanning ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <span className="inline-flex items-center justify-center px-1.5 py-0.5 text-[9px] font-bold bg-[hsl(230,80%,85%)] text-[hsl(230,70%,50%)] rounded-md mr-1">AI</span>}
+            {isScanning ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <span className="inline-flex items-center px-2 py-0.5 text-xs font-bold bg-gradient-to-r from-violet-500 to-cyan-500 text-white rounded-full mr-1">AI</span>}
             {isScanning ? "Scanning..." : "Optimise"}
           </Button>
         )}
