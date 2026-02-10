@@ -1,35 +1,30 @@
 
 
-## Default Mobile Region to Web's Current Jurisdiction
+## Always Inherit Web Jurisdiction on Mobile Open
 
 ### Problem
-When entering mobile mode, the jurisdiction defaults to "ZA" instead of matching whichever jurisdiction is currently active in the web view.
-
-### Solution
-Update `MobileRegionProvider.tsx` so that on first load (when no mobile-specific region has been saved), it reads the web view's localStorage key (`vantage-selected-region`) as the fallback instead of hardcoding `"ZA"`.
+Currently, the mobile view checks for a mobile-specific saved region first, which means it can show a stale jurisdiction even when the user has since changed the web view's region. The mobile view should always mirror the web view's active jurisdiction when opened.
 
 ### Changes
 
 **File: `src/contexts/MobileRegionProvider.tsx`**
 
-- Line 43: Change the fallback from `"ZA"` to reading the web region key first:
-  ```
-  // Before
-  return localStorage.getItem(MOBILE_REGION_KEY) || "ZA";
+1. Change the initial `selectedRegion` state (line 42-44) to always read the web key first, ignoring the mobile-specific key:
+   ```
+   // Before
+   return localStorage.getItem(MOBILE_REGION_KEY) 
+     || localStorage.getItem("vantage-selected-region") 
+     || "ZA";
 
-  // After
-  return localStorage.getItem(MOBILE_REGION_KEY) 
-    || localStorage.getItem("vantage-selected-region") 
-    || "ZA";
-  ```
+   // After
+   return localStorage.getItem("vantage-selected-region") || "ZA";
+   ```
 
-This means:
-1. If mobile has its own saved region, use that
-2. Otherwise, inherit whatever the web view currently has selected
-3. Fall back to "ZA" only if neither exists
+2. The initial `selectedAdvisors` state (lines 49-51) already calls `getAdvisorsForRegion` which defaults to the first advisor, so it will automatically pick the correct advisor for the inherited region.
 
-The advisor default already works correctly -- `getAdvisorsForRegion` picks the first advisor for whatever region is resolved, so no other changes are needed.
+3. Optionally remove the `MOBILE_REGION_KEY` constant and the `localStorage.setItem(MOBILE_REGION_KEY, ...)` call in `setSelectedRegion` (line 63) since mobile-specific region persistence is no longer needed -- every open inherits from web. The advisor map storage (`MOBILE_ADVISORS_KEY`) can remain for restoring the last-used advisor per region during a single mobile session.
 
 | File | Action |
 |------|--------|
-| `src/contexts/MobileRegionProvider.tsx` | Read web region key as fallback on line 43 |
+| `src/contexts/MobileRegionProvider.tsx` | Always read web region key; remove mobile region persistence |
+
