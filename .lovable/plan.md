@@ -1,47 +1,39 @@
 
 
-## Add Jurisdiction and Advisor Settings to Mobile Settings
+## Move Jurisdiction & Advisor Selection to Account Settings
 
-### What This Does
-Adds two new sections to the mobile Settings screen so you can pick your jurisdiction (country) and select which advisors' data to view -- exactly like the flag icon and advisor pills in the web header, but designed for the mobile layout.
+### Overview
 
-### Design
+Remove the jurisdiction and advisor selection sections from the mobile Settings menu and add them as a new "User Setup" section in the Account Settings page, accessible from both web and mobile.
 
-**Jurisdiction Selector**
-- A list of country flags with names (South Africa, Australia, Canada, United Kingdom, United States)
-- The currently selected jurisdiction shows a checkmark
-- Tapping a different country switches the region for the entire app
-- If the account is restricted to a specific jurisdiction, the selector is shown but disabled with an explanatory note
+### Changes
 
-**Advisor Filter**
-- Shown below the jurisdiction selector
-- Lists all advisors for the current jurisdiction with checkboxes
-- A "Toggle All" option at the top
-- Selecting/deselecting advisors updates the global filter, affecting all data across the app
+**File: `src/pages/AccountSettings.tsx`**
 
-Both sections use the existing `RegionContext` so changes here immediately affect Dashboard, Clients, Tasks, Calendar, and all other modules.
+1. Add a new settings section entry in the `settingsSections` array:
+   ```
+   { id: "setup", label: "User Setup", icon: Globe }
+   ```
+   Position it as the first item so it's prominent.
 
----
+2. Import `regions` from `@/components/dashboard/RegionSelector` and additional icons (`Check`, `Users` -- already has `Users` imported as icon).
 
-### Technical Details
+3. Pull `selectedRegion`, `setSelectedRegion`, `regionalData`, `selectedAdvisors`, `setSelectedAdvisors`, `isJurisdictionRestricted` from `useRegion()` (already partially imported).
 
-**File Modified:** `src/components/mobile/MobileSettingsMenu.tsx`
+4. Add a new `activeSection === "setup"` block rendering:
+   - **Jurisdiction Card**: Lists the 5 regions with flag images and checkmarks, calls `setSelectedRegion` on tap. Disabled with a note when `isJurisdictionRestricted`.
+   - **Advisor Filter Card**: Lists advisors for the current region with initials badges. Includes a "Select All / Deselect All" toggle. Tapping toggles individual advisors via `setSelectedAdvisors`.
 
-1. Import `useRegion` from `@/contexts/RegionContext` and `regions` from `@/components/dashboard/RegionSelector`
-2. Import `Globe, Users, Check` from lucide-react
-3. Add a "Jurisdiction" section between the User Info block and the existing menu items:
-   - Render each region as a row with flag image, country name, and a Check icon for the selected one
-   - On tap, call `setSelectedRegion(code)` from context
-   - If `isJurisdictionRestricted`, show rows as non-interactive with a small "(restricted)" note
-4. Add an "Advisors" section below Jurisdiction:
-   - Pull `regionalData.advisors`, `selectedAdvisors`, `setSelectedAdvisors` from context
-   - Render a "Select All" toggle row
-   - Render each advisor as a row with their initials badge and full name, with a Check icon when selected
-   - Tapping toggles that advisor in/out of the selection
+**File: `src/components/mobile/MobileSettingsMenu.tsx`**
 
-**No new files or database changes required** -- this purely extends the existing mobile UI using the already-available RegionContext.
+5. Remove the Jurisdiction Selector section (the `border-b` block with Globe icon and region list).
+6. Remove the Advisor Filter section (the `border-b` block with Users icon and advisor list).
+7. Remove now-unused imports: `Globe`, `Users`, `Check`, `regions` from RegionSelector, and the `useRegion` destructured properties that are no longer used locally (`regionalData`, `selectedAdvisors`, `setSelectedAdvisors`, `isJurisdictionRestricted`). Keep `selectedRegion` and `setSelectedRegion` only if still used elsewhere in the file (they are not after removal), so clean those too.
+
+### Summary
 
 | File | Action |
 |------|--------|
-| `src/components/mobile/MobileSettingsMenu.tsx` | Add jurisdiction and advisor sections |
+| `src/pages/AccountSettings.tsx` | Add "User Setup" section with jurisdiction & advisor selectors |
+| `src/components/mobile/MobileSettingsMenu.tsx` | Remove jurisdiction & advisor sections and unused imports |
 
