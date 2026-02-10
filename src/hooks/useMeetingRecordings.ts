@@ -33,6 +33,26 @@ export interface AISummary {
     concerns?: string[];
   };
   follow_up_date?: string;
+  tagged_actions?: TaggedAction[];
+  tagged_opportunities?: TaggedOpportunity[];
+}
+
+export interface TaggedAction {
+  task_id: string;
+  task_title: string;
+  outcome: string;
+  status_suggestion: "Completed" | "In Progress";
+}
+
+export interface TaggedOpportunity {
+  opportunity_id: string | null;
+  opportunity_name: string;
+  outcome: string;
+  suggested_task: {
+    title: string;
+    priority: "High" | "Medium" | "Low";
+    due_date: string;
+  };
 }
 
 export interface AIActionItem {

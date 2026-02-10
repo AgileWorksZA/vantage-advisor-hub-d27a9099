@@ -85,6 +85,7 @@ import { useMeetingRecordings } from "@/hooks/useMeetingRecordings";
 import { MeetingRecorder } from "@/components/calendar/MeetingRecorder";
 import { TranscriptionPanel } from "@/components/calendar/TranscriptionPanel";
 import { ActionItemsList } from "@/components/calendar/ActionItemsList";
+import { MeetingPrepPanel } from "@/components/calendar/MeetingPrepPanel";
 import { cn } from "@/lib/utils";
 import { useUserSettings } from "@/hooks/useUserSettings";
 import { COMMON_TIMEZONES, TIMEZONE_REGIONS, getActiveTimezone, getTimezoneAbbreviation, convertToTimezone } from "@/lib/timezone-utils";
@@ -943,6 +944,11 @@ const CalendarPage = () => {
                   </div>
                 )}
 
+                {/* Meeting Prep Panel - shown when client is linked */}
+                {selectedEvent.clientId && (
+                  <MeetingPrepPanel clientId={selectedEvent.clientId} />
+                )}
+
                 {/* Meeting Recorder Section */}
                 <div className="pt-4 border-t space-y-4">
                   <MeetingRecorder
@@ -971,6 +977,7 @@ const CalendarPage = () => {
                     <ActionItemsList
                       actionItems={eventRecordings[0].aiActionItems}
                       clientId={selectedEvent.clientId}
+                      aiSummary={eventRecordings[0].aiSummary}
                     />
                   )}
                 </div>

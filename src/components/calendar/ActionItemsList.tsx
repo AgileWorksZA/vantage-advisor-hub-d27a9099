@@ -19,14 +19,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CheckSquare, Plus, Quote, Loader2 } from "lucide-react";
-import { AIActionItem } from "@/hooks/useMeetingRecordings";
+import { CheckSquare, Plus, Quote, Loader2, Target, CheckCircle2, TrendingUp } from "lucide-react";
+import { AIActionItem, TaggedAction, TaggedOpportunity, AISummary } from "@/hooks/useMeetingRecordings";
 import { useTasks } from "@/hooks/useTasks";
 import { useToast } from "@/hooks/use-toast";
 
 interface ActionItemsListProps {
   actionItems: AIActionItem[] | null;
   clientId: string | null;
+  aiSummary?: AISummary | null;
   onTaskCreated?: () => void;
 }
 
@@ -36,9 +37,10 @@ type TaskType = "Client Complaint" | "Follow-up" | "Annual Review" | "Portfolio 
 export function ActionItemsList({
   actionItems,
   clientId,
+  aiSummary,
   onTaskCreated,
 }: ActionItemsListProps) {
-  const { createTask } = useTasks();
+  const { createTask, updateTask } = useTasks();
   const { toast } = useToast();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<AIActionItem | null>(null);
@@ -53,8 +55,16 @@ export function ActionItemsList({
     dueDate: "",
   });
 
+  const taggedActions = aiSummary?.tagged_actions || [];
+  const taggedOpportunities = aiSummary?.tagged_opportunities || [];
+  const [updatingTaskId, setUpdatingTaskId] = useState<string | null>(null);
+  const [creatingOppTask, setCreatingOppTask] = useState<string | null>(null);
+
   if (!actionItems || actionItems.length === 0) {
-    return null;
+    // Still show tagged sections even without new action items
+    if (taggedActions.length === 0 && taggedOpportunities.length === 0) {
+      return null;
+    }
   }
 
   const handleOpenCreateDialog = (item: AIActionItem, index: number) => {
@@ -164,95 +174,212 @@ export function ActionItemsList({
     }
   };
 
-  const remainingItems = actionItems.length - createdItems.size;
+  const remainingItems = (actionItems?.length || 0) - createdItems.size;
+
+  const handleUpdateTaggedTask = async (action: TaggedAction) => {
+    setUpdatingTaskId(action.task_id);
+    try {
+      await updateTask(action.task_id, {
+        status: action.status_suggestion === "Completed" ? "Completed" : "In Progress",
+      } as any);
+      toast({ title: "Task Updated", description: `"${action.task_title}" marked as ${action.status_suggestion}` });
+    } catch {
+      toast({ title: "Error", description: "Failed to update task", variant: "destructive" });
+    } finally {
+      setUpdatingTaskId(null);
+    }
+  };
+
+  const handleCreateOppTask = async (opp: TaggedOpportunity) => {
+    if (!opp.suggested_task) return;
+    setCreatingOppTask(opp.opportunity_id || opp.opportunity_name);
+    try {
+      await createTask({
+        title: opp.suggested_task.title,
+        priority: opp.suggested_task.priority || "Medium",
+        due_date: opp.suggested_task.due_date || undefined,
+        client_id: clientId || undefined,
+        task_type: "Follow-up",
+        description: `Opportunity: ${opp.opportunity_name} — ${opp.outcome}`,
+      });
+      toast({ title: "Task Created", description: `Follow-up task created for "${opp.opportunity_name}"` });
+      onTaskCreated?.();
+    } catch {
+      toast({ title: "Error", description: "Failed to create task", variant: "destructive" });
+    } finally {
+      setCreatingOppTask(null);
+    }
+  };
 
   return (
     <>
-      <Card>
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <CheckSquare className="w-4 h-4" />
-              Suggested Actions
-              <Badge variant="secondary" className="ml-1">
-                {remainingItems} remaining
-              </Badge>
-            </CardTitle>
-            {remainingItems > 0 && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleCreateAllTasks}
-                disabled={isCreating}
-              >
-                {isCreating ? (
-                  <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                ) : (
-                  <Plus className="w-4 h-4 mr-1" />
-                )}
-                Create All
-              </Button>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {actionItems.map((item, index) => (
-              <div
-                key={index}
-                className={`p-3 rounded-lg border ${
-                  createdItems.has(index)
-                    ? "bg-muted/50 opacity-60"
-                    : "bg-background hover:bg-muted/50"
-                } transition-colors`}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <p className={`text-sm font-medium ${createdItems.has(index) ? "line-through" : ""}`}>
-                        {item.title}
-                      </p>
-                      <Badge
-                        variant="outline"
-                        className={`text-xs ${getPriorityColor(item.priority)}`}
-                      >
-                        {item.priority}
-                      </Badge>
-                    </div>
-                    <p className="text-xs text-muted-foreground mb-2">
-                      {item.description}
-                    </p>
-                    {item.source_quote && (
-                      <div className="flex items-start gap-1 text-xs text-muted-foreground italic">
-                        <Quote className="w-3 h-3 mt-0.5 flex-shrink-0" />
-                        <span className="line-clamp-2">"{item.source_quote}"</span>
+      {/* Suggested Actions - only show if there are action items */}
+      {actionItems && actionItems.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <CheckSquare className="w-4 h-4" />
+                Suggested Actions
+                <Badge variant="secondary" className="ml-1">
+                  {remainingItems} remaining
+                </Badge>
+              </CardTitle>
+              {remainingItems > 0 && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleCreateAllTasks}
+                  disabled={isCreating}
+                >
+                  {isCreating ? (
+                    <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                  ) : (
+                    <Plus className="w-4 h-4 mr-1" />
+                  )}
+                  Create All
+                </Button>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {actionItems.map((item, index) => (
+                <div
+                  key={index}
+                  className={`p-3 rounded-lg border ${
+                    createdItems.has(index)
+                      ? "bg-muted/50 opacity-60"
+                      : "bg-background hover:bg-muted/50"
+                  } transition-colors`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <p className={`text-sm font-medium ${createdItems.has(index) ? "line-through" : ""}`}>
+                          {item.title}
+                        </p>
+                        <Badge
+                          variant="outline"
+                          className={`text-xs ${getPriorityColor(item.priority)}`}
+                        >
+                          {item.priority}
+                        </Badge>
                       </div>
-                    )}
-                    <div className="flex items-center gap-3 mt-2">
-                      <span className="text-xs text-muted-foreground">
-                        Due: {item.suggested_due_date || "Not set"}
-                      </span>
-                      <Badge variant="outline" className="text-xs">
-                        {item.task_type}
-                      </Badge>
+                      <p className="text-xs text-muted-foreground mb-2">
+                        {item.description}
+                      </p>
+                      {item.source_quote && (
+                        <div className="flex items-start gap-1 text-xs text-muted-foreground italic">
+                          <Quote className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                          <span className="line-clamp-2">"{item.source_quote}"</span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-3 mt-2">
+                        <span className="text-xs text-muted-foreground">
+                          Due: {item.suggested_due_date || "Not set"}
+                        </span>
+                        <Badge variant="outline" className="text-xs">
+                          {item.task_type}
+                        </Badge>
+                      </div>
                     </div>
+                    {!createdItems.has(index) && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleOpenCreateDialog(item, index)}
+                        className="flex-shrink-0"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </Button>
+                    )}
                   </div>
-                  {!createdItems.has(index) && (
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Tagged Outstanding Actions */}
+      {taggedActions.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <Target className="w-4 h-4 text-amber-500" />
+              Meeting Outcomes — Outstanding Actions
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {taggedActions.map((action, i) => (
+                <div key={i} className="p-3 rounded-lg border bg-background space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">{action.task_title}</span>
+                    <Badge variant="outline" className="text-xs">{action.status_suggestion}</Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{action.outcome}</p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="mt-1"
+                    disabled={updatingTaskId === action.task_id}
+                    onClick={() => handleUpdateTaggedTask(action)}
+                  >
+                    {updatingTaskId === action.task_id ? (
+                      <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                    ) : (
+                      <CheckCircle2 className="w-3 h-3 mr-1" />
+                    )}
+                    Mark as {action.status_suggestion}
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Tagged Opportunities */}
+      {taggedOpportunities.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-green-600" />
+              Meeting Outcomes — Opportunities
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {taggedOpportunities.map((opp, i) => (
+                <div key={i} className="p-3 rounded-lg border bg-background space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">{opp.opportunity_name}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{opp.outcome}</p>
+                  {opp.suggested_task && (
                     <Button
                       size="sm"
-                      variant="ghost"
-                      onClick={() => handleOpenCreateDialog(item, index)}
-                      className="flex-shrink-0"
+                      variant="outline"
+                      className="mt-1"
+                      disabled={creatingOppTask === (opp.opportunity_id || opp.opportunity_name)}
+                      onClick={() => handleCreateOppTask(opp)}
                     >
-                      <Plus className="w-4 h-4" />
+                      {creatingOppTask === (opp.opportunity_id || opp.opportunity_name) ? (
+                        <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                      ) : (
+                        <Plus className="w-3 h-3 mr-1" />
+                      )}
+                      Create: {opp.suggested_task.title}
                     </Button>
                   )}
                 </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Create Task Dialog */}
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>

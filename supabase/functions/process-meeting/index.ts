@@ -108,13 +108,31 @@ serve(async (req) => {
 
     // Get client info if linked
     let clientInfo = '';
+    let outstandingTasksInfo = '';
+    let opportunitiesInfo = '';
+    let outstandingTasks: any[] = [];
+    let clientOpportunities: any[] = [];
+
     if (recording.client_id) {
-      const { data: client } = await supabase
-        .from('clients')
-        .select('first_name, surname, email, occupation, date_of_birth')
-        .eq('id', recording.client_id)
-        .single();
-      
+      const [clientRes, tasksRes, oppsRes] = await Promise.all([
+        supabase
+          .from('clients')
+          .select('first_name, surname, email, occupation, date_of_birth')
+          .eq('id', recording.client_id)
+          .single(),
+        supabase
+          .from('tasks')
+          .select('id, title, task_type, priority, status, due_date')
+          .eq('client_id', recording.client_id)
+          .eq('is_deleted', false)
+          .not('status', 'in', '("Completed","Cancelled")'),
+        supabase
+          .from('project_opportunities')
+          .select('id, opportunity_type, potential_revenue, status, suggested_action, client_name')
+          .eq('client_id', recording.client_id),
+      ]);
+
+      const client = clientRes.data;
       if (client) {
         clientInfo = `\n\nClient Information:
 - Name: ${client.first_name} ${client.surname}
@@ -122,10 +140,24 @@ serve(async (req) => {
 - Occupation: ${client.occupation || 'N/A'}
 - Date of Birth: ${client.date_of_birth || 'N/A'}`;
       }
+
+      outstandingTasks = tasksRes.data || [];
+      if (outstandingTasks.length > 0) {
+        outstandingTasksInfo = `\n\nOutstanding Client Tasks:\n${outstandingTasks.map((t: any) =>
+          `- [ID: ${t.id}] "${t.title}" (Type: ${t.task_type}, Priority: ${t.priority}, Status: ${t.status}, Due: ${t.due_date || 'N/A'})`
+        ).join('\n')}`;
+      }
+
+      clientOpportunities = oppsRes.data || [];
+      if (clientOpportunities.length > 0) {
+        opportunitiesInfo = `\n\nClient Revenue Opportunities:\n${clientOpportunities.map((o: any) =>
+          `- [ID: ${o.id}] "${o.opportunity_type}" (Revenue: $${o.potential_revenue || 0}, Status: ${o.status}, Action: ${o.suggested_action || 'N/A'})`
+        ).join('\n')}`;
+      }
     }
 
     const analysisPrompt = `You are an AI assistant for financial advisors. Analyze the following meeting transcription and extract structured information.
-${clientInfo}
+${clientInfo}${outstandingTasksInfo}${opportunitiesInfo}
 
 Meeting Title: ${recording.title}
 Meeting Date: ${recording.recording_started_at || recording.created_at}
@@ -156,6 +188,26 @@ Please analyze this meeting and provide a JSON response with the following struc
       "task_type": "Follow-up|Document Request|Portfolio Review|Client Complaint|Annual Review|Compliance|Onboarding",
       "source_quote": "The exact quote from the transcription that led to this action item"
     }
+  ],
+  "tagged_actions": [
+    {
+      "task_id": "UUID of the outstanding task from the list above, if discussed",
+      "task_title": "Title of the task",
+      "outcome": "What was discussed or decided about this task",
+      "status_suggestion": "Completed|In Progress"
+    }
+  ],
+  "tagged_opportunities": [
+    {
+      "opportunity_id": "UUID of the opportunity from the list above, or null for new ones",
+      "opportunity_name": "Name/type of the opportunity",
+      "outcome": "What was discussed about this opportunity",
+      "suggested_task": {
+        "title": "Follow-up task title",
+        "priority": "High|Medium|Low",
+        "due_date": "YYYY-MM-DD format"
+      }
+    }
   ]
 }
 
@@ -166,6 +218,9 @@ Important guidelines:
 - Include relevant quotes to provide context
 - Use realistic due dates based on the discussion
 - Focus on client-centric action items
+- For tagged_actions: match any discussed topics to the outstanding tasks listed above. Only include tasks that were actually referenced or discussed.
+- For tagged_opportunities: match discussed revenue topics to the opportunities listed above. Include new opportunities if identified in the conversation.
+- If no outstanding tasks or opportunities were provided, return empty arrays for tagged_actions and tagged_opportunities.
 
 Respond ONLY with valid JSON, no additional text.`;
 
@@ -222,7 +277,9 @@ Respond ONLY with valid JSON, no additional text.`;
       key_topics: analysis.key_topics || [],
       decisions_made: analysis.decisions_made || [],
       client_facts: analysis.client_facts || {},
-      follow_up_date: analysis.follow_up_date
+      follow_up_date: analysis.follow_up_date,
+      tagged_actions: analysis.tagged_actions || [],
+      tagged_opportunities: analysis.tagged_opportunities || [],
     };
 
     const aiActionItems = analysis.action_items || [];
