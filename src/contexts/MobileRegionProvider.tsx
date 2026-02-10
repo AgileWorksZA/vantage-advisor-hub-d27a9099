@@ -3,7 +3,6 @@ import { RegionContext, RegionContextType } from "./RegionContext";
 import { getRegionalData, getFilteredRegionalData, getRegionalOpportunities } from "@/data/regionalData";
 import { useUserJurisdictions } from "@/hooks/useUserJurisdictions";
 
-const MOBILE_REGION_KEY = "vantage-mobile-region";
 const MOBILE_ADVISORS_KEY = "vantage-mobile-advisor-selections";
 
 const currencyMap: Record<string, { code: string; symbol: string; locale: string }> = {
@@ -40,9 +39,7 @@ export function MobileRegionProvider({ children }: { children: ReactNode }) {
   const { allowedJurisdictions, isRestricted } = useUserJurisdictions();
 
   const [selectedRegion, setSelectedRegionState] = useState<string>(() => {
-    return localStorage.getItem(MOBILE_REGION_KEY) 
-      || localStorage.getItem("vantage-selected-region") 
-      || "ZA";
+    return localStorage.getItem("vantage-selected-region") || "ZA";
   });
 
   const [advisorMap, setAdvisorMapState] = useState<Record<string, string[]>>(() => loadMobileAdvisorMap());
@@ -59,7 +56,6 @@ export function MobileRegionProvider({ children }: { children: ReactNode }) {
     setAdvisorMapState(updatedMap);
     saveMobileAdvisorMap(updatedMap);
     setSelectedRegionState(newRegion);
-    localStorage.setItem(MOBILE_REGION_KEY, newRegion);
     const restoredAdvisors = getAdvisorsForRegion(newRegion, updatedMap);
     setSelectedAdvisorsState(restoredAdvisors);
   };
