@@ -10,16 +10,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Client, getDisplayName, getInitials, calculateAge, formatBirthday } from "@/types/client";
-import { 
-  DollarSign, 
-  Image, 
-  MessageSquare, 
-  User, 
-  FileCheck
-} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { formatDistanceToNow } from "date-fns";
+import { useClientMeetingPrep } from "@/hooks/useClientMeetingPrep";
+import OpportunitiesTab, { getOpportunitiesCount } from "./next-best-action/OpportunitiesTab";
+import OutstandingTab from "./next-best-action/OutstandingTab";
+import RecentActivityTab, { RECENT_ACTIVITY_COUNT } from "./next-best-action/RecentActivityTab";
 
 interface ClientSummaryTabProps {
   client: Client;
@@ -38,105 +35,15 @@ const outstandingDocs = [
   { document: "Risk profile questionnaire", workflow: "Advice Cycle" },
 ];
 
-// Demo recent activity data
-const recentActivities = [
-  {
-    id: 1,
-    type: "product_sold",
-    title: "Product purchased",
-    description: 'Client added "Discovery Life Plan"',
-    timestamp: new Date(Date.now() - 5 * 60 * 1000), // 5 minutes ago
-  },
-  {
-    id: 2,
-    type: "document_uploaded",
-    title: "Document uploaded",
-    description: 'Uploaded "ID Document.pdf"',
-    timestamp: new Date(Date.now() - 30 * 60 * 1000), // 30 minutes ago
-  },
-  {
-    id: 3,
-    type: "note_added",
-    title: "Note added",
-    description: 'Meeting notes: Discussed retirement planning options',
-    timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-  },
-  {
-    id: 4,
-    type: "profile_updated",
-    title: "Profile updated",
-    description: 'Updated contact details and address',
-    timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
-  },
-  {
-    id: 5,
-    type: "compliance_created",
-    title: "Compliance created",
-    description: 'FAIS Control document generated',
-    timestamp: new Date(Date.now() - 48 * 60 * 60 * 1000), // 2 days ago
-  },
-  {
-    id: 6,
-    type: "product_sold",
-    title: "Premium adjusted",
-    description: 'Updated premium on "Sanlam Investment"',
-    timestamp: new Date(Date.now() - 72 * 60 * 60 * 1000), // 3 days ago
-  },
-  {
-    id: 7,
-    type: "note_added",
-    title: "Call logged",
-    description: 'Follow-up call regarding policy renewal',
-    timestamp: new Date(Date.now() - 96 * 60 * 60 * 1000), // 4 days ago
-  },
-  {
-    id: 8,
-    type: "document_uploaded",
-    title: "Document signed",
-    description: 'Signed "Beneficiary Nomination Form"',
-    timestamp: new Date(Date.now() - 120 * 60 * 60 * 1000), // 5 days ago
-  },
-];
-
-const getActivityIcon = (type: string) => {
-  switch (type) {
-    case "product_sold":
-      return <DollarSign className="w-4 h-4 text-amber-500" />;
-    case "document_uploaded":
-      return <Image className="w-4 h-4 text-purple-500" />;
-    case "note_added":
-      return <MessageSquare className="w-4 h-4 text-blue-500" />;
-    case "profile_updated":
-      return <User className="w-4 h-4 text-green-500" />;
-    case "compliance_created":
-      return <FileCheck className="w-4 h-4 text-[hsl(180,70%,45%)]" />;
-    default:
-      return <MessageSquare className="w-4 h-4 text-muted-foreground" />;
-  }
-};
-
-const getTitleColor = (type: string) => {
-  switch (type) {
-    case "product_sold":
-      return "text-amber-600";
-    case "document_uploaded":
-      return "text-purple-600";
-    case "note_added":
-      return "text-blue-600";
-    case "profile_updated":
-      return "text-green-600";
-    case "compliance_created":
-      return "text-[hsl(180,70%,45%)]";
-    default:
-      return "text-foreground";
-  }
-};
-
 const ClientSummaryTab = ({ client, clientId, onShowMoreActivity }: ClientSummaryTabProps) => {
   const displayName = getDisplayName(client);
   const initials = getInitials(client);
   const age = calculateAge(client.date_of_birth);
   const birthday = formatBirthday(client.date_of_birth);
+  const prepData = useClientMeetingPrep(clientId);
+
+  const oppsCount = getOpportunitiesCount(prepData.opportunities, prepData.products);
+  const outstandingCount = prepData.tasks.length + prepData.documents.length;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -232,42 +139,39 @@ const ClientSummaryTab = ({ client, clientId, onShowMoreActivity }: ClientSummar
           </CardContent>
         </Card>
 
-        {/* Recent Activity */}
+        {/* Next Best Action */}
         <Card>
           <CardHeader className="py-2">
-            <CardTitle className="text-lg">Recent Activity</CardTitle>
+            <CardTitle className="text-lg">Next Best Action</CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
-            <div className="space-y-0">
-              {recentActivities.map((activity) => (
-                <div 
-                  key={activity.id} 
-                  className="flex gap-2 py-1.5 border-b border-border/50 last:border-0"
-                >
-                  <div className="shrink-0 mt-0.5">
-                    {getActivityIcon(activity.type)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className={`font-medium text-xs ${getTitleColor(activity.type)}`}>
-                        {activity.title}
-                      </p>
-                      <span className="text-[10px] text-muted-foreground whitespace-nowrap">
-                        {formatDistanceToNow(activity.timestamp, { addSuffix: true })}
-                      </span>
-                    </div>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {activity.description}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-            
+            <Tabs defaultValue="opportunities" className="w-full">
+              <TabsList className="w-full h-8 mb-2">
+                <TabsTrigger value="opportunities" className="text-xs flex-1">
+                  Opportunities ({oppsCount})
+                </TabsTrigger>
+                <TabsTrigger value="outstanding" className="text-xs flex-1">
+                  Outstanding ({outstandingCount})
+                </TabsTrigger>
+                <TabsTrigger value="recent" className="text-xs flex-1">
+                  Recent Activity ({RECENT_ACTIVITY_COUNT})
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent value="opportunities" className="mt-0">
+                <OpportunitiesTab opportunities={prepData.opportunities} products={prepData.products} />
+              </TabsContent>
+              <TabsContent value="outstanding" className="mt-0">
+                <OutstandingTab tasks={prepData.tasks} documents={prepData.documents} />
+              </TabsContent>
+              <TabsContent value="recent" className="mt-0">
+                <RecentActivityTab />
+              </TabsContent>
+            </Tabs>
+
             {/* Show more link */}
             <div className="pt-1 border-t mt-1">
-              <Button 
-                variant="link" 
+              <Button
+                variant="link"
                 className="p-0 h-auto text-[hsl(180,70%,45%)] hover:text-[hsl(180,70%,35%)]"
                 onClick={onShowMoreActivity}
               >
