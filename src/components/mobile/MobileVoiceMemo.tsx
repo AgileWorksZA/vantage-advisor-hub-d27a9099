@@ -142,7 +142,7 @@ export default function MobileVoiceMemo() {
   // Recording overlay
   if (state === "recording") {
     return (
-      <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur flex flex-col">
+      <div className="absolute inset-0 z-50 bg-background/95 backdrop-blur flex flex-col">
         <header className="flex items-center justify-between px-4 h-12 border-b border-border">
           <div className="flex items-center gap-2">
             <span className="w-3 h-3 rounded-full bg-destructive animate-pulse" />
@@ -181,7 +181,7 @@ export default function MobileVoiceMemo() {
   // Done overlay
   if (state === "done") {
     return (
-      <div className="fixed inset-0 z-50 bg-background flex flex-col">
+      <div className="absolute inset-0 z-50 bg-background flex flex-col">
         <header className="flex items-center justify-between px-4 h-12 border-b border-border">
           <h1 className="text-sm font-semibold text-foreground">Voice Memo</h1>
           <button onClick={handleClose} className="p-1">
@@ -253,7 +253,7 @@ export default function MobileVoiceMemo() {
   return (
     <button
       onClick={startRecording}
-      className="fixed bottom-[4.5rem] right-4 z-20 w-12 h-12 rounded-full bg-[hsl(180,70%,45%)] text-white shadow-lg flex items-center justify-center active:scale-95 transition-transform"
+      className="absolute bottom-[4.5rem] right-4 z-20 w-12 h-12 rounded-full bg-[hsl(180,70%,45%)] text-white shadow-lg flex items-center justify-center active:scale-95 transition-transform"
       aria-label="Record voice memo"
     >
       <Mic className="h-5 w-5" />
