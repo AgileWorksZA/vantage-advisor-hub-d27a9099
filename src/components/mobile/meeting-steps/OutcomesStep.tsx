@@ -5,6 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Plus, Sparkles, FileText, CheckCircle2, Lightbulb, Users, Loader2, ChevronDown, ChevronUp, StickyNote, Clock, Target } from "lucide-react";
 import { KeyOutcome } from "../MobileMeetingScreen";
+import { matchTranscript } from "@/lib/transcript-utils";
 
 interface OutcomesStepProps {
   eventId: string;
@@ -15,27 +16,6 @@ interface OutcomesStepProps {
   onToggleOutcome: (id: string) => void;
   onUpdateOutcomeNote: (id: string, note: string) => void;
   setKeyOutcomes: Dispatch<SetStateAction<KeyOutcome[]>>;
-}
-
-function matchTranscript(outcomeText: string, transcription: string | null): { snippet: string; timestamp: string } | null {
-  if (!transcription) return null;
-  const keywords = outcomeText.toLowerCase().split(/\s+/).filter(w => w.length > 3);
-  const lowerTranscript = transcription.toLowerCase();
-  
-  for (const keyword of keywords) {
-    const idx = lowerTranscript.indexOf(keyword);
-    if (idx !== -1) {
-      const start = Math.max(0, idx - 50);
-      const end = Math.min(transcription.length, idx + keyword.length + 80);
-      const snippet = (start > 0 ? "..." : "") + transcription.slice(start, end).trim() + (end < transcription.length ? "..." : "");
-      // Estimate timestamp based on position in transcript
-      const position = idx / transcription.length;
-      const estimatedMinutes = Math.floor(position * 60);
-      const timestamp = `${Math.floor(estimatedMinutes / 60).toString().padStart(2, "0")}:${(estimatedMinutes % 60).toString().padStart(2, "0")}`;
-      return { snippet, timestamp };
-    }
-  }
-  return null;
 }
 
 export default function OutcomesStep({ eventId, clientId, onConvertToTask, keyOutcomes, onAddOutcome, onToggleOutcome, onUpdateOutcomeNote, setKeyOutcomes }: OutcomesStepProps) {
