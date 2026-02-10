@@ -1,5 +1,8 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { CalendarIcon, Loader2 } from "lucide-react";
 import { useAdminData } from "@/hooks/useAdminData";
 import { AdminSectionHeader } from "../AdminSectionHeader";
 import { AdminDataTable, ColumnDef } from "../AdminDataTable";
@@ -152,6 +155,40 @@ export function SystemSettingsSection() {
     await deleteItem(item.id);
   };
 
+  const [seedingCalendar, setSeedingCalendar] = useState(false);
+
+  const handleSeedCalendar = async () => {
+    setSeedingCalendar(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        toast.error("Not authenticated");
+        return;
+      }
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/seed-calendar-events`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      const result = await response.json();
+      if (result.success) {
+        toast.success(`Seeded ${result.totalEvents} calendar events across ${result.advisors} advisors`);
+      } else {
+        toast.error(result.error || "Failed to seed calendar events");
+      }
+    } catch (error: any) {
+      toast.error("Failed to seed calendar events");
+      console.error(error);
+    } finally {
+      setSeedingCalendar(false);
+    }
+  };
+
   return (
     <div className="p-6 space-y-6">
       <Tabs
@@ -175,6 +212,22 @@ export function SystemSettingsSection() {
             onAdd={handleAdd}
             onReset={() => refetch()}
           />
+
+          <div className="mt-4 flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSeedCalendar}
+              disabled={seedingCalendar}
+            >
+              {seedingCalendar ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <CalendarIcon className="w-4 h-4 mr-2" />
+              )}
+              {seedingCalendar ? "Seeding Calendar..." : "Seed Calendar Events"}
+            </Button>
+          </div>
 
           <div className="mt-4">
             <AdminDataTable
