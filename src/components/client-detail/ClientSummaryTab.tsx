@@ -172,7 +172,7 @@ const ClientSummaryTab = ({ client, clientId, onShowMoreActivity, onTabChange }:
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg flex items-center gap-2">
                 Next Best Action
-                <span className="inline-flex items-center justify-center w-5 h-5 text-[9px] font-bold bg-gradient-to-br from-[hsl(200,80%,50%)] to-[hsl(260,70%,55%)] text-white rounded-full">AI</span>
+                <span className="inline-flex items-center px-2 py-0.5 text-xs font-bold bg-gradient-to-r from-violet-500 to-cyan-500 text-white rounded-full">AI</span>
               </CardTitle>
               {client.household_group && (
                 <div className="flex items-center gap-1.5">
