@@ -1,40 +1,32 @@
 
 
-## Remove Summary Charts and Add Totals Row to Analytics Tab
+## Set Nunito as Global Font
 
 ### Overview
 
-Remove the 4-column summary chart grid (Status donut, Priority donut, Utilisation gauge, SLA gauge) from the Analytics tab and add a sticky totals row at the bottom of the data table that aggregates all visible columns.
+Replace the current Manrope font with Google Nunito across the entire application by updating the font import in `index.html` and the body font-family in `index.css`.
 
 ### Changes
 
-**File: `src/components/tasks/TaskAnalyticsTab.tsx`**
+**File: `index.html`**
 
-#### 1. Remove Summary Charts
-- Remove the `EChartsWrapper` import and the 4-card chart grid (Status, Priority, Utilisation, SLA)
-- Remove the associated `useMemo` hooks for `statusChartData`, `priorityChartData`, `aggregateUtilisation`, `aggregateSla`, and chart option builders (`makeGaugeOption`, donut options)
-- Remove the `Card`/`CardHeader`/`CardTitle`/`CardContent` imports if no longer used elsewhere in the component
+- Replace the Manrope Google Fonts `<link>` (preload + noscript fallback) with the equivalent for Nunito, loading weights 400, 600, 700, and 800.
+- Update the `rel="preload"` href and `noscript` href to:
+  `https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap`
 
-#### 2. Add Totals Row
-- Append a `<tfoot>` / final `<TableRow>` at the bottom of the data table with bold styling and a top border
-- The row displays aggregated totals for all numeric columns:
-  - **Name column**: displays "Totals"
-  - **Open Tasks**: sum of all visible rows
-  - **Completed (period)**: sum
-  - **Completed (prior)**: sum
-  - **Overdue**: sum
-  - **Avg Days to Close**: weighted average (or simple average across rows that have values)
-  - **Utilisation %**: weighted average based on total standard minutes vs total capacity
-  - **SLA Adherence %**: weighted average (total on-time / total with SLA)
-- Compute totals from the currently displayed `computedRows` (respects active filters)
-- Style the totals row with `font-semibold bg-muted/30 border-t-2` to visually separate it from data rows
+**File: `src/index.css`**
 
-### Technical Details
+- In the `body` selector inside `@layer base`, change `'Manrope'` to `'Nunito'` in the `font-family` declaration. The full value becomes:
+  `font-family: 'Nunito', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji';`
+
+No other font-family overrides exist in the codebase that need removal.
+
+### Technical Summary
 
 | Item | Detail |
 |------|--------|
-| Modified file | `src/components/tasks/TaskAnalyticsTab.tsx` |
-| Removed | EChartsWrapper charts, chart data memos, chart grid |
-| Added | Totals row at table bottom with aggregated metrics |
-| No DB changes | Pure UI update |
+| Files modified | `index.html`, `src/index.css` |
+| Font replaced | Manrope -> Nunito |
+| Weights loaded | 400, 600, 700, 800 |
+| No DB changes | Pure styling update |
 
