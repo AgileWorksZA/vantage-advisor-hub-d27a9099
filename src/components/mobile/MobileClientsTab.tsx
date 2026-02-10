@@ -1,24 +1,38 @@
 import { useState, useMemo } from "react";
 import { useClients } from "@/hooks/useClients";
+import { useRegion } from "@/contexts/RegionContext";
 import { Search, Phone, Mail, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import MobileClientProfile from "./MobileClientProfile";
 
 const MobileClientsTab = () => {
   const { clients, loading } = useClients();
+  const { selectedAdvisors, regionalData } = useRegion();
   const [search, setSearch] = useState("");
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
 
+  const selectedAdvisorNames = useMemo(() =>
+    regionalData.advisors
+      .filter(a => selectedAdvisors.includes(a.initials))
+      .map(a => a.name),
+    [regionalData.advisors, selectedAdvisors]
+  );
+
+  const advisorFilteredClients = useMemo(() =>
+    clients.filter(c => selectedAdvisorNames.includes(c.advisor)),
+    [clients, selectedAdvisorNames]
+  );
+
   const filtered = useMemo(() => {
-    if (!search.trim()) return clients;
+    if (!search.trim()) return advisorFilteredClients;
     const lower = search.toLowerCase();
-    return clients.filter(
+    return advisorFilteredClients.filter(
       (c) =>
         c.client.toLowerCase().includes(lower) ||
         c.email.toLowerCase().includes(lower) ||
         c.phone.includes(search)
     );
-  }, [clients, search]);
+  }, [advisorFilteredClients, search]);
 
   if (selectedClientId) {
     return (

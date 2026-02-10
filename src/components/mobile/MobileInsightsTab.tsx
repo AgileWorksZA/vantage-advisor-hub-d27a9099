@@ -1,29 +1,54 @@
 import { useMemo } from "react";
 import { useTasks } from "@/hooks/useTasks";
 import { useClients } from "@/hooks/useClients";
+import { useRegion } from "@/contexts/RegionContext";
 import { Users, CheckSquare, AlertTriangle, TrendingUp, PieChart, Shield } from "lucide-react";
 import { isBefore, startOfDay } from "date-fns";
 
 const MobileInsightsTab = () => {
   const { tasks, loading: tasksLoading } = useTasks();
   const { clients, loading: clientsLoading } = useClients();
+  const { selectedAdvisors, regionalData } = useRegion();
 
   const today = useMemo(() => new Date(), []);
 
+  const selectedAdvisorNames = useMemo(() =>
+    regionalData.advisors
+      .filter(a => selectedAdvisors.includes(a.initials))
+      .map(a => a.name),
+    [regionalData.advisors, selectedAdvisors]
+  );
+
+  const filteredClients = useMemo(() =>
+    clients.filter(c => selectedAdvisorNames.includes(c.advisor)),
+    [clients, selectedAdvisorNames]
+  );
+
+  const advisorClientNames = useMemo(() => {
+    const names = new Set<string>();
+    filteredClients.forEach(c => names.add(c.client));
+    return names;
+  }, [filteredClients]);
+
+  const filteredTasks = useMemo(() =>
+    tasks.filter((t) => t.isPracticeTask || advisorClientNames.has(t.clientName)),
+    [tasks, advisorClientNames]
+  );
+
   const metrics = useMemo(() => {
-    const openTasks = tasks.filter((t) => t.status !== "Completed" && t.status !== "Cancelled");
+    const openTasks = filteredTasks.filter((t) => t.status !== "Completed" && t.status !== "Cancelled");
     const overdue = openTasks.filter((t) => isBefore(t.dueDate, startOfDay(today)));
-    const completedTasks = tasks.filter((t) => t.status === "Completed");
-    const completionRate = tasks.length > 0 ? Math.round((completedTasks.length / tasks.length) * 100) : 0;
+    const completedTasks = filteredTasks.filter((t) => t.status === "Completed");
+    const completionRate = filteredTasks.length > 0 ? Math.round((completedTasks.length / filteredTasks.length) * 100) : 0;
 
     return {
-      totalClients: clients.length,
+      totalClients: filteredClients.length,
       openTasks: openTasks.length,
       overdueTasks: overdue.length,
       completionRate,
       complianceAlerts: overdue.filter((t) => t.taskType === "Compliance" || t.taskType === "Annual Review").length,
     };
-  }, [tasks, clients, today]);
+  }, [filteredTasks, filteredClients, today]);
 
   const loading = tasksLoading || clientsLoading;
 
@@ -90,7 +115,7 @@ const MobileInsightsTab = () => {
         {loading ? (
           <div className="h-24 bg-muted animate-pulse rounded" />
         ) : (
-          <TaskDistribution tasks={tasks} />
+          <TaskDistribution tasks={filteredTasks} />
         )}
       </div>
     </div>
