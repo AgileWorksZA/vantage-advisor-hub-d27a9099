@@ -1,39 +1,47 @@
 
 
-## Replace AI Badges with Dashboard-Style Gradient Pills
+## Add Jurisdiction and Advisor Settings to Mobile Settings
 
-### Overview
+### What This Does
+Adds two new sections to the mobile Settings screen so you can pick your jurisdiction (country) and select which advisors' data to view -- exactly like the flag icon and advisor pills in the web header, but designed for the mobile layout.
 
-Update both AI badges (next to "Next Best Action" heading and before "Optimise" button) to match the Adviser Dashboard style: a gradient pill from violet-500 to cyan-500 with white text, rounded-full, but non-clickable (no hover/cursor/animate-pulse effects).
+### Design
 
-### Changes
+**Jurisdiction Selector**
+- A list of country flags with names (South Africa, Australia, Canada, United Kingdom, United States)
+- The currently selected jurisdiction shows a checkmark
+- Tapping a different country switches the region for the entire app
+- If the account is restricted to a specific jurisdiction, the selector is shown but disabled with an explanatory note
 
-**File: `src/components/client-detail/ClientSummaryTab.tsx`**
+**Advisor Filter**
+- Shown below the jurisdiction selector
+- Lists all advisors for the current jurisdiction with checkboxes
+- A "Toggle All" option at the top
+- Selecting/deselecting advisors updates the global filter, affecting all data across the app
 
-Replace the circular gradient badge next to "Next Best Action" (line 153):
-```tsx
-// FROM:
-<span className="inline-flex items-center justify-center w-5 h-5 text-[9px] font-bold bg-gradient-to-br from-[hsl(200,80%,50%)] to-[hsl(260,70%,55%)] text-white rounded-full">AI</span>
+Both sections use the existing `RegionContext` so changes here immediately affect Dashboard, Clients, Tasks, Calendar, and all other modules.
 
-// TO:
-<span className="inline-flex items-center px-2 py-0.5 text-xs font-bold bg-gradient-to-r from-violet-500 to-cyan-500 text-white rounded-full">AI</span>
-```
+---
 
-**File: `src/components/client-detail/next-best-action/OpportunitiesTab.tsx`**
+### Technical Details
 
-Replace the pill badge before "Optimise" (line 84):
-```tsx
-// FROM:
-<span className="inline-flex items-center justify-center px-1.5 py-0.5 text-[9px] font-bold bg-[hsl(230,80%,85%)] text-[hsl(230,70%,50%)] rounded-md mr-1">AI</span>
+**File Modified:** `src/components/mobile/MobileSettingsMenu.tsx`
 
-// TO:
-<span className="inline-flex items-center px-2 py-0.5 text-xs font-bold bg-gradient-to-r from-violet-500 to-cyan-500 text-white rounded-full mr-1">AI</span>
-```
+1. Import `useRegion` from `@/contexts/RegionContext` and `regions` from `@/components/dashboard/RegionSelector`
+2. Import `Globe, Users, Check` from lucide-react
+3. Add a "Jurisdiction" section between the User Info block and the existing menu items:
+   - Render each region as a row with flag image, country name, and a Check icon for the selected one
+   - On tap, call `setSelectedRegion(code)` from context
+   - If `isJurisdictionRestricted`, show rows as non-interactive with a small "(restricted)" note
+4. Add an "Advisors" section below Jurisdiction:
+   - Pull `regionalData.advisors`, `selectedAdvisors`, `setSelectedAdvisors` from context
+   - Render a "Select All" toggle row
+   - Render each advisor as a row with their initials badge and full name, with a Check icon when selected
+   - Tapping toggles that advisor in/out of the selection
 
-Both use the same styling as the Dashboard button but without `animate-pulse`, `hover:scale-110`, `cursor-pointer`, or `onClick` -- making them purely decorative labels.
+**No new files or database changes required** -- this purely extends the existing mobile UI using the already-available RegionContext.
 
 | File | Action |
 |------|--------|
-| `src/components/client-detail/ClientSummaryTab.tsx` | Update AI badge styling |
-| `src/components/client-detail/next-best-action/OpportunitiesTab.tsx` | Update AI badge styling |
+| `src/components/mobile/MobileSettingsMenu.tsx` | Add jurisdiction and advisor sections |
 
