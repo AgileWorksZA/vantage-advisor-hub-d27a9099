@@ -8,6 +8,7 @@ import MobileTasksTab from "./MobileTasksTab";
 import MobileInsightsTab from "./MobileInsightsTab";
 import MobileAITab from "./MobileAITab";
 import MobileSettingsMenu from "./MobileSettingsMenu";
+import MobileVoiceMemo from "./MobileVoiceMemo";
 import { MobileRegionProvider } from "@/contexts/MobileRegionProvider";
 
 type MobileTab = "today" | "clients" | "tasks" | "insights" | "ai";
@@ -23,6 +24,18 @@ const tabs: { id: MobileTab; label: string; icon: typeof CalendarDays }[] = [
 const MobileAppContent = () => {
   const [activeTab, setActiveTab] = useState<MobileTab>("today");
   const [showSettings, setShowSettings] = useState(false);
+  const [mobileNotifications, setMobileNotifications] = useState<Array<{id: string; type: string; title: string; description: string; isRead: boolean; date: string; link?: string}>>([]);
+
+  const handleNotification = (n: { type: string; title: string; description: string; link?: string }) => {
+    setMobileNotifications(prev => [{
+      id: crypto.randomUUID(),
+      ...n,
+      isRead: false,
+      date: new Date().toISOString().split("T")[0],
+    }, ...prev]);
+  };
+
+  const unreadNotifCount = 3 + mobileNotifications.filter(n => !n.isRead).length;
 
   const renderContent = () => {
     switch (activeTab) {
@@ -71,7 +84,7 @@ const MobileAppContent = () => {
           <Button variant="ghost" size="icon" className="h-8 w-8 relative">
             <Bell className="h-4 w-4" />
             <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-destructive text-destructive-foreground text-[10px] rounded-full flex items-center justify-center">
-              3
+              {unreadNotifCount}
             </span>
           </Button>
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowSettings(true)}>
@@ -83,6 +96,9 @@ const MobileAppContent = () => {
       <main className="flex-1 overflow-y-auto">
         {renderContent()}
       </main>
+
+      {/* Voice Memo FAB */}
+      <MobileVoiceMemo />
 
       {/* Bottom Tab Bar */}
       <nav className="sticky bottom-0 z-10 flex items-center justify-around h-14 bg-background border-t border-border shrink-0">

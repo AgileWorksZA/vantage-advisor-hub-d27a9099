@@ -1,20 +1,26 @@
+import { useState } from "react";
 import { useMeetingRecordings } from "@/hooks/useMeetingRecordings";
 import { useClientMeetingPrep } from "@/hooks/useClientMeetingPrep";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Plus, Sparkles, CalendarDays, CheckSquare, TrendingUp, Loader2, ChevronRight, Target } from "lucide-react";
+import { Plus, Sparkles, CalendarDays, CheckSquare, TrendingUp, Loader2, ChevronRight, Target, ChevronDown, ChevronUp, Mail, AlertTriangle, Check } from "lucide-react";
 import { format, addDays, isPast } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
 import type { DetailView } from "./PrepStep";
 import type { KeyOutcome } from "../MobileMeetingScreen";
+import ScheduleFollowUpPanel from "./ScheduleFollowUpPanel";
+import MobileComposeMessageSheet from "./MobileComposeMessageSheet";
 
 interface FollowUpsStepProps {
   eventId: string;
   clientId: string | null;
   clientName?: string;
+  meetingTitle?: string;
   onConvertToTask: (title: string, description: string) => void;
   onTagClick: (view: DetailView) => void;
   keyOutcomes?: KeyOutcome[];
   transcription?: string | null;
+  onMessageSent?: (channel: string, sentAt: string, clientName: string) => void;
 }
 
 const statusToProgress: Record<string, number> = {
@@ -48,9 +54,16 @@ const originConfig: Record<string, { label: string; className: string }> = {
   "post-meeting": { label: "Post", className: "bg-amber-500/10 text-amber-600" },
 };
 
-export default function FollowUpsStep({ eventId, clientId, clientName, onConvertToTask, onTagClick, keyOutcomes = [], transcription = null }: FollowUpsStepProps) {
+export default function FollowUpsStep({ eventId, clientId, clientName, meetingTitle, onConvertToTask, onTagClick, keyOutcomes = [], transcription = null, onMessageSent }: FollowUpsStepProps) {
   const { recordings, loading: recLoading } = useMeetingRecordings(eventId, clientId || undefined);
   const { tasks, opportunities, loading: prepLoading } = useClientMeetingPrep(clientId);
+  const { toast } = useToast();
+
+  const [followUpExpanded, setFollowUpExpanded] = useState(false);
+  const [scheduledTaskIds, setScheduledTaskIds] = useState<string[]>([]);
+  const [scheduledInfo, setScheduledInfo] = useState<{ date: string; time: string; type: string } | null>(null);
+  const [showCompose, setShowCompose] = useState(false);
+  const [sentMessages, setSentMessages] = useState<Record<string, { channel: string; sentAt: string }>>({});
 
   const recording = recordings[0];
   const actionItems = recording?.aiActionItems || [];
@@ -58,10 +71,59 @@ export default function FollowUpsStep({ eventId, clientId, clientName, onConvert
   const followUpDate = summary?.follow_up_date
     ? format(new Date(summary.follow_up_date), "dd MMMM yyyy")
     : format(addDays(new Date(), 14), "dd MMMM yyyy");
+  const followUpDateISO = summary?.follow_up_date || addDays(new Date(), 14).toISOString();
 
   const recTranscription = recording?.transcription || transcription;
-
   const loading = recLoading || prepLoading;
+
+  const unaddressedTasks = tasks.filter(t => !scheduledTaskIds.includes(t.id) && t.status !== "Completed");
+
+  const handleScheduled = (taskIds: string[], details: { date: string; time: string; type: string }) => {
+    setScheduledTaskIds(prev => [...prev, ...taskIds]);
+    setScheduledInfo(details);
+    setFollowUpExpanded(false);
+  };
+
+  const handleResolveTask = (taskId: string, taskTitle: string) => {
+    setScheduledTaskIds(prev => [...prev, taskId]);
+    toast({ title: "Task resolved", description: taskTitle });
+  };
+
+  const handleAddToFollowUp = (taskId: string) => {
+    setFollowUpExpanded(true);
+    // Task will be included in the panel's task list
+  };
+
+  const generateMessageBody = () => {
+    const items = tasks.filter(t => t.status !== "Completed").slice(0, 8);
+    const outcomes = keyOutcomes.filter(o => !o.completed).slice(0, 5);
+    let body = `Hi ${clientName || "there"},\n\nThank you for our meeting. Here is a summary of our follow-up items:\n\n`;
+    if (items.length > 0) {
+      body += "Outstanding Tasks:\n";
+      items.forEach(t => { body += `• ${t.title}\n`; });
+      body += "\n";
+    }
+    if (outcomes.length > 0) {
+      body += "Key Outcomes to Address:\n";
+      outcomes.forEach(o => { body += `• ${o.text}\n`; });
+      body += "\n";
+    }
+    if (scheduledInfo) {
+      body += `Our next follow-up is scheduled for ${scheduledInfo.date} at ${scheduledInfo.time} (${scheduledInfo.type}).\n\n`;
+    }
+    body += "Please don't hesitate to reach out if you have any questions.\n\nKind regards";
+    return body;
+  };
+
+  const handleMessageSent = (channel: string, sentAt: string) => {
+    // Mark all open tasks as having a message sent
+    const openTaskIds = tasks.filter(t => t.status !== "Completed").map(t => t.id);
+    const newSent: Record<string, { channel: string; sentAt: string }> = {};
+    openTaskIds.forEach(id => { newSent[id] = { channel, sentAt }; });
+    setSentMessages(prev => ({ ...prev, ...newSent }));
+    setShowCompose(false);
+    onMessageSent?.(channel, sentAt, clientName || "Client");
+  };
 
   if (loading) {
     return (
@@ -71,25 +133,70 @@ export default function FollowUpsStep({ eventId, clientId, clientName, onConvert
     );
   }
 
+  if (showCompose && clientId) {
+    return (
+      <MobileComposeMessageSheet
+        clientId={clientId}
+        clientName={clientName || "Client"}
+        subject={`Follow-up: ${meetingTitle || "Meeting"} - ${format(new Date(), "dd MMM yyyy")}`}
+        bodyText={generateMessageBody()}
+        onClose={() => setShowCompose(false)}
+        onSent={(ch, at) => handleMessageSent(ch, at)}
+      />
+    );
+  }
+
   return (
     <div className="space-y-5 pb-6">
-      {/* Suggested Follow-up Date */}
-      <div className="flex items-center gap-3 p-3 rounded-lg bg-[hsl(180,70%,45%)]/5 border border-[hsl(180,70%,45%)]/20">
-        <CalendarDays className="h-5 w-5 text-[hsl(180,70%,45%)]" />
-        <div>
-          <p className="text-xs text-muted-foreground">Suggested Follow-up</p>
-          <p className="text-sm font-medium text-foreground">{followUpDate}</p>
-        </div>
+      {/* Suggested Follow-up - Expandable */}
+      <div className="rounded-lg border border-[hsl(180,70%,45%)]/20 overflow-hidden">
         <button
-          onClick={() => onConvertToTask(
-            `Follow-up meeting with ${clientName || "client"}`,
-            `Schedule follow-up meeting by ${followUpDate}`
-          )}
-          className="ml-auto p-1.5 rounded-md bg-[hsl(180,70%,45%)]/10 text-[hsl(180,70%,45%)]"
+          onClick={() => setFollowUpExpanded(!followUpExpanded)}
+          className="w-full flex items-center gap-3 p-3 bg-[hsl(180,70%,45%)]/5 hover:bg-[hsl(180,70%,45%)]/10 transition-colors"
         >
-          <Plus className="h-4 w-4" />
+          <CalendarDays className="h-5 w-5 text-[hsl(180,70%,45%)]" />
+          <div className="text-left flex-1">
+            <p className="text-xs text-muted-foreground">Suggested Follow-up</p>
+            <p className="text-sm font-medium text-foreground">{followUpDate}</p>
+          </div>
+          {scheduledInfo ? (
+            <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-600 text-[10px]">
+              <Check className="h-3 w-3 mr-0.5" />
+              Scheduled
+            </Badge>
+          ) : (
+            followUpExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />
+          )}
         </button>
+
+        {followUpExpanded && !scheduledInfo && (
+          <div className="border-t border-[hsl(180,70%,45%)]/20">
+            <ScheduleFollowUpPanel
+              tasks={tasks.filter(t => t.status !== "Completed").map(t => ({ id: t.id, title: t.title, status: t.status }))}
+              clientId={clientId}
+              clientName={clientName}
+              suggestedDate={followUpDateISO}
+              meetingTitle={meetingTitle || "Follow-up"}
+              onScheduled={handleScheduled}
+            />
+          </div>
+        )}
       </div>
+
+      {/* Send Message Button */}
+      {clientId && (
+        <button
+          onClick={() => setShowCompose(true)}
+          className="w-full flex items-center gap-3 p-3 rounded-lg bg-card border border-border hover:bg-accent/50 transition-colors"
+        >
+          <Mail className="h-5 w-5 text-[hsl(180,70%,45%)]" />
+          <div className="text-left flex-1">
+            <p className="text-sm font-medium text-foreground">Send Follow-up Message</p>
+            <p className="text-xs text-muted-foreground">Draft email, WhatsApp, or SMS to {clientName}</p>
+          </div>
+          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+        </button>
+      )}
 
       {/* AI Action Items */}
       {actionItems.length > 0 && (
@@ -125,6 +232,7 @@ export default function FollowUpsStep({ eventId, clientId, clientName, onConvert
             const progressColor = statusColors[t.status] ?? "bg-muted-foreground";
             const isOverdue = t.isOverdue || (t.dueDate && isPast(new Date(t.dueDate)));
             const linkedOutcome = findLinkedOutcome(t.title, keyOutcomes);
+            const sent = sentMessages[t.id];
 
             return (
               <button
@@ -175,10 +283,56 @@ export default function FollowUpsStep({ eventId, clientId, clientName, onConvert
                       </Badge>
                     </div>
                   )}
+
+                  {/* Message sent badge */}
+                  {sent && (
+                    <div className="flex items-center gap-1.5">
+                      <Mail className="h-3 w-3 text-purple-500 shrink-0" />
+                      <span className="text-xs text-muted-foreground">
+                        {sent.channel} sent {format(new Date(sent.sentAt), "dd MMM HH:mm")}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Scheduled badge */}
+                  {scheduledTaskIds.includes(t.id) && (
+                    <div className="flex items-center gap-1.5">
+                      <CalendarDays className="h-3 w-3 text-emerald-500 shrink-0" />
+                      <span className="text-xs text-emerald-600">Scheduled for follow-up</span>
+                    </div>
+                  )}
                 </div>
               </button>
             );
           })}
+        </div>
+      )}
+
+      {/* Unaddressed Tasks Warning */}
+      {unaddressedTasks.length > 0 && scheduledTaskIds.length > 0 && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 px-1">
+            <AlertTriangle className="h-4 w-4 text-amber-500" />
+            <h3 className="text-xs font-semibold text-amber-600 uppercase tracking-wider">Unaddressed Tasks</h3>
+          </div>
+          <p className="text-xs text-muted-foreground px-1">These tasks have not been included in a follow-up meeting.</p>
+          {unaddressedTasks.slice(0, 5).map(t => (
+            <div key={t.id} className="flex items-center gap-2 p-2.5 rounded-lg bg-amber-500/5 border border-amber-500/20">
+              <span className="text-sm text-foreground truncate flex-1">{t.title}</span>
+              <button
+                onClick={() => handleResolveTask(t.id, t.title)}
+                className="px-2 py-1 text-[10px] font-medium rounded bg-emerald-500/10 text-emerald-600"
+              >
+                Resolve
+              </button>
+              <button
+                onClick={() => handleAddToFollowUp(t.id)}
+                className="px-2 py-1 text-[10px] font-medium rounded bg-[hsl(180,70%,45%)]/10 text-[hsl(180,70%,45%)]"
+              >
+                Add to Follow-up
+              </button>
+            </div>
+          ))}
         </div>
       )}
 
