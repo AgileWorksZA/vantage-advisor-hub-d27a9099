@@ -98,7 +98,7 @@ const MobileTodayTab = () => {
     const target = inProgress || upcoming;
     if (target && eventRefs.current[target.id]) {
       setTimeout(() => {
-        eventRefs.current[target.id]?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        eventRefs.current[target.id]?.scrollIntoView({ behavior: "smooth", block: "start" });
       }, 100);
       scrolledRef.current = true;
     }
