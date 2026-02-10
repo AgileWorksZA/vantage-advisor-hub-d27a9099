@@ -142,7 +142,14 @@ const ClientRibbon = ({ client, clientName, relatedEntities, onTabChange }: Clie
                     onClick={() => navigate(`/clients/${entity.id}`)}
                   >
                     <div className="flex flex-col">
-                      <span className="font-medium">{entity.name}</span>
+                      <span className="font-medium">
+                        {entity.name}
+                        {client.household_group && entity.name.split(" ").some(word => word.length > 1 && client.household_group!.includes(word)) && (
+                          <Badge variant="outline" className="border-amber-500 text-amber-600 bg-transparent dark:text-amber-400 dark:border-amber-400 text-[10px] px-1.5 py-0 ml-2">
+                            Main Member
+                          </Badge>
+                        )}
+                      </span>
                       <span className="text-xs text-muted-foreground">{entity.type}</span>
                     </div>
                   </DropdownMenuItem>
