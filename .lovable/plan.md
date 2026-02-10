@@ -1,24 +1,35 @@
 
 
-## Default to First Advisor on Jurisdiction Change (Mobile)
+## Default Mobile Region to Web's Current Jurisdiction
 
 ### Problem
-When changing jurisdiction in mobile settings, the fallback selects all advisors for the new region. Since mobile only supports single-select, this causes an inconsistent state where no single advisor appears selected in the dropdown.
+When entering mobile mode, the jurisdiction defaults to "ZA" instead of matching whichever jurisdiction is currently active in the web view.
 
 ### Solution
-Modify `src/contexts/MobileRegionProvider.tsx` to always default to a single advisor (the first one listed) when switching jurisdictions, rather than restoring all advisors.
+Update `MobileRegionProvider.tsx` so that on first load (when no mobile-specific region has been saved), it reads the web view's localStorage key (`vantage-selected-region`) as the fallback instead of hardcoding `"ZA"`.
 
 ### Changes
 
 **File: `src/contexts/MobileRegionProvider.tsx`**
 
-1. Update `getAdvisorsForRegion` to return only the first advisor as default instead of all advisors:
-   - Change the fallback `return allInitials` to `return [allInitials[0]]` (line 36)
-   - When restoring from saved state, also ensure only a single advisor is returned: change `if (valid.length > 0) return valid` to `return [valid[0]]` (line 34)
+- Line 43: Change the fallback from `"ZA"` to reading the web region key first:
+  ```
+  // Before
+  return localStorage.getItem(MOBILE_REGION_KEY) || "ZA";
 
-2. Update the initial state (line 48-50) to also enforce single-select on first load — the same function change handles this automatically.
+  // After
+  return localStorage.getItem(MOBILE_REGION_KEY) 
+    || localStorage.getItem("vantage-selected-region") 
+    || "ZA";
+  ```
+
+This means:
+1. If mobile has its own saved region, use that
+2. Otherwise, inherit whatever the web view currently has selected
+3. Fall back to "ZA" only if neither exists
+
+The advisor default already works correctly -- `getAdvisorsForRegion` picks the first advisor for whatever region is resolved, so no other changes are needed.
 
 | File | Action |
 |------|--------|
-| `src/contexts/MobileRegionProvider.tsx` | Enforce single-advisor default in `getAdvisorsForRegion` |
-
+| `src/contexts/MobileRegionProvider.tsx` | Read web region key as fallback on line 43 |
