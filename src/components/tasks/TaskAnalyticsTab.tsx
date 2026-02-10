@@ -36,7 +36,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Download, Users, ListTodo, CalendarIcon, ChevronRight, Filter, X, Save, BookmarkCheck, Trash2 } from "lucide-react";
-import { EChartsWrapper } from "@/components/ui/echarts-wrapper";
+
 import { EnhancedTask, TaskFilters } from "@/hooks/useTasksEnhanced";
 import { useTeamMembers } from "@/hooks/useTeamMembers";
 import { useRegion } from "@/contexts/RegionContext";
@@ -235,6 +235,10 @@ const aggregateRows = (rows: AnalyticsRow[]): Omit<AnalyticsRow, "label" | "filt
     t.completedInPeriod += r.completedInPeriod;
     t.completedPriorPeriod += r.completedPriorPeriod;
   });
+  const utilVals = rows.filter((r) => r.utilisationPct !== null).map((r) => r.utilisationPct!);
+  t.utilisationPct = utilVals.length > 0 ? Math.round(utilVals.reduce((a, b) => a + b, 0) / utilVals.length) : null;
+  const slaVals = rows.filter((r) => r.slaPct !== null).map((r) => r.slaPct!);
+  t.slaPct = slaVals.length > 0 ? Math.round(slaVals.reduce((a, b) => a + b, 0) / slaVals.length) : null;
   return t;
 };
 
@@ -308,8 +312,14 @@ function TotalsRow({ totals }: { totals: ReturnType<typeof aggregateRows> }) {
       <TableCell className="text-center">{totals.dueNextWeek || "-"}</TableCell>
       <TableCell className="text-center">{totals.completedInPeriod || "-"}</TableCell>
       <TableCell className="text-center">{totals.completedPriorPeriod || "-"}</TableCell>
-      <TableCell className="text-center">-</TableCell>
-      <TableCell className="text-center">-</TableCell>
+      <TableCell className="text-center">{totals.utilisationPct !== null ? `${totals.utilisationPct}%` : "-"}</TableCell>
+      <TableCell className="text-center">
+        {totals.slaPct !== null ? (
+          <span className={totals.slaPct >= 80 ? "text-green-600" : totals.slaPct >= 50 ? "text-yellow-600" : "text-red-600"}>
+            {totals.slaPct}%
+          </span>
+        ) : "-"}
+      </TableCell>
     </TableRow>
   );
 }
@@ -491,95 +501,8 @@ export function TaskAnalyticsTab({ tasks, onDrillDown }: TaskAnalyticsTabProps) 
 
   const dateLabel = getDateLabel();
 
-  // --- Chart data from filtered tasks ---
-  const statusCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    filteredTasks.forEach((t) => {
-      counts[t.status] = (counts[t.status] || 0) + 1;
-    });
-    return Object.entries(counts).map(([name, value]) => ({ name, value }));
-  }, [filteredTasks]);
 
-  const priorityCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    filteredTasks.forEach((t) => {
-      const p = t.priority || "Normal";
-      counts[p] = (counts[p] || 0) + 1;
-    });
-    return Object.entries(counts).map(([name, value]) => ({ name, value }));
-  }, [filteredTasks]);
 
-  const avgUtilisation = useMemo(() => {
-    const vals = rows.filter((r) => r.utilisationPct !== null).map((r) => r.utilisationPct!);
-    return vals.length > 0 ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : 0;
-  }, [rows]);
-
-  const avgSla = useMemo(() => {
-    const vals = rows.filter((r) => r.slaPct !== null).map((r) => r.slaPct!);
-    return vals.length > 0 ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : 100;
-  }, [rows]);
-
-  const statusChartOption = useMemo(() => ({
-    tooltip: { trigger: "item" as const },
-    legend: { bottom: 0, left: "center" },
-    series: [{
-      type: "pie" as const,
-      radius: ["40%", "70%"],
-      avoidLabelOverlap: true,
-      itemStyle: { borderRadius: 10, borderColor: "transparent", borderWidth: 2 },
-      label: { show: false },
-      emphasis: { label: { show: true, fontSize: 14, fontWeight: "bold" as const } },
-      data: statusCounts,
-    }],
-  }), [statusCounts]);
-
-  const priorityChartOption = useMemo(() => ({
-    tooltip: { trigger: "item" as const },
-    legend: { bottom: 0, left: "center" },
-    series: [{
-      type: "pie" as const,
-      radius: ["40%", "70%"],
-      avoidLabelOverlap: true,
-      itemStyle: { borderRadius: 10, borderColor: "transparent", borderWidth: 2 },
-      label: { show: false },
-      emphasis: { label: { show: true, fontSize: 14, fontWeight: "bold" as const } },
-      selectedOffset: 12,
-      data: priorityCounts,
-    }],
-  }), [priorityCounts]);
-
-  const makeGaugeOption = (value: number) => ({
-    series: [{
-      type: "gauge" as const,
-      startAngle: 180,
-      endAngle: 0,
-      min: 0,
-      max: 100,
-      splitNumber: 4,
-      itemStyle: {
-        color: value >= 80 ? "hsl(142, 76%, 36%)" : value >= 50 ? "hsl(45, 93%, 47%)" : "hsl(0, 70%, 50%)",
-      },
-      progress: { show: true, width: 18 },
-      pointer: { show: false },
-      axisLine: { lineStyle: { width: 18 } },
-      axisTick: { show: false },
-      splitLine: { show: false },
-      axisLabel: { show: false },
-      title: { show: false },
-      detail: {
-        valueAnimation: true,
-        offsetCenter: [0, "0%"],
-        fontSize: 24,
-        fontWeight: "bold" as const,
-        formatter: "{value}%",
-        color: "inherit",
-      },
-      data: [{ value }],
-    }],
-  });
-
-  const utilisationGaugeOption = useMemo(() => makeGaugeOption(avgUtilisation), [avgUtilisation]);
-  const slaGaugeOption = useMemo(() => makeGaugeOption(avgSla), [avgSla]);
 
   return (
     <div className="p-6 space-y-4">
@@ -735,42 +658,6 @@ export function TaskAnalyticsTab({ tasks, onDrillDown }: TaskAnalyticsTabProps) 
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Summary Charts */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Tasks by Status</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <EChartsWrapper option={statusChartOption} height={200} />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Tasks by Priority</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <EChartsWrapper option={priorityChartOption} height={200} />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Utilisation</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <EChartsWrapper option={utilisationGaugeOption} height={200} />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">SLA Adherence</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <EChartsWrapper option={slaGaugeOption} height={200} />
-          </CardContent>
-        </Card>
-      </div>
 
       <Card>
         <CardHeader className="pb-2">
