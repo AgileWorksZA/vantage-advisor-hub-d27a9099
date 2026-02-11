@@ -18,11 +18,20 @@ export interface HouseholdPrepProduct extends PrepProduct {
   clientName: string;
 }
 
+export interface HouseholdMember {
+  id: string;
+  firstName: string;
+  surname: string;
+  nationality: string | null;
+  countryOfIssue: string | null;
+}
+
 export interface HouseholdPrepData {
   tasks: HouseholdPrepTask[];
   documents: HouseholdPrepDocument[];
   opportunities: HouseholdPrepOpportunity[];
   products: HouseholdPrepProduct[];
+  householdClients: HouseholdMember[];
   loading: boolean;
 }
 
@@ -36,12 +45,13 @@ export function useHouseholdMeetingPrep(householdGroup: string | null, enabled: 
     documents: [],
     opportunities: [],
     products: [],
+    householdClients: [],
     loading: false,
   });
 
   const fetchAll = useCallback(async () => {
     if (!householdGroup || !enabled) {
-      setData({ tasks: [], documents: [], opportunities: [], products: [], loading: false });
+      setData({ tasks: [], documents: [], opportunities: [], products: [], householdClients: [], loading: false });
       return;
     }
 
@@ -51,11 +61,11 @@ export function useHouseholdMeetingPrep(householdGroup: string | null, enabled: 
       // Get all clients in the household
       const { data: householdClients } = await supabase
         .from("clients")
-        .select("id, first_name, surname")
+        .select("id, first_name, surname, nationality, country_of_issue")
         .eq("household_group", householdGroup);
 
       if (!householdClients || householdClients.length === 0) {
-        setData({ tasks: [], documents: [], opportunities: [], products: [], loading: false });
+        setData({ tasks: [], documents: [], opportunities: [], products: [], householdClients: [], loading: false });
         return;
       }
 
@@ -94,6 +104,13 @@ export function useHouseholdMeetingPrep(householdGroup: string | null, enabled: 
 
       setData({
         loading: false,
+        householdClients: householdClients.map(c => ({
+          id: c.id,
+          firstName: c.first_name,
+          surname: c.surname,
+          nationality: (c as any).nationality || null,
+          countryOfIssue: (c as any).country_of_issue || null,
+        })),
         tasks: (tasksRes.data || []).map((t: any) => ({
           id: t.id,
           title: t.title,

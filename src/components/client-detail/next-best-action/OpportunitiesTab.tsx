@@ -43,8 +43,9 @@ const formatCurrency = (value: number | null) => {
   return new Intl.NumberFormat("en-ZA", { style: "currency", currency: "ZAR", maximumFractionDigits: 0 }).format(value);
 };
 
-function buildGapOpportunities(products: PrepProduct[]): GapOpportunity[] {
+function buildGapOpportunitiesForProducts(products: PrepProduct[], clientName?: string): GapOpportunity[] {
   const gaps: GapOpportunity[] = [];
+  const suffix = clientName ? `-${clientName.replace(/\s/g, "")}` : "";
   const categories = products.map(p => p.category?.toLowerCase() || "");
   const hasInvestments = categories.some(c => c.includes("invest") || c.includes("retirement") || c.includes("saving") || c.includes("super") || c.includes("rrsp") || c.includes("sipp") || c.includes("ira") || c.includes("401"));
   const hasInsurance = categories.some(c => c.includes("insurance") || c.includes("life") || c.includes("risk"));
@@ -58,31 +59,49 @@ function buildGapOpportunities(products: PrepProduct[]): GapOpportunity[] {
   }).reduce((sum, p) => sum + (p.currentValue || 0), 0);
 
   if (products.length < 3) {
-    gaps.push({ id: "gap-newbiz", type: "New Business", description: `Client has only ${products.length} product${products.length !== 1 ? "s" : ""} — room to expand`, suggestedAction: "Explore new product opportunities" });
+    gaps.push({ id: `gap-newbiz${suffix}`, type: "New Business", description: `Client has only ${products.length} product${products.length !== 1 ? "s" : ""} — room to expand`, suggestedAction: "Explore new product opportunities", clientName });
   }
   if (hasInvestments && !hasInsurance) {
-    gaps.push({ id: "gap-cross", type: "Cross-sell", description: "Client has investments but no insurance products", suggestedAction: "Cross-sell insurance or risk cover" });
+    gaps.push({ id: `gap-cross${suffix}`, type: "Cross-sell", description: "Client has investments but no insurance products", suggestedAction: "Cross-sell insurance or risk cover", clientName });
   }
   if (providers.size > 2) {
-    gaps.push({ id: "gap-platform", type: "Platform", description: `Assets spread across ${providers.size} providers`, suggestedAction: "Consolidate to preferred platform" });
+    gaps.push({ id: `gap-platform${suffix}`, type: "Platform", description: `Assets spread across ${providers.size} providers`, suggestedAction: "Consolidate to preferred platform", clientName });
   }
   if (totalValue > 500000) {
-    gaps.push({ id: "gap-upsell", type: "Upsell", description: `High-value portfolio (${formatCurrency(totalValue)}) with contribution room`, suggestedAction: "Drive additional contributions" });
+    gaps.push({ id: `gap-upsell${suffix}`, type: "Upsell", description: `High-value portfolio (${formatCurrency(totalValue)}) with contribution room`, suggestedAction: "Drive additional contributions", clientName });
   }
   if (hasBankOrSavings) {
-    gaps.push({ id: "gap-bankscrape", type: "Bank Scrape", description: "Client has bank/savings products not linked to live feeds", suggestedAction: "Link bank feeds for real-time balance tracking" });
+    gaps.push({ id: `gap-bankscrape${suffix}`, type: "Bank Scrape", description: "Client has bank/savings products not linked to live feeds", suggestedAction: "Link bank feeds for real-time balance tracking", clientName });
   }
   if (investmentValue > 200000) {
-    gaps.push({ id: "gap-tlh", type: "Tax Loss", description: `Investment portfolio (${formatCurrency(investmentValue)}) may have harvesting opportunities`, suggestedAction: "Review portfolio for tax-loss harvesting" });
+    gaps.push({ id: `gap-tlh${suffix}`, type: "Tax Loss", description: `Investment portfolio (${formatCurrency(investmentValue)}) may have harvesting opportunities`, suggestedAction: "Review portfolio for tax-loss harvesting", clientName });
   }
   if (hasMoneyMarketOrCash) {
-    gaps.push({ id: "gap-idlecash", type: "Idle Cash", description: "Idle cash in money market or call accounts", suggestedAction: "Deploy idle cash into growth assets" });
+    gaps.push({ id: `gap-idlecash${suffix}`, type: "Idle Cash", description: "Idle cash in money market or call accounts", suggestedAction: "Deploy idle cash into growth assets", clientName });
   }
   return gaps;
 }
 
-export function getOpportunitiesCount(opportunities: PrepOpportunity[], products: PrepProduct[]): number {
-  return opportunities.length > 0 ? opportunities.length : buildGapOpportunities(products).length;
+function buildGapOpportunities(products: PrepProduct[], householdView?: boolean): GapOpportunity[] {
+  if (householdView) {
+    // Group products by clientName and run gap analysis per member
+    const memberMap = new Map<string, PrepProduct[]>();
+    products.forEach(p => {
+      const name = (p as any).clientName || "Unknown";
+      if (!memberMap.has(name)) memberMap.set(name, []);
+      memberMap.get(name)!.push(p);
+    });
+    const allGaps: GapOpportunity[] = [];
+    memberMap.forEach((memberProducts, memberName) => {
+      allGaps.push(...buildGapOpportunitiesForProducts(memberProducts, memberName));
+    });
+    return allGaps;
+  }
+  return buildGapOpportunitiesForProducts(products);
+}
+
+export function getOpportunitiesCount(opportunities: PrepOpportunity[], products: PrepProduct[], householdView?: boolean): number {
+  return opportunities.length > 0 ? opportunities.length : buildGapOpportunities(products, householdView).length;
 }
 
 const ClientNameTag = ({ name }: { name: string }) => (
@@ -90,7 +109,7 @@ const ClientNameTag = ({ name }: { name: string }) => (
 );
 
 const OpportunitiesTab = ({ opportunities, products, householdView, onOptimise, hasScanned, isScanning, onTaxLossClick }: OpportunitiesTabProps) => {
-  const gaps = opportunities.length === 0 ? buildGapOpportunities(products) : [];
+  const gaps = opportunities.length === 0 ? buildGapOpportunities(products, householdView) : [];
   const items = opportunities.length > 0 ? opportunities : null;
 
   if (!items && gaps.length === 0) {
