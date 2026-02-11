@@ -76,6 +76,27 @@ const QuoteWizardView = ({ onClose, jurisdiction }: QuoteWizardViewProps) => {
   const [lumpSumFilter, setLumpSumFilter] = useState("all");
   const [recurringFilter, setRecurringFilter] = useState("all");
 
+  // Step 3: Recurring Withdrawal
+  const [withdrawalAmount, setWithdrawalAmount] = useState("0.00");
+  const [withdrawalStartDate, setWithdrawalStartDate] = useState("");
+  const [withdrawalFrequency, setWithdrawalFrequency] = useState("");
+  const [withdrawalEscalation, setWithdrawalEscalation] = useState("0");
+  const [withdrawalFunds, setWithdrawalFunds] = useState<FundRow[]>([createEmptyFundRow()]);
+  const [isWithdrawalOpen, setIsWithdrawalOpen] = useState(true);
+  const [withdrawalFilter, setWithdrawalFilter] = useState("all");
+
+  // Step 4: Financial Adviser
+  const [isAdviserOpen, setIsAdviserOpen] = useState(true);
+  const [isFeesOpen, setIsFeesOpen] = useState(false);
+  const [isPreferredFundOpen, setIsPreferredFundOpen] = useState(false);
+  const [lumpSumFee, setLumpSumFee] = useState("0.00");
+  const [additionalContributionFee, setAdditionalContributionFee] = useState("0.00");
+  const [recurringContributionFee, setRecurringContributionFee] = useState("0.00");
+  const [ongoingAdvisoryFee, setOngoingAdvisoryFee] = useState("0.00");
+  const [fundSpecificFees, setFundSpecificFees] = useState<{ id: string; fundName: string; fee: string }[]>([
+    { id: crypto.randomUUID(), fundName: "", fee: "0.00" },
+  ]);
+
   const handleProductChange = (product: string) => {
     setSelectedProduct(product);
     setContractNumber(generateContractNumber());
@@ -88,8 +109,9 @@ const QuoteWizardView = ({ onClose, jurisdiction }: QuoteWizardViewProps) => {
   const products = getQuoteProducts(jurisdiction);
 
   const handleNext = () => {
-    if (currentStep === 0 && selectedProduct) {
-      setCurrentStep(1);
+    if (currentStep === 0 && !selectedProduct) return;
+    if (currentStep < 3) {
+      setCurrentStep(prev => prev + 1);
     }
   };
 
@@ -405,6 +427,229 @@ const QuoteWizardView = ({ onClose, jurisdiction }: QuoteWizardViewProps) => {
               </div>
             </Collapsible>
           </TooltipProvider>
+        </div>
+      );
+    }
+
+    if (currentStep === 2) {
+      return (
+        <div className="space-y-4">
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+            Recurring withdrawal
+          </h3>
+
+          <Collapsible open={isWithdrawalOpen} onOpenChange={setIsWithdrawalOpen}>
+            <div className="border rounded-lg">
+              <CollapsibleTrigger className="flex items-center justify-between w-full px-4 py-3 hover:bg-muted/50 transition-colors">
+                <span className="text-sm font-medium">Recurring withdrawal</span>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                    onClick={(e) => { e.stopPropagation(); }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                  {isWithdrawalOpen ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                </div>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="border-t px-4 py-4 space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Amount</Label>
+                      <Input className="mt-1 h-9" value={withdrawalAmount} onChange={(e) => setWithdrawalAmount(e.target.value)} />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Start date</Label>
+                      <Input className="mt-1 h-9" type="date" value={withdrawalStartDate} onChange={(e) => setWithdrawalStartDate(e.target.value)} />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Frequency <span className="text-destructive">*</span></Label>
+                      <Select value={withdrawalFrequency} onValueChange={setWithdrawalFrequency}>
+                        <SelectTrigger className="mt-1 h-9">
+                          <SelectValue placeholder="Select" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="monthly">Monthly</SelectItem>
+                          <SelectItem value="quarterly">Quarterly</SelectItem>
+                          <SelectItem value="bi-annually">Bi-annually</SelectItem>
+                          <SelectItem value="annually">Annually</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Escalate % <span className="text-destructive">*</span></Label>
+                      <Input className="mt-1 h-9" value={withdrawalEscalation} onChange={(e) => setWithdrawalEscalation(e.target.value)} placeholder="0" />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end">
+                    <button className="text-xs text-[hsl(180,70%,45%)] hover:underline">Withdraw proportionally</button>
+                  </div>
+
+                  {renderFundAllocation("lumpsum", withdrawalFunds, withdrawalFilter, setWithdrawalFilter)}
+                </div>
+              </CollapsibleContent>
+            </div>
+          </Collapsible>
+        </div>
+      );
+    }
+
+    if (currentStep === 3) {
+      return (
+        <div className="space-y-4">
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+            Financial adviser
+          </h3>
+
+          {/* Financial adviser info */}
+          <Collapsible open={isAdviserOpen} onOpenChange={setIsAdviserOpen}>
+            <div className="border rounded-lg">
+              <CollapsibleTrigger className="flex items-center justify-between w-full px-4 py-3 hover:bg-muted/50 transition-colors">
+                <span className="text-sm font-medium">Financial adviser</span>
+                {isAdviserOpen ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="border-t px-4 py-4 space-y-3">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Adviser code</Label>
+                      <p className="text-sm font-medium mt-1">INT004</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Adviser name</Label>
+                      <p className="text-sm font-medium mt-1">Emile Wegner</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-xs text-muted-foreground">FSP name</Label>
+                      <p className="text-sm font-medium mt-1">Vantage Financial Services</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">FSP code</Label>
+                      <p className="text-sm font-medium mt-1">FSP12345</p>
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Agency code</Label>
+                    <p className="text-sm font-medium mt-1">AGN001</p>
+                  </div>
+                </div>
+              </CollapsibleContent>
+            </div>
+          </Collapsible>
+
+          {/* Advisory fees */}
+          <Collapsible open={isFeesOpen} onOpenChange={setIsFeesOpen}>
+            <div className="border rounded-lg">
+              <CollapsibleTrigger className="flex items-center justify-between w-full px-4 py-3 hover:bg-muted/50 transition-colors">
+                <span className="text-sm font-medium">Advisory fees</span>
+                {isFeesOpen ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="border-t px-4 py-4 space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Lump sum (initial) fee % excl.VAT</Label>
+                      <Input className="mt-1 h-9" value={lumpSumFee} onChange={(e) => setLumpSumFee(e.target.value)} />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Additional contribution fee % excl.VAT</Label>
+                      <Input className="mt-1 h-9" value={additionalContributionFee} onChange={(e) => setAdditionalContributionFee(e.target.value)} />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Recurring contribution fee % excl.VAT</Label>
+                      <Input className="mt-1 h-9" value={recurringContributionFee} onChange={(e) => setRecurringContributionFee(e.target.value)} />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Ongoing financial advisory fee % excl.VAT</Label>
+                      <Input className="mt-1 h-9" value={ongoingAdvisoryFee} onChange={(e) => setOngoingAdvisoryFee(e.target.value)} />
+                    </div>
+                  </div>
+
+                  {/* Fund-specific fees table */}
+                  <div className="space-y-3 mt-4">
+                    <h5 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Fund-specific fees</h5>
+                    <div className="grid grid-cols-[1fr_200px_32px] gap-2 text-xs font-medium text-muted-foreground border-b pb-1">
+                      <span>Fund name</span>
+                      <span>Ongoing advisory fee % (excl.VAT)</span>
+                      <span></span>
+                    </div>
+                    {fundSpecificFees.map((row) => (
+                      <div key={row.id} className="grid grid-cols-[1fr_200px_32px] gap-2 items-center">
+                        <Select value={row.fundName} onValueChange={(v) => setFundSpecificFees(prev => prev.map(r => r.id === row.id ? { ...r, fundName: v } : r))}>
+                          <SelectTrigger className="h-8 text-xs">
+                            <SelectValue placeholder="Select fund" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="balanced-fund">Balanced Fund</SelectItem>
+                            <SelectItem value="growth-fund">Growth Fund</SelectItem>
+                            <SelectItem value="income-fund">Income Fund</SelectItem>
+                            <SelectItem value="stable-fund">Stable Fund</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Input
+                          className="h-8 text-xs"
+                          value={row.fee}
+                          onChange={(e) => setFundSpecificFees(prev => prev.map(r => r.id === row.id ? { ...r, fee: e.target.value } : r))}
+                          placeholder="0.00"
+                        />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                          onClick={() => setFundSpecificFees(prev => prev.filter(r => r.id !== row.id))}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    ))}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs text-[hsl(180,70%,45%)] hover:text-[hsl(180,70%,40%)] p-0 h-auto"
+                      onClick={() => setFundSpecificFees(prev => [...prev, { id: crypto.randomUUID(), fundName: "", fee: "0.00" }])}
+                    >
+                      <Plus className="h-3.5 w-3.5 mr-1" /> Add fund
+                    </Button>
+                  </div>
+                </div>
+              </CollapsibleContent>
+            </div>
+          </Collapsible>
+
+          {/* Preferred fee fund */}
+          <Collapsible open={isPreferredFundOpen} onOpenChange={setIsPreferredFundOpen}>
+            <div className="border rounded-lg">
+              <CollapsibleTrigger className="flex items-center justify-between w-full px-4 py-3 hover:bg-muted/50 transition-colors">
+                <span className="text-sm font-medium">Preferred fee fund</span>
+                {isPreferredFundOpen ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="border-t px-4 py-4">
+                  <p className="text-xs text-muted-foreground">Select the preferred fund for fee deductions.</p>
+                  <Select>
+                    <SelectTrigger className="mt-2 h-9">
+                      <SelectValue placeholder="Select fund" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="balanced-fund">Balanced Fund</SelectItem>
+                      <SelectItem value="growth-fund">Growth Fund</SelectItem>
+                      <SelectItem value="income-fund">Income Fund</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CollapsibleContent>
+            </div>
+          </Collapsible>
         </div>
       );
     }
