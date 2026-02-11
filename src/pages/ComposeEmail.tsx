@@ -404,7 +404,7 @@ const ComposeEmail = () => {
   return (
     <div className="h-screen bg-muted/30 flex overflow-hidden">
       {/* Sidebar */}
-      <aside className="w-16 bg-[hsl(180,25%,25%)] flex flex-col items-center py-4 gap-1 shrink-0">
+      <aside className="hidden md:flex w-16 bg-[hsl(180,25%,25%)] flex-col items-center py-4 gap-1 shrink-0">
         <Button
           variant="ghost"
           size="icon"
@@ -452,7 +452,7 @@ const ComposeEmail = () => {
         {/* Content */}
         <div className="flex-1 flex flex-col bg-background overflow-y-auto">
           {/* Action Bar */}
-          <div className="flex items-center gap-2 p-4 border-b border-border">
+          <div className="flex flex-wrap items-center gap-2 p-3 md:p-4 border-b border-border">
             <Button
               size="sm"
               onClick={handleSend}
@@ -477,12 +477,12 @@ const ComposeEmail = () => {
           </div>
 
           {/* Form */}
-          <div className="p-6 max-w-4xl space-y-4">
+          <div className="p-3 md:p-6 w-full max-w-4xl space-y-4">
             {/* Metadata Section */}
-            <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+            <div className="bg-muted/50 rounded-lg p-3 md:p-4 space-y-3">
               {/* From */}
-              <div className="flex items-center gap-3">
-                <Label className="w-16 text-sm text-muted-foreground">From</Label>
+              <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-3">
+                <Label className="w-full md:w-16 text-sm text-muted-foreground">From</Label>
                 <Input 
                   value={emailSettings?.email_address || userEmail} 
                   readOnly 
@@ -491,8 +491,8 @@ const ComposeEmail = () => {
               </div>
 
               {/* To */}
-              <div className="flex items-start gap-3">
-                <Label className="w-16 text-sm text-muted-foreground pt-2">To*</Label>
+              <div className="flex flex-col md:flex-row md:items-start gap-1 md:gap-3">
+                <Label className="w-full md:w-16 text-sm text-muted-foreground md:pt-2">To*</Label>
                 <div className="flex-1 space-y-2">
                   <div className="relative" ref={toContainerRef}>
                     <div className="flex flex-wrap items-center gap-2 min-h-[36px] p-2 bg-background border border-input rounded-md">
@@ -524,7 +524,7 @@ const ComposeEmail = () => {
                           if (e.key === "Escape") setShowToDropdown(false);
                         }}
                         placeholder="Search clients..."
-                        className="flex-1 min-w-[150px] bg-transparent outline-none text-sm"
+                        className="flex-1 min-w-[100px] bg-transparent outline-none text-sm"
                       />
                     </div>
                     {showToDropdown && (
@@ -560,8 +560,8 @@ const ComposeEmail = () => {
 
               {/* CC */}
               {showCc && (
-                <div className="flex items-start gap-3">
-                  <Label className="w-16 text-sm text-muted-foreground pt-2">CC</Label>
+                <div className="flex flex-col md:flex-row md:items-start gap-1 md:gap-3">
+                  <Label className="w-full md:w-16 text-sm text-muted-foreground md:pt-2">CC</Label>
                   <div className="flex-1">
                     <div className="relative" ref={ccContainerRef}>
                       <div className="flex flex-wrap items-center gap-2 min-h-[36px] p-2 bg-background border border-input rounded-md">
@@ -593,7 +593,7 @@ const ComposeEmail = () => {
                             if (e.key === "Escape") setShowCcDropdown(false);
                           }}
                           placeholder="Search clients..."
-                          className="flex-1 min-w-[150px] bg-transparent outline-none text-sm"
+                          className="flex-1 min-w-[100px] bg-transparent outline-none text-sm"
                         />
                       </div>
                       {showCcDropdown && (
@@ -610,8 +610,8 @@ const ComposeEmail = () => {
 
               {/* BCC */}
               {showBcc && (
-                <div className="flex items-start gap-3">
-                  <Label className="w-16 text-sm text-muted-foreground pt-2">BCC</Label>
+                <div className="flex flex-col md:flex-row md:items-start gap-1 md:gap-3">
+                  <Label className="w-full md:w-16 text-sm text-muted-foreground md:pt-2">BCC</Label>
                   <div className="flex-1">
                     <div className="relative" ref={bccContainerRef}>
                       <div className="flex flex-wrap items-center gap-2 min-h-[36px] p-2 bg-background border border-input rounded-md">
@@ -643,7 +643,7 @@ const ComposeEmail = () => {
                             if (e.key === "Escape") setShowBccDropdown(false);
                           }}
                           placeholder="Search clients..."
-                          className="flex-1 min-w-[150px] bg-transparent outline-none text-sm"
+                          className="flex-1 min-w-[100px] bg-transparent outline-none text-sm"
                         />
                       </div>
                       {showBccDropdown && (
@@ -659,8 +659,8 @@ const ComposeEmail = () => {
               )}
 
               {/* Subject */}
-              <div className="flex items-center gap-3">
-                <Label className="w-16 text-sm text-muted-foreground">Subject</Label>
+              <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-3">
+                <Label className="w-full md:w-16 text-sm text-muted-foreground">Subject</Label>
                 <Input
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
@@ -670,8 +670,8 @@ const ComposeEmail = () => {
               </div>
 
               {/* Clients */}
-              <div className="flex items-start gap-3">
-                <Label className="w-16 text-sm text-muted-foreground pt-2">Clients</Label>
+              <div className="flex flex-col md:flex-row md:items-start gap-1 md:gap-3">
+                <Label className="w-full md:w-16 text-sm text-muted-foreground md:pt-2">Clients</Label>
                 <div className="flex-1 flex flex-wrap items-center gap-2">
                   {linkedClients.map((client) => (
                     <ClientAvatarBadge
