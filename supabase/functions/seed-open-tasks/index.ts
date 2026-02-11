@@ -18,8 +18,8 @@ const taskTemplates = [
   { type: "Compliance", title: "FICA compliance verification" },
   { type: "Document Request", title: "Request updated tax certificate" },
   { type: "Document Request", title: "Request beneficiary nomination form" },
-  { type: "Client Call", title: "Scheduled check-in call" },
-  { type: "Client Call", title: "Discuss recent market developments" },
+  { type: "Follow-up", title: "Scheduled check-in call" },
+  { type: "Follow-up", title: "Discuss recent market developments" },
 ];
 
 const priorities = ["Medium", "High", "Urgent"];
