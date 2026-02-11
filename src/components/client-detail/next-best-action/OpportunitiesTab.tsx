@@ -12,6 +12,7 @@ interface OpportunitiesTabProps {
   hasScanned?: boolean;
   isScanning?: boolean;
   onTaxLossClick?: () => void;
+  jurisdiction?: string;
 }
 
 interface GapOpportunity {
@@ -20,6 +21,8 @@ interface GapOpportunity {
   description: string;
   suggestedAction: string;
   clientName?: string;
+  opportunitySize?: number;
+  dateIdentified?: string;
 }
 
 const typeConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
@@ -38,9 +41,24 @@ const getConfig = (type: string) => {
   return key ? typeConfig[key] : typeConfig["Upsell"];
 };
 
-const formatCurrency = (value: number | null) => {
+const currencyMap: Record<string, { code: string; locale: string }> = {
+  ZA: { code: "ZAR", locale: "en-ZA" },
+  AU: { code: "AUD", locale: "en-AU" },
+  CA: { code: "CAD", locale: "en-CA" },
+  GB: { code: "GBP", locale: "en-GB" },
+  US: { code: "USD", locale: "en-US" },
+};
+
+const formatCurrency = (value: number | null, jurisdiction?: string) => {
   if (!value) return null;
-  return new Intl.NumberFormat("en-ZA", { style: "currency", currency: "ZAR", maximumFractionDigits: 0 }).format(value);
+  const curr = currencyMap[jurisdiction || "ZA"] || currencyMap.ZA;
+  return new Intl.NumberFormat(curr.locale, { style: "currency", currency: curr.code, maximumFractionDigits: 0 }).format(value);
+};
+
+const formatDate = (dateStr?: string) => {
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 };
 
 function buildGapOpportunitiesForProducts(products: PrepProduct[], clientName?: string): GapOpportunity[] {
@@ -57,34 +75,39 @@ function buildGapOpportunitiesForProducts(products: PrepProduct[], clientName?: 
     const cat = p.category?.toLowerCase() || "";
     return cat.includes("invest") || cat.includes("retirement") || cat.includes("saving") || cat.includes("super") || cat.includes("rrsp") || cat.includes("sipp") || cat.includes("ira") || cat.includes("401");
   }).reduce((sum, p) => sum + (p.currentValue || 0), 0);
+  const cashValue = products.filter(p => {
+    const cat = p.category?.toLowerCase() || "";
+    return cat.includes("money market") || cat.includes("cash") || cat.includes("call");
+  }).reduce((sum, p) => sum + (p.currentValue || 0), 0);
+
+  const today = new Date().toISOString().split("T")[0];
 
   if (products.length < 3) {
-    gaps.push({ id: `gap-newbiz${suffix}`, type: "New Business", description: `Client has only ${products.length} product${products.length !== 1 ? "s" : ""} — room to expand`, suggestedAction: "Explore new product opportunities", clientName });
+    gaps.push({ id: `gap-newbiz${suffix}`, type: "New Business", description: `Client has only ${products.length} product${products.length !== 1 ? "s" : ""} — room to expand`, suggestedAction: "Explore new product opportunities", clientName, opportunitySize: Math.round(totalValue * 0.05), dateIdentified: today });
   }
   if (hasInvestments && !hasInsurance) {
-    gaps.push({ id: `gap-cross${suffix}`, type: "Cross-sell", description: "Client has investments but no insurance products", suggestedAction: "Cross-sell insurance or risk cover", clientName });
+    gaps.push({ id: `gap-cross${suffix}`, type: "Cross-sell", description: "Client has investments but no insurance products", suggestedAction: "Cross-sell insurance or risk cover", clientName, opportunitySize: Math.round(investmentValue * 0.03), dateIdentified: today });
   }
   if (providers.size > 2) {
-    gaps.push({ id: `gap-platform${suffix}`, type: "Platform", description: `Assets spread across ${providers.size} providers`, suggestedAction: "Consolidate to preferred platform", clientName });
+    gaps.push({ id: `gap-platform${suffix}`, type: "Platform", description: `Assets spread across ${providers.size} providers`, suggestedAction: "Consolidate to preferred platform", clientName, opportunitySize: Math.round(totalValue * 0.03), dateIdentified: today });
   }
   if (totalValue > 500000) {
-    gaps.push({ id: `gap-upsell${suffix}`, type: "Upsell", description: `High-value portfolio (${formatCurrency(totalValue)}) with contribution room`, suggestedAction: "Drive additional contributions", clientName });
+    gaps.push({ id: `gap-upsell${suffix}`, type: "Upsell", description: `High-value portfolio with contribution room`, suggestedAction: "Drive additional contributions", clientName, opportunitySize: Math.round(totalValue * 0.05), dateIdentified: today });
   }
   if (hasBankOrSavings) {
-    gaps.push({ id: `gap-bankscrape${suffix}`, type: "Bank Scrape", description: "Client has bank/savings products not linked to live feeds", suggestedAction: "Link bank feeds for real-time balance tracking", clientName });
+    gaps.push({ id: `gap-bankscrape${suffix}`, type: "Bank Scrape", description: "Client has bank/savings products not linked to live feeds", suggestedAction: "Link bank feeds for real-time balance tracking", clientName, opportunitySize: 0, dateIdentified: today });
   }
   if (investmentValue > 200000) {
-    gaps.push({ id: `gap-tlh${suffix}`, type: "Tax Loss", description: `Investment portfolio (${formatCurrency(investmentValue)}) may have harvesting opportunities`, suggestedAction: "Review portfolio for tax-loss harvesting", clientName });
+    gaps.push({ id: `gap-tlh${suffix}`, type: "Tax Loss", description: `Investment portfolio may have harvesting opportunities`, suggestedAction: "Review portfolio for tax-loss harvesting", clientName, opportunitySize: Math.round(investmentValue * 0.02), dateIdentified: today });
   }
   if (hasMoneyMarketOrCash) {
-    gaps.push({ id: `gap-idlecash${suffix}`, type: "Idle Cash", description: "Idle cash in money market or call accounts", suggestedAction: "Deploy idle cash into growth assets", clientName });
+    gaps.push({ id: `gap-idlecash${suffix}`, type: "Idle Cash", description: "Idle cash in money market or call accounts", suggestedAction: "Deploy idle cash into growth assets", clientName, opportunitySize: Math.round(cashValue * 0.8), dateIdentified: today });
   }
   return gaps;
 }
 
 function buildGapOpportunities(products: PrepProduct[], householdView?: boolean): GapOpportunity[] {
   if (householdView) {
-    // Group products by clientName and run gap analysis per member
     const memberMap = new Map<string, PrepProduct[]>();
     products.forEach(p => {
       const name = (p as any).clientName || "Unknown";
@@ -108,7 +131,7 @@ const ClientNameTag = ({ name }: { name: string }) => (
   <span className="text-[10px] px-1.5 py-0 rounded bg-muted text-muted-foreground font-medium">{name}</span>
 );
 
-const OpportunitiesTab = ({ opportunities, products, householdView, onOptimise, hasScanned, isScanning, onTaxLossClick }: OpportunitiesTabProps) => {
+const OpportunitiesTab = ({ opportunities, products, householdView, onOptimise, hasScanned, isScanning, onTaxLossClick, jurisdiction }: OpportunitiesTabProps) => {
   const gaps = opportunities.length === 0 ? buildGapOpportunities(products, householdView) : [];
   const items = opportunities.length > 0 ? opportunities : null;
 
@@ -134,7 +157,7 @@ const OpportunitiesTab = ({ opportunities, products, householdView, onOptimise, 
                     <Badge variant="outline" className={`${cfg.color} text-[10px] px-1.5 py-0 font-medium`}>{cfg.label}</Badge>
                     {householdView && opp.clientName && <ClientNameTag name={opp.clientName} />}
                     {opp.potentialRevenue && (
-                      <span className="text-[10px] font-semibold text-emerald-600">{formatCurrency(opp.potentialRevenue)}</span>
+                      <span className="text-[10px] font-semibold text-emerald-600">{formatCurrency(opp.potentialRevenue, jurisdiction)}</span>
                     )}
                   </div>
                   {opp.confidence && (
@@ -142,6 +165,9 @@ const OpportunitiesTab = ({ opportunities, products, householdView, onOptimise, 
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground truncate">{opp.reasoning || opp.suggestedAction || opp.opportunityType}</p>
+                {(opp as any).dateIdentified && (
+                  <p className="text-[10px] text-muted-foreground/70">{formatDate((opp as any).dateIdentified)}</p>
+                )}
               </div>
             </div>
           );
@@ -161,9 +187,17 @@ const OpportunitiesTab = ({ opportunities, products, householdView, onOptimise, 
               <div className="flex items-center gap-1.5">
                 <Badge variant="outline" className={`${cfg.color} text-[10px] px-1.5 py-0 font-medium`}>{cfg.label}</Badge>
                 {householdView && gap.clientName && <ClientNameTag name={gap.clientName} />}
+                {gap.opportunitySize ? (
+                  <span className="text-[10px] font-semibold text-emerald-600">{formatCurrency(gap.opportunitySize, jurisdiction)}</span>
+                ) : null}
               </div>
               <p className="text-xs text-muted-foreground truncate">{gap.description}</p>
-              <p className="text-xs text-[hsl(180,70%,45%)]">{gap.suggestedAction}</p>
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-[hsl(180,70%,45%)]">{gap.suggestedAction}</p>
+                {gap.dateIdentified && (
+                  <span className="text-[10px] text-muted-foreground/70">{formatDate(gap.dateIdentified)}</span>
+                )}
+              </div>
             </div>
           </div>
         );
