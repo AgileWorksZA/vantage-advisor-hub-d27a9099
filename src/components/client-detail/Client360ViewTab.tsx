@@ -13,7 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Pencil, Trash2, MoreVertical, ChevronDown, ChevronUp } from "lucide-react";
 import { useClientDetail } from "@/hooks/useClientDetail";
 import { generateClient360Data, formatTotal, mapNationalityToJurisdiction } from "@/data/regional360ViewData";
-import QuoteWizardDialog from "./QuoteWizardDialog";
+import QuoteWizardView from "./QuoteWizardDialog";
 import NewBusinessWizardDialog from "./NewBusinessWizardDialog";
 
 const Client360ViewTab = () => {
@@ -70,6 +70,15 @@ const Client360ViewTab = () => {
       return next;
     });
   };
+
+  if (showQuoteWizard) {
+    return (
+      <QuoteWizardView
+        onClose={() => setShowQuoteWizard(false)}
+        jurisdiction={jurisdiction}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -519,12 +528,6 @@ const Client360ViewTab = () => {
           </Table>
         </CardContent>
       </Card>
-      {/* Wizard Dialogs */}
-      <QuoteWizardDialog
-        open={showQuoteWizard}
-        onOpenChange={setShowQuoteWizard}
-        jurisdiction={jurisdiction}
-      />
       <NewBusinessWizardDialog
         open={showNewBusinessWizard}
         onOpenChange={setShowNewBusinessWizard}
