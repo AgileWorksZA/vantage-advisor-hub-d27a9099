@@ -45,15 +45,15 @@ const formatCurrency = (value: number | null) => {
 function buildGapOpportunities(products: PrepProduct[]): GapOpportunity[] {
   const gaps: GapOpportunity[] = [];
   const categories = products.map(p => p.category?.toLowerCase() || "");
-  const hasInvestments = categories.some(c => c.includes("invest") || c.includes("retirement") || c.includes("saving"));
+  const hasInvestments = categories.some(c => c.includes("invest") || c.includes("retirement") || c.includes("saving") || c.includes("super") || c.includes("rrsp") || c.includes("sipp") || c.includes("ira") || c.includes("401"));
   const hasInsurance = categories.some(c => c.includes("insurance") || c.includes("life") || c.includes("risk"));
-  const hasBankOrSavings = categories.some(c => c.includes("bank") || c.includes("saving") || c.includes("deposit"));
+  const hasBankOrSavings = categories.some(c => c.includes("bank") || c.includes("saving") || c.includes("deposit") || c.includes("cash"));
   const hasMoneyMarketOrCash = categories.some(c => c.includes("money market") || c.includes("cash") || c.includes("call"));
-  const providers = new Set(products.map(p => p.productName.split(" ")[0]));
+  const providers = new Set(products.map(p => (p as any).provider || p.productName.split(" ")[0]).filter(Boolean));
   const totalValue = products.reduce((sum, p) => sum + (p.currentValue || 0), 0);
   const investmentValue = products.filter(p => {
     const cat = p.category?.toLowerCase() || "";
-    return cat.includes("invest") || cat.includes("retirement") || cat.includes("saving");
+    return cat.includes("invest") || cat.includes("retirement") || cat.includes("saving") || cat.includes("super") || cat.includes("rrsp") || cat.includes("sipp") || cat.includes("ira") || cat.includes("401");
   }).reduce((sum, p) => sum + (p.currentValue || 0), 0);
 
   if (products.length < 3) {

@@ -1,5 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { generateClient360Data, mapNationalityToJurisdiction } from "@/data/regional360ViewData";
+import type { PrepProduct } from "@/hooks/useClientMeetingPrep";
 
 import {
   Table,
@@ -64,8 +66,36 @@ const ClientSummaryTab = ({ client, clientId, onShowMoreActivity, onTabChange }:
     }, 1500);
   };
 
+  // Generate 360 View products and convert to PrepProduct format
+  const view360Products = useMemo(() => {
+    const data = generateClient360Data(clientId, client.nationality, client.country_of_issue);
+    const products: (PrepProduct & { provider?: string })[] = [];
+
+    data.onPlatformProducts.forEach((p, i) => {
+      products.push({ id: `360-onplat-${i}`, productName: p.product, category: "Investment - On Platform", currentValue: p.amountValue, status: "active", provider: "Vantage" });
+    });
+    data.externalProducts.forEach((p, i) => {
+      products.push({ id: `360-ext-${i}`, productName: `${p.product} (${p.provider})`, category: "Investment - External", currentValue: p.amountValue, status: "active", provider: p.provider });
+    });
+    data.platformCashAccounts.forEach((p, i) => {
+      products.push({ id: `360-cash-${i}`, productName: p.name, category: "Cash", currentValue: p.amountValue, status: "active", provider: "Platform" });
+    });
+    data.riskProducts.forEach((p, i) => {
+      products.push({ id: `360-risk-${i}`, productName: p.holdingName, category: "Risk / Insurance", currentValue: 0, status: "active", provider: p.holdingName });
+    });
+    data.shortTermProducts.forEach((p, i) => {
+      products.push({ id: `360-st-${i}`, productName: `${p.policyType} - ${p.insurer}`, category: "Short-Term Insurance", currentValue: 0, status: "active", provider: p.insurer });
+    });
+    data.medicalAid.forEach((p, i) => {
+      products.push({ id: `360-med-${i}`, productName: `${p.schemeName} ${p.planName}`, category: "Medical Aid", currentValue: 0, status: "active", provider: p.schemeName });
+    });
+
+    return products;
+  }, [clientId, client.nationality, client.country_of_issue]);
+
   const activeOpps = householdView ? householdData.opportunities : prepData.opportunities;
-  const activeProducts = householdView ? householdData.products : prepData.products;
+  const baseProducts = householdView ? householdData.products : prepData.products;
+  const activeProducts = [...baseProducts, ...view360Products];
   const activeTasks = householdView ? householdData.tasks : prepData.tasks;
   const activeDocs = householdView ? householdData.documents : prepData.documents;
 
