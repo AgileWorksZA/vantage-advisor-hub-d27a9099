@@ -7,6 +7,13 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { ChevronDown, ChevronUp, Check, Circle } from "lucide-react";
 import { getQuoteProducts } from "@/data/regional360ViewData";
 
+function generateContractNumber(): string {
+  const now = new Date();
+  const datePart = now.toISOString().slice(0, 10).replace(/-/g, "");
+  const randomPart = Math.floor(1000 + Math.random() * 9000).toString();
+  return datePart + randomPart;
+}
+
 interface QuoteWizardDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -26,6 +33,16 @@ const QUOTE_STEPS = {
 
 const QuoteWizardDialog = ({ open, onOpenChange, jurisdiction }: QuoteWizardDialogProps) => {
   const [selectedProduct, setSelectedProduct] = useState<string>("");
+  const [contractNumber, setContractNumber] = useState<string>("");
+
+  const handleProductChange = (product: string) => {
+    setSelectedProduct(product);
+    setContractNumber(generateContractNumber());
+  };
+
+  const quoteTitle = selectedProduct
+    ? `Quote - ${selectedProduct} (${contractNumber})`
+    : "Quote";
   const [isProductSectionOpen, setIsProductSectionOpen] = useState(true);
   const [currentStep] = useState(0);
 
@@ -37,7 +54,7 @@ const QuoteWizardDialog = ({ open, onOpenChange, jurisdiction }: QuoteWizardDial
         <div className="flex min-h-[600px]">
           {/* Left Panel */}
           <div className="flex-1 p-8">
-            <h2 className="text-xl font-bold text-foreground tracking-wide uppercase">Quote</h2>
+            <h2 className="text-xl font-bold text-foreground tracking-wide uppercase">{quoteTitle}</h2>
             <div className="h-1 w-full bg-[hsl(180,70%,45%)] mt-2 mb-6" />
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-6">
               Select your desired products
@@ -55,7 +72,7 @@ const QuoteWizardDialog = ({ open, onOpenChange, jurisdiction }: QuoteWizardDial
                 </CollapsibleTrigger>
                 <CollapsibleContent>
                   <div className="border-t px-4 py-4">
-                    <RadioGroup value={selectedProduct} onValueChange={setSelectedProduct}>
+                    <RadioGroup value={selectedProduct} onValueChange={handleProductChange}>
                       <div className="space-y-3">
                         {products.map((product) => (
                           <div key={product} className="flex items-center space-x-3">
@@ -76,7 +93,7 @@ const QuoteWizardDialog = ({ open, onOpenChange, jurisdiction }: QuoteWizardDial
           {/* Right Sidebar */}
           <div className="w-64 bg-muted/30 border-l flex flex-col">
             <div className="p-6 border-b">
-              <h3 className="text-center font-bold text-sm uppercase tracking-wider text-foreground">Quote</h3>
+              <h3 className="text-center font-bold text-sm uppercase tracking-wider text-foreground">{quoteTitle}</h3>
             </div>
 
             <div className="flex-1 p-6 space-y-6">
