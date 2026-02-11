@@ -9,18 +9,7 @@ import { cn } from "@/lib/utils";
 import { AdvisorData } from "@/data/regionalData";
 import { useRegion } from "@/contexts/RegionContext";
 import AdvisorAvatar from "./AdvisorAvatar";
-
-interface AdvisorPost {
-  id: string;
-  advisorInitials: string;
-  advisorName: string;
-  content: string;
-  timestamp: string;
-  likes: number;
-  comments: number;
-  type: "text" | "market-update" | "insight";
-  liked?: boolean;
-}
+import MobilePostDetailView, { type AdvisorPost, type PostComment } from "./MobilePostDetailView";
 
 interface AdvisorProfile {
   bio: string;
@@ -61,6 +50,17 @@ function getDefaultProfile(advisor: AdvisorData, region: string): AdvisorProfile
 }
 
 function getDefaultPosts(advisor: AdvisorData): AdvisorPost[] {
+  const demoClients = [
+    { name: "James van der Berg", initials: "JV" },
+    { name: "Sarah Mitchell", initials: "SM" },
+    { name: "David Chen", initials: "DC" },
+    { name: "Priya Naidoo", initials: "PN" },
+    { name: "Robert Fourie", initials: "RF" },
+    { name: "Emma Thompson", initials: "ET" },
+    { name: "Michael Adams", initials: "MA" },
+    { name: "Lisa Kruger", initials: "LK" },
+  ];
+
   return [
     {
       id: "demo-1",
@@ -71,6 +71,16 @@ function getDefaultPosts(advisor: AdvisorData): AdvisorPost[] {
       likes: 14,
       comments: 3,
       type: "market-update",
+      engagements: demoClients.slice(0, 6).map((c, i) => ({
+        clientName: c.name, clientInitials: c.initials,
+        read: true, liked: i < 3,
+        readAt: new Date(Date.now() - 86400000 * (1 + i * 0.3)).toISOString(),
+      })),
+      commentsList: [
+        { id: "c1", authorName: "Sarah Mitchell", authorInitials: "SM", authorType: "client", content: "Thanks for the update — reassuring to hear.", timestamp: new Date(Date.now() - 86400000 * 1.5).toISOString() },
+        { id: "c2", authorName: advisor.name, authorInitials: advisor.initials, authorType: "advisor", content: "Happy to help, Sarah. Let's chat if you'd like to go deeper.", timestamp: new Date(Date.now() - 86400000 * 1.2).toISOString() },
+        { id: "c3", authorName: "David Chen", authorInitials: "DC", authorType: "client", content: "Should I be concerned about emerging market exposure?", timestamp: new Date(Date.now() - 86400000 * 0.8).toISOString() },
+      ],
     },
     {
       id: "demo-2",
@@ -81,6 +91,17 @@ function getDefaultPosts(advisor: AdvisorData): AdvisorPost[] {
       likes: 22,
       comments: 7,
       type: "insight",
+      engagements: demoClients.slice(0, 7).map((c, i) => ({
+        clientName: c.name, clientInitials: c.initials,
+        read: true, liked: i < 5,
+        readAt: new Date(Date.now() - 86400000 * (4 + i * 0.2)).toISOString(),
+      })),
+      commentsList: [
+        { id: "c4", authorName: "James van der Berg", authorInitials: "JV", authorType: "client", content: "This is exactly what we discussed last week. Very helpful!", timestamp: new Date(Date.now() - 86400000 * 4.5).toISOString() },
+        { id: "c5", authorName: "Priya Naidoo", authorInitials: "PN", authorType: "client", content: "Could you share the presentation slides?", timestamp: new Date(Date.now() - 86400000 * 4).toISOString() },
+        { id: "c6", authorName: advisor.name, authorInitials: advisor.initials, authorType: "advisor", content: "Absolutely, Priya. I'll send them through this afternoon.", timestamp: new Date(Date.now() - 86400000 * 3.8).toISOString() },
+        { id: "c7", authorName: "Emma Thompson", authorInitials: "ET", authorType: "client", content: "Would love a follow-up session on this topic.", timestamp: new Date(Date.now() - 86400000 * 3).toISOString() },
+      ],
     },
     {
       id: "demo-3",
@@ -91,6 +112,15 @@ function getDefaultPosts(advisor: AdvisorData): AdvisorPost[] {
       likes: 45,
       comments: 12,
       type: "text",
+      engagements: demoClients.map((c, i) => ({
+        clientName: c.name, clientInitials: c.initials,
+        read: true, liked: i < 6,
+        readAt: new Date(Date.now() - 86400000 * (9 + i * 0.1)).toISOString(),
+      })),
+      commentsList: [
+        { id: "c8", authorName: "Robert Fourie", authorInitials: "RF", authorType: "client", content: "Congratulations! Well deserved.", timestamp: new Date(Date.now() - 86400000 * 9.5).toISOString() },
+        { id: "c9", authorName: "Lisa Kruger", authorInitials: "LK", authorType: "client", content: "Amazing achievement — looking forward to the insights!", timestamp: new Date(Date.now() - 86400000 * 9).toISOString() },
+      ],
     },
   ];
 }
@@ -115,6 +145,7 @@ const MobileAdvisorProfile = ({ advisor, onBack }: MobileAdvisorProfileProps) =>
   const { selectedRegion } = useRegion();
   const [isEditing, setIsEditing] = useState(false);
   const [newPostContent, setNewPostContent] = useState("");
+  const [selectedPost, setSelectedPost] = useState<AdvisorPost | null>(null);
 
   const [profile, setProfile] = useState<AdvisorProfile>(() => {
     try {
@@ -164,11 +195,33 @@ const MobileAdvisorProfile = ({ advisor, onBack }: MobileAdvisorProfileProps) =>
     ));
   };
 
+  const handleAddComment = (postId: string, comment: PostComment) => {
+    setPosts(posts.map(p =>
+      p.id === postId
+        ? { ...p, commentsList: [...(p.commentsList || []), comment], comments: (p.comments || 0) + 1 }
+        : p
+    ));
+  };
+
   const typeBadge: Record<string, { label: string; className: string }> = {
     "market-update": { label: "Market Update", className: "bg-chart-1/20 text-chart-1" },
     insight: { label: "Insight", className: "bg-chart-2/20 text-chart-2" },
     text: { label: "Post", className: "bg-muted text-muted-foreground" },
   };
+
+  // If a post is selected, show the detail overlay
+  if (selectedPost) {
+    const currentPost = posts.find(p => p.id === selectedPost.id) || selectedPost;
+    return (
+      <MobilePostDetailView
+        post={currentPost}
+        advisor={advisor}
+        onBack={() => setSelectedPost(null)}
+        onLike={handleLike}
+        onAddComment={handleAddComment}
+      />
+    );
+  }
 
   return (
     <div className="flex flex-col h-full bg-background">
@@ -296,7 +349,11 @@ const MobileAdvisorProfile = ({ advisor, onBack }: MobileAdvisorProfileProps) =>
         <section className="space-y-3">
           <h2 className="text-sm font-semibold text-foreground">Recent Posts</h2>
           {posts.map((post) => (
-            <div key={post.id} className="rounded-lg border border-border bg-card p-3 space-y-2">
+            <div
+              key={post.id}
+              onClick={() => setSelectedPost(post)}
+              className="rounded-lg border border-border bg-card p-3 space-y-2 cursor-pointer active:bg-muted/50 transition-colors"
+            >
               <div className="flex items-center gap-2">
                 <AdvisorAvatar advisor={advisor} size="sm" />
                 <div className="flex-1 min-w-0">
@@ -307,10 +364,10 @@ const MobileAdvisorProfile = ({ advisor, onBack }: MobileAdvisorProfileProps) =>
                   {typeBadge[post.type]?.label}
                 </Badge>
               </div>
-              <p className="text-sm text-foreground leading-relaxed">{post.content}</p>
+              <p className="text-sm text-foreground leading-relaxed line-clamp-3">{post.content}</p>
               <div className="flex items-center gap-4 pt-1">
                 <button
-                  onClick={() => handleLike(post.id)}
+                  onClick={(e) => { e.stopPropagation(); handleLike(post.id); }}
                   className={cn("flex items-center gap-1 text-xs", post.liked ? "text-destructive" : "text-muted-foreground")}
                 >
                   <Heart className={cn("h-3.5 w-3.5", post.liked && "fill-current")} />
@@ -318,7 +375,7 @@ const MobileAdvisorProfile = ({ advisor, onBack }: MobileAdvisorProfileProps) =>
                 </button>
                 <span className="flex items-center gap-1 text-xs text-muted-foreground">
                   <MessageCircle className="h-3.5 w-3.5" />
-                  {post.comments}
+                  {post.commentsList?.length || post.comments}
                 </span>
               </div>
             </div>
