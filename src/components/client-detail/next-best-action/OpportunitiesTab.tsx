@@ -1,7 +1,7 @@
 import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, ArrowRightLeft, Layers, Building2, Zap, Loader2 } from "lucide-react";
+import { TrendingUp, ArrowRightLeft, Layers, Building2, Briefcase, Landmark, Receipt, Banknote } from "lucide-react";
 import type { PrepOpportunity, PrepProduct } from "@/hooks/useClientMeetingPrep";
 
 interface OpportunitiesTabProps {
@@ -26,6 +26,10 @@ const typeConfig: Record<string, { label: string; color: string; icon: React.Rea
   "Cross-sell": { label: "Cross-sell", color: "bg-cyan-100 text-cyan-700 border-cyan-200", icon: <ArrowRightLeft className="w-3.5 h-3.5" /> },
   "Migration": { label: "Migration", color: "bg-violet-100 text-violet-700 border-violet-200", icon: <Layers className="w-3.5 h-3.5" /> },
   "Platform": { label: "Platform", color: "bg-orange-100 text-orange-700 border-orange-200", icon: <Building2 className="w-3.5 h-3.5" /> },
+  "New Business": { label: "New Business", color: "bg-blue-100 text-blue-700 border-blue-200", icon: <Briefcase className="w-3.5 h-3.5" /> },
+  "Bank Scrape": { label: "Bank Scrape", color: "bg-amber-100 text-amber-700 border-amber-200", icon: <Landmark className="w-3.5 h-3.5" /> },
+  "Tax Loss": { label: "Tax Loss", color: "bg-rose-100 text-rose-700 border-rose-200", icon: <Receipt className="w-3.5 h-3.5" /> },
+  "Idle Cash": { label: "Idle Cash", color: "bg-yellow-100 text-yellow-700 border-yellow-200", icon: <Banknote className="w-3.5 h-3.5" /> },
 };
 
 const getConfig = (type: string) => {
@@ -43,9 +47,18 @@ function buildGapOpportunities(products: PrepProduct[]): GapOpportunity[] {
   const categories = products.map(p => p.category?.toLowerCase() || "");
   const hasInvestments = categories.some(c => c.includes("invest") || c.includes("retirement") || c.includes("saving"));
   const hasInsurance = categories.some(c => c.includes("insurance") || c.includes("life") || c.includes("risk"));
+  const hasBankOrSavings = categories.some(c => c.includes("bank") || c.includes("saving") || c.includes("deposit"));
+  const hasMoneyMarketOrCash = categories.some(c => c.includes("money market") || c.includes("cash") || c.includes("call"));
   const providers = new Set(products.map(p => p.productName.split(" ")[0]));
   const totalValue = products.reduce((sum, p) => sum + (p.currentValue || 0), 0);
+  const investmentValue = products.filter(p => {
+    const cat = p.category?.toLowerCase() || "";
+    return cat.includes("invest") || cat.includes("retirement") || cat.includes("saving");
+  }).reduce((sum, p) => sum + (p.currentValue || 0), 0);
 
+  if (products.length < 3) {
+    gaps.push({ id: "gap-newbiz", type: "New Business", description: `Client has only ${products.length} product${products.length !== 1 ? "s" : ""} — room to expand`, suggestedAction: "Explore new product opportunities" });
+  }
   if (hasInvestments && !hasInsurance) {
     gaps.push({ id: "gap-cross", type: "Cross-sell", description: "Client has investments but no insurance products", suggestedAction: "Cross-sell insurance or risk cover" });
   }
@@ -54,6 +67,15 @@ function buildGapOpportunities(products: PrepProduct[]): GapOpportunity[] {
   }
   if (totalValue > 500000) {
     gaps.push({ id: "gap-upsell", type: "Upsell", description: `High-value portfolio (${formatCurrency(totalValue)}) with contribution room`, suggestedAction: "Drive additional contributions" });
+  }
+  if (hasBankOrSavings) {
+    gaps.push({ id: "gap-bankscrape", type: "Bank Scrape", description: "Client has bank/savings products not linked to live feeds", suggestedAction: "Link bank feeds for real-time balance tracking" });
+  }
+  if (investmentValue > 200000) {
+    gaps.push({ id: "gap-tlh", type: "Tax Loss", description: `Investment portfolio (${formatCurrency(investmentValue)}) may have harvesting opportunities`, suggestedAction: "Review portfolio for tax-loss harvesting" });
+  }
+  if (hasMoneyMarketOrCash) {
+    gaps.push({ id: "gap-idlecash", type: "Idle Cash", description: "Idle cash in money market or call accounts", suggestedAction: "Deploy idle cash into growth assets" });
   }
   return gaps;
 }
@@ -67,7 +89,7 @@ const ClientNameTag = ({ name }: { name: string }) => (
 );
 
 const OpportunitiesTab = ({ opportunities, products, householdView, onOptimise, hasScanned, isScanning }: OpportunitiesTabProps) => {
-  const gaps = (opportunities.length === 0 && hasScanned) ? buildGapOpportunities(products) : (opportunities.length === 0 ? [] : []);
+  const gaps = opportunities.length === 0 ? buildGapOpportunities(products) : [];
   const items = opportunities.length > 0 ? opportunities : null;
 
   if (!items && gaps.length === 0) {
