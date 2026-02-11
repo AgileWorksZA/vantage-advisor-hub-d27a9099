@@ -1,23 +1,42 @@
 
 
-## Fix: Bump Post Cache Version to v3
+## Dynamic Quote Title with Contract Number
 
-### Root Cause
-The localStorage key was bumped to `v2`, but the user's browser likely already wrote posts under the `v2` key *before* the engagement/comment seeding was added to `getDefaultPosts()`. So the cached `v2` data still has empty engagements and comments.
+### Overview
+When an advisor selects a product in the Quote wizard, the title updates from "QUOTE" to include the product name and an auto-generated contract number, e.g. **QUOTE - Tax Free Plan (202602115087)**.
 
-### Fix
-A single one-line change in `src/components/mobile/MobileAdvisorProfile.tsx`:
+### Contract Number Format
+Generate a deterministic-looking contract number using the pattern: `YYYYMMDD` + 4 random digits.
+- Example: `202602115087` (date: 2026-02-11, random: 5087)
+- Generated once when a product is selected, regenerated if the product changes.
 
-Change the version constant from `"v2"` to `"v3"` to force all browsers to discard the stale cache and reload from `getDefaultPosts()` which now includes full engagement and comment data.
+### Changes
 
+**`src/components/client-detail/QuoteWizardDialog.tsx`** (single file)
+
+1. **Add a helper function** to generate the contract number:
+```text
+function generateContractNumber(): string {
+  const now = new Date();
+  const datePart = now.toISOString().slice(0, 10).replace(/-/g, "");
+  const randomPart = Math.floor(1000 + Math.random() * 9000).toString();
+  return datePart + randomPart;
+}
 ```
-const POSTS_DATA_VERSION = "v3";
-```
+
+2. **Add `contractNumber` state**, initialized as empty string. When `selectedProduct` changes (via a wrapper around `setSelectedProduct`), generate a new contract number.
+
+3. **Update the title** (line 40) and sidebar title (line 79) to show:
+   - If no product selected: `QUOTE`
+   - If product selected: `QUOTE - {productName} ({contractNumber})`
 
 ### Technical Details
 
-| File | Change |
-|------|--------|
-| `src/components/mobile/MobileAdvisorProfile.tsx` | Update `POSTS_DATA_VERSION` from `"v2"` to `"v3"` (line 36) |
+| Line | Current | Updated |
+|------|---------|---------|
+| 28 | `selectedProduct` state only | Add `contractNumber` state |
+| 58 | `onValueChange={setSelectedProduct}` | Wrap to also generate contract number |
+| 40 | `"Quote"` heading | Dynamic: `Quote - Product (Number)` or just `Quote` |
+| 79 | `"Quote"` sidebar heading | Same dynamic title |
 
-This is the only change needed. The `getDefaultPosts()` function already returns posts with 5-8 client engagements and 2-4 comments each.
+No other files are affected.
