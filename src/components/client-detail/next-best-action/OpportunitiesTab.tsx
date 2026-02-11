@@ -124,7 +124,7 @@ function buildGapOpportunities(products: PrepProduct[], householdView?: boolean)
 }
 
 export function getOpportunitiesCount(opportunities: PrepOpportunity[], products: PrepProduct[], householdView?: boolean): number {
-  return opportunities.length > 0 ? opportunities.length : buildGapOpportunities(products, householdView).length;
+  return opportunities.length + buildGapOpportunities(products, householdView).length;
 }
 
 const ClientNameTag = ({ name }: { name: string }) => (
@@ -132,10 +132,9 @@ const ClientNameTag = ({ name }: { name: string }) => (
 );
 
 const OpportunitiesTab = ({ opportunities, products, householdView, onOptimise, hasScanned, isScanning, onTaxLossClick, jurisdiction }: OpportunitiesTabProps) => {
-  const gaps = opportunities.length === 0 ? buildGapOpportunities(products, householdView) : [];
-  const items = opportunities.length > 0 ? opportunities : null;
+  const gaps = buildGapOpportunities(products, householdView);
 
-  if (!items && gaps.length === 0) {
+  if (opportunities.length === 0 && gaps.length === 0) {
     return (
       <div className="flex flex-col items-center py-4 gap-2">
         <p className="text-xs text-muted-foreground text-center">No opportunities identified yet.</p>
@@ -143,41 +142,35 @@ const OpportunitiesTab = ({ opportunities, products, householdView, onOptimise, 
     );
   }
 
-  if (items) {
-    return (
-      <div className="space-y-0">
-        {items.map(opp => {
-          const cfg = getConfig(opp.opportunityType);
-          return (
-            <div key={opp.id} className={`flex gap-2 py-1.5 border-b border-border/50 last:border-0 ${opp.opportunityType.toLowerCase().includes("tax loss") && onTaxLossClick ? "cursor-pointer hover:bg-muted/50 rounded" : ""}`} onClick={opp.opportunityType.toLowerCase().includes("tax loss") && onTaxLossClick ? onTaxLossClick : undefined}>
-              <div className="shrink-0 mt-0.5 text-muted-foreground">{cfg.icon}</div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-1.5">
-                    <Badge variant="outline" className={`${cfg.color} text-[10px] px-1.5 py-0 font-medium`}>{cfg.label}</Badge>
-                    {householdView && opp.clientName && <ClientNameTag name={opp.clientName} />}
-                    {opp.potentialRevenue && (
-                      <span className="text-[10px] font-semibold text-emerald-600">{formatCurrency(opp.potentialRevenue, jurisdiction)}</span>
-                    )}
-                  </div>
-                  {opp.confidence && (
-                    <span className="text-[10px] text-muted-foreground">{opp.confidence}%</span>
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground truncate">{opp.reasoning || opp.suggestedAction || opp.opportunityType}</p>
-                {(opp as any).dateIdentified && (
-                  <p className="text-[10px] text-muted-foreground/70">{formatDate((opp as any).dateIdentified)}</p>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-0">
+      {opportunities.map(opp => {
+        const cfg = getConfig(opp.opportunityType);
+        return (
+          <div key={opp.id} className={`flex gap-2 py-1.5 border-b border-border/50 last:border-0 ${opp.opportunityType.toLowerCase().includes("tax loss") && onTaxLossClick ? "cursor-pointer hover:bg-muted/50 rounded" : ""}`} onClick={opp.opportunityType.toLowerCase().includes("tax loss") && onTaxLossClick ? onTaxLossClick : undefined}>
+            <div className="shrink-0 mt-0.5 text-muted-foreground">{cfg.icon}</div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5">
+                  <Badge variant="outline" className={`${cfg.color} text-[10px] px-1.5 py-0 font-medium`}>{cfg.label}</Badge>
+                  <Badge className="bg-green-100 text-green-700 border-green-200 text-[10px] px-1 py-0 font-medium">New</Badge>
+                  {householdView && opp.clientName && <ClientNameTag name={opp.clientName} />}
+                  {opp.potentialRevenue && (
+                    <span className="text-[10px] font-semibold text-emerald-600">{formatCurrency(opp.potentialRevenue, jurisdiction)}</span>
+                  )}
+                </div>
+                {opp.confidence && (
+                  <span className="text-[10px] text-muted-foreground">{opp.confidence}%</span>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground truncate">{opp.reasoning || opp.suggestedAction || opp.opportunityType}</p>
+              {(opp as any).dateIdentified && (
+                <p className="text-[10px] text-muted-foreground/70">{formatDate((opp as any).dateIdentified)}</p>
+              )}
+            </div>
+          </div>
+        );
+      })}
       {gaps.map(gap => {
         const cfg = getConfig(gap.type);
         return (
