@@ -33,8 +33,10 @@ function getStorageKey(initials: string, region: string) {
   return `vantage-advisor-profile-${region}-${initials}`;
 }
 
+const POSTS_DATA_VERSION = "v2";
+
 function getPostsKey(region: string) {
-  return `vantage-advisor-posts-${region}`;
+  return `vantage-advisor-posts-${region}-${POSTS_DATA_VERSION}`;
 }
 
 function getDefaultProfile(advisor: AdvisorData, region: string): AdvisorProfile {
