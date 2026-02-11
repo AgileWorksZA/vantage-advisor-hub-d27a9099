@@ -70,30 +70,46 @@ const ClientSummaryTab = ({ client, clientId, onShowMoreActivity, onTabChange }:
 
   // Generate 360 View products and convert to PrepProduct format
   const view360Products = useMemo(() => {
-    const data = generateClient360Data(clientId, client.nationality, client.country_of_issue);
-    const products: (PrepProduct & { provider?: string })[] = [];
+    const generateForClient = (id: string, nationality: string | null, countryOfIssue: string | null, clientName?: string) => {
+      const data = generateClient360Data(id, nationality, countryOfIssue);
+      const products: (PrepProduct & { provider?: string; clientName?: string })[] = [];
 
-    data.onPlatformProducts.forEach((p, i) => {
-      products.push({ id: `360-onplat-${i}`, productName: p.product, category: "Investment - On Platform", currentValue: p.amountValue, status: "active", provider: "Vantage" });
-    });
-    data.externalProducts.forEach((p, i) => {
-      products.push({ id: `360-ext-${i}`, productName: `${p.product} (${p.provider})`, category: "Investment - External", currentValue: p.amountValue, status: "active", provider: p.provider });
-    });
-    data.platformCashAccounts.forEach((p, i) => {
-      products.push({ id: `360-cash-${i}`, productName: p.name, category: "Cash", currentValue: p.amountValue, status: "active", provider: "Platform" });
-    });
-    data.riskProducts.forEach((p, i) => {
-      products.push({ id: `360-risk-${i}`, productName: p.holdingName, category: "Risk / Insurance", currentValue: 0, status: "active", provider: p.holdingName });
-    });
-    data.shortTermProducts.forEach((p, i) => {
-      products.push({ id: `360-st-${i}`, productName: `${p.policyType} - ${p.insurer}`, category: "Short-Term Insurance", currentValue: 0, status: "active", provider: p.insurer });
-    });
-    data.medicalAid.forEach((p, i) => {
-      products.push({ id: `360-med-${i}`, productName: `${p.schemeName} ${p.planName}`, category: "Medical Aid", currentValue: 0, status: "active", provider: p.schemeName });
-    });
+      data.onPlatformProducts.forEach((p, i) => {
+        products.push({ id: `360-onplat-${id}-${i}`, productName: p.product, category: "Investment - On Platform", currentValue: p.amountValue, status: "active", provider: "Vantage", clientName });
+      });
+      data.externalProducts.forEach((p, i) => {
+        products.push({ id: `360-ext-${id}-${i}`, productName: `${p.product} (${p.provider})`, category: "Investment - External", currentValue: p.amountValue, status: "active", provider: p.provider, clientName });
+      });
+      data.platformCashAccounts.forEach((p, i) => {
+        products.push({ id: `360-cash-${id}-${i}`, productName: p.name, category: "Cash", currentValue: p.amountValue, status: "active", provider: "Platform", clientName });
+      });
+      data.riskProducts.forEach((p, i) => {
+        products.push({ id: `360-risk-${id}-${i}`, productName: p.holdingName, category: "Risk / Insurance", currentValue: 0, status: "active", provider: p.holdingName, clientName });
+      });
+      data.shortTermProducts.forEach((p, i) => {
+        products.push({ id: `360-st-${id}-${i}`, productName: `${p.policyType} - ${p.insurer}`, category: "Short-Term Insurance", currentValue: 0, status: "active", provider: p.insurer, clientName });
+      });
+      data.medicalAid.forEach((p, i) => {
+        products.push({ id: `360-med-${id}-${i}`, productName: `${p.schemeName} ${p.planName}`, category: "Medical Aid", currentValue: 0, status: "active", provider: p.schemeName, clientName });
+      });
 
-    return products;
-  }, [clientId, client.nationality, client.country_of_issue]);
+      return products;
+    };
+
+    if (householdView && householdData.householdClients.length > 0) {
+      // Generate products for every household member
+      const allProducts: (PrepProduct & { provider?: string; clientName?: string })[] = [];
+      householdData.householdClients.forEach(member => {
+        const memberName = `${member.firstName} ${member.surname.charAt(0)}.`;
+        const memberProducts = generateForClient(member.id, member.nationality, member.countryOfIssue, memberName);
+        allProducts.push(...memberProducts);
+      });
+      return allProducts;
+    }
+
+    // Single client mode
+    return generateForClient(clientId, client.nationality, client.country_of_issue);
+  }, [clientId, client.nationality, client.country_of_issue, householdView, householdData.householdClients]);
 
   const activeOpps = householdView ? householdData.opportunities : prepData.opportunities;
   const baseProducts = householdView ? householdData.products : prepData.products;
@@ -101,7 +117,7 @@ const ClientSummaryTab = ({ client, clientId, onShowMoreActivity, onTabChange }:
   const activeTasks = householdView ? householdData.tasks : prepData.tasks;
   const activeDocs = householdView ? householdData.documents : prepData.documents;
 
-  const oppsCount = getOpportunitiesCount(activeOpps, activeProducts);
+  const oppsCount = getOpportunitiesCount(activeOpps, activeProducts, householdView);
   const outstandingCount = activeTasks.length + activeDocs.length;
 
   return (
