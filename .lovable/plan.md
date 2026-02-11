@@ -1,89 +1,35 @@
 
 
-## Post Detail View with Client Engagement and Comments
+## Refresh Stale Post Data with Engagements and Comments
 
-### Overview
-Add the ability to tap on any post in the advisor feed to open a full-screen detail view showing:
-- The full post content
-- A list of clients who have read and/or liked the post (with avatars and status indicators)
-- A comments thread with the ability to reply
+### Problem
+The `getDefaultPosts()` function already seeds all 3 demo posts with client engagements and comments. However, users who previously visited the advisor profile have older post data cached in localStorage -- without the `engagements` and `commentsList` fields. Since the app loads from localStorage first, these users never see the new enriched data.
 
-All data is demo/localStorage-based, consistent with the existing profile implementation.
+### Solution
+Add a localStorage version key so that when the seeded data structure changes, stale caches are automatically cleared and replaced with the updated defaults.
 
-### Data Model Changes
-
-**Extend `AdvisorPost` interface** to include engagement and comment data:
-
-```typescript
-interface PostEngagement {
-  clientName: string;
-  clientInitials: string;
-  read: boolean;
-  liked: boolean;
-  readAt?: string;
-}
-
-interface PostComment {
-  id: string;
-  authorName: string;
-  authorInitials: string;
-  authorType: "client" | "advisor";
-  content: string;
-  timestamp: string;
-}
-```
-
-Add `engagements` and `commentsList` arrays to each `AdvisorPost`. Default demo posts will be pre-seeded with sample engagement data from fictional client names (e.g., "James van der Berg", "Sarah Mitchell") and sample comments.
-
-### New Component
-
-**`src/components/mobile/MobilePostDetailView.tsx`**
-
-A full-screen overlay (same pattern as `MobileAdvisorProfile`) with:
-
-**Header:**
-- Back arrow to return to profile
-- Post type badge
-
-**Post content section:**
-- Advisor avatar, name, timestamp
-- Full post text
-- Like button (functional)
-
-**Client engagement section ("Who saw this"):**
-- Scrollable list of client rows
-- Each row: initials avatar, client name, status icons
-  - Eye icon = read (with timestamp)
-  - Heart icon (filled) = liked
-- Summary line: "12 of 45 clients read -- 8 liked"
-
-**Comments section:**
-- Thread of comments, each showing: initials avatar, name, timestamp, content
-- Client comments show a "Client" badge, advisor comments show "Advisor" badge
-- Reply input at the bottom (textarea + Send button)
-- New replies are added to the post and persisted in localStorage
-
-### Changes to Existing File
+### Changes
 
 **`src/components/mobile/MobileAdvisorProfile.tsx`**
 
-- Add `selectedPost` state to track which post is tapped
-- Make each post card clickable (wrap in a button/div with onClick)
-- When a post is selected, render `MobilePostDetailView` as a full-screen overlay
-- Pass back handler to return to profile feed
+1. Add a version constant at the top of the file:
+```text
+const POSTS_DATA_VERSION = "v2";
+```
 
-### Files Summary
+2. Update the `getPostsKey` function to include the version:
+```text
+function getPostsKey(region: string) {
+  return `vantage-advisor-posts-${region}-${POSTS_DATA_VERSION}`;
+}
+```
+
+This ensures that any previously cached posts (stored under the old key without a version suffix) are ignored, and the new defaults -- complete with 5-8 client engagements and 2-4 comments per post -- are loaded instead.
+
+### No other files are affected
+The `MobilePostDetailView.tsx` component and all data interfaces are already fully implemented and correctly render engagements and comments.
 
 | File | Action |
 |------|--------|
-| `src/components/mobile/MobilePostDetailView.tsx` | New -- full-screen post detail with engagement list and comments thread |
-| `src/components/mobile/MobileAdvisorProfile.tsx` | Update -- add click handler on posts, selectedPost state, render detail overlay |
-
-### Demo Data Seeding
-
-Each of the 3 default posts will include:
-- 5-8 client engagements (mix of read-only and read+liked)
-- 2-4 comments (mix of client and advisor replies)
-
-Client names will be drawn from the existing demo client pool where possible for consistency.
+| `src/components/mobile/MobileAdvisorProfile.tsx` | Update -- add version suffix to localStorage key to bust stale caches |
 
