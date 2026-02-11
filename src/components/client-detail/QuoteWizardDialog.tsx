@@ -439,32 +439,38 @@ const QuoteWizardView = ({ onClose, jurisdiction }: QuoteWizardViewProps) => {
     return "text-muted-foreground";
   };
 
+  const isCapturePhase = currentStep >= 0 && currentStep <= 3;
+  const isReviewPhase = currentStep === 4;
+  const isSubmittedPhase = currentStep === 5;
+
   return (
-        <div className="flex h-full min-h-[600px]">
+        <div className="flex h-full min-h-[600px] overflow-auto">
           {/* Left Panel */}
           <div className="flex-1 flex flex-col min-h-0">
-            <div className="p-8 pb-0">
+            <div className="p-6 pb-0">
               <h2 className="text-xl font-bold text-foreground tracking-wide uppercase">{quoteTitle}</h2>
-              <div className="h-1 w-full bg-[hsl(180,70%,45%)] mt-2 mb-6" />
+              <div className="h-1 w-full bg-[hsl(180,70%,45%)] mt-2 mb-4" />
             </div>
-            <ScrollArea className="flex-1 px-8 pb-8">
+            <ScrollArea className="flex-1 px-6 pb-6">
               {renderStepContent()}
             </ScrollArea>
           </div>
 
-          {/* Right Sidebar */}
-          <div className="w-64 bg-muted/30 border-l flex flex-col">
-            <div className="p-6 border-b">
-              <h3 className="text-center font-bold text-sm uppercase tracking-wider text-foreground">{quoteTitle}</h3>
+          {/* Right Floating Panel */}
+          <div className="w-64 self-start sticky top-4 m-4 rounded-lg border shadow-sm bg-background">
+            <div className="p-4 border-b">
+              <h3 className="text-center font-bold text-xs uppercase tracking-wider text-foreground">{quoteTitle}</h3>
             </div>
 
-            <div className="flex-1 p-6 space-y-6">
-              {/* Capture Section */}
+            <div className="p-4 space-y-4">
+              {/* Capture Phase */}
               <div>
-                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Capture</h4>
-                <div className="space-y-2.5">
+                <h4 className={`text-xs font-bold uppercase tracking-wider mb-2 ${isCapturePhase ? "text-[hsl(180,70%,45%)]" : "text-muted-foreground"}`}>
+                  Capture
+                </h4>
+                <div className="ml-3 space-y-2">
                   {QUOTE_STEPS.capture.map((step, index) => (
-                    <div key={step} className="flex items-center gap-2.5">
+                    <div key={step} className="flex items-center gap-2">
                       {getStepIcon(index)}
                       <span className={`text-xs ${getStepTextClass(index)}`}>
                         {step}
@@ -474,38 +480,30 @@ const QuoteWizardView = ({ onClose, jurisdiction }: QuoteWizardViewProps) => {
                 </div>
               </div>
 
-              {/* Review and Sign */}
-              <div>
-                <div className="flex items-center gap-2.5">
-                  <Circle className="h-5 w-5 text-muted-foreground/40 flex-shrink-0" />
-                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    {QUOTE_STEPS.review}
-                  </span>
-                </div>
-              </div>
+              {/* Review and Sign Phase */}
+              <h4 className={`text-xs font-bold uppercase tracking-wider ${isReviewPhase ? "text-[hsl(180,70%,45%)]" : "text-muted-foreground"}`}>
+                {QUOTE_STEPS.review}
+              </h4>
 
-              {/* Submitted */}
-              <div>
-                <div className="flex items-center gap-2.5">
-                  <Circle className="h-5 w-5 text-muted-foreground/40 flex-shrink-0" />
-                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    {QUOTE_STEPS.submitted}
-                  </span>
-                </div>
-              </div>
+              {/* Submitted Phase */}
+              <h4 className={`text-xs font-bold uppercase tracking-wider ${isSubmittedPhase ? "text-[hsl(180,70%,45%)]" : "text-muted-foreground"}`}>
+                {QUOTE_STEPS.submitted}
+              </h4>
             </div>
 
-            {/* Bottom Buttons */}
+            {/* Buttons */}
             <div className="p-4 space-y-2 border-t">
               <div className="flex gap-2">
                 <Button
                   variant="outline"
+                  size="sm"
                   className="flex-1 border-[hsl(180,70%,45%)] text-[hsl(180,70%,45%)] hover:bg-[hsl(180,70%,45%)]/10"
                   onClick={onClose}
                 >
                   Cancel
                 </Button>
                 <Button
+                  size="sm"
                   className="flex-1 bg-[hsl(180,70%,45%)] hover:bg-[hsl(180,70%,40%)] text-white"
                   onClick={onClose}
                 >
@@ -513,6 +511,7 @@ const QuoteWizardView = ({ onClose, jurisdiction }: QuoteWizardViewProps) => {
                 </Button>
               </div>
               <Button
+                size="sm"
                 className="w-full bg-[hsl(180,70%,45%)] hover:bg-[hsl(180,70%,40%)] text-white"
                 disabled={currentStep === 0 && !selectedProduct}
                 onClick={handleNext}
