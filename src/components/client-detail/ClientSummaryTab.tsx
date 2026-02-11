@@ -24,6 +24,7 @@ import OutstandingTab from "./next-best-action/OutstandingTab";
 import RecentActivityTab, { RECENT_ACTIVITY_COUNT } from "./next-best-action/RecentActivityTab";
 import { MeetingPrepSheet } from "./MeetingPrepSheet";
 import { ClientCalendarEvent } from "@/hooks/useClientCalendarEvents";
+import { TLHDashboard } from "@/components/tax-loss-harvesting/TLHDashboard";
 
 interface ClientSummaryTabProps {
   client: Client;
@@ -57,6 +58,7 @@ const ClientSummaryTab = ({ client, clientId, onShowMoreActivity, onTabChange }:
   const [selectedMeetingEvent, setSelectedMeetingEvent] = useState<ClientCalendarEvent | null>(null);
   const [hasScanned, setHasScanned] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
+  const [tlhDashboardOpen, setTlhDashboardOpen] = useState(false);
 
   const handleOptimise = () => {
     setIsScanning(true);
@@ -240,7 +242,7 @@ const ClientSummaryTab = ({ client, clientId, onShowMoreActivity, onTabChange }:
                 </TabsTrigger>
               </TabsList>
               <TabsContent value="opportunities" className="mt-0 flex-1">
-                <OpportunitiesTab opportunities={activeOpps} products={activeProducts} householdView={householdView} onOptimise={handleOptimise} hasScanned={hasScanned} isScanning={isScanning} />
+                <OpportunitiesTab opportunities={activeOpps} products={activeProducts} householdView={householdView} onOptimise={handleOptimise} hasScanned={hasScanned} isScanning={isScanning} onTaxLossClick={() => setTlhDashboardOpen(true)} />
               </TabsContent>
               <TabsContent value="outstanding" className="mt-0 flex-1">
                 <OutstandingTab tasks={activeTasks} documents={activeDocs} householdView={householdView} />
@@ -280,6 +282,13 @@ const ClientSummaryTab = ({ client, clientId, onShowMoreActivity, onTabChange }:
           setMeetingPrepOpen(false);
           onTabChange?.(type === "note" ? "notes" : type === "communication" ? "communication" : type === "document" ? "documents" : type);
         }}
+      />
+
+      <TLHDashboard
+        open={tlhDashboardOpen}
+        onOpenChange={setTlhDashboardOpen}
+        clientName={displayName}
+        clientId={clientId}
       />
     </div>
   );

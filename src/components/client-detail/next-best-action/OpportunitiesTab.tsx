@@ -11,6 +11,7 @@ interface OpportunitiesTabProps {
   onOptimise?: () => void;
   hasScanned?: boolean;
   isScanning?: boolean;
+  onTaxLossClick?: () => void;
 }
 
 interface GapOpportunity {
@@ -88,7 +89,7 @@ const ClientNameTag = ({ name }: { name: string }) => (
   <span className="text-[10px] px-1.5 py-0 rounded bg-muted text-muted-foreground font-medium">{name}</span>
 );
 
-const OpportunitiesTab = ({ opportunities, products, householdView, onOptimise, hasScanned, isScanning }: OpportunitiesTabProps) => {
+const OpportunitiesTab = ({ opportunities, products, householdView, onOptimise, hasScanned, isScanning, onTaxLossClick }: OpportunitiesTabProps) => {
   const gaps = opportunities.length === 0 ? buildGapOpportunities(products) : [];
   const items = opportunities.length > 0 ? opportunities : null;
 
@@ -106,7 +107,7 @@ const OpportunitiesTab = ({ opportunities, products, householdView, onOptimise, 
         {items.map(opp => {
           const cfg = getConfig(opp.opportunityType);
           return (
-            <div key={opp.id} className="flex gap-2 py-1.5 border-b border-border/50 last:border-0">
+            <div key={opp.id} className={`flex gap-2 py-1.5 border-b border-border/50 last:border-0 ${opp.opportunityType.toLowerCase().includes("tax loss") && onTaxLossClick ? "cursor-pointer hover:bg-muted/50 rounded" : ""}`} onClick={opp.opportunityType.toLowerCase().includes("tax loss") && onTaxLossClick ? onTaxLossClick : undefined}>
               <div className="shrink-0 mt-0.5 text-muted-foreground">{cfg.icon}</div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2">
@@ -135,7 +136,7 @@ const OpportunitiesTab = ({ opportunities, products, householdView, onOptimise, 
       {gaps.map(gap => {
         const cfg = getConfig(gap.type);
         return (
-          <div key={gap.id} className="flex gap-2 py-1.5 border-b border-border/50 last:border-0">
+          <div key={gap.id} className={`flex gap-2 py-1.5 border-b border-border/50 last:border-0 ${gap.type.toLowerCase().includes("tax loss") && onTaxLossClick ? "cursor-pointer hover:bg-muted/50 rounded" : ""}`} onClick={gap.type.toLowerCase().includes("tax loss") && onTaxLossClick ? onTaxLossClick : undefined}>
             <div className="shrink-0 mt-0.5 text-muted-foreground">{cfg.icon}</div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5">
