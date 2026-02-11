@@ -1,42 +1,73 @@
 
 
-## Dynamic Quote Title with Contract Number
+## Add "How Would You Like to Invest" Step to Quote Wizard
 
 ### Overview
-When an advisor selects a product in the Quote wizard, the title updates from "QUOTE" to include the product name and an auto-generated contract number, e.g. **QUOTE - Tax Free Plan (202602115087)**.
-
-### Contract Number Format
-Generate a deterministic-looking contract number using the pattern: `YYYYMMDD` + 4 random digits.
-- Example: `202602115087` (date: 2026-02-11, random: 5087)
-- Generated once when a product is selected, regenerated if the product changes.
+When the user clicks "Next" on the product selection step (with a product selected), the wizard advances to step 2 ("How would you like to invest") with a scrollable content area matching the reference screenshots.
 
 ### Changes
 
 **`src/components/client-detail/QuoteWizardDialog.tsx`** (single file)
 
-1. **Add a helper function** to generate the contract number:
-```text
-function generateContractNumber(): string {
-  const now = new Date();
-  const datePart = now.toISOString().slice(0, 10).replace(/-/g, "");
-  const randomPart = Math.floor(1000 + Math.random() * 9000).toString();
-  return datePart + randomPart;
-}
-```
+#### 1. Make `currentStep` stateful
+Replace `const [currentStep] = useState(0)` with `const [currentStep, setCurrentStep] = useState(0)` so we can advance through steps.
 
-2. **Add `contractNumber` state**, initialized as empty string. When `selectedProduct` changes (via a wrapper around `setSelectedProduct`), generate a new contract number.
+#### 2. Wire the "Next" button
+On click, increment `currentStep` (only when a product is selected and on step 0).
 
-3. **Update the title** (line 40) and sidebar title (line 79) to show:
-   - If no product selected: `QUOTE`
-   - If product selected: `QUOTE - {productName} ({contractNumber})`
+#### 3. Update sidebar progress indicator
+- Steps before `currentStep` show a green check icon (completed)
+- The current step shows an orange/amber half-circle indicator (in-progress)
+- Future steps remain grey circles
+- Step labels for completed steps use `text-[hsl(180,70%,45%)]` color (teal/cyan)
+
+#### 4. Add Step 2 content: "How Would You Like to Invest"
+Based on the reference images, this scrollable panel includes:
+
+**Lump-sum and phase-in investments** (collapsible, open by default):
+- Lump-sum amount input (default 0.00)
+- Phase in: Yes/No radio toggle (default No)
+- Allocation of funds section with "Use template" link
+  - Filter dropdown (default "All")
+  - Type and Name fund selector dropdown
+  - Percentage input + Amount input
+  - Delete row icon button
+  - Total row showing 0.00% and R 0.00
+  - Add row (+) button
+- "Save as a Template" button
+
+**Recurring contribution** (collapsible):
+- Amount input (0.00)
+- Start date input (dd/mm/yyyy) with calendar icon
+- Frequency dropdown
+- Escalate % input
+- Allocation of funds (same structure as above, with "Same as lump sum" button)
+
+**Other Investments** (collapsible):
+- Efficient On-Platform Investments input with info tooltip
+- External Investments input with info tooltip
+
+#### 5. Wrap left panel content in ScrollArea
+The left panel content area uses `<ScrollArea>` to allow vertical scrolling for the longer step 2 form.
+
+#### 6. Conditional rendering
+- Step 0: Show current product selection UI
+- Step 1: Show "How would you like to invest" UI
+
+### Sidebar Progress States
+| Step Index | When currentStep = 0 | When currentStep = 1 |
+|------------|----------------------|----------------------|
+| 0 (Select product) | Current (teal check) | Completed (green check, teal text) |
+| 1 (How to invest) | Future (grey circle) | Current (amber circle, teal text) |
+| 2 (Recurring withdrawal) | Future (grey) | Future (grey) |
+| 3 (Financial adviser) | Future (grey) | Future (grey) |
 
 ### Technical Details
 
-| Line | Current | Updated |
-|------|---------|---------|
-| 28 | `selectedProduct` state only | Add `contractNumber` state |
-| 58 | `onValueChange={setSelectedProduct}` | Wrap to also generate contract number |
-| 40 | `"Quote"` heading | Dynamic: `Quote - Product (Number)` or just `Quote` |
-| 79 | `"Quote"` sidebar heading | Same dynamic title |
+| Area | Detail |
+|------|--------|
+| File | `src/components/client-detail/QuoteWizardDialog.tsx` |
+| New imports | `ScrollArea` from ui/scroll-area, `Input` from ui/input, `Select` components, `Info`, `Trash2`, `Plus`, `Calendar` from lucide-react |
+| State additions | `currentStep` becomes mutable, add `lumpSumAmount`, `phaseIn`, fund allocation rows state |
+| Layout | Left panel wrapped in `ScrollArea` for step 2 overflow |
 
-No other files are affected.
