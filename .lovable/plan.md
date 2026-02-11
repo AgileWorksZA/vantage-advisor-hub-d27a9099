@@ -1,67 +1,50 @@
 
 
-## Always-On Opportunities in Next Best Action
+## Include 360 View Products in Next Best Action Opportunities
 
-### Overview
-Make the Opportunities tab always show relevant opportunities for every client -- no scanning required. Add five new opportunity types: New Business, Bank Balance Scraping, Tax Loss Harvesting, Upselling, and Idle Cash Reduction.
+### Problem
+The Next Best Action opportunities are driven by `PrepProduct` data from the `client_products` database table, which is often empty. Meanwhile, the 360 View tab shows rich product data generated deterministically via `generateClient360Data`. The opportunities should reflect these 360 View products so every client sees relevant suggestions.
+
+### Approach
+Feed the 360 View product data into the `OpportunitiesTab` by converting the generated 360 data into the `PrepProduct` format used by the gap analysis engine.
 
 ### Changes
 
-#### 1. `src/components/client-detail/next-best-action/OpportunitiesTab.tsx`
+#### 1. `src/components/client-detail/ClientSummaryTab.tsx`
 
-**Add new opportunity type configs:**
+- Import `generateClient360Data` and `mapNationalityToJurisdiction` from `@/data/regional360ViewData`
+- Use `useMemo` to generate the 360 data for the current client (same call the 360 View tab makes)
+- Convert the 360 View products (on-platform, external, platform cash, risk, short-term, medical) into `PrepProduct[]` format with appropriate category names (e.g. "Investment", "Insurance", "Cash", "Medical Aid")
+- Merge these with any existing database products (deduplication not needed since DB products are typically empty)
+- Pass the merged/converted product list to `OpportunitiesTab` as the `products` prop
 
-| Type | Label | Color | Icon |
-|------|-------|-------|------|
-| New Business | New Business | blue-100/blue-700 | `Briefcase` |
-| Bank Scrape | Bank Scrape | amber-100/amber-700 | `Landmark` |
-| Tax Loss | Tax Loss | rose-100/rose-700 | `Receipt` |
-| Idle Cash | Idle Cash | yellow-100/yellow-700 | `Banknote` |
+#### 2. `src/components/client-detail/next-best-action/OpportunitiesTab.tsx`
 
-(Upsell already exists as "Growth")
+- Update `buildGapOpportunities` to recognize the new category strings from 360 View products (e.g. "investment", "retirement annuity", "living annuity", "risk", "short-term insurance", "medical aid", "platform cash")
+- This ensures the gap rules fire correctly based on the richer product data:
+  - **New Business**: Still triggers if total product count is low
+  - **Cross-sell**: Detects investments without risk/insurance products
+  - **Platform**: Counts distinct providers from 360 data (Vantage + external providers)
+  - **Upsell/Growth**: Uses actual investment values from 360 data
+  - **Bank Scrape**: Triggers on platform cash accounts
+  - **Tax Loss**: Uses investment values from 360 data
+  - **Idle Cash**: Triggers on platform cash / money market products
 
-**Update `buildGapOpportunities` to always generate opportunities:**
-- Remove the dependency on `hasScanned` -- always build gap opportunities from the client's product data
-- Add new rules:
-  - **New Business**: Always show for clients with fewer than 3 products (suggest expanding portfolio)
-  - **Bank Balance Scraping**: Always show if client has bank/savings products (suggest linking bank feeds for real-time tracking)
-  - **Tax Loss Harvesting**: Show if client has investment products with total value over R200,000 (suggest reviewing for tax-loss harvesting)
-  - **Upsell**: Existing rule (total value over R500,000)
-  - **Idle Cash**: Show if client has money market or cash products (suggest deploying idle cash into growth assets)
-  - **Cross-sell**: Existing rule (investments but no insurance)
-  - **Platform**: Existing rule (multiple providers)
+### Product Mapping (360 View to PrepProduct)
 
-**Update the rendering logic:**
-- Remove the condition that only builds gaps when `hasScanned` is true
-- Always call `buildGapOpportunities(products)` so opportunities appear immediately
-- The `getOpportunitiesCount` function will also reflect this (it already falls back to gaps)
-
-#### 2. `src/components/client-detail/ClientSummaryTab.tsx`
-
-- Remove `hasScanned` and `isScanning` state variables (the Optimize button can remain but becomes a "refresh" that re-fetches from DB)
-- Or alternatively, keep the Optimize button for AI-powered scanning but show gap-based opportunities by default without needing to click it first
-
-**Chosen approach**: Keep the Optimize button for future AI scanning, but show gap-based opportunities by default for all clients. The Optimize button enriches/replaces them with AI-scanned results.
+| 360 View Source | PrepProduct.productName | PrepProduct.category | PrepProduct.currentValue |
+|----------------|------------------------|---------------------|------------------------|
+| On-Platform Products | product name (e.g. "Retirement Annuity Fund") | "Investment - On Platform" | amountValue |
+| External Products | product name + provider | "Investment - External" | amountValue |
+| Platform Cash | account name | "Cash" | amountValue |
+| Risk Products | holding name | "Risk / Insurance" | 0 |
+| Short-Term Products | policy type + insurer | "Short-Term Insurance" | 0 |
+| Medical Aid | scheme + plan | "Medical Aid" | 0 |
 
 ### Technical Summary
 
 | File | Change |
 |------|--------|
-| `OpportunitiesTab.tsx` | Add 4 new type configs (New Business, Bank Scrape, Tax Loss, Idle Cash); expand `buildGapOpportunities` with 4 new rules; remove `hasScanned` gate so gaps always render |
-| `ClientSummaryTab.tsx` | No structural changes needed -- just pass opportunities as before; gap opportunities will now always appear |
-
-### Default Opportunities per Client (examples)
-
-```text
-Client with 2 investment products, R800k total, 1 provider:
-  - New Business (< 3 products)
-  - Tax Loss Harvesting (investments > R200k)
-  - Upsell / Growth (> R500k)
-
-Client with investments + money market, no insurance, 3 providers:
-  - Cross-sell (no insurance)
-  - Platform consolidation (3 providers)
-  - Idle Cash (has money market)
-  - Tax Loss Harvesting (has investments)
-```
+| `ClientSummaryTab.tsx` | Import 360 data generator; convert 360 products to `PrepProduct[]`; pass as products prop |
+| `OpportunitiesTab.tsx` | Broaden category matching in `buildGapOpportunities` to recognize 360 View category strings |
 
