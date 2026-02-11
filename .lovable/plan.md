@@ -1,35 +1,23 @@
 
 
-## Refresh Stale Post Data with Engagements and Comments
+## Fix: Bump Post Cache Version to v3
 
-### Problem
-The `getDefaultPosts()` function already seeds all 3 demo posts with client engagements and comments. However, users who previously visited the advisor profile have older post data cached in localStorage -- without the `engagements` and `commentsList` fields. Since the app loads from localStorage first, these users never see the new enriched data.
+### Root Cause
+The localStorage key was bumped to `v2`, but the user's browser likely already wrote posts under the `v2` key *before* the engagement/comment seeding was added to `getDefaultPosts()`. So the cached `v2` data still has empty engagements and comments.
 
-### Solution
-Add a localStorage version key so that when the seeded data structure changes, stale caches are automatically cleared and replaced with the updated defaults.
+### Fix
+A single one-line change in `src/components/mobile/MobileAdvisorProfile.tsx`:
 
-### Changes
+Change the version constant from `"v2"` to `"v3"` to force all browsers to discard the stale cache and reload from `getDefaultPosts()` which now includes full engagement and comment data.
 
-**`src/components/mobile/MobileAdvisorProfile.tsx`**
-
-1. Add a version constant at the top of the file:
-```text
-const POSTS_DATA_VERSION = "v2";
+```
+const POSTS_DATA_VERSION = "v3";
 ```
 
-2. Update the `getPostsKey` function to include the version:
-```text
-function getPostsKey(region: string) {
-  return `vantage-advisor-posts-${region}-${POSTS_DATA_VERSION}`;
-}
-```
+### Technical Details
 
-This ensures that any previously cached posts (stored under the old key without a version suffix) are ignored, and the new defaults -- complete with 5-8 client engagements and 2-4 comments per post -- are loaded instead.
-
-### No other files are affected
-The `MobilePostDetailView.tsx` component and all data interfaces are already fully implemented and correctly render engagements and comments.
-
-| File | Action |
+| File | Change |
 |------|--------|
-| `src/components/mobile/MobileAdvisorProfile.tsx` | Update -- add version suffix to localStorage key to bust stale caches |
+| `src/components/mobile/MobileAdvisorProfile.tsx` | Update `POSTS_DATA_VERSION` from `"v2"` to `"v3"` (line 36) |
 
+This is the only change needed. The `getDefaultPosts()` function already returns posts with 5-8 client engagements and 2-4 comments each.
