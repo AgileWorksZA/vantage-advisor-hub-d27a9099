@@ -73,18 +73,6 @@ const OpportunitiesTab = ({ opportunities, products, householdView, onOptimise, 
   if (!items && gaps.length === 0) {
     return (
       <div className="flex flex-col items-center py-4 gap-2">
-        {onOptimise && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onOptimise}
-            disabled={isScanning}
-            className="border-[hsl(180,70%,45%)] text-[hsl(180,70%,45%)] hover:bg-[hsl(180,70%,45%)]/10"
-          >
-            {isScanning ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <span className="inline-flex items-center px-2 py-0.5 text-xs font-bold bg-gradient-to-r from-violet-500 to-cyan-500 text-white rounded-full mr-1">AI</span>}
-            {isScanning ? "Scanning..." : "Optimize"}
-          </Button>
-        )}
         <p className="text-xs text-muted-foreground text-center">No opportunities identified yet.</p>
       </div>
     );
