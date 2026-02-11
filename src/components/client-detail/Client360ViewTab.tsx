@@ -144,7 +144,7 @@ const Client360ViewTab = () => {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-48">
-                              <DropdownMenuItem className="text-[hsl(180,70%,45%)]">Additional contribution</DropdownMenuItem>
+                              <DropdownMenuItem>Additional contribution</DropdownMenuItem>
                               <DropdownMenuItem>Rebalance</DropdownMenuItem>
                               <DropdownMenuItem>Switch</DropdownMenuItem>
                               <DropdownMenuItem>Phase-in</DropdownMenuItem>
