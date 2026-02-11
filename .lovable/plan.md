@@ -1,67 +1,64 @@
 
 
-## Quote Wizard Layout and Progress Panel Refinements
+## Add Recurring Withdrawal and Financial Adviser Steps
 
 ### Overview
-Three changes: reduce top spacing, make the right panel a sticky floating card, and restructure the progress tracker to visually separate main workflow phases from sub-steps.
+Add two new steps to the Quote Wizard (steps 2 and 3) that the user navigates to by clicking "Next". The progress sidebar will update accordingly.
 
 ### Changes (single file: `src/components/client-detail/QuoteWizardDialog.tsx`)
 
-#### 1. Reduce space above quote heading
-- Change the left panel header padding from `p-8 pb-0` to `p-6 pb-0`
-- Reduce the teal divider bottom margin from `mb-6` to `mb-4`
+#### 1. Update `handleNext` to support all steps
+Currently only advances from step 0 to 1. Update to advance through steps 0 -> 1 -> 2 -> 3 (and eventually beyond).
 
-#### 2. Right panel becomes a sticky floating card
-- Replace the current full-height `w-64 bg-muted/30 border-l` sidebar with a `sticky top-4` positioned card
-- Add `rounded-lg border shadow-sm` styling to make it appear as a floating box
-- Set a compact height (auto-sized, not full-height) so it fits within less than half the scrollable area
-- Move the outer layout from `flex` to a relative layout: left panel scrolls normally, right panel is `sticky` within a flex container
-- Remove `flex-1` from the sidebar's inner content so it doesn't stretch
+#### 2. Add Step 2: Recurring Withdrawal (currentStep === 2)
+Based on the reference image, this step contains a single collapsible section:
 
-#### 3. Differentiate main steps from sub-steps
+- **Recurring withdrawal** (collapsible, open by default):
+  - Delete icon button (trash) at the top
+  - Amount input (default "0.00")
+  - Start date input (dd/mm/yyyy) with date picker
+  - Frequency dropdown (required, marked with asterisk)
+  - Escalate % input (required, default "0")
+  - "Withdraw proportionally" link aligned right
+  - Fund allocation table with columns: Type And Name (dropdown), Percentage, Amount
+  - Total row showing 0.00% and R 0.00
+  - Add fund (+) button
 
-**Main workflow phases** (Capture, Review and Sign, Submitted):
-- Render as bold section headers WITHOUT status circles
-- Highlight the active phase with teal text color; inactive phases use muted text
-- "Capture" is active when `currentStep` is 0-3
-- "Review and Sign" is active at step 4
-- "Submitted" is active at step 5
+#### 3. Add Step 3: Financial Adviser (currentStep === 3)
+Based on the reference image, this step has three collapsible sections:
 
-**Sub-steps** (Select product, How would you like to invest, etc.):
-- Remain indented under their parent phase with status circles (green check, amber current, grey future)
-- Only shown under the "Capture" phase
+- **Financial adviser** (collapsible, open by default):
+  - Read-only display fields: Adviser code (e.g., "INT004"), Adviser name (e.g., "Emile Wegner"), FSP name, FSP code, Agency code
 
-### Layout Structure (after changes)
+- **Advisory fees** (collapsible):
+  - Lump sum (initial) fee % excl.VAT input (default "0.00")
+  - Additional contribution fee % excl.VAT input (default "0.00")
+  - Recurring contribution fee % excl.VAT input (default "0.00")
+  - Ongoing financial advisory fee % excl.VAT input (default "0.00")
+  - Fund-specific fees table: Fund name (dropdown) + Ongoing financial advisory fee % (excl.VAT) input
+  - Add/delete row buttons
 
-```text
-+------------------------------------------+
-| QUOTE - Product (Number)        |  +------------------+ |
-| ================================|  | QUOTE - ...      | |
-|                                 |  |                  | |
-| [Scrollable step content]       |  | CAPTURE          | |
-|                                 |  |   o Select prod  | |
-|                                 |  |   o How to invest| |
-|                                 |  |   o Recurring    | |
-|                                 |  |   o Fin adviser  | |
-|                                 |  |                  | |
-|                                 |  | REVIEW AND SIGN  | |
-|                                 |  | SUBMITTED        | |
-|                                 |  |                  | |
-|                                 |  | [Cancel] [Save]  | |
-|                                 |  | [    Next      ] | |
-|                                 |  +------------------+ |
-+------------------------------------------+
-```
+- **Preferred fee fund** (collapsible, collapsed by default):
+  - Placeholder content for fee fund selection
 
-### Technical Details
+#### 4. State additions
+- Withdrawal step: `withdrawalAmount`, `withdrawalStartDate`, `withdrawalFrequency`, `withdrawalEscalation`, `withdrawalFunds`, `isWithdrawalOpen`, `withdrawProportionally`
+- Financial adviser step: `lumpSumFee`, `additionalContributionFee`, `recurringContributionFee`, `ongoingAdvisoryFee`, `fundSpecificFees` array, `isAdviserOpen`, `isFeesOpen`, `isPreferredFundOpen`
 
-| Area | Current | Updated |
-|------|---------|---------|
-| Header padding | `p-8 pb-0`, `mb-6` | `p-6 pb-0`, `mb-4` |
-| Right panel wrapper | `w-64 bg-muted/30 border-l flex flex-col` (full height) | `w-64 self-start sticky top-4 m-4 rounded-lg border shadow-sm bg-background` |
-| Outer container | `flex h-full` | `flex h-full overflow-auto` (ensure scroll context for sticky) |
-| "Capture" header | Has no special styling, uses `h4` with sub-items having circles | Bold label, highlighted teal when active, no circle |
-| "Review and Sign" | Has a `Circle` icon | No circle, bold label, teal when active phase |
-| "Submitted" | Has a `Circle` icon | No circle, bold label, teal when active phase |
-| Sub-steps | Same level as headers | Indented `ml-3` under Capture, keep circle indicators |
+#### 5. Navigation logic
+- Step 0 (Select product) -> Next -> Step 1 (How to invest) -> Next -> Step 2 (Recurring withdrawal) -> Next -> Step 3 (Financial adviser)
+- The "Next" button is always enabled on steps 1, 2, and 3; only disabled on step 0 without a product selected
+
+### Progress Sidebar Behavior
+The sidebar already correctly handles steps 0-3 with the existing `getStepIcon` and `getStepTextClass` logic. No sidebar changes needed -- the green check, amber current, and grey future indicators will work automatically as `currentStep` advances.
+
+### Technical Summary
+
+| Area | Detail |
+|------|--------|
+| File | `src/components/client-detail/QuoteWizardDialog.tsx` |
+| New state vars | ~10 new state variables for withdrawal and adviser form fields |
+| `handleNext` | Change from single condition to `if (currentStep < 3) setCurrentStep(currentStep + 1)` with step 0 requiring product selection |
+| `renderStepContent` | Add `currentStep === 2` and `currentStep === 3` branches |
+| Reuse | Reuse existing `renderFundAllocation` helper for the withdrawal fund table; create a simpler fund-fee table for adviser fees |
 
