@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { CalendarIcon, Loader2, ListChecks } from "lucide-react";
+import { CalendarIcon, Loader2, ListChecks, Database } from "lucide-react";
 import { useAdminData } from "@/hooks/useAdminData";
 import { AdminSectionHeader } from "../AdminSectionHeader";
 import { AdminDataTable, ColumnDef } from "../AdminDataTable";
@@ -157,6 +157,70 @@ export function SystemSettingsSection() {
 
   const [seedingCalendar, setSeedingCalendar] = useState(false);
   const [seedingOpenTasks, setSeedingOpenTasks] = useState(false);
+  const [seedingAll, setSeedingAll] = useState(false);
+  const [seedProgress, setSeedProgress] = useState("");
+
+  const seedSequence = [
+    { name: "seed-team-members", label: "Team Members" },
+    { name: "seed-demo-clients", label: "Demo Clients" },
+    { name: "seed-providers-data", label: "Providers" },
+    { name: "seed-instruments-data", label: "Instruments" },
+    { name: "seed-admin-reference-data", label: "Reference Data" },
+    { name: "seed-demo-relationships", label: "Relationships & Households" },
+    { name: "seed-demo-communications", label: "Communications" },
+    { name: "seed-us-communications", label: "US Communications" },
+    { name: "seed-whatsapp-enhanced", label: "WhatsApp Messages" },
+    { name: "seed-calendar-events", label: "Calendar Events" },
+    { name: "seed-demo-tasks", label: "Demo Tasks" },
+    { name: "seed-open-tasks", label: "Open Tasks" },
+    { name: "seed-onboarding-tasks", label: "Onboarding Tasks" },
+    { name: "seed-tlh-clients", label: "TLH Clients" },
+  ];
+
+  const handleSeedAll = async () => {
+    setSeedingAll(true);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) {
+      toast.error("Not authenticated");
+      setSeedingAll(false);
+      return;
+    }
+
+    let successes = 0;
+    let failures = 0;
+
+    for (let i = 0; i < seedSequence.length; i++) {
+      const step = seedSequence[i];
+      setSeedProgress(`${step.label} (${i + 1}/${seedSequence.length})`);
+      try {
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${step.name}`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        const result = await response.json();
+        if (result.success || response.ok) {
+          toast.success(`✓ ${step.label} seeded`);
+          successes++;
+        } else {
+          toast.error(`✗ ${step.label}: ${result.error || "Failed"}`);
+          failures++;
+        }
+      } catch (error: any) {
+        toast.error(`✗ ${step.label}: ${error.message}`);
+        failures++;
+      }
+    }
+
+    setSeedProgress("");
+    setSeedingAll(false);
+    toast.success(`Seeding complete: ${successes} succeeded, ${failures} failed`);
+  };
 
   const handleSeedCalendar = async () => {
     setSeedingCalendar(true);
@@ -246,12 +310,25 @@ export function SystemSettingsSection() {
             onReset={() => refetch()}
           />
 
-          <div className="mt-4 flex gap-2">
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleSeedAll}
+              disabled={seedingAll}
+            >
+              {seedingAll ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Database className="w-4 h-4 mr-2" />
+              )}
+              {seedingAll ? `Seeding: ${seedProgress}` : "Seed All Production Data"}
+            </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={handleSeedCalendar}
-              disabled={seedingCalendar}
+              disabled={seedingCalendar || seedingAll}
             >
               {seedingCalendar ? (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -264,7 +341,7 @@ export function SystemSettingsSection() {
               variant="outline"
               size="sm"
               onClick={handleSeedOpenTasks}
-              disabled={seedingOpenTasks}
+              disabled={seedingOpenTasks || seedingAll}
             >
               {seedingOpenTasks ? (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
