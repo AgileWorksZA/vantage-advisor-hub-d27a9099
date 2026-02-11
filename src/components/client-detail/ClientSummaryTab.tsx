@@ -14,7 +14,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Client, getDisplayName, getInitials, calculateAge, formatBirthday } from "@/types/client";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Users } from "lucide-react";
+import { Users, Loader2 } from "lucide-react";
 import { useClientMeetingPrep } from "@/hooks/useClientMeetingPrep";
 import { useHouseholdMeetingPrep } from "@/hooks/useHouseholdMeetingPrep";
 import OpportunitiesTab, { getOpportunitiesCount } from "./next-best-action/OpportunitiesTab";
@@ -170,21 +170,30 @@ const ClientSummaryTab = ({ client, clientId, onShowMoreActivity, onTabChange }:
         <Card className="flex-1 flex flex-col">
           <CardHeader className="py-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg flex items-center gap-2">
-                Next Best Action
-                <span className="inline-flex items-center px-2 py-0.5 text-xs font-bold bg-gradient-to-r from-violet-500 to-cyan-500 text-white rounded-full">AI</span>
-              </CardTitle>
-              {client.household_group && (
-                <div className="flex items-center gap-1.5">
-                  <Users className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground font-medium">Household</span>
-                  <Switch
-                    checked={householdView}
-                    onCheckedChange={setHouseholdView}
-                    className="scale-75"
-                  />
-                </div>
-              )}
+              <CardTitle className="text-lg">Next Best Action</CardTitle>
+              <div className="flex items-center gap-2">
+                {client.household_group && (
+                  <div className="flex items-center gap-1.5">
+                    <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground font-medium">Household</span>
+                    <Switch
+                      checked={householdView}
+                      onCheckedChange={setHouseholdView}
+                      className="scale-75"
+                    />
+                  </div>
+                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleOptimise}
+                  disabled={isScanning}
+                  className="border-[hsl(180,70%,45%)] text-[hsl(180,70%,45%)] hover:bg-[hsl(180,70%,45%)]/10"
+                >
+                  {isScanning ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <span className="inline-flex items-center px-2 py-0.5 text-xs font-bold bg-gradient-to-r from-violet-500 to-cyan-500 text-white rounded-full mr-1">AI</span>}
+                  {isScanning ? "Scanning..." : "Optimize"}
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="pt-0 flex-1 flex flex-col">
