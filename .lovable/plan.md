@@ -1,70 +1,33 @@
 
 
-## Enhance Opportunities Tab: Currency, Optimize Scan, and Opportunity Details
+## Resize Email Compose to Fit Mobile Frame
 
-### 1. Region-Aware Currency Formatting
+### Overview
+The `/email/compose` page (`ComposeEmail.tsx`) is currently desktop-only with a fixed sidebar, wide padding, and large form elements that overflow the mobile phone frame (393x852px). This plan makes the page responsive so it fits within the mobile viewport.
 
-**Problem**: `formatCurrency` in `OpportunitiesTab.tsx` is hardcoded to `en-ZA` / `ZAR`. US clients show "R" instead of "$".
+### Changes
 
-**Fix**: 
-- Pass the client's jurisdiction (derived from `country_of_issue` or `nationality`) from `ClientSummaryTab` into `OpportunitiesTab` as a new `jurisdiction` prop
-- Update `formatCurrency` to accept a jurisdiction parameter and use the correct currency code/locale from a mapping (same as `RegionContext`'s `currencyMap`)
-- Apply this to all currency displays: gap descriptions, opportunity revenue, and opportunity size
+#### `src/pages/ComposeEmail.tsx`
 
-### 2. Optimize Button: Show Scan Results Popup with New Opportunities
+1. **Hide sidebar on mobile**: Add `hidden md:flex` to the sidebar `<aside>` so it disappears on small screens
+2. **Responsive padding**: Change `p-6` to `p-3 md:p-6` on the form container
+3. **Responsive max-width**: Change `max-w-4xl` to `w-full max-w-4xl` so it fills available space on mobile
+4. **Stack action bar buttons**: Make the action bar buttons wrap on small screens with `flex-wrap`
+5. **Responsive form labels**: Hide the fixed-width labels (`w-16`) on mobile and stack fields vertically instead of side-by-side using `flex-col md:flex-row`
+6. **Reduce min-width on recipient inputs**: Change `min-w-[150px]` to `min-w-[100px]` so they fit on narrow screens
+7. **Responsive metadata section padding**: Change `p-4` to `p-3 md:p-4` on the metadata card
 
-**Problem**: Clicking "Optimize" runs a fake scan but shows no results. Need a popup summarizing findings and adding 1-2 new opportunities each time.
+### Technical Details
 
-**Fix in `ClientSummaryTab.tsx`**:
-- Add state for `scanResults`: an array of dynamically generated opportunities (persisted across scans within the session)
-- On scan complete, generate 1-2 new `PrepOpportunity`-like items from a pool of opportunity templates (e.g. "Rebalance to target allocation", "Estate planning review", "Fee reduction via platform switch", "Retirement contribution top-up")
-- Show a Dialog/AlertDialog after scan completes with a summary: "AI Scan Complete - X new opportunities identified" listing the new items
-- Merge `scanResults` into the `activeOpps` array passed to `OpportunitiesTab`
+| Element | Current | Mobile |
+|---------|---------|--------|
+| Sidebar | Always visible (`w-16`) | Hidden (`hidden md:flex`) |
+| Form padding | `p-6` | `p-3 md:p-6` |
+| Field layout | Horizontal (`flex items-center gap-3`) | Vertical on mobile (`flex flex-col md:flex-row md:items-center gap-2 md:gap-3`) |
+| Label width | Fixed `w-16` | Full width on mobile (`w-full md:w-16`) |
+| Action bar | Single row | Wrapping (`flex-wrap`) |
+| Recipient input min-width | `min-w-[150px]` | `min-w-[100px]` |
 
-**Opportunity templates pool** (rotates on each scan):
-- Migration: "Consolidate external holdings to reduce fees"
-- Upsell: "Increase retirement contributions by 5%"  
-- Cross-sell: "Add disability cover to protect income"
-- Platform: "Switch to lower-fee share class"
-- New Business: "Offshore investment diversification"
-- Tax Loss: "Harvest unrealised losses in equity portfolio"
-
-### 3. Show Opportunity Size and Date Identified
-
-**Problem**: Each opportunity row doesn't show its estimated value or when it was identified.
-
-**Fix in `OpportunitiesTab.tsx`**:
-- For gap opportunities: calculate an `opportunitySize` based on the gap type (e.g. Upsell = 5% of totalValue, Tax Loss = 2% of investmentValue, Platform = 3% of totalValue, etc.)
-- Add a `dateIdentified` field to `GapOpportunity` (default to today's date for gap-based, or the scan date for optimize-generated ones)
-- Display opportunity size (top-left, next to the badge) and date below it in a compact format (e.g. "14 Feb")
-- For `PrepOpportunity` items from the optimize scan, include `potentialRevenue` as the size and a timestamp
-
-### Technical Summary
-
-| File | Change |
-|------|--------|
-| `OpportunitiesTab.tsx` | Add `jurisdiction` prop; make `formatCurrency` jurisdiction-aware; add `opportunitySize` and `dateIdentified` to `GapOpportunity`; display size and date on each row |
-| `ClientSummaryTab.tsx` | Pass jurisdiction to OpportunitiesTab; add scan result state with Dialog popup; generate 1-2 new opportunities per scan; merge scan results into active opportunities |
-
-### Currency Mapping
-
-| Jurisdiction | Symbol | Code | Locale |
-|-------------|--------|------|--------|
-| ZA | R | ZAR | en-ZA |
-| US | $ | USD | en-US |
-| AU | A$ | AUD | en-AU |
-| CA | C$ | CAD | en-CA |
-| GB | pound | GBP | en-GB |
-
-### Opportunity Size Calculation
-
-| Gap Type | Size Formula |
-|----------|-------------|
-| Upsell/Growth | 5% of total portfolio value |
-| Cross-sell | 3% of investment value |
-| Platform | 3% of total value |
-| Tax Loss | 2% of investment value |
-| Idle Cash | 80% of cash value |
-| Bank Scrape | 0 (no monetary value) |
-| New Business | 5% of total value |
+### Result
+The compose page will stack vertically on mobile screens, hiding the sidebar and using full-width form fields, while maintaining the current desktop layout unchanged.
 
