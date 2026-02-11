@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
@@ -34,9 +34,8 @@ const createEmptyFundRow = (): FundRow => ({
   amount: "",
 });
 
-interface QuoteWizardDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+interface QuoteWizardViewProps {
+  onClose: () => void;
   jurisdiction: string;
 }
 
@@ -51,7 +50,7 @@ const QUOTE_STEPS = {
   submitted: "Submitted",
 };
 
-const QuoteWizardDialog = ({ open, onOpenChange, jurisdiction }: QuoteWizardDialogProps) => {
+const QuoteWizardView = ({ onClose, jurisdiction }: QuoteWizardViewProps) => {
   const [selectedProduct, setSelectedProduct] = useState<string>("");
   const [contractNumber, setContractNumber] = useState<string>("");
   const [currentStep, setCurrentStep] = useState(0);
@@ -441,9 +440,7 @@ const QuoteWizardDialog = ({ open, onOpenChange, jurisdiction }: QuoteWizardDial
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl p-0 gap-0 overflow-hidden [&>button]:hidden">
-        <div className="flex min-h-[600px]">
+        <div className="flex h-full min-h-[600px]">
           {/* Left Panel */}
           <div className="flex-1 flex flex-col min-h-0">
             <div className="p-8 pb-0">
@@ -504,13 +501,13 @@ const QuoteWizardDialog = ({ open, onOpenChange, jurisdiction }: QuoteWizardDial
                 <Button
                   variant="outline"
                   className="flex-1 border-[hsl(180,70%,45%)] text-[hsl(180,70%,45%)] hover:bg-[hsl(180,70%,45%)]/10"
-                  onClick={() => onOpenChange(false)}
+                  onClick={onClose}
                 >
                   Cancel
                 </Button>
                 <Button
                   className="flex-1 bg-[hsl(180,70%,45%)] hover:bg-[hsl(180,70%,40%)] text-white"
-                  onClick={() => onOpenChange(false)}
+                  onClick={onClose}
                 >
                   Save and close
                 </Button>
@@ -525,9 +522,7 @@ const QuoteWizardDialog = ({ open, onOpenChange, jurisdiction }: QuoteWizardDial
             </div>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
   );
 };
 
-export default QuoteWizardDialog;
+export default QuoteWizardView;
