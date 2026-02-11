@@ -11,6 +11,12 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Pencil, Trash2, MoreVertical, ChevronDown, ChevronUp } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useClientDetail } from "@/hooks/useClientDetail";
 import { generateClient360Data, formatTotal, mapNationalityToJurisdiction } from "@/data/regional360ViewData";
 import QuoteWizardView from "./QuoteWizardDialog";
@@ -131,9 +137,20 @@ const Client360ViewTab = () => {
                           <Button variant="ghost" size="icon" className="h-8 w-8">
                             <Pencil className="h-4 w-4 text-[hsl(180,70%,45%)]" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreVertical className="h-4 w-4 text-muted-foreground" />
-                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <MoreVertical className="h-4 w-4 text-muted-foreground" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-48">
+                              <DropdownMenuItem className="text-[hsl(180,70%,45%)]">Additional contribution</DropdownMenuItem>
+                              <DropdownMenuItem>Rebalance</DropdownMenuItem>
+                              <DropdownMenuItem>Switch</DropdownMenuItem>
+                              <DropdownMenuItem>Phase-in</DropdownMenuItem>
+                              <DropdownMenuItem>Withdraw</DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                           {product.expandable && (
                             <Button 
                               variant="ghost" 
