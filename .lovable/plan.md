@@ -1,73 +1,42 @@
 
 
-## Add "How Would You Like to Invest" Step to Quote Wizard
+## Convert Quote Wizard from Dialog to Full-Screen Inline View
 
 ### Overview
-When the user clicks "Next" on the product selection step (with a product selected), the wizard advances to step 2 ("How would you like to invest") with a scrollable content area matching the reference screenshots.
+Replace the modal/dialog-based Quote Wizard with a full-screen inline view that takes over the main content area of the client detail page, using the entire scrollable area.
+
+### Approach
+When the user clicks "+ Quote" in the 360 View tab, instead of opening a dialog, we replace the tab content area with the Quote Wizard rendered inline. A "Back" or "Cancel" action returns the user to the 360 View tab.
 
 ### Changes
 
-**`src/components/client-detail/QuoteWizardDialog.tsx`** (single file)
+#### 1. `src/components/client-detail/QuoteWizardDialog.tsx` -- Convert to inline component
 
-#### 1. Make `currentStep` stateful
-Replace `const [currentStep] = useState(0)` with `const [currentStep, setCurrentStep] = useState(0)` so we can advance through steps.
+- Remove the `Dialog` / `DialogContent` wrapper entirely
+- Remove `open` and `onOpenChange` props; replace with just `onClose: () => void`
+- Rename component to `QuoteWizardView` (keep the file name for now to minimize churn, or rename file)
+- The outer element becomes a plain `div` with `flex h-full` layout (fills the parent content area)
+- Left panel and right sidebar remain the same internal layout but now fill the screen naturally
+- The "Cancel" and "Save and close" buttons call `onClose()`
 
-#### 2. Wire the "Next" button
-On click, increment `currentStep` (only when a product is selected and on step 0).
+#### 2. `src/components/client-detail/Client360ViewTab.tsx` -- Toggle between 360 content and Quote view
 
-#### 3. Update sidebar progress indicator
-- Steps before `currentStep` show a green check icon (completed)
-- The current step shows an orange/amber half-circle indicator (in-progress)
-- Future steps remain grey circles
-- Step labels for completed steps use `text-[hsl(180,70%,45%)]` color (teal/cyan)
+- Add a `showQuoteInline` state (boolean)
+- When `showQuoteWizard` is triggered (the existing "+ Quote" click), set `showQuoteInline = true` instead of opening a dialog
+- Conditionally render: if `showQuoteInline` is true, render `<QuoteWizardView onClose={() => setShowQuoteInline(false)} jurisdiction={jurisdiction} />` instead of the normal 360 View content
+- Remove the old `<QuoteWizardDialog>` usage
 
-#### 4. Add Step 2 content: "How Would You Like to Invest"
-Based on the reference images, this scrollable panel includes:
+#### 3. Layout details
 
-**Lump-sum and phase-in investments** (collapsible, open by default):
-- Lump-sum amount input (default 0.00)
-- Phase in: Yes/No radio toggle (default No)
-- Allocation of funds section with "Use template" link
-  - Filter dropdown (default "All")
-  - Type and Name fund selector dropdown
-  - Percentage input + Amount input
-  - Delete row icon button
-  - Total row showing 0.00% and R 0.00
-  - Add row (+) button
-- "Save as a Template" button
+The Quote Wizard view will:
+- Use `className="flex h-full"` to fill the entire `<main>` scrollable area
+- Left panel: `flex-1 flex flex-col min-h-0` with internal `ScrollArea` for step content
+- Right sidebar: `w-64 bg-muted/30 border-l` (unchanged from current)
+- The whole view stretches to fill the tab content area naturally
 
-**Recurring contribution** (collapsible):
-- Amount input (0.00)
-- Start date input (dd/mm/yyyy) with calendar icon
-- Frequency dropdown
-- Escalate % input
-- Allocation of funds (same structure as above, with "Same as lump sum" button)
+### Technical Summary
 
-**Other Investments** (collapsible):
-- Efficient On-Platform Investments input with info tooltip
-- External Investments input with info tooltip
-
-#### 5. Wrap left panel content in ScrollArea
-The left panel content area uses `<ScrollArea>` to allow vertical scrolling for the longer step 2 form.
-
-#### 6. Conditional rendering
-- Step 0: Show current product selection UI
-- Step 1: Show "How would you like to invest" UI
-
-### Sidebar Progress States
-| Step Index | When currentStep = 0 | When currentStep = 1 |
-|------------|----------------------|----------------------|
-| 0 (Select product) | Current (teal check) | Completed (green check, teal text) |
-| 1 (How to invest) | Future (grey circle) | Current (amber circle, teal text) |
-| 2 (Recurring withdrawal) | Future (grey) | Future (grey) |
-| 3 (Financial adviser) | Future (grey) | Future (grey) |
-
-### Technical Details
-
-| Area | Detail |
+| File | Change |
 |------|--------|
-| File | `src/components/client-detail/QuoteWizardDialog.tsx` |
-| New imports | `ScrollArea` from ui/scroll-area, `Input` from ui/input, `Select` components, `Info`, `Trash2`, `Plus`, `Calendar` from lucide-react |
-| State additions | `currentStep` becomes mutable, add `lumpSumAmount`, `phaseIn`, fund allocation rows state |
-| Layout | Left panel wrapped in `ScrollArea` for step 2 overflow |
-
+| `QuoteWizardDialog.tsx` | Remove `Dialog`/`DialogContent` wrapper; change props from `open/onOpenChange` to `onClose`; render as plain `div` |
+| `Client360ViewTab.tsx` | Replace dialog toggle with inline view toggle; conditionally render Quote view or 360 content |
