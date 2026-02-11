@@ -1,33 +1,37 @@
 
 
-## Resize Email Compose to Fit Mobile Frame
+## Keep Existing Opportunities and Tag New Ones
 
-### Overview
-The `/email/compose` page (`ComposeEmail.tsx`) is currently desktop-only with a fixed sidebar, wide padding, and large form elements that overflow the mobile phone frame (393x852px). This plan makes the page responsive so it fits within the mobile viewport.
+### Problem
+Currently in `OpportunitiesTab.tsx`, line 135 uses an either/or approach: if there are `PrepOpportunity` items (from scans), gap opportunities are skipped entirely. This means scanning replaces the original gap-based opportunities instead of adding to them.
+
+### Solution
+Merge both lists: always build gap opportunities from products, then prepend scan-generated opportunities at the top with a "New" tag.
 
 ### Changes
 
-#### `src/pages/ComposeEmail.tsx`
+#### `src/components/client-detail/next-best-action/OpportunitiesTab.tsx`
 
-1. **Hide sidebar on mobile**: Add `hidden md:flex` to the sidebar `<aside>` so it disappears on small screens
-2. **Responsive padding**: Change `p-6` to `p-3 md:p-6` on the form container
-3. **Responsive max-width**: Change `max-w-4xl` to `w-full max-w-4xl` so it fills available space on mobile
-4. **Stack action bar buttons**: Make the action bar buttons wrap on small screens with `flex-wrap`
-5. **Responsive form labels**: Hide the fixed-width labels (`w-16`) on mobile and stack fields vertically instead of side-by-side using `flex-col md:flex-row`
-6. **Reduce min-width on recipient inputs**: Change `min-w-[150px]` to `min-w-[100px]` so they fit on narrow screens
-7. **Responsive metadata section padding**: Change `p-4` to `p-3 md:p-4` on the metadata card
+1. **Always build gaps**: Remove the conditional on line 135. Always call `buildGapOpportunities(products, householdView)` regardless of whether `opportunities` (scan results) exist.
 
-### Technical Details
+2. **Render a single merged list**: Instead of two separate render paths (lines 146-176 for scan items, lines 179-206 for gaps), combine into one list:
+   - Scan-generated opportunities at the top, each with a "New" badge
+   - Gap opportunities below
 
-| Element | Current | Mobile |
-|---------|---------|--------|
-| Sidebar | Always visible (`w-16`) | Hidden (`hidden md:flex`) |
-| Form padding | `p-6` | `p-3 md:p-6` |
-| Field layout | Horizontal (`flex items-center gap-3`) | Vertical on mobile (`flex flex-col md:flex-row md:items-center gap-2 md:gap-3`) |
-| Label width | Fixed `w-16` | Full width on mobile (`w-full md:w-16`) |
-| Action bar | Single row | Wrapping (`flex-wrap`) |
-| Recipient input min-width | `min-w-[150px]` | `min-w-[100px]` |
+3. **Add "New" tag**: Add a small green/blue badge reading "New" next to scan-generated opportunity badges:
+   ```
+   <Badge className="bg-green-100 text-green-700 border-green-200 text-[10px] px-1 py-0">New</Badge>
+   ```
 
-### Result
-The compose page will stack vertically on mobile screens, hiding the sidebar and using full-width form fields, while maintaining the current desktop layout unchanged.
+4. **Update `getOpportunitiesCount`**: Count should be scan opportunities + gap opportunities combined.
+
+#### `src/components/client-detail/ClientSummaryTab.tsx`
+
+- No changes needed -- scan opportunities are already accumulated via `setScanOpportunities(prev => [...prev, ...newOpps])`.
+
+### Technical Summary
+
+| File | Change |
+|------|--------|
+| `OpportunitiesTab.tsx` | Always build gaps; merge scan + gap lists; add "New" tag to scan items; single render path |
 
