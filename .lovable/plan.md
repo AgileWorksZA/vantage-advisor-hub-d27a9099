@@ -1,71 +1,70 @@
 
-## Household Opportunities with Per-Member Tagging
 
-### Overview
-When the household slider is on, generate 360 View products for **every** household member (not just the current client), build gap opportunities **per member**, and tag each opportunity with the member's name.
+## Enhance Opportunities Tab: Currency, Optimize Scan, and Opportunity Details
 
-### Changes
+### 1. Region-Aware Currency Formatting
 
-#### 1. `src/hooks/useHouseholdMeetingPrep.ts`
+**Problem**: `formatCurrency` in `OpportunitiesTab.tsx` is hardcoded to `en-ZA` / `ZAR`. US clients show "R" instead of "$".
 
-- Expand the `clients` select query to also fetch `nationality` and `country_of_issue` (needed to generate 360 View products per member)
-- Export the household clients list as part of the returned data so `ClientSummaryTab` can generate 360 products for each member
+**Fix**: 
+- Pass the client's jurisdiction (derived from `country_of_issue` or `nationality`) from `ClientSummaryTab` into `OpportunitiesTab` as a new `jurisdiction` prop
+- Update `formatCurrency` to accept a jurisdiction parameter and use the correct currency code/locale from a mapping (same as `RegionContext`'s `currencyMap`)
+- Apply this to all currency displays: gap descriptions, opportunity revenue, and opportunity size
 
-Add to `HouseholdPrepData`:
-```
-householdClients: { id: string; firstName: string; surname: string; nationality: string | null; countryOfIssue: string | null }[];
-```
+### 2. Optimize Button: Show Scan Results Popup with New Opportunities
 
-Update the query:
-```sql
-.select("id, first_name, surname, nationality, country_of_issue")
-```
+**Problem**: Clicking "Optimize" runs a fake scan but shows no results. Need a popup summarizing findings and adding 1-2 new opportunities each time.
 
-Return the household clients list alongside the existing data.
+**Fix in `ClientSummaryTab.tsx`**:
+- Add state for `scanResults`: an array of dynamically generated opportunities (persisted across scans within the session)
+- On scan complete, generate 1-2 new `PrepOpportunity`-like items from a pool of opportunity templates (e.g. "Rebalance to target allocation", "Estate planning review", "Fee reduction via platform switch", "Retirement contribution top-up")
+- Show a Dialog/AlertDialog after scan completes with a summary: "AI Scan Complete - X new opportunities identified" listing the new items
+- Merge `scanResults` into the `activeOpps` array passed to `OpportunitiesTab`
 
-#### 2. `src/components/client-detail/ClientSummaryTab.tsx`
+**Opportunity templates pool** (rotates on each scan):
+- Migration: "Consolidate external holdings to reduce fees"
+- Upsell: "Increase retirement contributions by 5%"  
+- Cross-sell: "Add disability cover to protect income"
+- Platform: "Switch to lower-fee share class"
+- New Business: "Offshore investment diversification"
+- Tax Loss: "Harvest unrealised losses in equity portfolio"
 
-- When `householdView` is on, use `householdData.householdClients` to generate 360 View products for **each** household member (not just the current client)
-- Tag each product with the member's `clientName` so the gap analysis can attribute them
-- Replace the single `view360Products` merge with a per-member loop:
+### 3. Show Opportunity Size and Date Identified
 
-```
-householdData.householdClients.forEach(member => {
-  const memberData = generateClient360Data(member.id, member.nationality, member.countryOfIssue);
-  // map products with clientName tag
-});
-```
+**Problem**: Each opportunity row doesn't show its estimated value or when it was identified.
 
-#### 3. `src/components/client-detail/next-best-action/OpportunitiesTab.tsx`
-
-- Update `buildGapOpportunities` to accept a `householdView` flag
-- When `householdView` is true, group products by `clientName` and run gap analysis **per member**, tagging each `GapOpportunity` with `clientName`
-- When `householdView` is false, keep current behavior (no tags)
-- Show `ClientNameTag` on all gap opportunities when in household view (already partially wired up, just needs the `clientName` to be populated)
-
-Updated signature:
-```
-function buildGapOpportunities(products: PrepProduct[], householdView?: boolean): GapOpportunity[]
-```
-
-Per-member logic when `householdView` is true:
-- Group products by `clientName` (or `(product as any).clientName`)
-- For each member, run the existing gap rules against their products only
-- Prefix gap IDs with member name for uniqueness (e.g., `gap-tlh-JohnS`)
-- Set `clientName` on each gap
-- Deduplicate: if same gap type exists for multiple members, keep all (each tagged)
-
-Update `getOpportunitiesCount` to also pass `householdView`.
-
-### Result
-- Toggling household slider shows opportunities from all household members
-- Each opportunity row displays a name tag (e.g., "John S.") identifying which member it belongs to
-- The opportunity count in the tab header reflects the combined household total
+**Fix in `OpportunitiesTab.tsx`**:
+- For gap opportunities: calculate an `opportunitySize` based on the gap type (e.g. Upsell = 5% of totalValue, Tax Loss = 2% of investmentValue, Platform = 3% of totalValue, etc.)
+- Add a `dateIdentified` field to `GapOpportunity` (default to today's date for gap-based, or the scan date for optimize-generated ones)
+- Display opportunity size (top-left, next to the badge) and date below it in a compact format (e.g. "14 Feb")
+- For `PrepOpportunity` items from the optimize scan, include `potentialRevenue` as the size and a timestamp
 
 ### Technical Summary
 
 | File | Change |
 |------|--------|
-| `useHouseholdMeetingPrep.ts` | Add `nationality`, `country_of_issue` to query; export `householdClients` list |
-| `ClientSummaryTab.tsx` | Generate 360 products per household member; merge all into `activeProducts` with `clientName` tags |
-| `OpportunitiesTab.tsx` | Group products by member and build gaps per member with `clientName` tags when `householdView` is on |
+| `OpportunitiesTab.tsx` | Add `jurisdiction` prop; make `formatCurrency` jurisdiction-aware; add `opportunitySize` and `dateIdentified` to `GapOpportunity`; display size and date on each row |
+| `ClientSummaryTab.tsx` | Pass jurisdiction to OpportunitiesTab; add scan result state with Dialog popup; generate 1-2 new opportunities per scan; merge scan results into active opportunities |
+
+### Currency Mapping
+
+| Jurisdiction | Symbol | Code | Locale |
+|-------------|--------|------|--------|
+| ZA | R | ZAR | en-ZA |
+| US | $ | USD | en-US |
+| AU | A$ | AUD | en-AU |
+| CA | C$ | CAD | en-CA |
+| GB | pound | GBP | en-GB |
+
+### Opportunity Size Calculation
+
+| Gap Type | Size Formula |
+|----------|-------------|
+| Upsell/Growth | 5% of total portfolio value |
+| Cross-sell | 3% of investment value |
+| Platform | 3% of total value |
+| Tax Loss | 2% of investment value |
+| Idle Cash | 80% of cash value |
+| Bank Scrape | 0 (no monetary value) |
+| New Business | 5% of total value |
+
