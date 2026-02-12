@@ -35,7 +35,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Download, Users, ListTodo, CalendarIcon, ChevronRight, Filter, X, Save, BookmarkCheck, Trash2 } from "lucide-react";
+import { Download, Users, ListTodo, CalendarIcon, ChevronRight, Filter, X, Save, BookmarkCheck, Trash2, ChevronsUpDown, ChevronsDownUp } from "lucide-react";
 
 import { EnhancedTask, TaskFilters } from "@/hooks/useTasksEnhanced";
 import { useTeamMembers } from "@/hooks/useTeamMembers";
@@ -270,10 +270,10 @@ const exportToCsv = (rows: AnalyticsRow[], viewLabel: string) => {
 function AnalyticsDataRow({ row, index, onClick }: { row: AnalyticsRow; index: number; onClick: () => void }) {
   return (
     <TableRow
-      className={`cursor-pointer hover:bg-muted/60 ${index % 2 === 1 ? "bg-muted/20" : ""}`}
+      className={`cursor-pointer hover:bg-muted/60 border-l-4 border-l-transparent text-sm ${index % 2 === 1 ? "bg-muted/10" : ""}`}
       onClick={onClick}
     >
-      <TableCell className="font-medium">{row.teamName ? <span className="pl-4">{row.label}</span> : row.label}</TableCell>
+      <TableCell className="font-normal">{row.teamName ? <span className="pl-8">{row.label}</span> : row.label}</TableCell>
       <TableCell className="text-center">{row.dueItems || "-"}</TableCell>
       <TableCell className="text-center">
         {row.overdue > 0 ? <Badge variant="destructive" className="text-xs">{row.overdue}</Badge> : "-"}
@@ -324,15 +324,14 @@ function TotalsRow({ totals }: { totals: ReturnType<typeof aggregateRows> }) {
   );
 }
 
-function TeamGroupRow({ teamName, totals, children }: { teamName: string; totals: ReturnType<typeof aggregateRows>; children: React.ReactNode }) {
-  const [open, setOpen] = useState(true);
+function TeamGroupRow({ teamName, totals, children, open, onToggle }: { teamName: string; totals: ReturnType<typeof aggregateRows>; children: React.ReactNode; open: boolean; onToggle: () => void }) {
   return (
     <>
-      <TableRow className="bg-muted/30 cursor-pointer hover:bg-muted/50 font-semibold" onClick={() => setOpen(!open)}>
+      <TableRow className="bg-primary/10 dark:bg-primary/20 cursor-pointer hover:bg-primary/15 dark:hover:bg-primary/25 font-semibold border-l-4 border-l-primary" onClick={onToggle}>
         <TableCell>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
             <ChevronRight className={`h-4 w-4 transition-transform ${open ? "rotate-90" : ""}`} />
-            {teamName}
+            <span className="uppercase tracking-wide text-sm">{teamName}</span>
           </div>
         </TableCell>
         <TableCell className="text-center">{totals.dueItems || "-"}</TableCell>
@@ -357,6 +356,8 @@ export function TaskAnalyticsTab({ tasks, onDrillDown }: TaskAnalyticsTabProps) 
   const [customFrom, setCustomFrom] = useState<Date | undefined>();
   const [customTo, setCustomTo] = useState<Date | undefined>();
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
+  const [expandedTeams, setExpandedTeams] = useState<Set<string>>(new Set());
+  const [expandedInitialized, setExpandedInitialized] = useState(false);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [filterName, setFilterName] = useState("");
   const [savedViewsSearch, setSavedViewsSearch] = useState("");
@@ -436,6 +437,22 @@ export function TaskAnalyticsTab({ tasks, onDrillDown }: TaskAnalyticsTabProps) 
     });
     return { groups, ungrouped };
   }, [rows, subView, memberTeamMap]);
+
+  // Initialize expandedTeams with all team names once grouped rows are available
+  const allTeamNames = useMemo(() => groupedRows ? Object.keys(groupedRows.groups) : [], [groupedRows]);
+  if (!expandedInitialized && allTeamNames.length > 0) {
+    setExpandedTeams(new Set(allTeamNames));
+    setExpandedInitialized(true);
+  }
+
+  const toggleTeam = (teamName: string) => {
+    setExpandedTeams(prev => {
+      const next = new Set(prev);
+      if (next.has(teamName)) next.delete(teamName);
+      else next.add(teamName);
+      return next;
+    });
+  };
 
   const totals = useMemo(() => aggregateRows(rows), [rows]);
 
@@ -656,12 +673,24 @@ export function TaskAnalyticsTab({ tasks, onDrillDown }: TaskAnalyticsTabProps) 
       </Dialog>
 
       <Card>
-        <CardHeader className="pb-2">
+         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center justify-between">
             <span>Task Analytics — {subView === "user" ? "By User" : "By Task Type"}</span>
-            <span className="text-xs font-normal text-muted-foreground">
-              {format(periodStart, "dd MMM yyyy")} – {format(periodEnd, "dd MMM yyyy")}
-            </span>
+            <div className="flex items-center gap-2">
+              {subView === "user" && groupedRows && Object.keys(groupedRows.groups).length > 0 && (
+                <>
+                  <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={() => setExpandedTeams(new Set(Object.keys(groupedRows.groups)))}>
+                    <ChevronsUpDown className="h-3.5 w-3.5" />Expand All
+                  </Button>
+                  <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={() => setExpandedTeams(new Set())}>
+                    <ChevronsDownUp className="h-3.5 w-3.5" />Collapse All
+                  </Button>
+                </>
+              )}
+              <span className="text-xs font-normal text-muted-foreground">
+                {format(periodStart, "dd MMM yyyy")} – {format(periodEnd, "dd MMM yyyy")}
+              </span>
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
@@ -698,7 +727,7 @@ export function TaskAnalyticsTab({ tasks, onDrillDown }: TaskAnalyticsTabProps) 
                           .map(([teamName, teamRows]) => {
                             const teamTotals = aggregateRows(teamRows);
                             return (
-                              <TeamGroupRow key={teamName} teamName={teamName} totals={teamTotals}>
+                              <TeamGroupRow key={teamName} teamName={teamName} totals={teamTotals} open={expandedTeams.has(teamName)} onToggle={() => toggleTeam(teamName)}>
                                 {teamRows.map((row, i) => (
                                   <AnalyticsDataRow key={row.label} row={row} index={i} onClick={() => handleRowClick(row)} />
                                 ))}
