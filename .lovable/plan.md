@@ -1,55 +1,39 @@
 
+## Differentiate Group vs Individual Rows + Add Expand/Collapse All
 
-## Fix Column Misalignment in Task Analytics "By User" Table
+### Changes (single file: `src/components/tasks/TaskAnalyticsTab.tsx`)
 
-### Problem
-The `TeamGroupRow` component wraps table rows in Radix UI `Collapsible`, `CollapsibleTrigger`, and `CollapsibleContent` components. These inject extra `<div>` elements into the DOM inside `<tbody>`, which is invalid HTML (only `<tr>` elements are valid children of `<tbody>`). This breaks the browser's table layout algorithm and causes columns to misalign.
+### 1. Visual Differentiation
 
-### Solution
-Replace the Radix Collapsible with a simple React state-based toggle using conditional rendering. This keeps the collapse/expand behavior without injecting non-table DOM elements.
+**Team Group Rows** (currently `bg-muted/30` with `font-semibold`):
+- Stronger background: `bg-primary/10 dark:bg-primary/20`
+- Left border accent: `border-l-4 border-l-primary`
+- Slightly larger text and uppercase team name
+- Bold numeric values
 
-### File Changed
-**`src/components/tasks/TaskAnalyticsTab.tsx`** (lines 327-356)
+**Individual Rows** (currently only indented with `pl-4`):
+- Keep lighter background with zebra striping
+- Increase left indent to `pl-8` for clearer hierarchy
+- Normal font weight, slightly smaller text (`text-sm`)
+- Add a subtle left border: `border-l-4 border-l-transparent` to maintain alignment
 
-Replace the `TeamGroupRow` component:
+### 2. Expand All / Collapse All Controls
 
-**Before (broken):**
-```tsx
-function TeamGroupRow({ ... }) {
-  const [open, setOpen] = useState(true);
-  return (
-    <Collapsible open={open} onOpenChange={setOpen}>
-      <CollapsibleTrigger asChild>
-        <TableRow>...</TableRow>
-      </CollapsibleTrigger>
-      <CollapsibleContent asChild>
-        <>{children}</>
-      </CollapsibleContent>
-    </Collapsible>
-  );
-}
-```
+**Approach**: Lift the open/closed state out of `TeamGroupRow` into the parent `TaskAnalyticsTab` component.
 
-**After (fixed):**
-```tsx
-function TeamGroupRow({ ... }) {
-  const [open, setOpen] = useState(true);
-  return (
-    <>
-      <TableRow
-        className="bg-muted/30 cursor-pointer hover:bg-muted/50 font-semibold"
-        onClick={() => setOpen(!open)}
-      >
-        {/* same cells as before */}
-      </TableRow>
-      {open && children}
-    </>
-  );
-}
-```
+- Add state: `expandedTeams` as a `Set<string>` (initialized with all team names)
+- Pass `open` and `onToggle` props down to `TeamGroupRow` instead of it managing its own state
+- Add two small icon buttons in the `CardHeader` next to the title (only visible in "By User" view):
+  - `ChevronsDownUp` icon button -- "Collapse All"
+  - `ChevronsUpDown` icon button -- "Expand All"
+- "Expand All" sets `expandedTeams` to contain all team names
+- "Collapse All" clears the set
 
-This removes the Collapsible/CollapsibleTrigger/CollapsibleContent wrappers entirely, using a simple `onClick` handler on the header `TableRow` and conditional rendering (`{open && children}`) for the child rows. The table DOM structure stays valid (`<tbody> > <tr>`), fixing the alignment.
+### Summary of Edits
 
-### Additional Cleanup
-- Remove the `Collapsible`, `CollapsibleContent`, `CollapsibleTrigger` imports if no longer used elsewhere in the file (they are not used elsewhere in this file).
-
+| Location | Change |
+|---|---|
+| `TeamGroupRow` component (~line 327) | Accept `open` and `onToggle` props instead of local state; update styling with stronger bg, left border accent |
+| `AnalyticsDataRow` component (~line 270) | Increase indent, ensure lighter styling for contrast |
+| `TaskAnalyticsTab` component (~line 354) | Add `expandedTeams` state; pass props to `TeamGroupRow` |
+| Card header (~line 659) | Add Expand All / Collapse All icon buttons (visible only in "By User" sub-view) |
