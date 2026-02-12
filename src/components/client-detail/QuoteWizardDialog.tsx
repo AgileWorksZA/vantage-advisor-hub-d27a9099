@@ -132,7 +132,18 @@ const QuoteWizardView = ({ onClose, jurisdiction }: QuoteWizardViewProps) => {
   };
 
   const updateFundRow = (target: "lumpsum" | "recurring", id: string, field: keyof FundRow, value: string) => {
-    const updater = (rows: FundRow[]) => rows.map(r => r.id === id ? { ...r, [field]: value } : r);
+    const updater = (rows: FundRow[]) => rows.map(r => {
+      if (r.id !== id) return r;
+      const updated = { ...r, [field]: value };
+      if (field === "percentage") {
+        const baseAmount = target === "lumpsum"
+          ? parseFloat(lumpSumAmount.replace(/[^0-9.]/g, "")) || 0
+          : parseFloat(recurringAmount.replace(/[^0-9.]/g, "")) || 0;
+        const pct = parseFloat(value) || 0;
+        updated.amount = (baseAmount * pct / 100).toFixed(2);
+      }
+      return updated;
+    });
     if (target === "lumpsum") {
       setLumpSumFunds(updater(lumpSumFunds));
     } else {
