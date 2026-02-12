@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+
 import { Input } from "@/components/ui/input";
 import {
   Dialog,
@@ -327,31 +327,27 @@ function TotalsRow({ totals }: { totals: ReturnType<typeof aggregateRows> }) {
 function TeamGroupRow({ teamName, totals, children }: { teamName: string; totals: ReturnType<typeof aggregateRows>; children: React.ReactNode }) {
   const [open, setOpen] = useState(true);
   return (
-    <Collapsible open={open} onOpenChange={setOpen}>
-      <CollapsibleTrigger asChild>
-        <TableRow className="bg-muted/30 cursor-pointer hover:bg-muted/50 font-semibold">
-          <TableCell>
-            <div className="flex items-center gap-1">
-              <ChevronRight className={`h-4 w-4 transition-transform ${open ? "rotate-90" : ""}`} />
-              {teamName}
-            </div>
-          </TableCell>
-          <TableCell className="text-center">{totals.dueItems || "-"}</TableCell>
-          <TableCell className="text-center">{totals.overdue ? <Badge variant="destructive" className="text-xs">{totals.overdue}</Badge> : "-"}</TableCell>
-          <TableCell className="text-center">{totals.dueToday || "-"}</TableCell>
-          <TableCell className="text-center">{totals.dueTomorrow || "-"}</TableCell>
-          <TableCell className="text-center">{totals.dueThisWeek || "-"}</TableCell>
-          <TableCell className="text-center">{totals.dueNextWeek || "-"}</TableCell>
-          <TableCell className="text-center">{totals.completedInPeriod || "-"}</TableCell>
-          <TableCell className="text-center">{totals.completedPriorPeriod || "-"}</TableCell>
-          <TableCell className="text-center">-</TableCell>
-          <TableCell className="text-center">-</TableCell>
-        </TableRow>
-      </CollapsibleTrigger>
-      <CollapsibleContent asChild>
-        <>{children}</>
-      </CollapsibleContent>
-    </Collapsible>
+    <>
+      <TableRow className="bg-muted/30 cursor-pointer hover:bg-muted/50 font-semibold" onClick={() => setOpen(!open)}>
+        <TableCell>
+          <div className="flex items-center gap-1">
+            <ChevronRight className={`h-4 w-4 transition-transform ${open ? "rotate-90" : ""}`} />
+            {teamName}
+          </div>
+        </TableCell>
+        <TableCell className="text-center">{totals.dueItems || "-"}</TableCell>
+        <TableCell className="text-center">{totals.overdue ? <Badge variant="destructive" className="text-xs">{totals.overdue}</Badge> : "-"}</TableCell>
+        <TableCell className="text-center">{totals.dueToday || "-"}</TableCell>
+        <TableCell className="text-center">{totals.dueTomorrow || "-"}</TableCell>
+        <TableCell className="text-center">{totals.dueThisWeek || "-"}</TableCell>
+        <TableCell className="text-center">{totals.dueNextWeek || "-"}</TableCell>
+        <TableCell className="text-center">{totals.completedInPeriod || "-"}</TableCell>
+        <TableCell className="text-center">{totals.completedPriorPeriod || "-"}</TableCell>
+        <TableCell className="text-center">-</TableCell>
+        <TableCell className="text-center">-</TableCell>
+      </TableRow>
+      {open && children}
+    </>
   );
 }
 
