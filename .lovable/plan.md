@@ -1,40 +1,55 @@
 
 
-## Auto-Calculate Fund Amount from Percentage
+## Fix Column Misalignment in Task Analytics "By User" Table
 
-### What Changes
-When you type a percentage value in a fund allocation row, the **amount** field will automatically be set to `lumpSumAmount * percentage / 100` (for lump-sum rows) or `recurringAmount * percentage / 100` (for recurring rows).
+### Problem
+The `TeamGroupRow` component wraps table rows in Radix UI `Collapsible`, `CollapsibleTrigger`, and `CollapsibleContent` components. These inject extra `<div>` elements into the DOM inside `<tbody>`, which is invalid HTML (only `<tr>` elements are valid children of `<tbody>`). This breaks the browser's table layout algorithm and causes columns to misalign.
 
-### Technical Detail
+### Solution
+Replace the Radix Collapsible with a simple React state-based toggle using conditional rendering. This keeps the collapse/expand behavior without injecting non-table DOM elements.
 
-**File:** `src/components/client-detail/QuoteWizardDialog.tsx`
+### File Changed
+**`src/components/tasks/TaskAnalyticsTab.tsx`** (lines 327-356)
 
-Modify the `updateFundRow` function (line 134) so that when the `field` being updated is `"percentage"`, it also computes and sets the `amount` on that row:
+Replace the `TeamGroupRow` component:
 
-```typescript
-const updateFundRow = (target: "lumpsum" | "recurring", id: string, field: keyof FundRow, value: string) => {
-  const updater = (rows: FundRow[]) => rows.map(r => {
-    if (r.id !== id) return r;
-    const updated = { ...r, [field]: value };
-    if (field === "percentage") {
-      const baseAmount = target === "lumpsum"
-        ? parseFloat(lumpSumAmount.replace(/[^0-9.]/g, "")) || 0
-        : parseFloat(recurringAmount.replace(/[^0-9.]/g, "")) || 0;
-      const pct = parseFloat(value) || 0;
-      updated.amount = (baseAmount * pct / 100).toFixed(2);
-    }
-    return updated;
-  });
-  if (target === "lumpsum") {
-    setLumpSumFunds(updater(lumpSumFunds));
-  } else {
-    setRecurringFunds(updater(recurringFunds));
-  }
-};
+**Before (broken):**
+```tsx
+function TeamGroupRow({ ... }) {
+  const [open, setOpen] = useState(true);
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <CollapsibleTrigger asChild>
+        <TableRow>...</TableRow>
+      </CollapsibleTrigger>
+      <CollapsibleContent asChild>
+        <>{children}</>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
 ```
 
-- Parses the lump-sum (or recurring) amount, stripping non-numeric characters
-- Multiplies by the entered percentage divided by 100
-- Formats the result to 2 decimal places
-- Only triggers when the percentage field is edited; direct amount edits remain manual
+**After (fixed):**
+```tsx
+function TeamGroupRow({ ... }) {
+  const [open, setOpen] = useState(true);
+  return (
+    <>
+      <TableRow
+        className="bg-muted/30 cursor-pointer hover:bg-muted/50 font-semibold"
+        onClick={() => setOpen(!open)}
+      >
+        {/* same cells as before */}
+      </TableRow>
+      {open && children}
+    </>
+  );
+}
+```
+
+This removes the Collapsible/CollapsibleTrigger/CollapsibleContent wrappers entirely, using a simple `onClick` handler on the header `TableRow` and conditional rendering (`{open && children}`) for the child rows. The table DOM structure stays valid (`<tbody> > <tr>`), fixing the alignment.
+
+### Additional Cleanup
+- Remove the `Collapsible`, `CollapsibleContent`, `CollapsibleTrigger` imports if no longer used elsewhere in the file (they are not used elsewhere in this file).
 
