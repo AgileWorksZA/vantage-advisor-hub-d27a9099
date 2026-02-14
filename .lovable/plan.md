@@ -1,49 +1,82 @@
 
 
-## Link Teams to Selected Advisors in Task Analytics
+## Restructure Analytics "By User" to Show Advisers with Expandable Assistants + Seed Tasks + Drill-Down Filtering
 
-### Problem
-The "By User" table in Task Analytics shows all teams regardless of which advisors are selected in the top bar. Additionally, some team members appear in an "ungrouped" section outside of any team.
+### Overview
+Replace the current team-name grouping with adviser-name grouping. Each adviser row is expandable to show their assistants (non-primary team members). Update the seed function so tasks are distributed across all team members with proper `assigned_to_name`. Add click-to-filter so clicking any row drills down to that person's tasks.
 
-### Solution
-Add an `advisor_initials` column to the `team_members` table to directly link each team (via its Financial Adviser) to a regional advisor. Then filter the displayed teams based on the advisors selected in the header filter.
+---
 
-### Changes
+### 1. Restructure the "By User" Table (TaskAnalyticsTab.tsx)
 
-**1. Database Migration** -- Add `advisor_initials` column to `team_members`
-```sql
-ALTER TABLE team_members ADD COLUMN advisor_initials TEXT;
-```
+**Current**: Groups by `team_name` (e.g., "Jordaan Financial Planning")
+**New**: Groups by adviser name (e.g., "Johan Botha") with assistants nested underneath
 
-**2. Update seed function** (`supabase/functions/seed-team-members/index.ts`)
-- Add `advisorInitials` to the seed data structure for each team, mapping each team's Financial Adviser to the corresponding regional advisor initials
-- For example in ZA: Jordaan Financial Planning maps to "JB", Mostert Advisory to "SM", Van der Merwe Wealth to "PN", Naidoo Financial Services to "LV", Pretorius Practice to "DG"
-- Populate the `advisor_initials` column on insert for all team members in each team (so every member in a team shares the same advisor_initials value)
-- Apply same mapping for AU, CA, GB, US regions
+Changes to `TaskAnalyticsTab.tsx`:
 
-**3. Update `useTeamMembers.ts`**
-- Add `advisor_initials: string | null` to the `TeamMember` interface
+- **Rename `TeamGroupRow` to `AdviserGroupRow`** -- the header row displays the adviser's full name (from `regionalData.advisors`) instead of team name
+- **Grouping logic**: Instead of grouping by `team_name`, group by `advisor_initials`. For each group:
+  - The header row shows the adviser's name (the primary team member / Financial Adviser) with aggregated totals
+  - Expanded children show only the non-primary members (assistants, paraplanners, administrators)
+- **Remove team filter MultiSelect** -- replace with adviser-based filtering (already handled by top bar)
+- **Expand/Collapse All** remains the same, just keyed on adviser initials instead of team names
 
-**4. Update `TaskAnalyticsTab.tsx`**
-- Import `selectedAdvisors` from `useRegion()`
-- Build a set of advisor_initials that are currently selected in the top bar
-- Filter `jurisdictionMembers` to only include members whose `advisor_initials` is in the selected set
-- This automatically filters the teams shown (since teams are built from `jurisdictionMembers`)
-- Remove the "ungrouped" rendering block -- all members will be in a team via the seed data; any truly unmatched rows are hidden
-
-### Data Flow
-
+**Grouping data flow:**
 ```text
-Advisor Filter (top bar)
-  --> selectedAdvisors: ["JB", "SM"]
-  --> team_members with advisor_initials = "JB" or "SM"
-  --> Teams: "Jordaan Financial Planning", "Mostert Advisory"
-  --> Only those teams + their members appear in the table
+team_members (filtered by selectedAdvisors + selectedRegion)
+  --> group by advisor_initials
+  --> for each group:
+       Header row = adviser name (from regionalData.advisors matching initials)
+       Child rows = members where is_primary_adviser = false
 ```
 
-### Steps
-1. Run migration to add `advisor_initials` column
-2. Update seed function with initials mapping for all 25 teams (5 per region)
-3. Deploy and run seed function to populate data
-4. Update TypeScript interface in `useTeamMembers.ts`
-5. Update filtering logic in `TaskAnalyticsTab.tsx` to filter by selected advisors and remove ungrouped section
+### 2. Click-to-Filter Drill-Down
+
+**Current**: `handleRowClick` only filters by `task_type` in the "By Type" view; in "By User" view it does nothing meaningful.
+
+**Changes:**
+- When clicking an adviser header row: call `onDrillDown({ assignedTo: adviserName })` -- this switches to the "All Tasks" detail view filtered to that adviser's name
+- When clicking an assistant row: call `onDrillDown({ assignedTo: assistantName })` -- filters to that specific person
+- The `TaskFilters` interface already has `assignedTo?: string` so no schema change needed
+
+### 3. Re-seed Task Data with Proper Distribution
+
+**Update `supabase/functions/seed-demo-tasks/index.ts`:**
+
+Currently 834 out of ~1000+ tasks have `assigned_to_name = NULL`. The seed function distributes tasks only across team members it finds, but many tasks remain unassigned.
+
+Changes:
+- Delete existing tasks before re-seeding (idempotent)
+- Ensure every task gets an `assigned_to_name` from the team members list (no nulls)
+- Distribute tasks proportionally: Financial Advisers get ~60% of tasks, assistants/paraplanners get ~40%
+- This ensures the analytics table has meaningful data for every team member
+
+### 4. Cleanup
+
+- Remove the `selectedTeams` / team filter MultiSelect state and UI (lines 358, 409-417, 567-575, 634-641) since grouping is now by adviser from the top bar
+- Remove references to `teamOptions` and `memberTeamMap` -- replace with an `adviserGroupMap` keyed on `advisor_initials`
+- Update the `groupedRows` memo to build groups by adviser initials
+- Update expand/collapse state keys from team names to adviser initials
+
+---
+
+### Technical Details
+
+**File: `src/components/tasks/TaskAnalyticsTab.tsx`**
+
+| Section | Change |
+|---|---|
+| `groupedRows` memo (~line 424) | Group rows by `advisor_initials` instead of `team_name`. Use `regionalData.advisors` to get the adviser display name for each initials key |
+| `TeamGroupRow` component (~line 327) | Rename to `AdviserGroupRow`; display adviser name instead of team name |
+| `handleRowClick` (~line 456) | For "user" subView: set `assignedTo` filter to the clicked person's name and call `onDrillDown` |
+| Team filter UI (~line 567) | Remove the MultiSelect for team filtering |
+| Expand/Collapse (~line 677) | Key on adviser initials instead of team names |
+
+**File: `supabase/functions/seed-demo-tasks/index.ts`**
+
+| Section | Change |
+|---|---|
+| Before insert (~line 328) | Delete existing tasks for the user first (`DELETE FROM tasks WHERE user_id = ...`) |
+| Task assignment (~line 352) | Always assign a team member name; weight Financial Advisers at 60% |
+| Total tasks | Keep at 500 |
+
