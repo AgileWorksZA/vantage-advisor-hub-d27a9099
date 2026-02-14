@@ -1,39 +1,49 @@
 
-## Differentiate Group vs Individual Rows + Add Expand/Collapse All
 
-### Changes (single file: `src/components/tasks/TaskAnalyticsTab.tsx`)
+## Link Teams to Selected Advisors in Task Analytics
 
-### 1. Visual Differentiation
+### Problem
+The "By User" table in Task Analytics shows all teams regardless of which advisors are selected in the top bar. Additionally, some team members appear in an "ungrouped" section outside of any team.
 
-**Team Group Rows** (currently `bg-muted/30` with `font-semibold`):
-- Stronger background: `bg-primary/10 dark:bg-primary/20`
-- Left border accent: `border-l-4 border-l-primary`
-- Slightly larger text and uppercase team name
-- Bold numeric values
+### Solution
+Add an `advisor_initials` column to the `team_members` table to directly link each team (via its Financial Adviser) to a regional advisor. Then filter the displayed teams based on the advisors selected in the header filter.
 
-**Individual Rows** (currently only indented with `pl-4`):
-- Keep lighter background with zebra striping
-- Increase left indent to `pl-8` for clearer hierarchy
-- Normal font weight, slightly smaller text (`text-sm`)
-- Add a subtle left border: `border-l-4 border-l-transparent` to maintain alignment
+### Changes
 
-### 2. Expand All / Collapse All Controls
+**1. Database Migration** -- Add `advisor_initials` column to `team_members`
+```sql
+ALTER TABLE team_members ADD COLUMN advisor_initials TEXT;
+```
 
-**Approach**: Lift the open/closed state out of `TeamGroupRow` into the parent `TaskAnalyticsTab` component.
+**2. Update seed function** (`supabase/functions/seed-team-members/index.ts`)
+- Add `advisorInitials` to the seed data structure for each team, mapping each team's Financial Adviser to the corresponding regional advisor initials
+- For example in ZA: Jordaan Financial Planning maps to "JB", Mostert Advisory to "SM", Van der Merwe Wealth to "PN", Naidoo Financial Services to "LV", Pretorius Practice to "DG"
+- Populate the `advisor_initials` column on insert for all team members in each team (so every member in a team shares the same advisor_initials value)
+- Apply same mapping for AU, CA, GB, US regions
 
-- Add state: `expandedTeams` as a `Set<string>` (initialized with all team names)
-- Pass `open` and `onToggle` props down to `TeamGroupRow` instead of it managing its own state
-- Add two small icon buttons in the `CardHeader` next to the title (only visible in "By User" view):
-  - `ChevronsDownUp` icon button -- "Collapse All"
-  - `ChevronsUpDown` icon button -- "Expand All"
-- "Expand All" sets `expandedTeams` to contain all team names
-- "Collapse All" clears the set
+**3. Update `useTeamMembers.ts`**
+- Add `advisor_initials: string | null` to the `TeamMember` interface
 
-### Summary of Edits
+**4. Update `TaskAnalyticsTab.tsx`**
+- Import `selectedAdvisors` from `useRegion()`
+- Build a set of advisor_initials that are currently selected in the top bar
+- Filter `jurisdictionMembers` to only include members whose `advisor_initials` is in the selected set
+- This automatically filters the teams shown (since teams are built from `jurisdictionMembers`)
+- Remove the "ungrouped" rendering block -- all members will be in a team via the seed data; any truly unmatched rows are hidden
 
-| Location | Change |
-|---|---|
-| `TeamGroupRow` component (~line 327) | Accept `open` and `onToggle` props instead of local state; update styling with stronger bg, left border accent |
-| `AnalyticsDataRow` component (~line 270) | Increase indent, ensure lighter styling for contrast |
-| `TaskAnalyticsTab` component (~line 354) | Add `expandedTeams` state; pass props to `TeamGroupRow` |
-| Card header (~line 659) | Add Expand All / Collapse All icon buttons (visible only in "By User" sub-view) |
+### Data Flow
+
+```text
+Advisor Filter (top bar)
+  --> selectedAdvisors: ["JB", "SM"]
+  --> team_members with advisor_initials = "JB" or "SM"
+  --> Teams: "Jordaan Financial Planning", "Mostert Advisory"
+  --> Only those teams + their members appear in the table
+```
+
+### Steps
+1. Run migration to add `advisor_initials` column
+2. Update seed function with initials mapping for all 25 teams (5 per region)
+3. Deploy and run seed function to populate data
+4. Update TypeScript interface in `useTeamMembers.ts`
+5. Update filtering logic in `TaskAnalyticsTab.tsx` to filter by selected advisors and remove ungrouped section
