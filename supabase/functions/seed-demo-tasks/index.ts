@@ -182,37 +182,31 @@ function randomInt(min: number, max: number): number {
 
 function generateDueDate(index: number): string | null {
   const today = new Date();
-  const distribution = index % 20; // Cycle through 20 patterns
+  const distribution = index % 20;
 
   if (distribution < 3) {
-    // 15% overdue (past 30 days)
     const daysAgo = randomInt(1, 30);
     const date = new Date(today);
     date.setDate(date.getDate() - daysAgo);
     return date.toISOString().split("T")[0];
   } else if (distribution < 4) {
-    // 5% due today
     return today.toISOString().split("T")[0];
   } else if (distribution < 8) {
-    // 20% due this week
     const daysAhead = randomInt(1, 7);
     const date = new Date(today);
     date.setDate(date.getDate() + daysAhead);
     return date.toISOString().split("T")[0];
   } else if (distribution < 13) {
-    // 25% due next week
     const daysAhead = randomInt(8, 14);
     const date = new Date(today);
     date.setDate(date.getDate() + daysAhead);
     return date.toISOString().split("T")[0];
   } else if (distribution < 18) {
-    // 25% due next month
     const daysAhead = randomInt(15, 45);
     const date = new Date(today);
     date.setDate(date.getDate() + daysAhead);
     return date.toISOString().split("T")[0];
   } else {
-    // 10% no due date
     return null;
   }
 }
@@ -314,16 +308,38 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Fetch team members for assigning tasks
+    // Fetch team members for assigning tasks - include is_primary_adviser
     const { data: teamMembers } = await supabase
       .from("team_members")
-      .select("name, team_name, jurisdiction")
+      .select("name, team_name, jurisdiction, is_primary_adviser")
       .eq("user_id", userId)
       .eq("is_active", true);
 
-    const memberNames = teamMembers?.map((m: any) => m.name) || [];
+    const allMembers = teamMembers || [];
+    const primaryMembers = allMembers.filter((m: any) => m.is_primary_adviser);
+    const assistantMembers = allMembers.filter((m: any) => !m.is_primary_adviser);
 
-    console.log(`Found ${clients.length} clients, ${memberNames.length} team members for task distribution`);
+    console.log(`Found ${clients.length} clients, ${allMembers.length} team members (${primaryMembers.length} advisers, ${assistantMembers.length} assistants)`);
+
+    // Delete existing tasks for idempotent re-seeding
+    // First delete task_clients links, then tasks
+    const { error: deleteLinksError } = await supabase
+      .from("task_clients")
+      .delete()
+      .eq("user_id", userId);
+    if (deleteLinksError) {
+      console.error("Error deleting task_clients:", deleteLinksError);
+    }
+
+    const { error: deleteTasksError } = await supabase
+      .from("tasks")
+      .delete()
+      .eq("user_id", userId);
+    if (deleteTasksError) {
+      console.error("Error deleting tasks:", deleteTasksError);
+    }
+
+    console.log("Cleared existing tasks for re-seeding");
 
     // Generate 500 tasks
     const tasks = [];
@@ -349,10 +365,19 @@ Deno.serve(async (req) => {
       const dueDate = generateDueDate(i);
       const clientId = clients[i % clients.length].id;
 
-      // Assign to a team member name if available
-      const assignedToName = memberNames.length > 0
-        ? memberNames[i % memberNames.length]
-        : null;
+      // Assign to a team member - 60% to advisers, 40% to assistants
+      let assignedToName: string;
+      if (allMembers.length === 0) {
+        assignedToName = "Unassigned";
+      } else if (primaryMembers.length > 0 && assistantMembers.length > 0) {
+        if (Math.random() < 0.6) {
+          assignedToName = randomFromArray(primaryMembers).name;
+        } else {
+          assignedToName = randomFromArray(assistantMembers).name;
+        }
+      } else {
+        assignedToName = randomFromArray(allMembers).name;
+      }
 
       const task: any = {
         user_id: userId,
@@ -408,7 +433,6 @@ Deno.serve(async (req) => {
     const taskClientLinks = [];
 
     for (const taskId of multiClientTasks) {
-      // Add 1-2 additional clients to each task
       const additionalClients = randomInt(1, 2);
       const usedClientIds = new Set<string>();
 
@@ -434,7 +458,6 @@ Deno.serve(async (req) => {
 
       if (linkError) {
         console.error("Task clients link error:", linkError);
-        // Don't throw, just log - main tasks are already created
       } else {
         console.log(`Created ${taskClientLinks.length} multi-client links`);
       }
@@ -445,6 +468,7 @@ Deno.serve(async (req) => {
       total_tasks_created: totalInserted,
       clients_used: clients.length,
       multi_client_links: taskClientLinks.length,
+      team_members_used: allMembers.length,
       distribution: {
         by_status: {
           "Not Started": tasks.filter((t) => t.status === "Not Started").length,
@@ -468,6 +492,7 @@ Deno.serve(async (req) => {
           "Onboarding": tasks.filter((t) => t.task_type === "Onboarding").length,
           "Document Request": tasks.filter((t) => t.task_type === "Document Request").length,
         },
+        assigned_null_count: tasks.filter((t) => !t.assigned_to_name || t.assigned_to_name === "Unassigned").length,
         overdue: tasks.filter((t) => t.due_date && new Date(t.due_date) < new Date()).length,
         pinned: tasks.filter((t) => t.is_pinned).length,
       },

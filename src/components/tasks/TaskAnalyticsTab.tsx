@@ -35,13 +35,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Download, Users, ListTodo, CalendarIcon, ChevronRight, Filter, X, Save, BookmarkCheck, Trash2, ChevronsUpDown, ChevronsDownUp } from "lucide-react";
+import { Download, Users, ListTodo, CalendarIcon, ChevronRight, X, Save, BookmarkCheck, Trash2, ChevronsUpDown, ChevronsDownUp } from "lucide-react";
 
 import { EnhancedTask, TaskFilters } from "@/hooks/useTasksEnhanced";
 import { useTeamMembers } from "@/hooks/useTeamMembers";
 import { useRegion } from "@/contexts/RegionContext";
 import { useSavedTaskFilters } from "@/hooks/useSavedTaskFilters";
-import { MultiSelect } from "@/components/ui/multi-select";
 import { toast } from "sonner";
 import {
   startOfWeek,
@@ -267,13 +266,13 @@ const exportToCsv = (rows: AnalyticsRow[], viewLabel: string) => {
   URL.revokeObjectURL(url);
 };
 
-function AnalyticsDataRow({ row, index, onClick }: { row: AnalyticsRow; index: number; onClick: () => void }) {
+function AnalyticsDataRow({ row, index, onClick, indented }: { row: AnalyticsRow; index: number; onClick: () => void; indented?: boolean }) {
   return (
     <TableRow
       className={`cursor-pointer hover:bg-muted/60 border-l-4 border-l-transparent text-sm ${index % 2 === 1 ? "bg-muted/10" : ""}`}
       onClick={onClick}
     >
-      <TableCell className="font-normal">{row.teamName ? <span className="pl-8">{row.label}</span> : row.label}</TableCell>
+      <TableCell className="font-normal">{indented ? <span className="pl-8">{row.label}</span> : row.label}</TableCell>
       <TableCell className="text-center">{row.dueItems || "-"}</TableCell>
       <TableCell className="text-center">
         {row.overdue > 0 ? <Badge variant="destructive" className="text-xs">{row.overdue}</Badge> : "-"}
@@ -324,14 +323,19 @@ function TotalsRow({ totals }: { totals: ReturnType<typeof aggregateRows> }) {
   );
 }
 
-function TeamGroupRow({ teamName, totals, children, open, onToggle }: { teamName: string; totals: ReturnType<typeof aggregateRows>; children: React.ReactNode; open: boolean; onToggle: () => void }) {
+function AdviserGroupRow({ adviserName, totals, children, open, onToggle, onDrillDown }: { adviserName: string; totals: ReturnType<typeof aggregateRows>; children: React.ReactNode; open: boolean; onToggle: () => void; onDrillDown: () => void }) {
   return (
     <>
       <TableRow className="bg-primary/10 dark:bg-primary/20 cursor-pointer hover:bg-primary/15 dark:hover:bg-primary/25 font-semibold border-l-4 border-l-primary" onClick={onToggle}>
         <TableCell>
           <div className="flex items-center gap-2">
             <ChevronRight className={`h-4 w-4 transition-transform ${open ? "rotate-90" : ""}`} />
-            <span className="uppercase tracking-wide text-sm">{teamName}</span>
+            <span
+              className="tracking-wide text-sm hover:underline"
+              onClick={(e) => { e.stopPropagation(); onDrillDown(); }}
+            >
+              {adviserName}
+            </span>
           </div>
         </TableCell>
         <TableCell className="text-center">{totals.dueItems || "-"}</TableCell>
@@ -355,17 +359,15 @@ export function TaskAnalyticsTab({ tasks, onDrillDown }: TaskAnalyticsTabProps) 
   const [datePreset, setDatePreset] = useState<DatePreset>("this_week");
   const [customFrom, setCustomFrom] = useState<Date | undefined>();
   const [customTo, setCustomTo] = useState<Date | undefined>();
-  const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
-  const [expandedTeams, setExpandedTeams] = useState<Set<string>>(new Set());
+  const [expandedAdvisors, setExpandedAdvisors] = useState<Set<string>>(new Set());
   const [expandedInitialized, setExpandedInitialized] = useState(false);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [filterName, setFilterName] = useState("");
   const [savedViewsSearch, setSavedViewsSearch] = useState("");
 
   const { teamMembers } = useTeamMembers();
-  const { selectedRegion, selectedAdvisors } = useRegion();
+  const { selectedRegion, selectedAdvisors, regionalData } = useRegion();
   const { savedFilters, saveFilter, deleteFilter } = useSavedTaskFilters();
-  // Analytics-specific saved filters
   const analyticsSavedFilters = useMemo(
     () => savedFilters.filter((f) => (f.filters as any)?.type === "analytics"),
     [savedFilters]
@@ -376,24 +378,43 @@ export function TaskAnalyticsTab({ tasks, onDrillDown }: TaskAnalyticsTabProps) 
     [analyticsSavedFilters, savedViewsSearch]
   );
 
-  // Filter team members by current jurisdiction
+  // Filter team members by current jurisdiction and selected advisors
   const jurisdictionMembers = useMemo(
     () => teamMembers.filter((m) => m.jurisdiction === selectedRegion && m.advisor_initials && selectedAdvisors.includes(m.advisor_initials)),
     [teamMembers, selectedRegion, selectedAdvisors]
   );
 
-  const teamOptions = useMemo(() => {
-    const names = new Set(jurisdictionMembers.map((m) => m.team_name).filter(Boolean) as string[]);
-    return Array.from(names).sort().map((n) => ({ label: n, value: n }));
-  }, [jurisdictionMembers]);
-
-  const memberTeamMap = useMemo(() => {
-    const map: Record<string, string> = {};
-    jurisdictionMembers.forEach((m) => {
-      if (m.team_name) map[m.name] = m.team_name;
+  // Build adviser groups: key = advisor_initials, value = { adviserName, assistants[] }
+  const adviserGroups = useMemo(() => {
+    const groups: Record<string, { adviserName: string; primaryMemberName: string; assistantNames: string[] }> = {};
+    
+    // Build a map from advisor_initials to adviser display name
+    const advisorNameMap: Record<string, string> = {};
+    regionalData.advisors.forEach((a) => {
+      advisorNameMap[a.initials] = a.name;
     });
-    return map;
-  }, [jurisdictionMembers]);
+
+    jurisdictionMembers.forEach((m) => {
+      const initials = m.advisor_initials;
+      if (!initials) return;
+      
+      if (!groups[initials]) {
+        groups[initials] = {
+          adviserName: advisorNameMap[initials] || initials,
+          primaryMemberName: "",
+          assistantNames: [],
+        };
+      }
+      
+      if (m.is_primary_adviser) {
+        groups[initials].primaryMemberName = m.name;
+      } else {
+        groups[initials].assistantNames.push(m.name);
+      }
+    });
+    
+    return groups;
+  }, [jurisdictionMembers, regionalData.advisors]);
 
   const { periodStart, periodEnd, priorStart, priorEnd, workingDays } = useMemo(() => {
     const { start, end } = getDateRange(datePreset, customFrom, customTo);
@@ -406,47 +427,44 @@ export function TaskAnalyticsTab({ tasks, onDrillDown }: TaskAnalyticsTabProps) 
     };
   }, [datePreset, customFrom, customTo]);
 
-  const filteredTasks = useMemo(() => {
-    if (subView !== "user" || selectedTeams.length === 0) return tasks;
-    const validNames = new Set(
-      jurisdictionMembers
-        .filter((m) => m.team_name && selectedTeams.includes(m.team_name))
-        .map((m) => m.name)
-    );
-    return tasks.filter((t) => t.assigned_to_name && validNames.has(t.assigned_to_name));
-  }, [tasks, subView, selectedTeams, jurisdictionMembers]);
-
   const rows = useMemo(
-    () => computeRows(filteredTasks, subView === "user" ? "assigned_to_name" : "task_type", periodStart, periodEnd, priorStart, priorEnd, workingDays),
-    [filteredTasks, subView, periodStart, periodEnd, priorStart, priorEnd, workingDays]
+    () => computeRows(tasks, subView === "user" ? "assigned_to_name" : "task_type", periodStart, periodEnd, priorStart, priorEnd, workingDays),
+    [tasks, subView, periodStart, periodEnd, priorStart, priorEnd, workingDays]
   );
 
-  const groupedRows = useMemo(() => {
+  // Group rows by adviser initials for the "user" sub-view
+  const groupedByAdviser = useMemo(() => {
     if (subView !== "user") return null;
-    const groups: Record<string, AnalyticsRow[]> = {};
-    rows.forEach((row) => {
-      const team = memberTeamMap[row.label];
-      if (team) {
-        row.teamName = team;
-        if (!groups[team]) groups[team] = [];
-        groups[team].push(row);
-      }
-    });
-    return { groups };
-  }, [rows, subView, memberTeamMap]);
 
-  // Initialize expandedTeams with all team names once grouped rows are available
-  const allTeamNames = useMemo(() => groupedRows ? Object.keys(groupedRows.groups) : [], [groupedRows]);
-  if (!expandedInitialized && allTeamNames.length > 0) {
-    setExpandedTeams(new Set(allTeamNames));
+    // Build a name -> advisor_initials lookup
+    const nameToInitials: Record<string, string> = {};
+    jurisdictionMembers.forEach((m) => {
+      if (m.advisor_initials) nameToInitials[m.name] = m.advisor_initials;
+    });
+
+    const result: Record<string, AnalyticsRow[]> = {};
+    rows.forEach((row) => {
+      const initials = nameToInitials[row.label];
+      if (!initials) return; // skip unmatched (e.g. "Unassigned")
+      if (!result[initials]) result[initials] = [];
+      result[initials].push(row);
+    });
+
+    return result;
+  }, [rows, subView, jurisdictionMembers]);
+
+  // Initialize expanded state with all adviser initials
+  const allAdviserKeys = useMemo(() => groupedByAdviser ? Object.keys(groupedByAdviser) : [], [groupedByAdviser]);
+  if (!expandedInitialized && allAdviserKeys.length > 0) {
+    setExpandedAdvisors(new Set(allAdviserKeys));
     setExpandedInitialized(true);
   }
 
-  const toggleTeam = (teamName: string) => {
-    setExpandedTeams(prev => {
+  const toggleAdviser = (initials: string) => {
+    setExpandedAdvisors(prev => {
       const next = new Set(prev);
-      if (next.has(teamName)) next.delete(teamName);
-      else next.add(teamName);
+      if (next.has(initials)) next.delete(initials);
+      else next.add(initials);
       return next;
     });
   };
@@ -455,8 +473,20 @@ export function TaskAnalyticsTab({ tasks, onDrillDown }: TaskAnalyticsTabProps) 
 
   const handleRowClick = (row: AnalyticsRow) => {
     const filters: TaskFilters = {};
-    if (subView === "type") filters.taskType = [row.filterKey];
+    if (subView === "type") {
+      filters.taskType = [row.filterKey];
+    } else {
+      filters.assignedTo = row.filterKey;
+    }
     onDrillDown(filters);
+  };
+
+  const handleAdviserDrillDown = (adviserInitials: string) => {
+    // Get all member names in this adviser group and filter by assigned names
+    const group = adviserGroups[adviserInitials];
+    if (!group) return;
+    const adviserName = group.primaryMemberName || group.adviserName;
+    onDrillDown({ assignedTo: adviserName });
   };
 
   const groupLabel = subView === "user" ? "Assigned To" : "Task Type";
@@ -466,8 +496,7 @@ export function TaskAnalyticsTab({ tasks, onDrillDown }: TaskAnalyticsTabProps) 
     custom: "Custom Range",
   };
 
-  // Filter active state detection
-  const isDefaultFilters = datePreset === "this_week" && selectedTeams.length === 0;
+  const isDefaultFilters = datePreset === "this_week";
 
   const getDateLabel = () => {
     if (datePreset === "custom" && customFrom && customTo) {
@@ -482,7 +511,6 @@ export function TaskAnalyticsTab({ tasks, onDrillDown }: TaskAnalyticsTabProps) 
     setDatePreset("this_week");
     setCustomFrom(undefined);
     setCustomTo(undefined);
-    setSelectedTeams([]);
   };
 
   const handleSaveFilter = async () => {
@@ -493,7 +521,6 @@ export function TaskAnalyticsTab({ tasks, onDrillDown }: TaskAnalyticsTabProps) 
       datePreset,
       customFrom: customFrom?.toISOString(),
       customTo: customTo?.toISOString(),
-      selectedTeams,
     };
     await saveFilter(filterName.trim(), payload);
     setFilterName("");
@@ -506,13 +533,9 @@ export function TaskAnalyticsTab({ tasks, onDrillDown }: TaskAnalyticsTabProps) 
     if (f.datePreset) setDatePreset(f.datePreset);
     setCustomFrom(f.customFrom ? new Date(f.customFrom) : undefined);
     setCustomTo(f.customTo ? new Date(f.customTo) : undefined);
-    setSelectedTeams(f.selectedTeams || []);
   };
 
   const dateLabel = getDateLabel();
-
-
-
 
   return (
     <div className="p-6 space-y-4">
@@ -562,16 +585,6 @@ export function TaskAnalyticsTab({ tasks, onDrillDown }: TaskAnalyticsTabProps) 
                 </PopoverContent>
               </Popover>
             </div>
-          )}
-
-          {subView === "user" && teamOptions.length > 0 && (
-            <MultiSelect
-              options={teamOptions}
-              onChange={setSelectedTeams}
-              selected={selectedTeams}
-              placeholder="Filter by team..."
-              className="w-[220px]"
-            />
           )}
 
           {analyticsSavedFilters.length > 0 && (
@@ -631,14 +644,6 @@ export function TaskAnalyticsTab({ tasks, onDrillDown }: TaskAnalyticsTabProps) 
               </button>
             </Badge>
           )}
-          {selectedTeams.map((team) => (
-            <Badge key={team} variant="secondary" className="gap-1 text-xs">
-              {team}
-              <button onClick={() => setSelectedTeams((prev) => prev.filter((t) => t !== team))}>
-                <X className="h-3 w-3" />
-              </button>
-            </Badge>
-          ))}
           <button onClick={resetFilters} className="text-xs text-primary hover:underline ml-1">Reset Filters</button>
           <span className="text-muted-foreground">|</span>
           <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={() => setSaveDialogOpen(true)}>
@@ -674,12 +679,12 @@ export function TaskAnalyticsTab({ tasks, onDrillDown }: TaskAnalyticsTabProps) 
           <CardTitle className="text-base flex items-center justify-between">
             <span>Task Analytics — {subView === "user" ? "By User" : "By Task Type"}</span>
             <div className="flex items-center gap-2">
-              {subView === "user" && groupedRows && Object.keys(groupedRows.groups).length > 0 && (
+              {subView === "user" && groupedByAdviser && Object.keys(groupedByAdviser).length > 0 && (
                 <>
-                  <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={() => setExpandedTeams(new Set(Object.keys(groupedRows.groups)))}>
+                  <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={() => setExpandedAdvisors(new Set(Object.keys(groupedByAdviser)))}>
                     <ChevronsUpDown className="h-3.5 w-3.5" />Expand All
                   </Button>
-                  <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={() => setExpandedTeams(new Set())}>
+                  <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={() => setExpandedAdvisors(new Set())}>
                     <ChevronsDownUp className="h-3.5 w-3.5" />Collapse All
                   </Button>
                 </>
@@ -717,18 +722,34 @@ export function TaskAnalyticsTab({ tasks, onDrillDown }: TaskAnalyticsTabProps) 
                   </TableRow>
                 ) : (
                   <>
-                    {subView === "user" && groupedRows ? (
+                    {subView === "user" && groupedByAdviser ? (
                       <>
-                        {Object.entries(groupedRows.groups)
-                          .sort(([a], [b]) => a.localeCompare(b))
-                          .map(([teamName, teamRows]) => {
-                            const teamTotals = aggregateRows(teamRows);
+                        {Object.entries(adviserGroups)
+                          .sort(([, a], [, b]) => a.adviserName.localeCompare(b.adviserName))
+                          .map(([initials, group]) => {
+                            const adviserRows = groupedByAdviser[initials] || [];
+                            if (adviserRows.length === 0) return null;
+                            
+                            // Separate primary adviser row from assistant rows
+                            const primaryRow = adviserRows.find(r => r.label === group.primaryMemberName);
+                            const assistantRows = adviserRows.filter(r => r.label !== group.primaryMemberName);
+                            
+                            // Totals for the adviser header include all members
+                            const adviserTotals = aggregateRows(adviserRows);
+                            
                             return (
-                              <TeamGroupRow key={teamName} teamName={teamName} totals={teamTotals} open={expandedTeams.has(teamName)} onToggle={() => toggleTeam(teamName)}>
-                                {teamRows.map((row, i) => (
-                                  <AnalyticsDataRow key={row.label} row={row} index={i} onClick={() => handleRowClick(row)} />
+                              <AdviserGroupRow
+                                key={initials}
+                                adviserName={group.adviserName}
+                                totals={adviserTotals}
+                                open={expandedAdvisors.has(initials)}
+                                onToggle={() => toggleAdviser(initials)}
+                                onDrillDown={() => handleAdviserDrillDown(initials)}
+                              >
+                                {assistantRows.map((row, i) => (
+                                  <AnalyticsDataRow key={row.label} row={row} index={i} indented onClick={() => handleRowClick(row)} />
                                 ))}
-                              </TeamGroupRow>
+                              </AdviserGroupRow>
                             );
                           })}
                       </>
