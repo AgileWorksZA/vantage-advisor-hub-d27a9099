@@ -3812,6 +3812,7 @@ export type Database = {
       }
       team_members: {
         Row: {
+          advisor_initials: string | null
           created_at: string
           email: string
           id: string
@@ -3825,6 +3826,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          advisor_initials?: string | null
           created_at?: string
           email: string
           id?: string
@@ -3838,6 +3840,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          advisor_initials?: string | null
           created_at?: string
           email?: string
           id?: string

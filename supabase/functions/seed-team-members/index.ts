@@ -6,19 +6,17 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-interface TeamMemberSeed {
-  name: string;
-  email: string;
-  role: string;
-  is_primary_adviser: boolean;
-  team_name: string;
-  jurisdiction: string;
+interface TeamConfig {
+  teamName: string;
+  advisorInitials: string;
+  members: Array<{ name: string; role: string; isPrimary: boolean }>;
 }
 
-const teamData: Record<string, Array<{ teamName: string; members: Array<{ name: string; role: string; isPrimary: boolean }> }>> = {
+const teamData: Record<string, TeamConfig[]> = {
   ZA: [
     {
       teamName: "Jordaan Financial Planning",
+      advisorInitials: "JB",
       members: [
         { name: "Johan Botha", role: "Financial Adviser", isPrimary: true },
         { name: "Anele Mkhize", role: "Paraplanner", isPrimary: false },
@@ -27,6 +25,7 @@ const teamData: Record<string, Array<{ teamName: string; members: Array<{ name: 
     },
     {
       teamName: "Mostert Advisory",
+      advisorInitials: "SM",
       members: [
         { name: "Sarah Mostert", role: "Financial Adviser", isPrimary: true },
         { name: "Thabo Mokoena", role: "Assistant", isPrimary: false },
@@ -35,6 +34,7 @@ const teamData: Record<string, Array<{ teamName: string; members: Array<{ name: 
     },
     {
       teamName: "Van der Merwe Wealth",
+      advisorInitials: "PN",
       members: [
         { name: "Pieter van der Merwe", role: "Financial Adviser", isPrimary: true },
         { name: "Nomsa Khumalo", role: "Administrator", isPrimary: false },
@@ -43,6 +43,7 @@ const teamData: Record<string, Array<{ teamName: string; members: Array<{ name: 
     },
     {
       teamName: "Naidoo Financial Services",
+      advisorInitials: "LV",
       members: [
         { name: "Priya Naidoo", role: "Financial Adviser", isPrimary: true },
         { name: "Sipho Ndlovu", role: "Assistant", isPrimary: false },
@@ -50,6 +51,7 @@ const teamData: Record<string, Array<{ teamName: string; members: Array<{ name: 
     },
     {
       teamName: "Pretorius Practice",
+      advisorInitials: "DG",
       members: [
         { name: "Hendrik Pretorius", role: "Financial Adviser", isPrimary: true },
         { name: "Fatima Aboobaker", role: "Paraplanner", isPrimary: false },
@@ -60,6 +62,7 @@ const teamData: Record<string, Array<{ teamName: string; members: Array<{ name: 
   AU: [
     {
       teamName: "Mitchell Financial Group",
+      advisorInitials: "JM",
       members: [
         { name: "James Mitchell", role: "Financial Adviser", isPrimary: true },
         { name: "Sophie Chen", role: "Paraplanner", isPrimary: false },
@@ -68,6 +71,7 @@ const teamData: Record<string, Array<{ teamName: string; members: Array<{ name: 
     },
     {
       teamName: "Thompson Wealth Advisory",
+      advisorInitials: "ST",
       members: [
         { name: "Emma Thompson", role: "Financial Adviser", isPrimary: true },
         { name: "Liam Nguyen", role: "Assistant", isPrimary: false },
@@ -76,6 +80,7 @@ const teamData: Record<string, Array<{ teamName: string; members: Array<{ name: 
     },
     {
       teamName: "O'Brien & Associates",
+      advisorInitials: "MO",
       members: [
         { name: "Michael O'Brien", role: "Financial Adviser", isPrimary: true },
         { name: "Priya Sharma", role: "Administrator", isPrimary: false },
@@ -83,6 +88,7 @@ const teamData: Record<string, Array<{ teamName: string; members: Array<{ name: 
     },
     {
       teamName: "Clarke Financial Planning",
+      advisorInitials: "EA",
       members: [
         { name: "Sarah Clarke", role: "Financial Adviser", isPrimary: true },
         { name: "Daniel Kim", role: "Paraplanner", isPrimary: false },
@@ -91,6 +97,7 @@ const teamData: Record<string, Array<{ teamName: string; members: Array<{ name: 
     },
     {
       teamName: "Williams Advisory",
+      advisorInitials: "TM",
       members: [
         { name: "David Williams", role: "Financial Adviser", isPrimary: true },
         { name: "Mia Anderson", role: "Paraplanner", isPrimary: false },
@@ -100,6 +107,7 @@ const teamData: Record<string, Array<{ teamName: string; members: Array<{ name: 
   CA: [
     {
       teamName: "Tremblay Wealth Management",
+      advisorInitials: "PT",
       members: [
         { name: "Marc Tremblay", role: "Financial Adviser", isPrimary: true },
         { name: "Anika Singh", role: "Paraplanner", isPrimary: false },
@@ -108,6 +116,7 @@ const teamData: Record<string, Array<{ teamName: string; members: Array<{ name: 
     },
     {
       teamName: "Campbell Financial",
+      advisorInitials: "MB",
       members: [
         { name: "Laura Campbell", role: "Financial Adviser", isPrimary: true },
         { name: "Wei Zhang", role: "Assistant", isPrimary: false },
@@ -116,6 +125,7 @@ const teamData: Record<string, Array<{ teamName: string; members: Array<{ name: 
     },
     {
       teamName: "Roy & Partners",
+      advisorInitials: "JM",
       members: [
         { name: "Philippe Roy", role: "Financial Adviser", isPrimary: true },
         { name: "Jennifer Lee", role: "Administrator", isPrimary: false },
@@ -123,6 +133,7 @@ const teamData: Record<string, Array<{ teamName: string; members: Array<{ name: 
     },
     {
       teamName: "MacLeod Advisory Group",
+      advisorInitials: "SG",
       members: [
         { name: "Duncan MacLeod", role: "Financial Adviser", isPrimary: true },
         { name: "Harpreet Kaur", role: "Paraplanner", isPrimary: false },
@@ -131,6 +142,7 @@ const teamData: Record<string, Array<{ teamName: string; members: Array<{ name: 
     },
     {
       teamName: "Chen Financial Services",
+      advisorInitials: "RS",
       members: [
         { name: "Michael Chen", role: "Financial Adviser", isPrimary: true },
         { name: "Samantha Brown", role: "Paraplanner", isPrimary: false },
@@ -140,6 +152,7 @@ const teamData: Record<string, Array<{ teamName: string; members: Array<{ name: 
   GB: [
     {
       teamName: "Harrison Wealth Partners",
+      advisorInitials: "WS",
       members: [
         { name: "Oliver Harrison", role: "Financial Adviser", isPrimary: true },
         { name: "Amara Okafor", role: "Paraplanner", isPrimary: false },
@@ -148,6 +161,7 @@ const teamData: Record<string, Array<{ teamName: string; members: Array<{ name: 
     },
     {
       teamName: "Taylor Financial Planning",
+      advisorInitials: "EJ",
       members: [
         { name: "Emily Taylor", role: "Financial Adviser", isPrimary: true },
         { name: "Raj Patel", role: "Assistant", isPrimary: false },
@@ -156,6 +170,7 @@ const teamData: Record<string, Array<{ teamName: string; members: Array<{ name: 
     },
     {
       teamName: "Blackwood Advisory",
+      advisorInitials: "TW",
       members: [
         { name: "Thomas Blackwood", role: "Financial Adviser", isPrimary: true },
         { name: "Fatima Khan", role: "Administrator", isPrimary: false },
@@ -163,6 +178,7 @@ const teamData: Record<string, Array<{ teamName: string; members: Array<{ name: 
     },
     {
       teamName: "Stewart Wealth Management",
+      advisorInitials: "VB",
       members: [
         { name: "Fiona Stewart", role: "Financial Adviser", isPrimary: true },
         { name: "George Abbott", role: "Paraplanner", isPrimary: false },
@@ -171,6 +187,7 @@ const teamData: Record<string, Array<{ teamName: string; members: Array<{ name: 
     },
     {
       teamName: "Davies & Co",
+      advisorInitials: "JT",
       members: [
         { name: "Rhys Davies", role: "Financial Adviser", isPrimary: true },
         { name: "Hannah Brooks", role: "Paraplanner", isPrimary: false },
@@ -180,6 +197,7 @@ const teamData: Record<string, Array<{ teamName: string; members: Array<{ name: 
   US: [
     {
       teamName: "Johnson Wealth Advisors",
+      advisorInitials: "MJ",
       members: [
         { name: "Robert Johnson", role: "Financial Adviser", isPrimary: true },
         { name: "Maria Garcia", role: "Paraplanner", isPrimary: false },
@@ -188,6 +206,7 @@ const teamData: Record<string, Array<{ teamName: string; members: Array<{ name: 
     },
     {
       teamName: "Martinez Financial Group",
+      advisorInitials: "JW",
       members: [
         { name: "Isabella Martinez", role: "Financial Adviser", isPrimary: true },
         { name: "Kevin Nguyen", role: "Assistant", isPrimary: false },
@@ -196,6 +215,7 @@ const teamData: Record<string, Array<{ teamName: string; members: Array<{ name: 
     },
     {
       teamName: "Anderson Advisory",
+      advisorInitials: "RB",
       members: [
         { name: "Brian Anderson", role: "Financial Adviser", isPrimary: true },
         { name: "Priya Desai", role: "Administrator", isPrimary: false },
@@ -203,6 +223,7 @@ const teamData: Record<string, Array<{ teamName: string; members: Array<{ name: 
     },
     {
       teamName: "Wilson Planning Group",
+      advisorInitials: "MG",
       members: [
         { name: "Catherine Wilson", role: "Financial Adviser", isPrimary: true },
         { name: "Marcus Brown", role: "Paraplanner", isPrimary: false },
@@ -211,6 +232,7 @@ const teamData: Record<string, Array<{ teamName: string; members: Array<{ name: 
     },
     {
       teamName: "Rodriguez & Associates",
+      advisorInitials: "WD",
       members: [
         { name: "Carlos Rodriguez", role: "Financial Adviser", isPrimary: true },
         { name: "Sarah O'Connor", role: "Paraplanner", isPrimary: false },
@@ -240,10 +262,8 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Use service role to bypass RLS for seeding
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Verify the calling user
     const supabaseAuth = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -257,7 +277,6 @@ Deno.serve(async (req) => {
     }
     const userId = claimsData.claims.sub;
 
-    // Delete existing team members for this user (idempotent)
     const { error: deleteError } = await supabase
       .from("team_members")
       .delete()
@@ -267,7 +286,6 @@ Deno.serve(async (req) => {
       console.error("Delete error:", deleteError);
     }
 
-    // Build all team members
     const allMembers: any[] = [];
     for (const [jurisdiction, teams] of Object.entries(teamData)) {
       for (const team of teams) {
@@ -281,12 +299,12 @@ Deno.serve(async (req) => {
             is_active: true,
             team_name: team.teamName,
             jurisdiction,
+            advisor_initials: team.advisorInitials,
           });
         }
       }
     }
 
-    // Insert in batches
     const BATCH_SIZE = 50;
     let totalInserted = 0;
     for (let i = 0; i < allMembers.length; i += BATCH_SIZE) {

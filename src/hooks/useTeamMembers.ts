@@ -12,6 +12,7 @@ export interface TeamMember {
   is_active: boolean;
   team_name: string | null;
   jurisdiction: string | null;
+  advisor_initials: string | null;
   created_at: string;
   updated_at: string;
 }
