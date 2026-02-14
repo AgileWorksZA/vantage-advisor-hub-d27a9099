@@ -363,7 +363,7 @@ export function TaskAnalyticsTab({ tasks, onDrillDown }: TaskAnalyticsTabProps) 
   const [savedViewsSearch, setSavedViewsSearch] = useState("");
 
   const { teamMembers } = useTeamMembers();
-  const { selectedRegion } = useRegion();
+  const { selectedRegion, selectedAdvisors } = useRegion();
   const { savedFilters, saveFilter, deleteFilter } = useSavedTaskFilters();
   // Analytics-specific saved filters
   const analyticsSavedFilters = useMemo(
@@ -378,8 +378,8 @@ export function TaskAnalyticsTab({ tasks, onDrillDown }: TaskAnalyticsTabProps) 
 
   // Filter team members by current jurisdiction
   const jurisdictionMembers = useMemo(
-    () => teamMembers.filter((m) => m.jurisdiction === selectedRegion),
-    [teamMembers, selectedRegion]
+    () => teamMembers.filter((m) => m.jurisdiction === selectedRegion && m.advisor_initials && selectedAdvisors.includes(m.advisor_initials)),
+    [teamMembers, selectedRegion, selectedAdvisors]
   );
 
   const teamOptions = useMemo(() => {
@@ -424,18 +424,15 @@ export function TaskAnalyticsTab({ tasks, onDrillDown }: TaskAnalyticsTabProps) 
   const groupedRows = useMemo(() => {
     if (subView !== "user") return null;
     const groups: Record<string, AnalyticsRow[]> = {};
-    const ungrouped: AnalyticsRow[] = [];
     rows.forEach((row) => {
       const team = memberTeamMap[row.label];
       if (team) {
         row.teamName = team;
         if (!groups[team]) groups[team] = [];
         groups[team].push(row);
-      } else {
-        ungrouped.push(row);
       }
     });
-    return { groups, ungrouped };
+    return { groups };
   }, [rows, subView, memberTeamMap]);
 
   // Initialize expandedTeams with all team names once grouped rows are available
@@ -734,9 +731,6 @@ export function TaskAnalyticsTab({ tasks, onDrillDown }: TaskAnalyticsTabProps) 
                               </TeamGroupRow>
                             );
                           })}
-                        {groupedRows.ungrouped.map((row, i) => (
-                          <AnalyticsDataRow key={row.label} row={row} index={i} onClick={() => handleRowClick(row)} />
-                        ))}
                       </>
                     ) : (
                       rows.map((row, i) => (
