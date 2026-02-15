@@ -138,6 +138,7 @@ export function TaskTable({
             <TableHead>Status</TableHead>
             <TableHead>Due Date</TableHead>
             <TableHead>SLA</TableHead>
+            <TableHead>Utilisation</TableHead>
             <TableHead className="w-[50px]"></TableHead>
           </TableRow>
         </TableHeader>
@@ -219,6 +220,17 @@ export function TaskTable({
                     >
                       {slaBreached ? "Breached" : "On Track"}
                     </Badge>
+                  ) : (
+                    "—"
+                  )}
+                </TableCell>
+                <TableCell>
+                  {task.standard_execution_minutes ? (
+                    <span className="text-sm">
+                      {task.standard_execution_minutes >= 60
+                        ? `${Math.floor(task.standard_execution_minutes / 60)}h ${task.standard_execution_minutes % 60 ? `${task.standard_execution_minutes % 60}m` : ""}`
+                        : `${task.standard_execution_minutes}m`}
+                    </span>
                   ) : (
                     "—"
                   )}

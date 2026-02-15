@@ -267,27 +267,26 @@ const exportToCsv = (rows: AnalyticsRow[], viewLabel: string) => {
   URL.revokeObjectURL(url);
 };
 
-function AnalyticsDataRow({ row, index, onClick, indented }: { row: AnalyticsRow; index: number; onClick: () => void; indented?: boolean }) {
+function AnalyticsDataRow({ row, index, onCellClick, indented }: { row: AnalyticsRow; index: number; onCellClick: (column: string) => void; indented?: boolean }) {
   return (
     <TableRow
       className={`cursor-pointer hover:bg-muted/60 border-l-4 border-l-transparent text-sm ${index % 2 === 1 ? "bg-muted/10" : ""}`}
-      onClick={onClick}
     >
-      <TableCell className="font-normal">{indented ? <span className="pl-8">{row.label}</span> : row.label}</TableCell>
-      <TableCell className="text-center">{row.dueItems || "-"}</TableCell>
-      <TableCell className="text-center">
+      <TableCell className="font-normal" onClick={() => onCellClick("all")}>{indented ? <span className="pl-8">{row.label}</span> : row.label}</TableCell>
+      <TableCell className="text-center cursor-pointer hover:underline" onClick={() => onCellClick("dueItems")}>{row.dueItems || "-"}</TableCell>
+      <TableCell className="text-center cursor-pointer hover:underline" onClick={() => onCellClick("overdue")}>
         {row.overdue > 0 ? <Badge variant="destructive" className="text-xs">{row.overdue}</Badge> : "-"}
       </TableCell>
-      <TableCell className="text-center">
+      <TableCell className="text-center cursor-pointer hover:underline" onClick={() => onCellClick("dueToday")}>
         {row.dueToday > 0 ? <Badge className="bg-yellow-500/20 text-yellow-700 dark:text-yellow-300 border-yellow-500/30 text-xs">{row.dueToday}</Badge> : "-"}
       </TableCell>
-      <TableCell className="text-center">{row.dueTomorrow || "-"}</TableCell>
-      <TableCell className="text-center">{row.dueThisWeek || "-"}</TableCell>
-      <TableCell className="text-center">{row.dueNextWeek || "-"}</TableCell>
-      <TableCell className="text-center">
+      <TableCell className="text-center cursor-pointer hover:underline" onClick={() => onCellClick("dueTomorrow")}>{row.dueTomorrow || "-"}</TableCell>
+      <TableCell className="text-center cursor-pointer hover:underline" onClick={() => onCellClick("dueThisWeek")}>{row.dueThisWeek || "-"}</TableCell>
+      <TableCell className="text-center cursor-pointer hover:underline" onClick={() => onCellClick("dueNextWeek")}>{row.dueNextWeek || "-"}</TableCell>
+      <TableCell className="text-center cursor-pointer hover:underline" onClick={() => onCellClick("completedInPeriod")}>
         {row.completedInPeriod > 0 ? <Badge className="bg-green-500/20 text-green-700 dark:text-green-300 border-green-500/30 text-xs">{row.completedInPeriod}</Badge> : "-"}
       </TableCell>
-      <TableCell className="text-center">{row.completedPriorPeriod || "-"}</TableCell>
+      <TableCell className="text-center cursor-pointer hover:underline" onClick={() => onCellClick("completedPriorPeriod")}>{row.completedPriorPeriod || "-"}</TableCell>
       <TableCell className="text-center">{row.utilisationPct !== null ? `${row.utilisationPct}%` : "-"}</TableCell>
       <TableCell className="text-center">
         {row.slaPct !== null ? (
@@ -324,29 +323,29 @@ function TotalsRow({ totals }: { totals: ReturnType<typeof aggregateRows> }) {
   );
 }
 
-function AdviserGroupRow({ adviserName, totals, children, open, onToggle, onDrillDown }: { adviserName: string; totals: ReturnType<typeof aggregateRows>; children: React.ReactNode; open: boolean; onToggle: () => void; onDrillDown: () => void }) {
+function AdviserGroupRow({ adviserName, totals, children, open, onToggle, onCellClick }: { adviserName: string; totals: ReturnType<typeof aggregateRows>; children: React.ReactNode; open: boolean; onToggle: () => void; onCellClick: (column: string) => void }) {
   return (
     <>
-      <TableRow className="bg-primary/10 dark:bg-primary/20 cursor-pointer hover:bg-primary/15 dark:hover:bg-primary/25 font-semibold border-l-4 border-l-primary" onClick={onToggle}>
-        <TableCell>
+      <TableRow className="bg-primary/10 dark:bg-primary/20 cursor-pointer hover:bg-primary/15 dark:hover:bg-primary/25 font-semibold border-l-4 border-l-primary">
+        <TableCell onClick={onToggle}>
           <div className="flex items-center gap-2">
             <ChevronRight className={`h-4 w-4 transition-transform ${open ? "rotate-90" : ""}`} />
             <span
               className="tracking-wide text-sm hover:underline"
-              onClick={(e) => { e.stopPropagation(); onDrillDown(); }}
+              onClick={(e) => { e.stopPropagation(); onCellClick("all"); }}
             >
               {adviserName}
             </span>
           </div>
         </TableCell>
-        <TableCell className="text-center">{totals.dueItems || "-"}</TableCell>
-        <TableCell className="text-center">{totals.overdue ? <Badge variant="destructive" className="text-xs">{totals.overdue}</Badge> : "-"}</TableCell>
-        <TableCell className="text-center">{totals.dueToday || "-"}</TableCell>
-        <TableCell className="text-center">{totals.dueTomorrow || "-"}</TableCell>
-        <TableCell className="text-center">{totals.dueThisWeek || "-"}</TableCell>
-        <TableCell className="text-center">{totals.dueNextWeek || "-"}</TableCell>
-        <TableCell className="text-center">{totals.completedInPeriod || "-"}</TableCell>
-        <TableCell className="text-center">{totals.completedPriorPeriod || "-"}</TableCell>
+        <TableCell className="text-center cursor-pointer hover:underline" onClick={() => onCellClick("dueItems")}>{totals.dueItems || "-"}</TableCell>
+        <TableCell className="text-center cursor-pointer hover:underline" onClick={() => onCellClick("overdue")}>{totals.overdue ? <Badge variant="destructive" className="text-xs">{totals.overdue}</Badge> : "-"}</TableCell>
+        <TableCell className="text-center cursor-pointer hover:underline" onClick={() => onCellClick("dueToday")}>{totals.dueToday || "-"}</TableCell>
+        <TableCell className="text-center cursor-pointer hover:underline" onClick={() => onCellClick("dueTomorrow")}>{totals.dueTomorrow || "-"}</TableCell>
+        <TableCell className="text-center cursor-pointer hover:underline" onClick={() => onCellClick("dueThisWeek")}>{totals.dueThisWeek || "-"}</TableCell>
+        <TableCell className="text-center cursor-pointer hover:underline" onClick={() => onCellClick("dueNextWeek")}>{totals.dueNextWeek || "-"}</TableCell>
+        <TableCell className="text-center cursor-pointer hover:underline" onClick={() => onCellClick("completedInPeriod")}>{totals.completedInPeriod || "-"}</TableCell>
+        <TableCell className="text-center cursor-pointer hover:underline" onClick={() => onCellClick("completedPriorPeriod")}>{totals.completedPriorPeriod || "-"}</TableCell>
         <TableCell className="text-center">-</TableCell>
         <TableCell className="text-center">-</TableCell>
       </TableRow>
@@ -475,8 +474,42 @@ export function TaskAnalyticsTab({ tasks, onDrillDown }: TaskAnalyticsTabProps) 
 
   const totals = useMemo(() => aggregateRows(rows), [rows]);
 
-  const handleRowClick = (row: AnalyticsRow) => {
-    const filters: TaskFilters = {};
+  const buildColumnFilters = (column: string): Partial<TaskFilters> => {
+    const now = new Date();
+    const today = startOfDay(now);
+    const todayStr = format(today, "yyyy-MM-dd");
+    const tomorrow = addDays(today, 1);
+    const tomorrowStr = format(tomorrow, "yyyy-MM-dd");
+    const thisWeekStart = startOfWeek(now, { weekStartsOn: 1 });
+    const thisWeekEnd = endOfWeek(now, { weekStartsOn: 1 });
+    const nextWeekStart = addDays(thisWeekEnd, 1);
+    const nextWeekEnd = endOfWeek(nextWeekStart, { weekStartsOn: 1 });
+    const yesterday = addDays(today, -1);
+
+    switch (column) {
+      case "overdue":
+        return { dueDateTo: format(yesterday, "yyyy-MM-dd"), status: ["Not Started", "In Progress", "Pending Client"] };
+      case "dueToday":
+        return { dueDateFrom: todayStr, dueDateTo: todayStr, status: ["Not Started", "In Progress", "Pending Client"] };
+      case "dueTomorrow":
+        return { dueDateFrom: tomorrowStr, dueDateTo: tomorrowStr, status: ["Not Started", "In Progress", "Pending Client"] };
+      case "dueThisWeek":
+        return { dueDateFrom: format(thisWeekStart, "yyyy-MM-dd"), dueDateTo: format(thisWeekEnd, "yyyy-MM-dd"), status: ["Not Started", "In Progress", "Pending Client"] };
+      case "dueNextWeek":
+        return { dueDateFrom: format(nextWeekStart, "yyyy-MM-dd"), dueDateTo: format(nextWeekEnd, "yyyy-MM-dd"), status: ["Not Started", "In Progress", "Pending Client"] };
+      case "completedInPeriod":
+        return { status: ["Completed"], dueDateFrom: format(periodStart, "yyyy-MM-dd"), dueDateTo: format(periodEnd, "yyyy-MM-dd") };
+      case "completedPriorPeriod":
+        return { status: ["Completed"], dueDateFrom: format(priorStart, "yyyy-MM-dd"), dueDateTo: format(priorEnd, "yyyy-MM-dd") };
+      case "dueItems":
+        return { status: ["Not Started", "In Progress", "Pending Client"] };
+      default:
+        return {};
+    }
+  };
+
+  const handleCellClick = (row: AnalyticsRow, column: string) => {
+    const filters: TaskFilters = { ...buildColumnFilters(column) };
     if (subView === "type") {
       filters.taskType = [row.filterKey];
     } else {
@@ -485,13 +518,8 @@ export function TaskAnalyticsTab({ tasks, onDrillDown }: TaskAnalyticsTabProps) 
     onDrillDown(filters);
   };
 
-  const handleAdviserDrillDown = (adviserInitials: string) => {
-    // Get all member names in this adviser group and filter by assigned names
-    const group = adviserGroups[adviserInitials];
-    if (!group) return;
-    const adviserName = group.primaryMemberName || group.adviserName;
-    onDrillDown({ assignedTo: adviserName });
-  };
+
+
 
   const groupLabel = subView === "user" ? "Assigned To" : "Task Type";
   const presetLabels: Record<DatePreset, string> = {
@@ -748,10 +776,14 @@ export function TaskAnalyticsTab({ tasks, onDrillDown }: TaskAnalyticsTabProps) 
                                 totals={adviserTotals}
                                 open={expandedAdvisors.has(initials)}
                                 onToggle={() => toggleAdviser(initials)}
-                                onDrillDown={() => handleAdviserDrillDown(initials)}
+                                onCellClick={(col) => {
+                                  const adviserName = group.primaryMemberName || group.adviserName;
+                                  const filters: TaskFilters = { ...buildColumnFilters(col), assignedTo: adviserName };
+                                  onDrillDown(filters);
+                                }}
                               >
                                 {assistantRows.map((row, i) => (
-                                  <AnalyticsDataRow key={row.label} row={row} index={i} indented onClick={() => handleRowClick(row)} />
+                                  <AnalyticsDataRow key={row.label} row={row} index={i} indented onCellClick={(col) => handleCellClick(row, col)} />
                                 ))}
                               </AdviserGroupRow>
                             );
@@ -759,7 +791,7 @@ export function TaskAnalyticsTab({ tasks, onDrillDown }: TaskAnalyticsTabProps) 
                       </>
                     ) : (
                       rows.map((row, i) => (
-                        <AnalyticsDataRow key={row.label} row={row} index={i} onClick={() => handleRowClick(row)} />
+                        <AnalyticsDataRow key={row.label} row={row} index={i} onCellClick={(col) => handleCellClick(row, col)} />
                       ))
                     )}
                     <TotalsRow totals={totals} />

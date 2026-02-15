@@ -33,6 +33,7 @@ export interface EnhancedTask {
   actual_hours: number | null;
   category: string | null;
   subcategory: string | null;
+  standard_execution_minutes: number | null;
   created_at: string;
   updated_at: string;
   completed_at: string | null;
