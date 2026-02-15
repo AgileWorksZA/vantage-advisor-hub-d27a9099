@@ -1,74 +1,63 @@
 
 
-## Fix Drill-Down Filtering, Seed Task Type Standards, and Add Standards Management Table
+## Fix Task Dashboard Data: Jurisdiction-Aligned Task Assignment
 
-### Problem Summary
-1. **Drill-down bug**: Clicking a number in the analytics table triggers `"Failed to load tasks"` because the filter passes a person's name (e.g., "Rachel Kim") to `assigned_to_user_id` -- a UUID column. It should filter on `assigned_to_name` instead.
-2. **No SLA/Utilisation standards data**: The `task_type_standards` table exists but is empty, so all Utilisation and SLA columns show "-".
-3. **No UI to manage standards**: There's no table where users can view/edit SLA hours and standard execution minutes per task type.
+### Root Cause
+The task seed function assigns tasks to random team members from ALL jurisdictions, regardless of the client's region. For example, a Johan Botha (ZA) client's task might be assigned to a US or AU team member. This causes the analytics "By User" view to show very low numbers because:
+1. Tasks.tsx filters tasks by `client_advisor` matching the selected region's advisors
+2. The analytics then groups by `assigned_to_name` -- but those names belong to other regions
+3. Result: most tasks fall through the cracks between both filters
 
----
+Additionally, 403 tasks from other seed functions have NULL `assigned_to_name`, diluting the data.
 
-### Changes
+### Solution
 
-#### 1. Fix the drill-down filter bug (`src/hooks/useTasksEnhanced.ts`)
+**Update `supabase/functions/seed-demo-tasks/index.ts`:**
 
-Change line 126 from:
+1. **Fetch clients WITH their advisor field** -- currently only fetches `id`. Change to also select `advisor` so we know which jurisdiction each client belongs to.
+
+2. **Build a client-to-jurisdiction mapping** using the advisor name:
+   - Map each advisor name to their jurisdiction (e.g., "Johan Botha" -> ZA, "James Mitchell" -> AU)
+   - Group team members by jurisdiction
+
+3. **Assign tasks to same-jurisdiction team members** -- when assigning a task for a client, look up the client's jurisdiction via their advisor, then pick a random team member from that same jurisdiction (60% primary, 40% assistant).
+
+4. **Increase total tasks to 750** to guarantee 150 per jurisdiction (5 regions x 150 = 750).
+
+5. **Clean up orphan tasks** -- the delete step already deletes by `user_id`. Also delete tasks from `task_clients` first. Run the seed AFTER other seeders to ensure it's the final state.
+
+### Advisor-to-Jurisdiction Mapping (in seed function)
+
+```text
+ZA: Johan Botha, Sarah Mostert, Pieter Naude, Linda van Wyk, David Greenberg
+AU: James Mitchell, Sarah Thompson, Michael O'Brien, Emily Anderson, Thomas Murphy
+CA: Pierre Tremblay, Marie Bouchard, James MacDonald, Sophie Gagnon, Robert Singh
+GB: William Smith, Elizabeth Jones, Thomas Williams, Victoria Brown, James Taylor
+US: Michael Johnson, Jennifer Williams, Robert Brown, Maria Garcia, William Davis
 ```
-query = query.eq("assigned_to_user_id", filters.assignedTo);
+
+### Data Flow After Fix
+
+```text
+Client (advisor = "Johan Botha") -> Jurisdiction = ZA
+  -> Task assigned to ZA team member (e.g., "Zanele Dlamini" or "Johan Botha")
+  -> Tasks.tsx filters: client_advisor "Johan Botha" matches selectedAdvisorNames -> VISIBLE
+  -> Analytics: assigned_to_name "Zanele Dlamini" matches ZA jurisdictionMembers -> COUNTED
 ```
-to:
-```
-query = query.eq("assigned_to_name", filters.assignedTo);
-```
 
-This ensures clicking a person's name in the analytics table filters tasks by the text `assigned_to_name` column rather than the UUID `assigned_to_user_id` column.
+### Steps
 
-#### 2. Seed task type standards data
+1. Update `seed-demo-tasks/index.ts`:
+   - Fetch clients with `id, advisor` fields
+   - Build advisor-to-jurisdiction lookup table (hardcoded, matching regionalData)
+   - Group team members by jurisdiction
+   - Assign tasks to jurisdiction-matched team members
+   - Increase TOTAL_TASKS from 500 to 750
+2. Deploy and run the updated seed function
+3. Verify dashboard shows 100+ tasks per jurisdiction with all advisors selected
 
-Insert default SLA and utilisation standards for all 7 existing task types into `task_type_standards`. The seed will run via the existing `seed-demo-tasks` edge function (or a new dedicated seed function).
+### Files to Modify
+- `supabase/functions/seed-demo-tasks/index.ts`
 
-| Task Type | Standard Execution (mins) | SLA (hours) |
-|---|---|---|
-| Annual Review | 120 | 168 (7 days) |
-| Portfolio Review | 90 | 120 (5 days) |
-| Client Complaint | 60 | 48 (2 days) |
-| Follow-up | 30 | 72 (3 days) |
-| Compliance | 45 | 96 (4 days) |
-| Onboarding | 180 | 240 (10 days) |
-| Document Request | 20 | 48 (2 days) |
-
-Also update the `seed-demo-tasks` function to:
-- Populate `standard_execution_minutes` on each seeded task (matching its task type)
-- Populate `sla_deadline` on each seeded task (created_at + SLA hours)
-- Re-seed tasks so the 208 NULL `assigned_to_name` tasks get proper assignments
-
-#### 3. Add SLA and Utilisation standards management table (`src/components/tasks/TaskAnalyticsTab.tsx`)
-
-Add a new section below the analytics table (or as a collapsible panel) with an editable table showing:
-- Task Type (read-only)
-- Standard Execution Time (minutes) -- editable
-- SLA Target (hours) -- editable
-- Save button per row
-
-This uses the existing `useTaskTypeStandards` hook which already has `upsertStandard` mutation support.
-
-The table will be rendered inside a Card with a "Task Type Standards" header, visible on the Analytics tab. Each row will have inline-editable number inputs that call `upsertStandard` on change/blur.
-
-#### 4. Wire standards into analytics calculations
-
-Update `computeRows` in `TaskAnalyticsTab.tsx` to use the standards from `useTaskTypeStandards`:
-- For utilisation: use `standard_execution_minutes` from the standards table (currently reads from task-level field which may be 0)
-- For SLA: already computed from `sla_deadline` on each task, which will now be populated by the seed
-
----
-
-### Technical Details
-
-**Files to modify:**
-- `src/hooks/useTasksEnhanced.ts` -- Fix `assignedTo` filter (1 line change)
-- `supabase/functions/seed-demo-tasks/index.ts` -- Add SLA/execution data to seeded tasks, seed `task_type_standards`, fix NULL assignments
-- `src/components/tasks/TaskAnalyticsTab.tsx` -- Add standards management table UI
-
-**No database migration needed** -- the `task_type_standards` table and all required columns already exist.
+No frontend changes needed -- the filtering logic is correct, the data just needs proper jurisdiction alignment.
 
