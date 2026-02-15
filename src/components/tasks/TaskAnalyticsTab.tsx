@@ -35,12 +35,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Download, Users, ListTodo, CalendarIcon, ChevronRight, X, Save, BookmarkCheck, Trash2, ChevronsUpDown, ChevronsDownUp } from "lucide-react";
+import { Download, Users, ListTodo, CalendarIcon, ChevronRight, X, Save, BookmarkCheck, Trash2, ChevronsUpDown, ChevronsDownUp, Settings2 } from "lucide-react";
 
 import { EnhancedTask, TaskFilters } from "@/hooks/useTasksEnhanced";
 import { useTeamMembers } from "@/hooks/useTeamMembers";
 import { useRegion } from "@/contexts/RegionContext";
 import { useSavedTaskFilters } from "@/hooks/useSavedTaskFilters";
+import { useTaskTypeStandards } from "@/hooks/useTaskTypeStandards";
 import { toast } from "sonner";
 import {
   startOfWeek,
@@ -368,6 +369,9 @@ export function TaskAnalyticsTab({ tasks, onDrillDown }: TaskAnalyticsTabProps) 
   const { teamMembers } = useTeamMembers();
   const { selectedRegion, selectedAdvisors, regionalData } = useRegion();
   const { savedFilters, saveFilter, deleteFilter } = useSavedTaskFilters();
+  const { standards, upsertStandard } = useTaskTypeStandards();
+  const [showStandards, setShowStandards] = useState(false);
+  const [editingStandards, setEditingStandards] = useState<Record<string, { mins: number; sla: number }>>({});
   const analyticsSavedFilters = useMemo(
     () => savedFilters.filter((f) => (f.filters as any)?.type === "analytics"),
     [savedFilters]
@@ -765,6 +769,102 @@ export function TaskAnalyticsTab({ tasks, onDrillDown }: TaskAnalyticsTabProps) 
             </Table>
           </div>
         </CardContent>
+      </Card>
+
+      {/* Task Type Standards Management */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center justify-between">
+            <span className="flex items-center gap-2">
+              <Settings2 className="h-4 w-4" />
+              Task Type Standards
+            </span>
+            <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setShowStandards(!showStandards)}>
+              {showStandards ? "Hide" : "Show"}
+            </Button>
+          </CardTitle>
+        </CardHeader>
+        {showStandards && (
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/50">
+                    <TableHead className="font-semibold min-w-[180px]">Task Type</TableHead>
+                    <TableHead className="text-center font-semibold min-w-[160px]">Standard Execution (mins)</TableHead>
+                    <TableHead className="text-center font-semibold min-w-[140px]">SLA Target (hours)</TableHead>
+                    <TableHead className="text-center font-semibold min-w-[80px]">Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {["Annual Review", "Portfolio Review", "Client Complaint", "Follow-up", "Compliance", "Onboarding", "Document Request"].map((taskType) => {
+                    const existing = standards.find((s) => s.task_type === taskType);
+                    const editing = editingStandards[taskType];
+                    const mins = editing?.mins ?? existing?.standard_execution_minutes ?? 0;
+                    const sla = editing?.sla ?? existing?.sla_hours ?? 0;
+
+                    return (
+                      <TableRow key={taskType}>
+                        <TableCell className="font-medium">{taskType}</TableCell>
+                        <TableCell className="text-center">
+                          <Input
+                            type="number"
+                            className="w-24 mx-auto text-center h-8"
+                            value={mins}
+                            onChange={(e) =>
+                              setEditingStandards((prev) => ({
+                                ...prev,
+                                [taskType]: { mins: Number(e.target.value), sla: prev[taskType]?.sla ?? sla },
+                              }))
+                            }
+                          />
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Input
+                            type="number"
+                            className="w-24 mx-auto text-center h-8"
+                            value={sla}
+                            onChange={(e) =>
+                              setEditingStandards((prev) => ({
+                                ...prev,
+                                [taskType]: { mins: prev[taskType]?.mins ?? mins, sla: Number(e.target.value) },
+                              }))
+                            }
+                          />
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 text-xs"
+                            disabled={!editing}
+                            onClick={() => {
+                              upsertStandard.mutate(
+                                { task_type: taskType, standard_execution_minutes: editing.mins, sla_hours: editing.sla },
+                                {
+                                  onSuccess: () => {
+                                    toast.success(`${taskType} standards updated`);
+                                    setEditingStandards((prev) => {
+                                      const next = { ...prev };
+                                      delete next[taskType];
+                                      return next;
+                                    });
+                                  },
+                                }
+                              );
+                            }}
+                          >
+                            <Save className="h-3 w-3 mr-1" />Save
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        )}
       </Card>
     </div>
   );

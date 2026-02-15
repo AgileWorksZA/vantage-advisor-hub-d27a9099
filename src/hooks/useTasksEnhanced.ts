@@ -123,7 +123,7 @@ export const useTasksEnhanced = (filters?: TaskFilters) => {
         query = query.lte("due_date", filters.dueDateTo);
       }
       if (filters?.assignedTo) {
-        query = query.eq("assigned_to_user_id", filters.assignedTo);
+        query = query.eq("assigned_to_name", filters.assignedTo);
       }
       if (filters?.isPinned !== undefined) {
         query = query.eq("is_pinned", filters.isPinned);
