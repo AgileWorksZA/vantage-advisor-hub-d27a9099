@@ -1,63 +1,56 @@
 
 
-## Fix Task Dashboard Data: Jurisdiction-Aligned Task Assignment
+## Fix Analytics Drill-Down, Add SLA/Utilisation to Task Table, Rename Button
 
-### Root Cause
-The task seed function assigns tasks to random team members from ALL jurisdictions, regardless of the client's region. For example, a Johan Botha (ZA) client's task might be assigned to a US or AU team member. This causes the analytics "By User" view to show very low numbers because:
-1. Tasks.tsx filters tasks by `client_advisor` matching the selected region's advisors
-2. The analytics then groups by `assigned_to_name` -- but those names belong to other regions
-3. Result: most tasks fall through the cracks between both filters
+### 1. Rename "All Tasks" to "Overview"
 
-Additionally, 403 tasks from other seed functions have NULL `assigned_to_name`, diluting the data.
+**File: `src/pages/Tasks.tsx` (line 238)**
 
-### Solution
+Change the button label from "All Tasks" to "Overview". Also update any references in `handleViewChange` and URL params that use "detail" display text.
 
-**Update `supabase/functions/seed-demo-tasks/index.ts`:**
+---
 
-1. **Fetch clients WITH their advisor field** -- currently only fetches `id`. Change to also select `advisor` so we know which jurisdiction each client belongs to.
+### 2. Fix Analytics Click-to-Filter (Column-Aware Drill-Down)
 
-2. **Build a client-to-jurisdiction mapping** using the advisor name:
-   - Map each advisor name to their jurisdiction (e.g., "Johan Botha" -> ZA, "James Mitchell" -> AU)
-   - Group team members by jurisdiction
+**Problem**: Clicking any number in a row (e.g., the "Overdue" count for "Annual Review") only filters by the row label (task type or person name). It does not filter by the specific column (overdue, due today, etc.), so all tasks for that category appear.
 
-3. **Assign tasks to same-jurisdiction team members** -- when assigning a task for a client, look up the client's jurisdiction via their advisor, then pick a random team member from that same jurisdiction (60% primary, 40% assistant).
+**Fix in `src/components/tasks/TaskAnalyticsTab.tsx`:**
 
-4. **Increase total tasks to 750** to guarantee 150 per jurisdiction (5 regions x 150 = 750).
+- Update `AnalyticsDataRow` so each cell has its own click handler that passes both the row filter AND the column-specific date/status filter
+- Each clickable cell will call `onDrillDown` with combined filters:
+  - "Overdue" cell: adds `dueDateTo: yesterday` + excludes completed
+  - "Due Today" cell: adds `dueDateFrom: today, dueDateTo: today`
+  - "Due Tomorrow" cell: adds `dueDateFrom: tomorrow, dueDateTo: tomorrow`
+  - "Due This Week" cell: adds `dueDateFrom: weekStart, dueDateTo: weekEnd`
+  - "Due Next Week" cell: adds `dueDateFrom: nextWeekStart, dueDateTo: nextWeekEnd`
+  - "Completed in Period" cell: adds `status: ["Completed"]` + period date range
+  - "Due Items" cell: filters by row only (current behavior)
+- Pass `onCellClick(row, column)` instead of a single `onClick` per row
+- The same logic applies to `AdviserGroupRow` header cells
 
-5. **Clean up orphan tasks** -- the delete step already deletes by `user_id`. Also delete tasks from `task_clients` first. Run the seed AFTER other seeders to ensure it's the final state.
+---
 
-### Advisor-to-Jurisdiction Mapping (in seed function)
+### 3. Show SLA and Utilisation Columns on the Overview (Task Table)
 
-```text
-ZA: Johan Botha, Sarah Mostert, Pieter Naude, Linda van Wyk, David Greenberg
-AU: James Mitchell, Sarah Thompson, Michael O'Brien, Emily Anderson, Thomas Murphy
-CA: Pierre Tremblay, Marie Bouchard, James MacDonald, Sophie Gagnon, Robert Singh
-GB: William Smith, Elizabeth Jones, Thomas Williams, Victoria Brown, James Taylor
-US: Michael Johnson, Jennifer Williams, Robert Brown, Maria Garcia, William Davis
-```
+**File: `src/components/tasks/TaskTable.tsx`:**
 
-### Data Flow After Fix
+- Add a "Utilisation" column next to the existing "SLA" column
+- Display the `standard_execution_minutes` value from each task (e.g., "120 min" or "2h")
+- The SLA column already shows "On Track" / "Breached" -- keep as is
 
-```text
-Client (advisor = "Johan Botha") -> Jurisdiction = ZA
-  -> Task assigned to ZA team member (e.g., "Zanele Dlamini" or "Johan Botha")
-  -> Tasks.tsx filters: client_advisor "Johan Botha" matches selectedAdvisorNames -> VISIBLE
-  -> Analytics: assigned_to_name "Zanele Dlamini" matches ZA jurisdictionMembers -> COUNTED
-```
+**File: `src/hooks/useTasksEnhanced.ts`:**
 
-### Steps
+- Ensure `standard_execution_minutes` is included in the `EnhancedTask` interface (it comes from the DB but is currently accessed via `(t as any).standard_execution_minutes`)
+- Add `standard_execution_minutes` to the `EnhancedTask` type definition so it is properly typed
 
-1. Update `seed-demo-tasks/index.ts`:
-   - Fetch clients with `id, advisor` fields
-   - Build advisor-to-jurisdiction lookup table (hardcoded, matching regionalData)
-   - Group team members by jurisdiction
-   - Assign tasks to jurisdiction-matched team members
-   - Increase TOTAL_TASKS from 500 to 750
-2. Deploy and run the updated seed function
-3. Verify dashboard shows 100+ tasks per jurisdiction with all advisors selected
+---
 
-### Files to Modify
-- `supabase/functions/seed-demo-tasks/index.ts`
+### Technical Summary
 
-No frontend changes needed -- the filtering logic is correct, the data just needs proper jurisdiction alignment.
+| File | Changes |
+|---|---|
+| `src/pages/Tasks.tsx` | Rename "All Tasks" button to "Overview" (line 238) |
+| `src/components/tasks/TaskAnalyticsTab.tsx` | Refactor `AnalyticsDataRow` to pass column-specific filters on each cell click; update `handleRowClick` to accept a column parameter |
+| `src/components/tasks/TaskTable.tsx` | Add "Utilisation" column showing `standard_execution_minutes` |
+| `src/hooks/useTasksEnhanced.ts` | Add `standard_execution_minutes: number | null` to `EnhancedTask` interface |
 
