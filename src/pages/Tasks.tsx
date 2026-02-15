@@ -235,7 +235,7 @@ const Tasks = () => {
               <TrendingUp className="h-4 w-4" />Analytics
             </Button>
             <Button variant={view === "detail" ? "default" : "outline"} size="sm" onClick={() => handleViewChange("detail")} className="gap-2">
-              <TableIcon className="h-4 w-4" />All Tasks
+              <TableIcon className="h-4 w-4" />Overview
             </Button>
           </div>
           <Button onClick={() => setCreateDialogOpen(true)} className="gap-2">
