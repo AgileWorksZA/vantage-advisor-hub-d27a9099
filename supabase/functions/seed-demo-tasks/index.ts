@@ -299,11 +299,11 @@ Deno.serve(async (req) => {
     }
     const userId = claimsData.claims.sub;
 
-    // Fetch all clients for this user
+    // Fetch all clients for this user WITH advisor field for jurisdiction mapping
     const { data: clients, error: clientsError } = await supabase
       .from("clients")
-      .select("id")
-      .limit(500);
+      .select("id, advisor")
+      .limit(1000);
 
     if (clientsError) {
       throw new Error(`Failed to fetch clients: ${clientsError.message}`);
@@ -319,7 +319,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Fetch team members for assigning tasks - include is_primary_adviser
+    // Fetch team members for assigning tasks - include is_primary_adviser and jurisdiction
     const { data: teamMembers } = await supabase
       .from("team_members")
       .select("name, team_name, jurisdiction, is_primary_adviser")
@@ -327,10 +327,41 @@ Deno.serve(async (req) => {
       .eq("is_active", true);
 
     const allMembers = teamMembers || [];
-    const primaryMembers = allMembers.filter((m: any) => m.is_primary_adviser);
-    const assistantMembers = allMembers.filter((m: any) => !m.is_primary_adviser);
 
-    console.log(`Found ${clients.length} clients, ${allMembers.length} team members (${primaryMembers.length} advisers, ${assistantMembers.length} assistants)`);
+    // Advisor-to-jurisdiction mapping (matches client.advisor values from seed-demo-clients)
+    const advisorToJurisdiction: Record<string, string> = {
+      // ZA advisors (from regionalData)
+      "Johan Botha": "ZA", "Sarah Mostert": "ZA", "Pieter Naudé": "ZA", "Linda van Wyk": "ZA", "David Greenberg": "ZA",
+      // AU advisors
+      "James Mitchell": "AU", "Sarah Thompson": "AU", "Michael O'Brien": "AU", "Emily Anderson": "AU", "Thomas Murphy": "AU",
+      // CA advisors
+      "Pierre Tremblay": "CA", "Marie Bouchard": "CA", "James MacDonald": "CA", "Sophie Gagnon": "CA", "Robert Singh": "CA",
+      // GB advisors
+      "William Smith": "GB", "Elizabeth Jones": "GB", "Thomas Williams": "GB", "Victoria Brown": "GB", "James Taylor": "GB",
+      // US advisors
+      "Michael Johnson": "US", "Jennifer Williams": "US", "Robert Brown": "US", "Maria Garcia": "US", "William Davis": "US",
+    };
+
+    // Group team members by jurisdiction
+    const membersByJurisdiction: Record<string, { primary: any[]; assistant: any[] }> = {};
+    for (const m of allMembers) {
+      const j = m.jurisdiction || "ZA";
+      if (!membersByJurisdiction[j]) membersByJurisdiction[j] = { primary: [], assistant: [] };
+      if (m.is_primary_adviser) {
+        membersByJurisdiction[j].primary.push(m);
+      } else {
+        membersByJurisdiction[j].assistant.push(m);
+      }
+    }
+
+    // Map each client to a jurisdiction via their advisor
+    const clientJurisdictions: Record<string, string> = {};
+    for (const c of clients) {
+      clientJurisdictions[c.id] = advisorToJurisdiction[c.advisor || ""] || "ZA";
+    }
+
+    console.log(`Found ${clients.length} clients, ${allMembers.length} team members`);
+    console.log("Members by jurisdiction:", Object.fromEntries(Object.entries(membersByJurisdiction).map(([j, g]) => [j, { primary: g.primary.length, assistant: g.assistant.length }])));
 
     // Delete existing tasks for idempotent re-seeding
     // First delete task_clients links, then tasks
@@ -352,9 +383,9 @@ Deno.serve(async (req) => {
 
     console.log("Cleared existing tasks for re-seeding");
 
-    // Generate 500 tasks
+    // Generate 750 tasks (150 per jurisdiction)
     const tasks = [];
-    const TOTAL_TASKS = 500;
+    const TOTAL_TASKS = 750;
 
     // Standard execution minutes by type
     const execMinutesByType: Record<string, number> = {
@@ -376,18 +407,24 @@ Deno.serve(async (req) => {
       const dueDate = generateDueDate(i);
       const clientId = clients[i % clients.length].id;
 
-      // Assign to a team member - 60% to advisers, 40% to assistants
+      // Look up this client's jurisdiction, then assign to a same-jurisdiction team member
+      const clientJurisdiction = clientJurisdictions[clientId] || "ZA";
+      const jurisdictionGroup = membersByJurisdiction[clientJurisdiction];
+
       let assignedToName: string;
-      if (allMembers.length === 0) {
-        assignedToName = "Unassigned";
-      } else if (primaryMembers.length > 0 && assistantMembers.length > 0) {
+      if (!jurisdictionGroup || (jurisdictionGroup.primary.length === 0 && jurisdictionGroup.assistant.length === 0)) {
+        // Fallback: pick from all members
+        assignedToName = allMembers.length > 0 ? randomFromArray(allMembers).name : "Unassigned";
+      } else if (jurisdictionGroup.primary.length > 0 && jurisdictionGroup.assistant.length > 0) {
+        // 60% primary adviser, 40% assistant
         if (Math.random() < 0.6) {
-          assignedToName = randomFromArray(primaryMembers).name;
+          assignedToName = randomFromArray(jurisdictionGroup.primary).name;
         } else {
-          assignedToName = randomFromArray(assistantMembers).name;
+          assignedToName = randomFromArray(jurisdictionGroup.assistant).name;
         }
       } else {
-        assignedToName = randomFromArray(allMembers).name;
+        const pool = [...jurisdictionGroup.primary, ...jurisdictionGroup.assistant];
+        assignedToName = randomFromArray(pool).name;
       }
 
       const createdAt = new Date(Date.now() - randomInt(0, 60) * 86400000).toISOString();
