@@ -218,11 +218,22 @@ function generateFollowUpDate(dueDate: string | null): string | null {
   return date.toISOString().split("T")[0];
 }
 
-function generateSlaDeadline(dueDate: string | null): string | null {
-  if (!dueDate || Math.random() > 0.7) return null;
-  const date = new Date(dueDate);
-  date.setDate(date.getDate() - randomInt(1, 2));
-  return date.toISOString().split("T")[0];
+// SLA hours by task type
+const slaHoursByType: Record<string, number> = {
+  "Annual Review": 168,
+  "Portfolio Review": 120,
+  "Client Complaint": 48,
+  "Follow-up": 72,
+  "Compliance": 96,
+  "Onboarding": 240,
+  "Document Request": 48,
+};
+
+function generateSlaDeadline(createdAt: string, taskType: string): string {
+  const slaHours = slaHoursByType[taskType] || 72;
+  const date = new Date(createdAt);
+  date.setHours(date.getHours() + slaHours);
+  return date.toISOString();
 }
 
 function generateNotes(userId: string): object[] {
@@ -379,6 +390,8 @@ Deno.serve(async (req) => {
         assignedToName = randomFromArray(allMembers).name;
       }
 
+      const createdAt = new Date(Date.now() - randomInt(0, 60) * 86400000).toISOString();
+
       const task: any = {
         user_id: userId,
         client_id: clientId,
@@ -389,7 +402,7 @@ Deno.serve(async (req) => {
         status: status,
         due_date: dueDate,
         follow_up_date: generateFollowUpDate(dueDate),
-        sla_deadline: generateSlaDeadline(dueDate),
+        sla_deadline: generateSlaDeadline(createdAt, taskType),
         is_pinned: Math.random() < 0.05,
         source: randomFromArray(sourceOptions),
         tags: generateTags(),
@@ -397,6 +410,7 @@ Deno.serve(async (req) => {
         estimated_hours: Math.round(Math.random() * 7.5 * 2 + 1) / 2,
         standard_execution_minutes: execMinutesByType[taskType] || 60,
         assigned_to_name: assignedToName,
+        created_at: createdAt,
         completed_at: status === "Completed" ? new Date(Date.now() - randomInt(0, 14) * 86400000).toISOString() : null,
       };
 
@@ -463,7 +477,25 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Calculate summary stats
+    // Seed task_type_standards
+    const standardsData = Object.entries(execMinutesByType).map(([taskType, mins]) => ({
+      user_id: userId,
+      task_type: taskType,
+      standard_execution_minutes: mins,
+      sla_hours: slaHoursByType[taskType] || 72,
+    }));
+
+    // Delete existing standards then insert
+    await supabase.from("task_type_standards").delete().eq("user_id", userId);
+    const { error: standardsError } = await supabase
+      .from("task_type_standards")
+      .insert(standardsData);
+    if (standardsError) {
+      console.error("Error seeding task_type_standards:", standardsError);
+    } else {
+      console.log(`Seeded ${standardsData.length} task type standards`);
+    }
+
     const summary = {
       total_tasks_created: totalInserted,
       clients_used: clients.length,
