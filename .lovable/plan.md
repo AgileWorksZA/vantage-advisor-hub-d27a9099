@@ -1,82 +1,74 @@
 
 
-## Restructure Analytics "By User" to Show Advisers with Expandable Assistants + Seed Tasks + Drill-Down Filtering
+## Fix Drill-Down Filtering, Seed Task Type Standards, and Add Standards Management Table
 
-### Overview
-Replace the current team-name grouping with adviser-name grouping. Each adviser row is expandable to show their assistants (non-primary team members). Update the seed function so tasks are distributed across all team members with proper `assigned_to_name`. Add click-to-filter so clicking any row drills down to that person's tasks.
+### Problem Summary
+1. **Drill-down bug**: Clicking a number in the analytics table triggers `"Failed to load tasks"` because the filter passes a person's name (e.g., "Rachel Kim") to `assigned_to_user_id` -- a UUID column. It should filter on `assigned_to_name` instead.
+2. **No SLA/Utilisation standards data**: The `task_type_standards` table exists but is empty, so all Utilisation and SLA columns show "-".
+3. **No UI to manage standards**: There's no table where users can view/edit SLA hours and standard execution minutes per task type.
 
 ---
 
-### 1. Restructure the "By User" Table (TaskAnalyticsTab.tsx)
+### Changes
 
-**Current**: Groups by `team_name` (e.g., "Jordaan Financial Planning")
-**New**: Groups by adviser name (e.g., "Johan Botha") with assistants nested underneath
+#### 1. Fix the drill-down filter bug (`src/hooks/useTasksEnhanced.ts`)
 
-Changes to `TaskAnalyticsTab.tsx`:
-
-- **Rename `TeamGroupRow` to `AdviserGroupRow`** -- the header row displays the adviser's full name (from `regionalData.advisors`) instead of team name
-- **Grouping logic**: Instead of grouping by `team_name`, group by `advisor_initials`. For each group:
-  - The header row shows the adviser's name (the primary team member / Financial Adviser) with aggregated totals
-  - Expanded children show only the non-primary members (assistants, paraplanners, administrators)
-- **Remove team filter MultiSelect** -- replace with adviser-based filtering (already handled by top bar)
-- **Expand/Collapse All** remains the same, just keyed on adviser initials instead of team names
-
-**Grouping data flow:**
-```text
-team_members (filtered by selectedAdvisors + selectedRegion)
-  --> group by advisor_initials
-  --> for each group:
-       Header row = adviser name (from regionalData.advisors matching initials)
-       Child rows = members where is_primary_adviser = false
+Change line 126 from:
+```
+query = query.eq("assigned_to_user_id", filters.assignedTo);
+```
+to:
+```
+query = query.eq("assigned_to_name", filters.assignedTo);
 ```
 
-### 2. Click-to-Filter Drill-Down
+This ensures clicking a person's name in the analytics table filters tasks by the text `assigned_to_name` column rather than the UUID `assigned_to_user_id` column.
 
-**Current**: `handleRowClick` only filters by `task_type` in the "By Type" view; in "By User" view it does nothing meaningful.
+#### 2. Seed task type standards data
 
-**Changes:**
-- When clicking an adviser header row: call `onDrillDown({ assignedTo: adviserName })` -- this switches to the "All Tasks" detail view filtered to that adviser's name
-- When clicking an assistant row: call `onDrillDown({ assignedTo: assistantName })` -- filters to that specific person
-- The `TaskFilters` interface already has `assignedTo?: string` so no schema change needed
+Insert default SLA and utilisation standards for all 7 existing task types into `task_type_standards`. The seed will run via the existing `seed-demo-tasks` edge function (or a new dedicated seed function).
 
-### 3. Re-seed Task Data with Proper Distribution
+| Task Type | Standard Execution (mins) | SLA (hours) |
+|---|---|---|
+| Annual Review | 120 | 168 (7 days) |
+| Portfolio Review | 90 | 120 (5 days) |
+| Client Complaint | 60 | 48 (2 days) |
+| Follow-up | 30 | 72 (3 days) |
+| Compliance | 45 | 96 (4 days) |
+| Onboarding | 180 | 240 (10 days) |
+| Document Request | 20 | 48 (2 days) |
 
-**Update `supabase/functions/seed-demo-tasks/index.ts`:**
+Also update the `seed-demo-tasks` function to:
+- Populate `standard_execution_minutes` on each seeded task (matching its task type)
+- Populate `sla_deadline` on each seeded task (created_at + SLA hours)
+- Re-seed tasks so the 208 NULL `assigned_to_name` tasks get proper assignments
 
-Currently 834 out of ~1000+ tasks have `assigned_to_name = NULL`. The seed function distributes tasks only across team members it finds, but many tasks remain unassigned.
+#### 3. Add SLA and Utilisation standards management table (`src/components/tasks/TaskAnalyticsTab.tsx`)
 
-Changes:
-- Delete existing tasks before re-seeding (idempotent)
-- Ensure every task gets an `assigned_to_name` from the team members list (no nulls)
-- Distribute tasks proportionally: Financial Advisers get ~60% of tasks, assistants/paraplanners get ~40%
-- This ensures the analytics table has meaningful data for every team member
+Add a new section below the analytics table (or as a collapsible panel) with an editable table showing:
+- Task Type (read-only)
+- Standard Execution Time (minutes) -- editable
+- SLA Target (hours) -- editable
+- Save button per row
 
-### 4. Cleanup
+This uses the existing `useTaskTypeStandards` hook which already has `upsertStandard` mutation support.
 
-- Remove the `selectedTeams` / team filter MultiSelect state and UI (lines 358, 409-417, 567-575, 634-641) since grouping is now by adviser from the top bar
-- Remove references to `teamOptions` and `memberTeamMap` -- replace with an `adviserGroupMap` keyed on `advisor_initials`
-- Update the `groupedRows` memo to build groups by adviser initials
-- Update expand/collapse state keys from team names to adviser initials
+The table will be rendered inside a Card with a "Task Type Standards" header, visible on the Analytics tab. Each row will have inline-editable number inputs that call `upsertStandard` on change/blur.
+
+#### 4. Wire standards into analytics calculations
+
+Update `computeRows` in `TaskAnalyticsTab.tsx` to use the standards from `useTaskTypeStandards`:
+- For utilisation: use `standard_execution_minutes` from the standards table (currently reads from task-level field which may be 0)
+- For SLA: already computed from `sla_deadline` on each task, which will now be populated by the seed
 
 ---
 
 ### Technical Details
 
-**File: `src/components/tasks/TaskAnalyticsTab.tsx`**
+**Files to modify:**
+- `src/hooks/useTasksEnhanced.ts` -- Fix `assignedTo` filter (1 line change)
+- `supabase/functions/seed-demo-tasks/index.ts` -- Add SLA/execution data to seeded tasks, seed `task_type_standards`, fix NULL assignments
+- `src/components/tasks/TaskAnalyticsTab.tsx` -- Add standards management table UI
 
-| Section | Change |
-|---|---|
-| `groupedRows` memo (~line 424) | Group rows by `advisor_initials` instead of `team_name`. Use `regionalData.advisors` to get the adviser display name for each initials key |
-| `TeamGroupRow` component (~line 327) | Rename to `AdviserGroupRow`; display adviser name instead of team name |
-| `handleRowClick` (~line 456) | For "user" subView: set `assignedTo` filter to the clicked person's name and call `onDrillDown` |
-| Team filter UI (~line 567) | Remove the MultiSelect for team filtering |
-| Expand/Collapse (~line 677) | Key on adviser initials instead of team names |
-
-**File: `supabase/functions/seed-demo-tasks/index.ts`**
-
-| Section | Change |
-|---|---|
-| Before insert (~line 328) | Delete existing tasks for the user first (`DELETE FROM tasks WHERE user_id = ...`) |
-| Task assignment (~line 352) | Always assign a team member name; weight Financial Advisers at 60% |
-| Total tasks | Keep at 500 |
+**No database migration needed** -- the `task_type_standards` table and all required columns already exist.
 
