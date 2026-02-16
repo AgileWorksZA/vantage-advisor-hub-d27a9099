@@ -62,13 +62,16 @@ export const useWidgetLayout = ({ pageId, defaultLayout, userId }: UseWidgetLayo
             return defaults !== undefined && item.w !== defaults.w;
           });
 
+          // Check if saved layout contains widget IDs not in the default layout (cross-page contamination)
+          const hasForeignWidgets = savedLayout.some(item => !defaultLayoutMap.has(item.i));
+
           // Widgets are not resizable in the UI, so any height mismatch is safe to auto-migrate.
           const needsHeightMigration = savedLayout.some(item => {
             const defaults = defaultLayoutMap.get(item.i);
             return defaults !== undefined && item.h !== defaults.h;
           });
           
-          if (isInvalidLayout) {
+          if (isInvalidLayout || hasForeignWidgets) {
             // Auto-heal: use default layout and persist it
             setLayout(defaultLayout);
             await supabase
