@@ -260,7 +260,7 @@ const ClientDetail = () => {
                 { value: "performance", label: "Performance" },
                 
                 { value: "meetings", label: "Meetings" },
-                { value: "relationships", label: "Relationships" },
+                
                 { value: "workflows", label: "Workflows" },
                 { value: "compliance", label: "Compliance" },
                 { value: "notes", label: "Notes" },
