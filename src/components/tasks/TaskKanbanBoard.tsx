@@ -140,7 +140,7 @@ const TaskKanbanBoard = ({ tasks, onTaskClick, onUpdateTask }: TaskKanbanBoardPr
                 return (
                   <div
                     key={status}
-                    className={`flex flex-col min-w-[240px] w-[240px] shrink-0 rounded-lg border transition-colors ${
+                    className={`flex flex-col flex-1 min-w-[200px] rounded-lg border transition-colors ${
                       dragOverColumn === status ? "border-primary bg-primary/5" : "border-border bg-muted/30"
                     }`}
                     onDragOver={(e) => handleDragOver(e, status)}
