@@ -1,19 +1,20 @@
 
 
-## Increase "Clients by Age Group" Widget Height
+## Revert "Clients by Age Group" Widget to Standard Size
 
 ### Change
 
 **File: `src/pages/Dashboard.tsx`**
 
-Update the `age-groups` entry in the `defaultDashboardLayout` array from `h: 3` to `h: 4`, giving it 480px of vertical space (4 rows at 120px each) instead of the current 360px. This provides enough room for the header, column headings, and up to 8 age group rows without clipping.
+Revert the `age-groups` widget height from `h: 4` back to `h: 3` so it matches all other dashboard widgets (350px x 360px).
 
 ```
 // Before
-{ i: 'age-groups', x: 3, y: 6, w: 3, h: 3 }
+{ i: 'age-groups', x: 3, y: 6, w: 3, h: 4 }
 
 // After
-{ i: 'age-groups', x: 3, y: 6, w: 3, h: 4 }
+{ i: 'age-groups', x: 3, y: 6, w: 3, h: 3 }
 ```
 
-**Note:** Since users may already have a saved layout with the old height, the existing auto-heal logic in `useWidgetLayout.ts` will detect the height mismatch and automatically migrate the saved layout to use the new default height on next load.
+The content will scroll within the card if it overflows, consistent with how other widgets handle overflow (e.g., Birthdays). The auto-heal logic in `useWidgetLayout.ts` will automatically migrate any saved layouts to the new height.
+
