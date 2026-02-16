@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
 import { generateClient360Data, mapNationalityToJurisdiction } from "@/data/regional360ViewData";
 import type { PrepProduct, PrepOpportunity } from "@/hooks/useClientMeetingPrep";
-import { CheckCircle } from "lucide-react";
+import { CheckCircle, Clock, CheckCircle2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Client, getDisplayName } from "@/types/client";
@@ -13,7 +14,7 @@ import { Users, Loader2 } from "lucide-react";
 import { useClientMeetingPrep } from "@/hooks/useClientMeetingPrep";
 import { useHouseholdMeetingPrep } from "@/hooks/useHouseholdMeetingPrep";
 import OpportunitiesTab, { getOpportunitiesCount, buildGapOpportunities } from "./next-best-action/OpportunitiesTab";
-import OpportunitySummaryTiles from "./next-best-action/OpportunitySummaryTiles";
+import OpportunitySummaryTiles, { getInProgressOpportunities, getCompletedOpportunities, type OpportunityStatus } from "./next-best-action/OpportunitySummaryTiles";
 import OutstandingTab from "./next-best-action/OutstandingTab";
 import RecentActivityTab, { RECENT_ACTIVITY_COUNT } from "./next-best-action/RecentActivityTab";
 import { MeetingPrepSheet } from "./MeetingPrepSheet";
@@ -42,6 +43,7 @@ const ClientSummaryTab = ({ client, clientId, onShowMoreActivity, onTabChange }:
   const [scanOpportunities, setScanOpportunities] = useState<PrepOpportunity[]>([]);
   const [scanResultsOpen, setScanResultsOpen] = useState(false);
   const [latestScanResults, setLatestScanResults] = useState<PrepOpportunity[]>([]);
+  const [selectedStatus, setSelectedStatus] = useState<OpportunityStatus>("identified");
 
   const scanTemplates: { type: string; reasoning: string; action: string; revenueRange: [number, number] }[] = useMemo(() => [
     { type: "Migration", reasoning: "Consolidate external holdings to reduce fees", action: "Migrate to preferred platform", revenueRange: [15000, 45000] },
@@ -57,7 +59,6 @@ const ClientSummaryTab = ({ client, clientId, onShowMoreActivity, onTabChange }:
   const handleOptimise = useCallback(() => {
     setIsScanning(true);
     setTimeout(() => {
-      // Pick 1-2 random templates not already used
       const usedReasonings = new Set(scanOpportunities.map(o => o.reasoning));
       const available = scanTemplates.filter(t => !usedReasonings.has(t.reasoning));
       const pool = available.length >= 2 ? available : scanTemplates;
@@ -117,7 +118,6 @@ const ClientSummaryTab = ({ client, clientId, onShowMoreActivity, onTabChange }:
     };
 
     if (householdView && householdData.householdClients.length > 0) {
-      // Generate products for every household member
       const allProducts: (PrepProduct & { provider?: string; clientName?: string })[] = [];
       householdData.householdClients.forEach(member => {
         const memberName = `${member.firstName} ${member.surname.charAt(0)}.`;
@@ -127,7 +127,6 @@ const ClientSummaryTab = ({ client, clientId, onShowMoreActivity, onTabChange }:
       return allProducts;
     }
 
-    // Single client mode
     return generateForClient(clientId, client.nationality, client.country_of_issue);
   }, [clientId, client.nationality, client.country_of_issue, householdView, householdData.householdClients]);
 
@@ -141,12 +140,66 @@ const ClientSummaryTab = ({ client, clientId, onShowMoreActivity, onTabChange }:
   const oppsCount = getOpportunitiesCount(activeOpps, activeProducts, householdView);
   const outstandingCount = activeTasks.length + activeDocs.length;
 
+  // Filtered lists for in-progress and completed views
+  const inProgressOpps = useMemo(() => getInProgressOpportunities(activeOpps), [activeOpps]);
+  const completedOpps = useMemo(() => getCompletedOpportunities(activeOpps), [activeOpps]);
+
+  const currencyMap: Record<string, { code: string; locale: string }> = {
+    ZA: { code: "ZAR", locale: "en-ZA" },
+    AU: { code: "AUD", locale: "en-AU" },
+    CA: { code: "CAD", locale: "en-CA" },
+    GB: { code: "GBP", locale: "en-GB" },
+    US: { code: "USD", locale: "en-US" },
+  };
+  const formatCurrency = (value: number | null) => {
+    if (!value) return null;
+    const curr = currencyMap[clientJurisdiction || "ZA"] || currencyMap.ZA;
+    return new Intl.NumberFormat(curr.locale, { style: "currency", currency: curr.code, maximumFractionDigits: 0 }).format(value);
+  };
+
+  const renderStatusList = (opps: PrepOpportunity[], statusLabel: string, statusColor: string, StatusIcon: typeof Clock) => (
+    <div className="space-y-0">
+      {opps.length === 0 ? (
+        <div className="flex flex-col items-center py-4 gap-2">
+          <p className="text-xs text-muted-foreground text-center">No {statusLabel.toLowerCase()} opportunities.</p>
+        </div>
+      ) : (
+        opps.map(opp => (
+          <div key={opp.id} className="flex gap-2 py-1.5 border-b border-border/50 last:border-0">
+            <div className="shrink-0 mt-0.5 text-muted-foreground">
+              <StatusIcon className="w-3.5 h-3.5" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5">
+                <Badge variant="outline" className={`${statusColor} text-[10px] px-1.5 py-0 font-medium`}>{statusLabel}</Badge>
+                <span className="text-xs font-semibold">{opp.opportunityType}</span>
+                {opp.potentialRevenue && (
+                  <span className="text-[10px] font-semibold text-emerald-600">{formatCurrency(opp.potentialRevenue)}</span>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground truncate">{opp.reasoning || opp.suggestedAction}</p>
+            </div>
+          </div>
+        ))
+      )}
+    </div>
+  );
+
   return (
     <div>
+      {/* Summary tiles above the card */}
+      <OpportunitySummaryTiles
+        opportunities={activeOpps}
+        gapOpportunities={gapOpportunities}
+        jurisdiction={clientJurisdiction}
+        selectedStatus={selectedStatus}
+        onStatusChange={setSelectedStatus}
+      />
+
       <Card className="flex flex-col">
           <CardHeader className="py-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">Next Best Action</CardTitle>
+              <CardTitle className="text-lg">Opportunities</CardTitle>
               <div className="flex items-center gap-2">
                 {client.household_group && (
                   <div className="flex items-center gap-1.5">
@@ -173,37 +226,44 @@ const ClientSummaryTab = ({ client, clientId, onShowMoreActivity, onTabChange }:
             </div>
           </CardHeader>
           <CardContent className="pt-0 flex-1 flex flex-col">
-            <OpportunitySummaryTiles opportunities={activeOpps} gapOpportunities={gapOpportunities} jurisdiction={clientJurisdiction} />
-            <Tabs defaultValue="opportunities" className="w-full flex-1 flex flex-col">
-              <TabsList className="w-full h-8 mb-2">
-                <TabsTrigger value="opportunities" className="text-xs flex-1">
-                  Opportunities ({oppsCount})
-                </TabsTrigger>
-                <TabsTrigger value="outstanding" className="text-xs flex-1">
-                  Outstanding ({outstandingCount})
-                </TabsTrigger>
-                <TabsTrigger value="recent" className="text-xs flex-1">
-                  Recent Activity ({RECENT_ACTIVITY_COUNT})
-                </TabsTrigger>
-              </TabsList>
-              <TabsContent value="opportunities" className="mt-0 flex-1">
-                <OpportunitiesTab opportunities={activeOpps} products={activeProducts} householdView={householdView} onOptimise={handleOptimise} hasScanned={hasScanned} isScanning={isScanning} onTaxLossClick={() => setTlhDashboardOpen(true)} jurisdiction={clientJurisdiction} />
-              </TabsContent>
-              <TabsContent value="outstanding" className="mt-0 flex-1">
-                <OutstandingTab tasks={activeTasks} documents={activeDocs} householdView={householdView} />
-              </TabsContent>
-              <TabsContent value="recent" className="mt-0 flex-1">
-                <RecentActivityTab
-                  householdView={householdView}
-                  clientId={clientId}
-                  onCalendarEventClick={(event) => {
-                    setSelectedMeetingEvent(event);
-                    setMeetingPrepOpen(true);
-                  }}
-                  onActivityClick={(type) => onTabChange?.(type)}
-                />
-              </TabsContent>
-            </Tabs>
+            {selectedStatus === "identified" ? (
+              <>
+                <Tabs defaultValue="opportunities" className="w-full flex-1 flex flex-col">
+                  <TabsList className="w-full h-8 mb-2">
+                    <TabsTrigger value="opportunities" className="text-xs flex-1">
+                      Opportunities ({oppsCount})
+                    </TabsTrigger>
+                    <TabsTrigger value="outstanding" className="text-xs flex-1">
+                      Outstanding ({outstandingCount})
+                    </TabsTrigger>
+                    <TabsTrigger value="recent" className="text-xs flex-1">
+                      Recent Activity ({RECENT_ACTIVITY_COUNT})
+                    </TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="opportunities" className="mt-0 flex-1">
+                    <OpportunitiesTab opportunities={activeOpps} products={activeProducts} householdView={householdView} onOptimise={handleOptimise} hasScanned={hasScanned} isScanning={isScanning} onTaxLossClick={() => setTlhDashboardOpen(true)} jurisdiction={clientJurisdiction} />
+                  </TabsContent>
+                  <TabsContent value="outstanding" className="mt-0 flex-1">
+                    <OutstandingTab tasks={activeTasks} documents={activeDocs} householdView={householdView} />
+                  </TabsContent>
+                  <TabsContent value="recent" className="mt-0 flex-1">
+                    <RecentActivityTab
+                      householdView={householdView}
+                      clientId={clientId}
+                      onCalendarEventClick={(event) => {
+                        setSelectedMeetingEvent(event);
+                        setMeetingPrepOpen(true);
+                      }}
+                      onActivityClick={(type) => onTabChange?.(type)}
+                    />
+                  </TabsContent>
+                </Tabs>
+              </>
+            ) : selectedStatus === "in-progress" ? (
+              renderStatusList(inProgressOpps, "In Progress", "bg-amber-100 text-amber-700 border-amber-200", Clock)
+            ) : (
+              renderStatusList(completedOpps, "Completed", "bg-emerald-100 text-emerald-700 border-emerald-200", CheckCircle2)
+            )}
 
             <div className="pt-1 border-t mt-1">
               <Button
@@ -254,7 +314,7 @@ const ClientSummaryTab = ({ client, clientId, onShowMoreActivity, onTabChange }:
                     <span className="text-xs font-semibold">{opp.opportunityType}</span>
                     {opp.potentialRevenue && (
                       <span className="text-[10px] font-semibold text-emerald-600">
-                        {new Intl.NumberFormat(clientJurisdiction === "US" ? "en-US" : clientJurisdiction === "GB" ? "en-GB" : clientJurisdiction === "AU" ? "en-AU" : clientJurisdiction === "CA" ? "en-CA" : "en-ZA", { style: "currency", currency: clientJurisdiction === "US" ? "USD" : clientJurisdiction === "GB" ? "GBP" : clientJurisdiction === "AU" ? "AUD" : clientJurisdiction === "CA" ? "CAD" : "ZAR", maximumFractionDigits: 0 }).format(opp.potentialRevenue)}
+                        {formatCurrency(opp.potentialRevenue)}
                       </span>
                     )}
                   </div>
