@@ -1,110 +1,54 @@
 
 
-## Fix Task Dashboard: Decouple Filters, SLA Adherence, Date Selector, and Drill-Down
+## Add "Clients by Age Group" Dashboard Widget
 
-### Problem Summary
+### Overview
 
-1. **Coupled filters**: Dashboard and Overview share the same `filters` state passed to `useTasksEnhanced`. When a dashboard widget sets filters and navigates to Overview, those filters persist when returning to Dashboard, causing the stats/charts to show filtered data instead of all tasks.
+Add a new widget to the Advisor Dashboard that displays client counts grouped into 10-year age brackets (e.g., 20-29, 30-39, etc.), sorted from youngest to oldest. The widget follows the same table-based layout as the Birthdays widget.
 
-2. **SLA gauge uses wrong data**: Currently calculated as `(totalOpen - overdue) / totalOpen`, which is just "% not overdue" -- not actual SLA adherence. Should use `sla_deadline` field from tasks.
+### Changes
 
-3. **No date selector on Dashboard**: Analytics tab has a date period dropdown (This Week, Last Week, etc.) but Dashboard does not.
+**File: `src/pages/Dashboard.tsx`**
 
-4. **Dashboard drill-down incomplete**: Chart clicks only pass status/type/priority but miss excluding completed/cancelled tasks where appropriate. SLA gauge is not clickable.
+1. **Add widget to layout and config arrays:**
+   - Add `{ i: 'age-groups', x: 3, y: 6, w: 3, h: 3 }` to `defaultDashboardLayout`
+   - Add `{ id: 'age-groups', label: 'Clients by Age Group' }` to `DASHBOARD_WIDGETS`
 
----
+2. **Fetch client age data from database:**
+   - Add a `useEffect` that queries clients for `date_of_birth` (only non-null values)
+   - Compute age from `date_of_birth`, then bucket into 10-year groups: "Under 20", "20-29", "30-39", ..., "80-89", "90+"
+   - Store as state: `{ label: string; count: number }[]`
 
-### Solution
+3. **Render the widget** (matching Birthday widget style):
+   - Table with columns: "Age Group" (left-aligned) and "Clients" (right-aligned)
+   - Each row shows the bracket label and client count
+   - Sorted youngest to oldest
+   - Clicking a row navigates to `/clients` filtered by that age range
+   - Same Card/CardHeader/CardContent structure with drag handle and close button
 
-#### 1. Decouple Dashboard from Detail Filters
+### Widget Layout (table format)
 
-**File: `src/pages/Tasks.tsx`**
-
-- Separate the filter state: keep `filters` for the Overview table only
-- When `handleViewChange` switches to `"dashboard"`, clear the detail filters back to empty `{}`
-- Fetch all tasks without filters (pass no filters to `useTasksEnhanced`), then apply `filters` client-side for the Overview table only
-
-Specifically:
-- Call `useTasksEnhanced()` with NO filters (fetch all tasks)
-- Apply `filters` to tasks in a `useMemo` for the Overview table pagination
-- Dashboard stats are always computed from the full (advisor-filtered) task set
-- Dashboard date period filtering is applied separately in the stats `useMemo`
-
-#### 2. Fix SLA Adherence Gauge
-
-**File: `src/components/tasks/TaskDashboard.tsx`**
-
-- Rename "SLA Compliance" to "SLA Adherence"
-- Change calculation: Instead of `(totalOpen - overdue) / totalOpen`, compute from tasks that have an `sla_deadline`:
-  - Count tasks with `sla_deadline` that were completed on or before their SLA deadline (adherent)
-  - Count tasks with `sla_deadline` that are overdue past their SLA deadline (breached)
-  - SLA Adherence % = adherent / (adherent + breached) * 100
-- Update `TaskStats` interface in `useTasksEnhanced.ts` to include `slaAdherent` and `slaBreached` counts
-- Make the SLA gauge clickable -- clicking navigates to Overview filtered to show SLA-breached tasks
-
-#### 3. Add Date Period Dropdown to Dashboard
-
-**File: `src/components/tasks/TaskDashboard.tsx`**
-
-- Add a date period `Select` dropdown in the header area (matching the reference image: This Week, Last Week, This Month, Last Month, Custom Range)
-- Default to "This Week"
-- The selected period filters the dashboard stats (stat cards + charts) by task `due_date` or `created_at` within the range
-- Reuse the same `DatePreset` type and `getDateRange` logic from `TaskAnalyticsTab.tsx` (extract to shared utility or duplicate inline)
-
-#### 4. Fix Dashboard Chart Drill-Down Filters
-
-**File: `src/components/tasks/TaskDashboard.tsx`**
-
-Update click handlers to pass complete, correct filters:
-
-- **Status chart click**: Pass `status: [clickedStatus]` (current behavior is correct)
-- **Type chart click**: Pass `taskType: [clickedType]` plus `status: ["Not Started", "In Progress", "Pending Client"]` to exclude completed
-- **Priority chart click**: Pass `priority: [clickedPriority]` plus `status: ["Not Started", "In Progress", "Pending Client"]`
-- **SLA Adherence gauge click**: Pass filter for tasks where SLA is breached
-- **"Total Open" card**: Pass `status: ["Not Started", "In Progress", "Pending Client"]` instead of no filter
-- **"Due Today" card**: Already correct
-- **"Overdue" card**: Add `status: ["Not Started", "In Progress", "Pending Client"]` to exclude completed
-- **"Completed This Week" card**: Already correct
-
----
+```text
+Age Group    Clients
+Under 20          3
+20 - 29          12
+30 - 39          28
+40 - 49          35
+50 - 59          22
+60 - 69          15
+70 - 79           8
+80+               4
+```
 
 ### Technical Detail
 
-#### Files to Modify
-
-| File | Changes |
+| Aspect | Detail |
 |---|---|
-| `src/hooks/useTasksEnhanced.ts` | Remove `filters` from DB query; add `slaAdherent` and `slaBreached` to `TaskStats`; add `slaBreached` filter support |
-| `src/pages/Tasks.tsx` | Apply filters client-side for Overview only; clear filters on dashboard return; pass dashboard date period to `TaskDashboard` |
-| `src/components/tasks/TaskDashboard.tsx` | Add date period dropdown; fix SLA calculation using `sla_deadline`; rename to "SLA Adherence"; fix all drill-down filters; accept `allTasks` prop for date-filtered stats |
-
-#### Updated TaskDashboard Props
-
-```text
-interface TaskDashboardProps {
-  tasks: EnhancedTask[];          // All advisor-filtered tasks (unfiltered by detail filters)
-  onViewDetail: (filters?: TaskFilters) => void;
-}
-```
-
-The dashboard will compute its own stats internally from the `tasks` prop, filtered by the selected date period. This fully decouples it from the Overview filter state.
-
-#### SLA Adherence Calculation
-
-```text
-Tasks with sla_deadline:
-  - Completed before/on sla_deadline -> "adherent"
-  - Completed after sla_deadline OR still open past sla_deadline -> "breached"
-  
-SLA Adherence % = adherent / (adherent + breached) * 100
-```
-
-#### Date Period Dropdown (Dashboard Header)
-
-Renders as a `Select` component with calendar icon, matching the reference image:
-- This Week (default, checked)
-- Last Week
-- This Month
-- Last Month
-- Custom Range (with date pickers)
+| File | `src/pages/Dashboard.tsx` |
+| Data source | `supabase.from('clients').select('date_of_birth')` filtered to current user |
+| Age calculation | Same logic as `calculateAge` in `src/types/client.ts` |
+| Grouping | 10-year buckets: Under 20, 20-29, 30-39, 40-49, 50-59, 60-69, 70-79, 80+ |
+| Sorting | Ascending by age (youngest first) |
+| Click behavior | Navigate to `/clients?filter=age-group&ageFrom=X&ageTo=Y` (or simply show filtered view) |
+| Widget ID | `age-groups` |
 
