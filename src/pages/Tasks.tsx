@@ -272,18 +272,21 @@ const Tasks = () => {
             <TaskAnalyticsTab tasks={advisorFilteredTasks} onDrillDown={(f) => handleViewChange("detail", f)} />
           ) : view === "kanban" ? (
             <div className="flex flex-col flex-1 min-h-0 h-full">
-              <div className="flex items-center gap-3 px-6 py-2 border-b bg-background">
-                <div className="flex-1 min-w-0">
-                  <TaskFiltersComponent filters={filters} onFiltersChange={setFilters} />
-                </div>
-                <div className="flex items-center gap-1 shrink-0">
-                  <span className="text-xs font-medium text-muted-foreground mr-1">Group:</span>
-                  {(["none", "assignee", "priority"] as KanbanGroupBy[]).map((g) => (
-                    <Button key={g} size="sm" variant={kanbanGroupBy === g ? "default" : "outline"} className="h-7 text-xs" onClick={() => setKanbanGroupBy(g)}>
-                      {g === "none" ? "None" : g === "assignee" ? "Assignee" : "Priority"}
-                    </Button>
-                  ))}
-                </div>
+              <div className="px-6 py-2 border-b bg-background">
+                <TaskFiltersComponent
+                  filters={filters}
+                  onFiltersChange={setFilters}
+                  rightSlot={
+                    <div className="flex items-center gap-1 shrink-0">
+                      <span className="text-xs font-medium text-muted-foreground mr-1">Group:</span>
+                      {(["none", "assignee", "priority"] as KanbanGroupBy[]).map((g) => (
+                        <Button key={g} size="sm" variant={kanbanGroupBy === g ? "default" : "outline"} className="h-7 text-xs" onClick={() => setKanbanGroupBy(g)}>
+                          {g === "none" ? "None" : g === "assignee" ? "Assignee" : "Priority"}
+                        </Button>
+                      ))}
+                    </div>
+                  }
+                />
               </div>
               <TaskKanbanBoard tasks={filteredTasks} onTaskClick={handleTaskClick} onUpdateTask={updateTask} groupBy={kanbanGroupBy} />
             </div>

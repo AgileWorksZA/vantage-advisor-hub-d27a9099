@@ -34,9 +34,10 @@ import type { DateRange } from "react-day-picker";
 interface TaskFiltersProps {
   filters: TaskFiltersType;
   onFiltersChange: (filters: TaskFiltersType) => void;
+  rightSlot?: React.ReactNode;
 }
 
-export function TaskFilters({ filters, onFiltersChange }: TaskFiltersProps) {
+export function TaskFilters({ filters, onFiltersChange, rightSlot }: TaskFiltersProps) {
   const { taskTypes, taskStatuses, taskPriorities, taskCategories } = useTaskTypes();
   const { savedFilters, saveFilter, deleteFilter } = useSavedTaskFilters();
   const [localSearch, setLocalSearch] = useState(filters.search || "");
@@ -144,126 +145,60 @@ export function TaskFilters({ filters, onFiltersChange }: TaskFiltersProps) {
 
   return (
     <div className="space-y-2">
-      <div className="flex flex-wrap items-center gap-2 px-3 py-2 bg-muted/30 rounded-lg border">
-        {/* Saved Filters Dropdown */}
-        {savedFilters.length > 0 && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-2">
-                <BookmarkCheck className="h-4 w-4" />
-                Saved Views
+      <div className="space-y-2 px-3 py-2 bg-muted/30 rounded-lg border">
+        {/* Row 1: Filter dropdowns */}
+        <div className="flex flex-wrap items-center gap-2">
+          {savedFilters.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2">
+                  <BookmarkCheck className="h-4 w-4" />
+                  Saved Views
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-[220px]">
+                {savedFilters.map((sf) => (
+                  <DropdownMenuItem key={sf.id} className="flex items-center justify-between gap-2">
+                    <span className="flex-1 truncate cursor-pointer" onClick={() => handleLoadFilter(sf)}>{sf.name}</span>
+                    <button onClick={(e) => { e.stopPropagation(); deleteFilter(sf.id); }} className="text-muted-foreground hover:text-destructive p-0.5">
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+
+          <MultiSelect options={statusOptions} selected={filters.status || []} onChange={(vals) => onFiltersChange({ ...filters, status: vals.length ? vals : undefined })} placeholder="Status" className="w-[160px]" />
+          <MultiSelect options={priorityOptions} selected={filters.priority || []} onChange={(vals) => onFiltersChange({ ...filters, priority: vals.length ? vals : undefined })} placeholder="Priority" className="w-[160px]" />
+          <MultiSelect options={typeOptions} selected={filters.taskType || []} onChange={(vals) => onFiltersChange({ ...filters, taskType: vals.length ? vals : undefined })} placeholder="Type" className="w-[160px]" />
+          {categoryOptions.length > 0 && (
+            <MultiSelect options={categoryOptions} selected={filters.category || []} onChange={(vals) => onFiltersChange({ ...filters, category: vals.length ? vals : undefined })} placeholder="Category" className="w-[160px]" />
+          )}
+
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className={cn("w-[220px] justify-start text-left font-normal", !dateRange && "text-muted-foreground")}>
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {dateRange?.from ? (dateRange.to ? (<>{format(dateRange.from, "MMM d")} – {format(dateRange.to, "MMM d, yyyy")}</>) : format(dateRange.from, "MMM d, yyyy")) : "Due Date"}
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-[220px]">
-              {savedFilters.map((sf) => (
-                <DropdownMenuItem key={sf.id} className="flex items-center justify-between gap-2">
-                  <span
-                    className="flex-1 truncate cursor-pointer"
-                    onClick={() => handleLoadFilter(sf)}
-                  >
-                    {sf.name}
-                  </span>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      deleteFilter(sf.id);
-                    }}
-                    className="text-muted-foreground hover:text-destructive p-0.5"
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </button>
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar mode="range" selected={dateRange} onSelect={handleDateRangeChange} numberOfMonths={2} initialFocus className={cn("p-3 pointer-events-auto")} />
+            </PopoverContent>
+          </Popover>
+        </div>
 
-        {/* Search */}
-        <form onSubmit={handleSearchSubmit} className="flex-1 min-w-[200px]">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search tasks, clients, task number..."
-              value={localSearch}
-              onChange={(e) => setLocalSearch(e.target.value)}
-              className="pl-9"
-            />
-          </div>
-        </form>
-
-        {/* Status Multi-Select */}
-        <MultiSelect
-          options={statusOptions}
-          selected={filters.status || []}
-          onChange={(vals) => onFiltersChange({ ...filters, status: vals.length ? vals : undefined })}
-          placeholder="Status"
-          className="w-[160px]"
-        />
-
-        {/* Priority Multi-Select */}
-        <MultiSelect
-          options={priorityOptions}
-          selected={filters.priority || []}
-          onChange={(vals) => onFiltersChange({ ...filters, priority: vals.length ? vals : undefined })}
-          placeholder="Priority"
-          className="w-[160px]"
-        />
-
-        {/* Type Multi-Select */}
-        <MultiSelect
-          options={typeOptions}
-          selected={filters.taskType || []}
-          onChange={(vals) => onFiltersChange({ ...filters, taskType: vals.length ? vals : undefined })}
-          placeholder="Type"
-          className="w-[160px]"
-        />
-
-        {/* Category Multi-Select */}
-        {categoryOptions.length > 0 && (
-          <MultiSelect
-            options={categoryOptions}
-            selected={filters.category || []}
-            onChange={(vals) => onFiltersChange({ ...filters, category: vals.length ? vals : undefined })}
-            placeholder="Category"
-            className="w-[160px]"
-          />
-        )}
-
-        {/* Date Range Picker */}
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              className={cn(
-                "w-[220px] justify-start text-left font-normal",
-                !dateRange && "text-muted-foreground"
-              )}
-            >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {dateRange?.from ? (
-                dateRange.to ? (
-                  <>
-                    {format(dateRange.from, "MMM d")} – {format(dateRange.to, "MMM d, yyyy")}
-                  </>
-                ) : (
-                  format(dateRange.from, "MMM d, yyyy")
-                )
-              ) : (
-                "Due Date"
-              )}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="range"
-              selected={dateRange}
-              onSelect={handleDateRangeChange}
-              numberOfMonths={2}
-              initialFocus
-              className={cn("p-3 pointer-events-auto")}
-            />
-          </PopoverContent>
-        </Popover>
+        {/* Row 2: Search + right slot */}
+        <div className="flex items-center gap-2">
+          <form onSubmit={handleSearchSubmit} className="flex-1 min-w-[200px]">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input placeholder="Search tasks, clients, task number..." value={localSearch} onChange={(e) => setLocalSearch(e.target.value)} className="pl-9" />
+            </div>
+          </form>
+          {rightSlot}
+        </div>
       </div>
 
       {/* Filter Tags Row */}
