@@ -196,7 +196,12 @@ export function TaskDashboard({ tasks, onViewDetail }: TaskDashboardProps) {
       axisTick: { show: false },
       splitLine: { show: false },
       axisLabel: { show: false },
-      title: { show: false },
+      title: {
+        show: true,
+        offsetCenter: [0, "25%"],
+        fontSize: 12,
+        color: "hsl(var(--muted-foreground))",
+      },
       detail: {
         valueAnimation: true,
         offsetCenter: [0, "0%"],
@@ -205,7 +210,7 @@ export function TaskDashboard({ tasks, onViewDetail }: TaskDashboardProps) {
         formatter: "{value}%",
         color: "inherit",
       },
-      data: [{ value: slaData.pct }],
+      data: [{ value: slaData.pct, name: "SLA Met" }],
     }],
   }), [slaData.pct]);
 
