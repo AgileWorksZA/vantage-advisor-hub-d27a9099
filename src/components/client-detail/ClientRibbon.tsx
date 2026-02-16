@@ -31,11 +31,6 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { Client, getDisplayName, getInitials } from "@/types/client";
 import ClientRibbonExpandedDetails from "./ClientRibbonExpandedDetails";
 
@@ -216,34 +211,14 @@ const ClientRibbon = ({ client, clientName, relatedEntities, onTabChange }: Clie
                   {client.profile_state}
                 </Badge>
                 {client.household_group && (
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Badge
-                        variant="outline"
-                        className="border-purple-500 text-purple-600 bg-transparent dark:text-purple-400 dark:border-purple-400 cursor-pointer hover:bg-purple-50 dark:hover:bg-purple-900/20"
-                      >
-                        <Users className="w-3 h-3 mr-1" />
-                        {client.household_group}
-                      </Badge>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-64 p-2" align="start">
-                      <p className="text-xs font-semibold text-muted-foreground mb-1 px-2">Related Entities</p>
-                      {relatedEntities.length === 0 ? (
-                        <p className="text-xs text-muted-foreground px-2 py-2">No related entities</p>
-                      ) : (
-                        relatedEntities.map((entity) => (
-                          <button
-                            key={entity.id}
-                            onClick={() => navigate(`/clients/${entity.id}`)}
-                            className="w-full text-left px-2 py-1.5 rounded-md hover:bg-muted text-sm flex flex-col"
-                          >
-                            <span className="font-medium">{entity.name}</span>
-                            <span className="text-xs text-muted-foreground">{entity.type}</span>
-                          </button>
-                        ))
-                      )}
-                    </PopoverContent>
-                  </Popover>
+                  <Badge
+                    variant="outline"
+                    className="border-purple-500 text-purple-600 bg-transparent dark:text-purple-400 dark:border-purple-400 cursor-pointer hover:bg-purple-50 dark:hover:bg-purple-900/20"
+                    onClick={() => onTabChange?.("relationships")}
+                  >
+                    <Users className="w-3 h-3 mr-1" />
+                    {client.household_group}
+                  </Badge>
                 )}
                 {client.household_group?.includes(client.surname) && (
                   <Badge
