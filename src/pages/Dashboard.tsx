@@ -60,7 +60,7 @@ const defaultDashboardLayout: WidgetLayout[] = [
   { i: 'clients-value', x: 3, y: 3, w: 3, h: 3 },
   { i: 'corporate-actions', x: 6, y: 3, w: 3, h: 3 },
   { i: 'onboarding-progress', x: 0, y: 6, w: 3, h: 3 },
-  { i: 'age-groups', x: 3, y: 6, w: 3, h: 4 },
+  { i: 'age-groups', x: 3, y: 6, w: 3, h: 5 },
 ];
 
 const DASHBOARD_WIDGETS: WidgetConfig[] = [
