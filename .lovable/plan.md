@@ -1,30 +1,36 @@
 
+## Fix SLA Gauge: Date Filtering + 3-Color Segments
 
-## Fix SLA Gauge Percentage Display and Bar Chart Hover
+### Issue 1: SLA Not Responding to Date Range
+The `slaData` calculation on line 111 filters from `tasks` (the full unfiltered list) instead of `periodTasks` (the date-filtered list). Changing this dependency makes the SLA widget react to the date selector.
 
-### Issue 1: SLA Gauge Not Showing Percentage Value
-The gauge arc and "SLA Met" label render correctly, but the percentage number (e.g., "7%") is invisible. The cause is `color: "inherit"` in the `detail` configuration -- ECharts renders on canvas where CSS `inherit` has no meaning, so the text renders as invisible/black on a dark background.
+### Issue 2: Show 3 Colors (Met / Breached / At Risk)
+The current gauge uses a single `progress` arc with one color based on the overall percentage. To show all three categories visually, we replace the single-value gauge with a **pie chart** styled as a half-donut (semi-circle) that displays three colored segments:
+- Green for % Met
+- Red for % Breached  
+- Orange for % At Risk
 
-### Issue 2: Bar Chart Hover Highlights Entire Row
-The "Tasks by Type" bar chart uses `axisPointer: { type: "shadow" }` which draws a full-width shaded band across the entire row when hovering. Only the bar itself should highlight.
+The percentage label in the center will still show "SLA Met" percentage.
 
-### Changes
+### Technical Changes
 
 **File: `src/components/tasks/TaskDashboard.tsx`**
 
-1. **Fix gauge detail color** -- Replace `color: "inherit"` with `color: "auto"`. ECharts' `"auto"` inherits from the series itemStyle color, which matches the gauge progress arc color and is always visible.
+1. **Fix date filtering** -- Change `slaData` to use `periodTasks` instead of `tasks`:
+   ```typescript
+   const withSla = periodTasks.filter(t => t.sla_deadline);
+   ```
+   Update the `useMemo` dependency from `[tasks]` to `[periodTasks]`.
 
-2. **Fix bar chart hover** -- Change `axisPointer` type from `"shadow"` to `"none"` so hovering only triggers the tooltip without highlighting the full row. Keep the tooltip trigger as `"axis"` so it still activates when hovering near a bar.
+2. **Replace gauge with semi-circle pie** -- Replace `slaGaugeOption` with a pie chart configuration:
+   - `startAngle: 180`, `endAngle: 0` to create a half-circle
+   - Three data items with fixed colors: green (adherent), red (breached), orange (atRisk)
+   - A "phantom" transparent segment to fill the bottom half
+   - Center label showing the SLA Met percentage using `graphic` elements
+   - If all counts are zero, show a single grey placeholder segment
 
-### Technical Detail
+3. **Update the legend beneath the chart** -- The existing HTML legend below the chart already shows Met/Breached/At Risk counts with colored dots, so no changes needed there.
 
-```typescript
-// Gauge detail fix (line ~211)
-detail: {
-  ...
-  color: "auto",  // was "inherit" which doesn't work in canvas
-},
-
-// Bar chart tooltip fix (line ~152)
-tooltip: { trigger: "axis", axisPointer: { type: "none" } },
-```
+### Summary
+- Only one file changes: `src/components/tasks/TaskDashboard.tsx`
+- Two edits: swap `tasks` to `periodTasks` in the SLA calculation, and replace the gauge series config with a 3-segment semi-circle pie
