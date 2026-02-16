@@ -1,52 +1,65 @@
 
 
-## Compact Kanban Ribbon and Fix Outer Scrollbar
+## Rearrange Kanban Filter Ribbon Layout
 
-### Problem
-The Kanban view has two separate horizontal bars (the filter ribbon and the "Group by" toolbar) taking up excessive vertical space. Additionally, the page layout creates a double/outer scrollbar because the kanban view wrapper inside `<main className="flex-1 overflow-y-auto">` uses `h-full` which conflicts with the scrollable main area.
+### Goal
+Move the Due Date picker inline with the Type/Category dropdowns, and place the Group by toggle below the search bar.
+
+### Current Layout (single row)
+```text
+[Search........................] [Status] [Priority] [Type] [Category] [Due Date]  | Group: [None] [Assignee] [Priority]
+```
+
+### New Layout (two rows)
+```text
+Row 1: [Status] [Priority] [Type] [Category] [Due Date]
+Row 2: [Search.............................] [Group: None | Assignee | Priority]
+```
 
 ### Changes
 
-**1. `src/components/tasks/TaskKanbanBoard.tsx`** -- Merge Group-by into filters area and remove the separate toolbar
+**1. `src/components/tasks/TaskFilters.tsx`**
+- Split the single flex-wrap row into two rows inside the bordered container
+- Row 1: Saved Views (if any), Status, Priority, Type, Category, Due Date -- all the dropdown filters together
+- Row 2: Search bar (flex-1) -- takes the full width of the second row
+- Accept optional `rightSlot` prop (ReactNode) to allow Tasks.tsx to inject the Group by buttons on the search row
 
-- Remove the standalone "Group by" toolbar `div` (lines 97-123)
-- Move the group-by buttons into a prop or render them inline at the start of the board, but the cleaner approach is to move them up into the filter area
-- Actually, the simplest fix: move the group-by toggle buttons out of `TaskKanbanBoard` and into the kanban section of `Tasks.tsx`, placed inline next to the `TaskFiltersComponent` on the same row
-
-**2. `src/components/tasks/TaskFilters.tsx`** -- Make the filter bar more compact for Kanban
-
-- Reduce padding from `p-4` to `px-3 py-2` on the filter container
-- Reduce gap from `gap-3` to `gap-2`
-- This tightens the ribbon without losing functionality
-
-**3. `src/pages/Tasks.tsx`** -- Fix the scroll context for Kanban view
-
-- The kanban view currently sits inside `<main className="flex-1 overflow-y-auto">` with an inner `<div className="flex flex-col h-full">`. This creates conflicting scroll areas
-- Change the kanban branch so it properly fills the available space: remove the extra wrapper div and let `TaskKanbanBoard` handle its own flex layout within `main`
-- Move the group-by buttons into the filter/ribbon area so there is one single compact strip containing: search, filters, and group-by toggles
-- The group-by state will be lifted to `Tasks.tsx` and passed as props
-
-**4. `src/components/tasks/TaskKanbanBoard.tsx`** -- Accept `groupBy` as a prop
-
-- Change `groupBy` from internal state to a prop so the parent controls it alongside the filter strip
-- Remove the toolbar div entirely from the board component
-- The board component focuses purely on rendering columns and handling drag-drop
-
-### Layout After Fix
-
-```text
-[Tab Bar: Dashboard | Analytics | Kanban | Overview]          [+ New Task]
-[Search...] [Status v] [Priority v] [Type v] [Due Date]  | Group: [None] [Assignee] [Priority]
-+---------------+---------------+------------------+---------------+---------------+
-| Not Started   | In Progress   | Pending Client   | Completed     | Cancelled     |
-```
-
-One compact ribbon, no double scrollbar.
+**2. `src/pages/Tasks.tsx`**
+- Pass the Group by toggle buttons as a `rightSlot` prop to TaskFiltersComponent, so they render inline on the search row (right-aligned)
+- Remove the separate Group by div from the kanban wrapper
 
 ### Technical Detail
 
-- `Tasks.tsx`: Add `kanbanGroupBy` state, render the group-by buttons in the same `px-6 pt-4` div as `TaskFiltersComponent`, pass `groupBy` prop to `TaskKanbanBoard`
-- `TaskKanbanBoard.tsx`: Remove `useState` for `groupBy`, accept it as a prop, delete the toolbar div
-- `TaskFilters.tsx`: Reduce padding (`p-4` to `px-3 py-2`) and gap (`gap-3` to `gap-2`)
-- The `main` overflow-y-auto handles all scrolling; the kanban board's outer div changes from `h-full` to `flex-1 min-h-0` to prevent overflow escape
+**TaskFilters.tsx** -- restructure the JSX inside the bordered container:
+```
+<div className="space-y-2">
+  <div className="space-y-2 px-3 py-2 bg-muted/30 rounded-lg border">
+    {/* Row 1: filter dropdowns */}
+    <div className="flex flex-wrap items-center gap-2">
+      [Saved Views] [Status] [Priority] [Type] [Category] [Due Date]
+    </div>
+    {/* Row 2: search + right slot */}
+    <div className="flex items-center gap-2">
+      <form className="flex-1 min-w-[200px]">...</form>
+      {rightSlot}
+    </div>
+  </div>
+  {/* Filter tags row (unchanged) */}
+</div>
+```
 
+**Tasks.tsx (lines 275-286)** -- pass Group by as rightSlot and remove the wrapper div:
+```
+<TaskFiltersComponent
+  filters={filters}
+  onFiltersChange={setFilters}
+  rightSlot={
+    <div className="flex items-center gap-1 shrink-0">
+      <span className="text-xs ...">Group:</span>
+      {buttons...}
+    </div>
+  }
+/>
+```
+
+Two files, layout restructure only.
