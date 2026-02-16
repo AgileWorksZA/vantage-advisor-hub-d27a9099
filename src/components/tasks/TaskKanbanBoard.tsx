@@ -3,7 +3,7 @@ import { EnhancedTask } from "@/hooks/useTasksEnhanced";
 import KanbanCard from "./KanbanCard";
 import { Button } from "@/components/ui/button";
 import { Users, Signal, Minus } from "lucide-react";
-import { ScrollArea } from "@/components/ui/scroll-area";
+
 
 const COLUMN_ORDER = [
   "Not Started",
@@ -163,7 +163,7 @@ const TaskKanbanBoard = ({ tasks, onTaskClick, onUpdateTask }: TaskKanbanBoardPr
                     </div>
 
                     {/* Cards */}
-                    <ScrollArea className="flex-1 max-h-[calc(100vh-320px)]">
+                    <div className="flex-1 overflow-hidden">
                       <div className="flex flex-col gap-2 p-2">
                         {columnTasks.length === 0 && (
                           <div className="flex items-center justify-center h-20 text-xs text-muted-foreground">
@@ -174,7 +174,7 @@ const TaskKanbanBoard = ({ tasks, onTaskClick, onUpdateTask }: TaskKanbanBoardPr
                           <KanbanCard key={task.id} task={task} onTaskClick={onTaskClick} />
                         ))}
                       </div>
-                    </ScrollArea>
+                    </div>
                   </div>
                 );
               })}
