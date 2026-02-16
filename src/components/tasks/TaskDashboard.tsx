@@ -149,7 +149,7 @@ export function TaskDashboard({ tasks, onViewDetail }: TaskDashboardProps) {
   }), [stats.byStatus]);
 
   const typeChartOption = useMemo(() => ({
-    tooltip: { trigger: "axis" as const, axisPointer: { type: "shadow" as const } },
+    tooltip: { trigger: "axis" as const, axisPointer: { type: "none" as const } },
     grid: { left: "3%", right: "4%", bottom: "3%", top: "3%", containLabel: true },
     xAxis: { type: "value" as const, show: false },
     yAxis: {
@@ -208,7 +208,7 @@ export function TaskDashboard({ tasks, onViewDetail }: TaskDashboardProps) {
         fontSize: 24,
         fontWeight: "bold" as const,
         formatter: "{value}%",
-        color: "inherit",
+        color: "auto",
       },
       data: [{ value: slaData.pct, name: "SLA Met" }],
     }],
