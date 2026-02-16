@@ -21,6 +21,7 @@ import vantageLogo from "@/assets/vantage-logo.png";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ClientRibbon from "@/components/client-detail/ClientRibbon";
+import ClientDashboardTab from "@/components/client-detail/ClientDashboardTab";
 import ClientSummaryTab from "@/components/client-detail/ClientSummaryTab";
 import ClientDetailsTab from "@/components/client-detail/ClientDetailsTab";
 
@@ -57,7 +58,7 @@ const ClientDetail = () => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("summary");
+  const [activeTab, setActiveTab] = useState("dashboard");
   const { regionalData, selectedAdvisors } = useRegion();
   const { setCurrentAdvisorInitials } = usePageContext();
 
@@ -253,6 +254,7 @@ const ClientDetail = () => {
             />
             <TabsList className="w-full justify-start h-auto p-0 bg-transparent rounded-none gap-0 flex-wrap px-6 mt-1">
               {[
+                { value: "dashboard", label: "Dashboard" },
                 { value: "summary", label: "Summary" },
                 { value: "360-view", label: "360 View" },
                 { value: "performance", label: "Performance" },
@@ -278,8 +280,11 @@ const ClientDetail = () => {
 
           {/* Scrollable tab content */}
           <main className="flex-1 p-6 overflow-auto">
+            <TabsContent value="dashboard" className="mt-0">
+              <ClientDashboardTab client={client} clientId={clientId!} onTabChange={setActiveTab} />
+            </TabsContent>
             <TabsContent value="summary" className="mt-0">
-              <ClientSummaryTab 
+              <ClientSummaryTab
                 client={client} 
                 clientId={clientId!} 
                 onShowMoreActivity={() => setActiveTab("recent-activity")}
