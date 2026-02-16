@@ -47,6 +47,7 @@ const ClientDetailsTab = ({ client, onUpdate }: ClientDetailsTabProps) => {
     gender: client.gender || "",
     date_of_birth: client.date_of_birth || "",
     nationality: client.nationality || "South African",
+    tax_number: client.tax_number || "",
     home_number: client.home_number || "",
     work_number: client.work_number || "",
     work_extension: client.work_extension || "",
@@ -94,6 +95,7 @@ const ClientDetailsTab = ({ client, onUpdate }: ClientDetailsTabProps) => {
       gender: client.gender || "",
       date_of_birth: client.date_of_birth || "",
       nationality: client.nationality || "South African",
+      tax_number: client.tax_number || "",
       home_number: client.home_number || "",
       work_number: client.work_number || "",
       work_extension: client.work_extension || "",
@@ -163,6 +165,7 @@ const ClientDetailsTab = ({ client, onUpdate }: ClientDetailsTabProps) => {
         country_of_issue: formData.country_of_issue || null,
         date_of_birth: formData.date_of_birth || null,
         nationality: formData.nationality || null,
+        tax_number: formData.tax_number || null,
         home_number: formData.home_number || null,
         work_number: formData.work_number || null,
         work_extension: formData.work_extension || null,
@@ -461,6 +464,15 @@ const ClientDetailsTab = ({ client, onUpdate }: ClientDetailsTabProps) => {
                         <SelectItem value="Zimbabwean">Zimbabwean</SelectItem>
                       </SelectContent>
                     </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Tax number</Label>
+                    <Input 
+                      value={formData.tax_number} 
+                      onChange={(e) => handleChange("tax_number", e.target.value)}
+                      placeholder="Enter tax number"
+                    />
                   </div>
                 </div>
               </CardContent>
