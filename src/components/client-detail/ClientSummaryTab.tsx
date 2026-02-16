@@ -12,7 +12,8 @@ import { Switch } from "@/components/ui/switch";
 import { Users, Loader2 } from "lucide-react";
 import { useClientMeetingPrep } from "@/hooks/useClientMeetingPrep";
 import { useHouseholdMeetingPrep } from "@/hooks/useHouseholdMeetingPrep";
-import OpportunitiesTab, { getOpportunitiesCount } from "./next-best-action/OpportunitiesTab";
+import OpportunitiesTab, { getOpportunitiesCount, buildGapOpportunities } from "./next-best-action/OpportunitiesTab";
+import OpportunitySummaryTiles from "./next-best-action/OpportunitySummaryTiles";
 import OutstandingTab from "./next-best-action/OutstandingTab";
 import RecentActivityTab, { RECENT_ACTIVITY_COUNT } from "./next-best-action/RecentActivityTab";
 import { MeetingPrepSheet } from "./MeetingPrepSheet";
@@ -136,6 +137,7 @@ const ClientSummaryTab = ({ client, clientId, onShowMoreActivity, onTabChange }:
   const activeTasks = householdView ? householdData.tasks : prepData.tasks;
   const activeDocs = householdView ? householdData.documents : prepData.documents;
 
+  const gapOpportunities = useMemo(() => buildGapOpportunities(activeProducts, householdView), [activeProducts, householdView]);
   const oppsCount = getOpportunitiesCount(activeOpps, activeProducts, householdView);
   const outstandingCount = activeTasks.length + activeDocs.length;
 
@@ -171,6 +173,7 @@ const ClientSummaryTab = ({ client, clientId, onShowMoreActivity, onTabChange }:
             </div>
           </CardHeader>
           <CardContent className="pt-0 flex-1 flex flex-col">
+            <OpportunitySummaryTiles opportunities={activeOpps} gapOpportunities={gapOpportunities} jurisdiction={clientJurisdiction} />
             <Tabs defaultValue="opportunities" className="w-full flex-1 flex flex-col">
               <TabsList className="w-full h-8 mb-2">
                 <TabsTrigger value="opportunities" className="text-xs flex-1">
