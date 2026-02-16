@@ -23,7 +23,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ClientRibbon from "@/components/client-detail/ClientRibbon";
 import ClientSummaryTab from "@/components/client-detail/ClientSummaryTab";
 import ClientDetailsTab from "@/components/client-detail/ClientDetailsTab";
-import ClientCRMTab from "@/components/client-detail/ClientCRMTab";
+
 import ClientRelationshipsTab from "@/components/client-detail/ClientRelationshipsTab";
 import ClientWorkflowsTab from "@/components/client-detail/ClientWorkflowsTab";
 import ClientComplianceTab from "@/components/client-detail/ClientComplianceTab";
@@ -257,7 +257,6 @@ const ClientDetail = () => {
                 { value: "360-view", label: "360 View" },
                 { value: "performance", label: "Performance" },
                 { value: "details", label: "Details" },
-                { value: "crm", label: "CRM" },
                 { value: "meetings", label: "Meetings" },
                 { value: "relationships", label: "Relationships" },
                 { value: "workflows", label: "Workflows" },
@@ -295,9 +294,6 @@ const ClientDetail = () => {
             </TabsContent>
             <TabsContent value="details" className="mt-0">
               <ClientDetailsTab client={client} onUpdate={updateClient} />
-            </TabsContent>
-            <TabsContent value="crm" className="mt-0">
-              <ClientCRMTab client={client} onUpdate={updateClient} />
             </TabsContent>
             <TabsContent value="meetings" className="mt-0">
               <ClientMeetingsTab />
