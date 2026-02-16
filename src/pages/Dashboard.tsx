@@ -60,7 +60,7 @@ const defaultDashboardLayout: WidgetLayout[] = [
   { i: 'clients-value', x: 3, y: 3, w: 3, h: 3 },
   { i: 'corporate-actions', x: 6, y: 3, w: 3, h: 3 },
   { i: 'onboarding-progress', x: 0, y: 6, w: 3, h: 3 },
-  { i: 'age-groups', x: 3, y: 6, w: 3, h: 5 },
+  
 ];
 
 const DASHBOARD_WIDGETS: WidgetConfig[] = [
@@ -71,7 +71,7 @@ const DASHBOARD_WIDGETS: WidgetConfig[] = [
   { id: 'clients-value', label: 'Clients by Value' },
   { id: 'corporate-actions', label: 'Upcoming Corporate Actions' },
   { id: 'onboarding-progress', label: 'Account Onboarding Progress' },
-  { id: 'age-groups', label: 'Clients by Age Group' },
+  
 ];
 
 const Dashboard = () => {
@@ -80,7 +80,7 @@ const Dashboard = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [caFilter, setCaFilter] = useState<'mandatory' | 'voluntary'>('mandatory');
-  const [ageGroups, setAgeGroups] = useState<{ label: string; count: number; ageFrom: number; ageTo: number }[]>([]);
+  
   
   // Use global region context with filtered data
   const { selectedRegion, setSelectedRegion, filteredRegionalData, selectedAdvisors, regionalData } = useRegion();
@@ -229,50 +229,6 @@ const Dashboard = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  // Fetch client age groups
-  useEffect(() => {
-    const fetchAgeGroups = async () => {
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
-      if (!currentUser) return;
-
-      const { data, error } = await supabase
-        .from('clients')
-        .select('date_of_birth')
-        .eq('user_id', currentUser.id)
-        .not('date_of_birth', 'is', null);
-
-      if (error || !data) return;
-
-      const buckets = [
-        { label: 'Under 20', ageFrom: 0, ageTo: 19, count: 0 },
-        { label: '20 - 29', ageFrom: 20, ageTo: 29, count: 0 },
-        { label: '30 - 39', ageFrom: 30, ageTo: 39, count: 0 },
-        { label: '40 - 49', ageFrom: 40, ageTo: 49, count: 0 },
-        { label: '50 - 59', ageFrom: 50, ageTo: 59, count: 0 },
-        { label: '60 - 69', ageFrom: 60, ageTo: 69, count: 0 },
-        { label: '70 - 79', ageFrom: 70, ageTo: 79, count: 0 },
-        { label: '80+', ageFrom: 80, ageTo: 999, count: 0 },
-      ];
-
-      const today = new Date();
-      data.forEach((row) => {
-        const dob = row.date_of_birth;
-        if (!dob) return;
-        const birthDate = new Date(dob);
-        let age = today.getFullYear() - birthDate.getFullYear();
-        const monthDiff = today.getMonth() - birthDate.getMonth();
-        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-          age--;
-        }
-        const bucket = buckets.find(b => age >= b.ageFrom && age <= b.ageTo);
-        if (bucket) bucket.count++;
-      });
-
-      setAgeGroups(buckets);
-    };
-
-    fetchAgeGroups();
-  }, [user]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -629,47 +585,6 @@ const Dashboard = () => {
               <OnboardingProgressWidget selectedAdvisorNames={selectedAdvisorNames} />
             </div>}
 
-            {/* Clients by Age Group */}
-            {isWidgetVisible('age-groups') && <div key="age-groups">
-              <Card className="h-full">
-                <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
-                  <div className="flex items-center gap-2">
-                    <GripVertical className="w-4 h-4 text-muted-foreground" />
-                    <CardTitle className="text-sm font-medium">Clients by Age Group</CardTitle>
-                  </div>
-                  <Button variant="ghost" size="icon" className="h-6 w-6">
-                    <X className="w-4 h-4" />
-                  </Button>
-                </CardHeader>
-                <CardContent className="px-4 pb-4">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="text-muted-foreground text-xs">
-                        <th className="text-left pb-2 font-normal">Age Group</th>
-                        <th className="text-right pb-2 font-normal">Clients</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {ageGroups.filter(g => g.count > 0).map(group => (
-                        <tr
-                          key={group.label}
-                          className="border-t border-border hover:bg-muted/50 cursor-pointer"
-                          onClick={() => navigate(`/clients?filter=age-group&ageFrom=${group.ageFrom}&ageTo=${group.ageTo}`)}
-                        >
-                          <td className="py-1.5">{group.label}</td>
-                          <td className="py-1.5 text-right">{group.count}</td>
-                        </tr>
-                      ))}
-                      {ageGroups.every(g => g.count === 0) && (
-                        <tr>
-                          <td colSpan={2} className="py-4 text-center text-muted-foreground text-xs">No age data available</td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </CardContent>
-              </Card>
-            </div>}
           </DraggableWidgetGrid>
         </main>
       </div>
