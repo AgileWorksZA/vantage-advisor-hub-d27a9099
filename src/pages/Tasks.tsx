@@ -58,7 +58,7 @@ const Tasks = () => {
     return "dashboard";
   });
 
-  // Build initial filters from URL params
+  // Detail/Overview filters - only used for the Overview table, NOT for the dashboard
   const [filters, setFilters] = useState<TaskFilters>(() => {
     const initial: TaskFilters = {};
     if (urlTaskType) initial.taskType = [urlTaskType];
@@ -113,7 +113,8 @@ const Tasks = () => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
 
-  const { tasks: allTasks, stats: rawStats, loading, createTask, updateTask, deleteTask, togglePin, addNote } = useTasksEnhanced(filters);
+  // Fetch ALL tasks (no filters) - dashboard & analytics always see everything
+  const { tasks: allTasks, loading, createTask, updateTask, deleteTask, togglePin, addNote } = useTasksEnhanced();
   const { selectedAdvisors, regionalData } = useRegion();
 
   // Map selected advisor initials to full names for filtering
@@ -123,46 +124,57 @@ const Tasks = () => {
       .map(a => a.name);
   }, [selectedAdvisors, regionalData.advisors]);
 
-  // Filter tasks by selected advisors
-  const tasks = useMemo(() => {
+  // Filter tasks by selected advisors (global filter for all views)
+  const advisorFilteredTasks = useMemo(() => {
     return allTasks.filter(task => {
-      // Tasks without a client (practice tasks) are always visible
       if (!task.client_id) return true;
-      // Tasks with a client must match a selected advisor
       return task.client_advisor ? selectedAdvisorNames.includes(task.client_advisor) : false;
     });
   }, [allTasks, selectedAdvisorNames]);
 
-  // Recalculate stats from filtered tasks
-  const stats = useMemo(() => {
-    const today = new Date().toISOString().split("T")[0];
-    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-    const s = {
-      totalOpen: tasks.filter(t => !["Completed", "Cancelled"].includes(t.status)).length,
-      dueToday: tasks.filter(t => t.due_date === today && !["Completed", "Cancelled"].includes(t.status)).length,
-      overdue: tasks.filter(t => t.due_date && t.due_date < today && !["Completed", "Cancelled"].includes(t.status)).length,
-      completedThisWeek: tasks.filter(t => t.status === "Completed" && t.completed_at && t.completed_at >= weekAgo).length,
-      byStatus: {} as Record<string, number>,
-      byType: {} as Record<string, number>,
-      byPriority: {} as Record<string, number>,
-    };
-    tasks.forEach(t => {
-      s.byStatus[t.status] = (s.byStatus[t.status] || 0) + 1;
-      s.byType[t.task_type] = (s.byType[t.task_type] || 0) + 1;
-      s.byPriority[t.priority] = (s.byPriority[t.priority] || 0) + 1;
-    });
-    return s;
-  }, [tasks]);
+  // Apply detail filters client-side for the Overview table only
+  const filteredTasks = useMemo(() => {
+    let result = advisorFilteredTasks;
+    if (filters.status && filters.status.length > 0) {
+      result = result.filter(t => filters.status!.includes(t.status));
+    }
+    if (filters.priority && filters.priority.length > 0) {
+      result = result.filter(t => filters.priority!.includes(t.priority));
+    }
+    if (filters.taskType && filters.taskType.length > 0) {
+      result = result.filter(t => filters.taskType!.includes(t.task_type));
+    }
+    if (filters.category && filters.category.length > 0) {
+      result = result.filter(t => filters.category!.includes(t.category || ""));
+    }
+    if (filters.dueDateFrom) {
+      result = result.filter(t => t.due_date && t.due_date >= filters.dueDateFrom!);
+    }
+    if (filters.dueDateTo) {
+      result = result.filter(t => t.due_date && t.due_date <= filters.dueDateTo!);
+    }
+    if (filters.assignedTo) {
+      result = result.filter(t => t.assigned_to_name === filters.assignedTo);
+    }
+    if (filters.isPinned !== undefined) {
+      result = result.filter(t => t.is_pinned === filters.isPinned);
+    }
+    if (filters.search) {
+      const s = filters.search.toLowerCase();
+      result = result.filter(t => t.title.toLowerCase().includes(s) || (t.description || "").toLowerCase().includes(s));
+    }
+    return result;
+  }, [advisorFilteredTasks, filters]);
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
 
   const paginatedTasks = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
-    return tasks.slice(startIndex, startIndex + itemsPerPage);
-  }, [tasks, currentPage]);
+    return filteredTasks.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredTasks, currentPage]);
 
-  const totalPages = Math.ceil(tasks.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredTasks.length / itemsPerPage);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -186,8 +198,12 @@ const Tasks = () => {
   const handleViewChange = (newView: "dashboard" | "analytics" | "detail", newFilters?: TaskFilters) => {
     setView(newView);
     setSearchParams(newView === "dashboard" ? {} : { view: newView });
-    if (newFilters) {
+    if (newView === "dashboard") {
+      // Clear detail filters when returning to dashboard
+      setFilters({});
+    } else if (newFilters) {
       setFilters(newFilters);
+      setCurrentPage(1);
     }
   };
 
@@ -245,16 +261,16 @@ const Tasks = () => {
 
         <main className="flex-1 overflow-y-auto">
           {view === "dashboard" ? (
-            <TaskDashboard stats={stats} onViewDetail={(filters) => handleViewChange("detail", filters)} />
+            <TaskDashboard tasks={advisorFilteredTasks} onViewDetail={(f) => handleViewChange("detail", f)} />
           ) : view === "analytics" ? (
-            <TaskAnalyticsTab tasks={tasks} onDrillDown={(f) => handleViewChange("detail", f)} />
+            <TaskAnalyticsTab tasks={advisorFilteredTasks} onDrillDown={(f) => handleViewChange("detail", f)} />
           ) : (
             <div className="p-6 space-y-4">
               <TaskFiltersComponent filters={filters} onFiltersChange={setFilters} />
               <TaskTable tasks={paginatedTasks} loading={loading} onTaskClick={handleTaskClick} onTogglePin={(id, isPinned) => togglePin(id, isPinned)} onDeleteTask={deleteTask} selectedTasks={selectedTaskIds} onSelectionChange={setSelectedTaskIds} />
               {totalPages > 1 && (
                 <div className="flex items-center justify-between py-4">
-                  <p className="text-sm text-muted-foreground">Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, tasks.length)} of {tasks.length} tasks</p>
+                  <p className="text-sm text-muted-foreground">Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredTasks.length)} of {filteredTasks.length} tasks</p>
                   <div className="flex items-center gap-2">
                     <Button variant="outline" size="sm" disabled={currentPage === 1} onClick={() => setCurrentPage((p) => p - 1)}>Previous</Button>
                     <span className="text-sm">Page {currentPage} of {totalPages}</span>

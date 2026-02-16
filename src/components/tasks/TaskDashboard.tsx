@@ -1,36 +1,149 @@
-import { useMemo } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { EChartsWrapper } from "@/components/ui/echarts-wrapper";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { Button } from "@/components/ui/button";
 import {
   CheckCircle2,
   Clock,
   AlertTriangle,
   ListTodo,
+  CalendarIcon,
 } from "lucide-react";
-import { TaskStats, TaskFilters } from "@/hooks/useTasksEnhanced";
+import { EnhancedTask, TaskFilters } from "@/hooks/useTasksEnhanced";
+import {
+  startOfWeek,
+  endOfWeek,
+  startOfMonth,
+  endOfMonth,
+  subWeeks,
+  subMonths,
+  isWithinInterval,
+  startOfDay,
+  endOfDay,
+  isBefore,
+  format,
+} from "date-fns";
+
+type DatePreset = "this_week" | "last_week" | "this_month" | "last_month" | "custom";
+
+const getDateRange = (preset: DatePreset, customFrom?: Date, customTo?: Date): { start: Date; end: Date } => {
+  const now = new Date();
+  switch (preset) {
+    case "this_week":
+      return { start: startOfWeek(now, { weekStartsOn: 1 }), end: endOfWeek(now, { weekStartsOn: 1 }) };
+    case "last_week": {
+      const s = subWeeks(startOfWeek(now, { weekStartsOn: 1 }), 1);
+      return { start: s, end: endOfWeek(s, { weekStartsOn: 1 }) };
+    }
+    case "this_month":
+      return { start: startOfMonth(now), end: endOfMonth(now) };
+    case "last_month": {
+      const lm = subMonths(now, 1);
+      return { start: startOfMonth(lm), end: endOfMonth(lm) };
+    }
+    case "custom":
+      return { start: customFrom || startOfWeek(now, { weekStartsOn: 1 }), end: customTo || endOfWeek(now, { weekStartsOn: 1 }) };
+    default:
+      return { start: startOfWeek(now, { weekStartsOn: 1 }), end: endOfWeek(now, { weekStartsOn: 1 }) };
+  }
+};
 
 interface TaskDashboardProps {
-  stats: TaskStats;
+  tasks: EnhancedTask[];
   onViewDetail: (filters?: TaskFilters) => void;
 }
 
-export function TaskDashboard({ stats, onViewDetail }: TaskDashboardProps) {
+export function TaskDashboard({ tasks, onViewDetail }: TaskDashboardProps) {
+  const [datePreset, setDatePreset] = useState<DatePreset>("this_week");
+  const [customFrom, setCustomFrom] = useState<Date | undefined>();
+  const [customTo, setCustomTo] = useState<Date | undefined>();
+
+  const { start: periodStart, end: periodEnd } = useMemo(
+    () => getDateRange(datePreset, customFrom, customTo),
+    [datePreset, customFrom, customTo]
+  );
+
+  // Filter tasks by date period (based on due_date for open, completed_at for completed)
+  const periodTasks = useMemo(() => {
+    return tasks.filter(t => {
+      const dateStr = t.status === "Completed" ? t.completed_at : t.due_date;
+      if (!dateStr) return false;
+      const d = new Date(dateStr);
+      return isWithinInterval(d, { start: startOfDay(periodStart), end: endOfDay(periodEnd) });
+    });
+  }, [tasks, periodStart, periodEnd]);
+
+  // Compute stats from period-filtered tasks
+  const stats = useMemo(() => {
+    const today = startOfDay(new Date());
+    const todayStr = format(today, "yyyy-MM-dd");
+
+    const s = {
+      totalOpen: periodTasks.filter(t => !["Completed", "Cancelled"].includes(t.status)).length,
+      dueToday: periodTasks.filter(t => t.due_date === todayStr && !["Completed", "Cancelled"].includes(t.status)).length,
+      overdue: periodTasks.filter(t => t.due_date && isBefore(new Date(t.due_date), today) && !["Completed", "Cancelled"].includes(t.status)).length,
+      completedInPeriod: periodTasks.filter(t => t.status === "Completed").length,
+      byStatus: {} as Record<string, number>,
+      byType: {} as Record<string, number>,
+      byPriority: {} as Record<string, number>,
+    };
+    periodTasks.forEach(t => {
+      s.byStatus[t.status] = (s.byStatus[t.status] || 0) + 1;
+      s.byType[t.task_type] = (s.byType[t.task_type] || 0) + 1;
+      s.byPriority[t.priority] = (s.byPriority[t.priority] || 0) + 1;
+    });
+    return s;
+  }, [periodTasks]);
+
+  // SLA Adherence: use sla_deadline field
+  const slaData = useMemo(() => {
+    const now = new Date();
+    const withSla = tasks.filter(t => t.sla_deadline);
+    let adherent = 0;
+    let breached = 0;
+    withSla.forEach(t => {
+      const deadline = new Date(t.sla_deadline!);
+      if (t.status === "Completed" && t.completed_at) {
+        if (new Date(t.completed_at) <= deadline) adherent++;
+        else breached++;
+      } else if (!["Completed", "Cancelled"].includes(t.status) && isBefore(deadline, now)) {
+        breached++;
+      } else if (t.status === "Completed") {
+        // Completed but no completed_at — count as adherent
+        adherent++;
+      }
+      // Open tasks not yet past deadline are neither
+    });
+    const pct = (adherent + breached) > 0 ? Math.round((adherent / (adherent + breached)) * 100) : 100;
+    return { adherent, breached, pct };
+  }, [tasks]);
+
+  const periodLabel = useMemo(() => `${format(periodStart, "d MMM")} – ${format(periodEnd, "d MMM yyyy")}`, [periodStart, periodEnd]);
+
+  const openStatuses = ["Not Started", "In Progress", "Pending Client"];
+
   const statusChartOption = useMemo(() => ({
     tooltip: { trigger: "item" as const },
     legend: { bottom: "0%", left: "center", itemGap: 8, textStyle: { fontSize: 11 } },
-    series: [
-      {
-        type: "pie" as const,
-        radius: ["35%", "60%"],
-        center: ["50%", "45%"],
-        avoidLabelOverlap: false,
-        itemStyle: { borderRadius: 0, borderColor: "transparent", borderWidth: 2 },
-        label: { show: false },
-        emphasis: { label: { show: true, fontSize: 14, fontWeight: "bold" as const } },
-        data: Object.entries(stats.byStatus).map(([name, value]) => ({ name, value })),
-      },
-    ],
+    series: [{
+      type: "pie" as const,
+      radius: ["35%", "60%"],
+      center: ["50%", "45%"],
+      avoidLabelOverlap: false,
+      itemStyle: { borderRadius: 0, borderColor: "transparent", borderWidth: 2 },
+      label: { show: false },
+      emphasis: { label: { show: true, fontSize: 14, fontWeight: "bold" as const } },
+      data: Object.entries(stats.byStatus).map(([name, value]) => ({ name, value })),
+    }],
   }), [stats.byStatus]);
 
   const typeChartOption = useMemo(() => ({
@@ -43,95 +156,126 @@ export function TaskDashboard({ stats, onViewDetail }: TaskDashboardProps) {
       axisLine: { show: false },
       axisTick: { show: false },
     },
-    series: [
-      {
-        type: "bar" as const,
-        data: Object.values(stats.byType).slice(0, 8),
-        itemStyle: { borderRadius: [0, 4, 4, 0] },
-        barWidth: 16,
-      },
-    ],
+    series: [{
+      type: "bar" as const,
+      data: Object.values(stats.byType).slice(0, 8),
+      itemStyle: { borderRadius: [0, 4, 4, 0] },
+      barWidth: 16,
+    }],
   }), [stats.byType]);
 
   const priorityChartOption = useMemo(() => ({
     tooltip: { trigger: "item" as const },
     legend: { bottom: 0, left: "center" },
-    series: [
-      {
-        type: "pie" as const,
-        radius: "70%",
-        data: Object.entries(stats.byPriority).map(([name, value]) => ({ name, value })),
-        emphasis: {
-          itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: "rgba(0, 0, 0, 0.5)" },
-        },
+    series: [{
+      type: "pie" as const,
+      radius: "70%",
+      data: Object.entries(stats.byPriority).map(([name, value]) => ({ name, value })),
+      emphasis: {
+        itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: "rgba(0, 0, 0, 0.5)" },
       },
-    ],
+    }],
   }), [stats.byPriority]);
 
-  const slaCompliance = stats.totalOpen > 0 
-    ? Math.round(((stats.totalOpen - stats.overdue) / stats.totalOpen) * 100)
-    : 100;
-
   const slaGaugeOption = useMemo(() => ({
-    series: [
-      {
-        type: "gauge" as const,
-        startAngle: 180,
-        endAngle: 0,
-        min: 0,
-        max: 100,
-        splitNumber: 4,
-        itemStyle: {
-          color: slaCompliance >= 80 ? "hsl(var(--chart-2))" : slaCompliance >= 50 ? "hsl(var(--chart-4))" : "hsl(var(--destructive))",
-        },
-        progress: { show: true, width: 18 },
-        pointer: { show: false },
-        axisLine: { lineStyle: { width: 18 } },
-        axisTick: { show: false },
-        splitLine: { show: false },
-        axisLabel: { show: false },
-        title: { show: false },
-        detail: {
-          valueAnimation: true,
-          offsetCenter: [0, "0%"],
-          fontSize: 24,
-          fontWeight: "bold" as const,
-          formatter: "{value}%",
-          color: "inherit",
-        },
-        data: [{ value: slaCompliance }],
+    series: [{
+      type: "gauge" as const,
+      startAngle: 180,
+      endAngle: 0,
+      min: 0,
+      max: 100,
+      splitNumber: 4,
+      itemStyle: {
+        color: slaData.pct >= 80 ? "hsl(var(--chart-2))" : slaData.pct >= 50 ? "hsl(var(--chart-4))" : "hsl(var(--destructive))",
       },
-    ],
-  }), [slaCompliance]);
+      progress: { show: true, width: 18 },
+      pointer: { show: false },
+      axisLine: { lineStyle: { width: 18 } },
+      axisTick: { show: false },
+      splitLine: { show: false },
+      axisLabel: { show: false },
+      title: { show: false },
+      detail: {
+        valueAnimation: true,
+        offsetCenter: [0, "0%"],
+        fontSize: 24,
+        fontWeight: "bold" as const,
+        formatter: "{value}%",
+        color: "inherit",
+      },
+      data: [{ value: slaData.pct }],
+    }],
+  }), [slaData.pct]);
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const todayStr = today.toISOString().split("T")[0];
-  const yesterday = new Date(today);
+  const todayStr = format(new Date(), "yyyy-MM-dd");
+  const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayStr = yesterday.toISOString().split("T")[0];
+  const yesterdayStr = format(yesterday, "yyyy-MM-dd");
 
   const handleStatusChartClick = (params: any) => {
     if (params?.name) onViewDetail({ status: [params.name] });
   };
   const handleTypeChartClick = (params: any) => {
-    if (params?.name) onViewDetail({ taskType: [params.name] });
+    if (params?.name) onViewDetail({ taskType: [params.name], status: openStatuses });
   };
   const handlePriorityChartClick = (params: any) => {
-    if (params?.name) onViewDetail({ priority: [params.name] });
+    if (params?.name) onViewDetail({ priority: [params.name], status: openStatuses });
   };
 
   return (
     <div className="p-6 space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold">Tasks Dashboard</h1>
-        <p className="text-muted-foreground">Overview of your task performance</p>
+      {/* Header with date selector */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Tasks Dashboard</h1>
+          <p className="text-muted-foreground">Overview of your task performance</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Select value={datePreset} onValueChange={(v) => setDatePreset(v as DatePreset)}>
+            <SelectTrigger className="w-[160px] gap-2">
+              <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="this_week">This Week</SelectItem>
+              <SelectItem value="last_week">Last Week</SelectItem>
+              <SelectItem value="this_month">This Month</SelectItem>
+              <SelectItem value="last_month">Last Month</SelectItem>
+              <SelectItem value="custom">Custom Range</SelectItem>
+            </SelectContent>
+          </Select>
+          {datePreset === "custom" && (
+            <div className="flex items-center gap-1">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="text-xs">
+                    {customFrom ? format(customFrom, "dd MMM") : "From"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar mode="single" selected={customFrom} onSelect={setCustomFrom} />
+                </PopoverContent>
+              </Popover>
+              <span className="text-muted-foreground text-xs">–</span>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="text-xs">
+                    {customTo ? format(customTo, "dd MMM") : "To"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar mode="single" selected={customTo} onSelect={setCustomTo} />
+                </PopoverContent>
+              </Popover>
+            </div>
+          )}
+          <span className="text-xs text-muted-foreground">{periodLabel}</span>
+        </div>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => onViewDetail()}>
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => onViewDetail({ status: openStatuses })}>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-primary/10 rounded-full">
@@ -145,7 +289,7 @@ export function TaskDashboard({ stats, onViewDetail }: TaskDashboardProps) {
           </CardContent>
         </Card>
 
-        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => onViewDetail({ dueDateFrom: todayStr, dueDateTo: todayStr })}>
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => onViewDetail({ dueDateFrom: todayStr, dueDateTo: todayStr, status: openStatuses })}>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-amber-500/10 rounded-full">
@@ -159,7 +303,7 @@ export function TaskDashboard({ stats, onViewDetail }: TaskDashboardProps) {
           </CardContent>
         </Card>
 
-        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => onViewDetail({ dueDateTo: yesterdayStr })}>
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => onViewDetail({ dueDateTo: yesterdayStr, status: openStatuses })}>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-destructive/10 rounded-full">
@@ -180,8 +324,8 @@ export function TaskDashboard({ stats, onViewDetail }: TaskDashboardProps) {
                 <CheckCircle2 className="h-6 w-6 text-emerald-500" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Completed This Week</p>
-                <p className="text-2xl font-bold">{stats.completedThisWeek}</p>
+                <p className="text-sm text-muted-foreground">Completed in Period</p>
+                <p className="text-2xl font-bold">{stats.completedInPeriod}</p>
               </div>
             </div>
           </CardContent>
@@ -217,9 +361,9 @@ export function TaskDashboard({ stats, onViewDetail }: TaskDashboardProps) {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="cursor-pointer" onClick={() => onViewDetail({ status: openStatuses })}>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">SLA Compliance</CardTitle>
+            <CardTitle className="text-sm font-medium">SLA Adherence</CardTitle>
           </CardHeader>
           <CardContent>
             <EChartsWrapper option={slaGaugeOption} height={220} />
