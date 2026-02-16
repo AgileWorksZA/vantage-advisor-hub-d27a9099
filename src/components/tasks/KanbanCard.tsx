@@ -53,9 +53,14 @@ const KanbanCard = ({ task, onTaskClick }: KanbanCardProps) => {
 
       <div className="ml-2 flex flex-1 flex-col gap-1 min-w-0">
         <div className="flex items-start justify-between gap-1">
-          <span className="text-sm font-medium leading-tight truncate">
-            {task.title}
-          </span>
+          <div className="flex flex-col gap-0.5 min-w-0">
+            {task.task_number && (
+              <span className="text-[10px] font-mono text-muted-foreground">#{task.task_number}</span>
+            )}
+            <span className="text-sm font-medium leading-tight line-clamp-2">
+              {task.title}
+            </span>
+          </div>
           {task.is_pinned && (
             <Pin className="h-3 w-3 shrink-0 text-primary fill-primary" />
           )}
