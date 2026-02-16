@@ -107,9 +107,11 @@ export function TaskDashboard({ tasks, onViewDetail }: TaskDashboardProps) {
   // SLA Adherence: use sla_deadline field
   const slaData = useMemo(() => {
     const now = new Date();
+    const threeDaysFromNow = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
     const withSla = tasks.filter(t => t.sla_deadline);
     let adherent = 0;
     let breached = 0;
+    let atRisk = 0;
     withSla.forEach(t => {
       const deadline = new Date(t.sla_deadline!);
       if (t.status === "Completed" && t.completed_at) {
@@ -117,14 +119,14 @@ export function TaskDashboard({ tasks, onViewDetail }: TaskDashboardProps) {
         else breached++;
       } else if (!["Completed", "Cancelled"].includes(t.status) && isBefore(deadline, now)) {
         breached++;
+      } else if (!["Completed", "Cancelled"].includes(t.status) && isBefore(deadline, threeDaysFromNow)) {
+        atRisk++;
       } else if (t.status === "Completed") {
-        // Completed but no completed_at — count as adherent
         adherent++;
       }
-      // Open tasks not yet past deadline are neither
     });
     const pct = (adherent + breached) > 0 ? Math.round((adherent / (adherent + breached)) * 100) : 100;
-    return { adherent, breached, pct };
+    return { adherent, breached, atRisk, pct, total: withSla.length };
   }, [tasks]);
 
   const periodLabel = useMemo(() => `${format(periodStart, "d MMM")} – ${format(periodEnd, "d MMM yyyy")}`, [periodStart, periodEnd]);
@@ -366,7 +368,21 @@ export function TaskDashboard({ tasks, onViewDetail }: TaskDashboardProps) {
             <CardTitle className="text-sm font-medium">SLA Adherence</CardTitle>
           </CardHeader>
           <CardContent>
-            <EChartsWrapper option={slaGaugeOption} height={220} />
+            <EChartsWrapper option={slaGaugeOption} height={160} />
+            <div className="flex justify-center gap-4 mt-1 text-xs">
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                {slaData.adherent} Met
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-rose-500" />
+                {slaData.breached} Breached
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-amber-500" />
+                {slaData.atRisk} At Risk
+              </span>
+            </div>
           </CardContent>
         </Card>
       </div>
