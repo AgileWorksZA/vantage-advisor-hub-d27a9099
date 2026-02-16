@@ -226,10 +226,10 @@ export function TaskDashboard({ tasks, onViewDetail }: TaskDashboardProps) {
     if (params?.name) onViewDetail({ status: [params.name], dueDateFrom: periodFromStr, dueDateTo: periodToStr });
   };
   const handleTypeChartClick = (params: any) => {
-    if (params?.name) onViewDetail({ taskType: [params.name], status: openStatuses, dueDateFrom: periodFromStr, dueDateTo: periodToStr });
+    if (params?.name) onViewDetail({ taskType: [params.name], dueDateFrom: periodFromStr, dueDateTo: periodToStr });
   };
   const handlePriorityChartClick = (params: any) => {
-    if (params?.name) onViewDetail({ priority: [params.name], status: openStatuses, dueDateFrom: periodFromStr, dueDateTo: periodToStr });
+    if (params?.name) onViewDetail({ priority: [params.name], dueDateFrom: periodFromStr, dueDateTo: periodToStr });
   };
 
   return (
