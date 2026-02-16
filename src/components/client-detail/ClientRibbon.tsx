@@ -292,7 +292,7 @@ const ClientRibbon = ({ client, clientName, relatedEntities, onTabChange }: Clie
 
           {/* Expanded details */}
           <CollapsibleContent>
-            <ClientRibbonExpandedDetails client={client} />
+            <ClientRibbonExpandedDetails client={client} onEdit={() => onTabChange?.("details")} />
           </CollapsibleContent>
         </div>
       </Collapsible>

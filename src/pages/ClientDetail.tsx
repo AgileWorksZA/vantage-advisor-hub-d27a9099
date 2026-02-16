@@ -304,7 +304,7 @@ const ClientDetail = () => {
               <ClientMeetingsTab />
             </TabsContent>
             <TabsContent value="relationships" className="mt-0">
-              <ClientRelationshipsTab householdGroup={client?.household_group} />
+              <ClientRelationshipsTab householdGroup={client?.household_group} client={client} onTabChange={setActiveTab} />
             </TabsContent>
             <TabsContent value="workflows" className="mt-0">
               <ClientWorkflowsTab />

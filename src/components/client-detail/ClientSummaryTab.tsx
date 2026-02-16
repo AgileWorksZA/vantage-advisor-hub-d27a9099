@@ -3,10 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
 import { generateClient360Data, mapNationalityToJurisdiction } from "@/data/regional360ViewData";
 import type { PrepProduct, PrepOpportunity } from "@/hooks/useClientMeetingPrep";
-import { CheckCircle, Pencil } from "lucide-react";
+import { CheckCircle } from "lucide-react";
 
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Client, getDisplayName, getInitials, calculateAge, formatBirthday } from "@/types/client";
+import { Client, getDisplayName } from "@/types/client";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Users, Loader2 } from "lucide-react";
@@ -28,9 +28,6 @@ interface ClientSummaryTabProps {
 
 const ClientSummaryTab = ({ client, clientId, onShowMoreActivity, onTabChange }: ClientSummaryTabProps) => {
   const displayName = getDisplayName(client);
-  const initials = getInitials(client);
-  const age = calculateAge(client.date_of_birth);
-  const birthday = formatBirthday(client.date_of_birth);
   const prepData = useClientMeetingPrep(clientId);
 
   const [householdView, setHouseholdView] = useState(false);
@@ -143,46 +140,8 @@ const ClientSummaryTab = ({ client, clientId, onShowMoreActivity, onTabChange }:
   const outstandingCount = activeTasks.length + activeDocs.length;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      {/* Left Column */}
-      <div className="space-y-4">
-        {/* General Details */}
-        <Card>
-         <CardHeader className="py-2 flex flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-lg">General details</CardTitle>
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onTabChange?.("details")} title="Edit details">
-              <Pencil className="h-3.5 w-3.5" />
-            </Button>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-1">
-              {[
-                { label: "Name", value: displayName },
-                { label: "Title", value: client.title || "-" },
-                { label: "Initials", value: client.initials || initials },
-                { label: "Person type", value: client.person_type || "Individual" },
-                { label: "ID Number", value: client.id_number || "-" },
-                { label: "Country of issue", value: client.country_of_issue || "South Africa" },
-                { label: "Gender", value: client.gender || "-" },
-                { label: "Age", value: age.toString() },
-                { label: "Birthday", value: birthday },
-                { label: "Language", value: client.language || "English" },
-                { label: "Tax number", value: client.tax_number || "-" },
-              ].map((item) => (
-                <div key={item.label} className="flex justify-between items-center py-0.5 border-b border-border/50 last:border-0">
-                  <span className="text-sm text-muted-foreground">{item.label}</span>
-                  <span className="text-sm font-medium">{item.value}</span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-      </div>
-
-      {/* Right Column */}
-      <div className="flex flex-col">
-        <Card className="flex-1 flex flex-col">
+    <div>
+      <Card className="flex flex-col">
           <CardHeader className="py-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg">Next Best Action</CardTitle>
@@ -253,8 +212,7 @@ const ClientSummaryTab = ({ client, clientId, onShowMoreActivity, onTabChange }:
               </Button>
             </div>
           </CardContent>
-        </Card>
-      </div>
+      </Card>
 
       <MeetingPrepSheet
         open={meetingPrepOpen}
