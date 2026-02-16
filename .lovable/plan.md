@@ -1,30 +1,40 @@
 
 
-## Fix "Clients by Age Group" Widget Overflow
+## Fix "Clients by Age Group" Widget Sizing
 
 ### Problem
-The widget content (header + 7-8 table rows) exceeds the 360px grid cell height, causing text to render outside the card boundary.
+The widget content overflows its container, and the previous fix added scrollbars which is not desired. The widget should simply be tall enough to fit all its content, matching the visual style of other widgets.
 
-### Solution
+### Changes
+
 **File: `src/pages/Dashboard.tsx`**
 
-Add overflow handling to the Age Group widget so content stays within the card and scrolls if needed:
+Two changes:
 
-1. Add `overflow-hidden` to the Card component to clip content at the card boundary
-2. Add `overflow-y-auto` and a flex layout to the CardContent so the table scrolls within the available space
-3. Use a flex column layout on the Card so the content area fills remaining space after the header
-
-These are the same patterns used by other widgets that have variable-length content.
-
-### Specific Changes
-
+1. **Increase widget height to fit content** -- change `h: 3` to `h: 4` in `defaultDashboardLayout`:
 ```
-// Card: add overflow-hidden and flex layout
+// Before
+{ i: 'age-groups', x: 3, y: 6, w: 3, h: 3 }
+
+// After
+{ i: 'age-groups', x: 3, y: 6, w: 3, h: 4 }
+```
+
+2. **Revert Card/CardContent to standard widget styling** -- remove the overflow and flex classes added in the previous fix so the widget matches the simple styling used by every other widget:
+```
+// Before (with scroll classes)
 <Card className="h-full overflow-hidden flex flex-col">
+  ...
+  <CardContent className="px-4 pb-4 flex-1 overflow-y-auto min-h-0">
 
-// CardContent: add flex-1, overflow-y-auto, and min-h-0
-<CardContent className="px-4 pb-4 flex-1 overflow-y-auto min-h-0">
+// After (standard widget styling)
+<Card className="h-full">
+  ...
+  <CardContent className="px-4 pb-4">
 ```
 
-This ensures the card respects the grid cell boundary and the table rows scroll if they exceed the available space, matching the behavior of other same-sized widgets.
+### Why this works
+- `h: 4` gives the widget 480px of vertical space (4 rows x 120px), enough for the header + 8 age group rows
+- The Card and CardContent use the same simple classes as every other widget on the dashboard (e.g., Birthdays, Top Accounts)
+- The auto-heal logic in `useWidgetLayout.ts` will automatically migrate any saved user layouts to the new height
 
