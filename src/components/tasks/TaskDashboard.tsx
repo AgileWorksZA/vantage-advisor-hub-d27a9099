@@ -194,7 +194,7 @@ export function TaskDashboard({ tasks, onViewDetail }: TaskDashboardProps) {
           { value: 1, name: "", itemStyle: { color: "transparent" }, label: { show: false }, emphasis: { disabled: true } },
         ];
     return {
-      tooltip: { show: false },
+      tooltip: { trigger: "item" as const },
       legend: { show: false },
       graphic: [
         { type: "text", left: "center", top: "55%", style: { text: `${slaData.pct}%`, fontSize: 24, fontWeight: "bold", fill: "#10b981", textAlign: "center" } },
