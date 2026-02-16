@@ -17,6 +17,7 @@ import {
   BarChart3,
   Table as TableIcon,
   TrendingUp,
+  Columns3,
 } from "lucide-react";
 import commandCenterIcon from "@/assets/command-center-icon.png";
 import vantageLogo from "@/assets/vantage-logo.png";
@@ -28,6 +29,7 @@ import { TaskFilters as TaskFiltersComponent } from "@/components/tasks/TaskFilt
 import { TaskDetailSheet } from "@/components/tasks/TaskDetailSheet";
 import { CreateTaskDialog } from "@/components/tasks/CreateTaskDialog";
 import { TaskAnalyticsTab } from "@/components/tasks/TaskAnalyticsTab";
+import TaskKanbanBoard from "@/components/tasks/TaskKanbanBoard";
 import GlobalAIChat from "@/components/ai-assistant/GlobalAIChat";
 
 const sidebarItems = [
@@ -52,9 +54,10 @@ const Tasks = () => {
   const urlStatus = searchParams.get("status");
   const urlDueBucket = searchParams.get("dueBucket");
 
-  const [view, setView] = useState<"dashboard" | "analytics" | "detail">(() => {
+  const [view, setView] = useState<"dashboard" | "analytics" | "detail" | "kanban">(() => {
     if (urlTaskType || searchParams.get("view") === "detail") return "detail";
     if (searchParams.get("view") === "analytics") return "analytics";
+    if (searchParams.get("view") === "kanban") return "kanban";
     return "dashboard";
   });
 
@@ -195,11 +198,10 @@ const Tasks = () => {
     navigate("/auth");
   };
 
-  const handleViewChange = (newView: "dashboard" | "analytics" | "detail", newFilters?: TaskFilters) => {
+  const handleViewChange = (newView: "dashboard" | "analytics" | "detail" | "kanban", newFilters?: TaskFilters) => {
     setView(newView);
     setSearchParams(newView === "dashboard" ? {} : { view: newView });
     if (newView === "dashboard") {
-      // Clear detail filters when returning to dashboard
       setFilters({});
     } else if (newFilters) {
       setFilters(newFilters);
@@ -250,6 +252,9 @@ const Tasks = () => {
             <Button variant={view === "analytics" ? "default" : "outline"} size="sm" onClick={() => handleViewChange("analytics")} className="gap-2">
               <TrendingUp className="h-4 w-4" />Analytics
             </Button>
+            <Button variant={view === "kanban" ? "default" : "outline"} size="sm" onClick={() => handleViewChange("kanban")} className="gap-2">
+              <Columns3 className="h-4 w-4" />Kanban
+            </Button>
             <Button variant={view === "detail" ? "default" : "outline"} size="sm" onClick={() => handleViewChange("detail")} className="gap-2">
               <TableIcon className="h-4 w-4" />Overview
             </Button>
@@ -264,6 +269,13 @@ const Tasks = () => {
             <TaskDashboard tasks={advisorFilteredTasks} onViewDetail={(f) => handleViewChange("detail", f)} />
           ) : view === "analytics" ? (
             <TaskAnalyticsTab tasks={advisorFilteredTasks} onDrillDown={(f) => handleViewChange("detail", f)} />
+          ) : view === "kanban" ? (
+            <div className="flex flex-col h-full">
+              <div className="px-6 pt-4">
+                <TaskFiltersComponent filters={filters} onFiltersChange={setFilters} />
+              </div>
+              <TaskKanbanBoard tasks={filteredTasks} onTaskClick={handleTaskClick} onUpdateTask={updateTask} />
+            </div>
           ) : (
             <div className="p-6 space-y-4">
               <TaskFiltersComponent filters={filters} onFiltersChange={setFilters} />
