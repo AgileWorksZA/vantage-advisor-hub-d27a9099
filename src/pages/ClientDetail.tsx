@@ -33,6 +33,7 @@ import ClientNotesTab from "@/components/client-detail/ClientNotesTab";
 import ClientCommunicationTab from "@/components/client-detail/ClientCommunicationTab";
 import ClientDocumentsTab from "@/components/client-detail/ClientDocumentsTab";
 import ClientMeetingsTab from "@/components/client-detail/ClientMeetingsTab";
+import ClientTasksTab from "@/components/client-detail/ClientTasksTab";
 import ClientRecentActivityTab from "@/components/client-detail/ClientRecentActivityTab";
 import ClientPerformanceTab from "@/components/client-detail/ClientPerformanceTab";
 import { useClientDetail } from "@/hooks/useClientDetail";
@@ -260,6 +261,7 @@ const ClientDetail = () => {
                 { value: "performance", label: "Performance" },
                 
                 { value: "meetings", label: "Meetings" },
+                { value: "tasks", label: "Tasks" },
                 
                 { value: "workflows", label: "Workflows" },
                 { value: "compliance", label: "Compliance" },
@@ -305,6 +307,9 @@ const ClientDetail = () => {
             </TabsContent>
             <TabsContent value="meetings" className="mt-0">
               <ClientMeetingsTab />
+            </TabsContent>
+            <TabsContent value="tasks" className="mt-0">
+              <ClientTasksTab clientId={clientId!} />
             </TabsContent>
             <TabsContent value="relationships" className="mt-0">
               <ClientRelationshipsTab householdGroup={client?.household_group} client={client} onTabChange={setActiveTab} />
