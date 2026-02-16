@@ -1,50 +1,38 @@
 
 
-## Rename Summary Tab to "Next Best Action" and Move Widgets
+## Fix New Widget Sizing on Client Dashboard
 
-### Overview
-Rename the "Summary" tab to "Next Best Action" and relocate the "Current Advisor and Accounts" and "Outstanding Documents" cards from the Summary/NBA page into the Client Dashboard as new draggable widgets.
+### Problem
+The two new widgets ("Current Advisor & Accounts" and "Outstanding Documents") are set to `h: 3` (360px height), matching the chart-based widgets. However, they only contain 2-3 small table rows, resulting in large amounts of empty white space. They need a smaller height to match their content density.
 
 ### Changes
 
-**1. `src/pages/ClientDetail.tsx` -- Minor edit**
-- Change the tab label from `"Summary"` to `"Next Best Action"` in the TabsList array (line 258)
+**1. `src/components/client-detail/ClientDashboardTab.tsx`**
 
-**2. `src/components/client-detail/ClientSummaryTab.tsx` -- Edit**
-- Remove the "Current Advisor and Accounts" card (lines 201-233) and the `advisorData` constant (lines 38-41)
-- Remove the "Outstanding Documents" card (lines 235-258) and the `outstandingDocs` constant (lines 43-47)
-- With those two cards removed, the left column will contain only "General details"; the right column stays as-is with the Next Best Action panel
-- Remove the now-unused `Table`, `TableBody`, `TableCell`, `TableHead`, `TableHeader`, `TableRow` imports
+Update the default heights for the two new widgets from `h: 3` to `h: 2`:
 
-**3. `src/components/client-detail/ClientDashboardTab.tsx` -- Edit**
+```
+{ i: 'advisor-accounts', x: 6, y: 6, w: 3, h: 2 }   // was h: 3
+{ i: 'outstanding-docs', x: 0, y: 9, w: 3, h: 2 }    // was h: 3
+```
 
-Add two new widgets to the draggable grid:
+This makes them 240px tall instead of 360px, appropriate for their sparse table content.
 
-- **`advisor-accounts`** -- "Current Advisor & Accounts" widget showing the advisor table (same data/layout as the removed card, using the `client.advisor` prop)
-- **`outstanding-docs`** -- "Outstanding Documents" widget showing the static outstanding documents table
+**2. Database cleanup**
 
-Specific changes:
-- Add `Table`, `TableBody`, `TableCell`, `TableHead`, `TableHeader`, `TableRow` imports
-- Add the `advisorData` and `outstandingDocs` constants (moved from SummaryTab)
-- Add two new entries to `defaultClientDashboardLayout`:
-  - `{ i: 'advisor-accounts', x: 6, y: 6, w: 3, h: 3 }`
-  - `{ i: 'outstanding-docs', x: 0, y: 9, w: 3, h: 3 }`
-- Add two new entries to `CLIENT_DASHBOARD_WIDGETS`:
-  - `{ id: 'advisor-accounts', label: 'Current Advisor & Accounts' }`
-  - `{ id: 'outstanding-docs', label: 'Outstanding Documents' }`
-- Add the two widget card blocks inside `DraggableWidgetGrid`, following the same drag-handle pattern as existing widgets
+Delete any saved `client-dashboard` layout row so the corrected defaults take effect on next load. The existing auto-heal logic (which detects height mismatches via `needsHeightMigration`) will also auto-correct any future stale layouts since widget heights are not user-resizable.
 
-### What stays the same
-- All existing 8 dashboard widgets remain unchanged
-- The Next Best Action panel content (Opportunities, Outstanding, Recent Activity sub-tabs) stays in the renamed tab
-- The "General details" card stays on the renamed tab
-- All data generation and hook logic unchanged
+### Why this won't recur
 
-### Files
+The `useWidgetLayout` hook already contains three safeguards:
+- **Foreign widget detection**: resets layout if widget IDs from another page are found
+- **Width validation**: resets layout if saved widths differ from defaults
+- **Height migration**: auto-corrects saved heights to match defaults (since widgets are not resizable)
 
-| File | Action |
+So if we update the default `h` values and clear the stale DB row, the system will self-heal going forward.
+
+| File | Change |
 |------|--------|
-| `src/pages/ClientDetail.tsx` | Rename tab label from "Summary" to "Next Best Action" |
-| `src/components/client-detail/ClientSummaryTab.tsx` | Remove Advisor/Accounts and Outstanding Docs cards and related imports |
-| `src/components/client-detail/ClientDashboardTab.tsx` | Add two new draggable widgets with the moved content |
+| `src/components/client-detail/ClientDashboardTab.tsx` | Change `h: 3` to `h: 2` for `advisor-accounts` and `outstanding-docs` |
+| Database | Delete stale `client-dashboard` layout row |
 
