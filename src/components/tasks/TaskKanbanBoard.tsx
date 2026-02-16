@@ -1,8 +1,6 @@
 import { useState, useMemo, useCallback } from "react";
 import { EnhancedTask } from "@/hooks/useTasksEnhanced";
 import KanbanCard from "./KanbanCard";
-import { Button } from "@/components/ui/button";
-import { Users, Signal, Minus } from "lucide-react";
 
 
 const COLUMN_ORDER = [
@@ -23,16 +21,16 @@ const columnColors: Record<string, string> = {
 
 const WIP_LIMIT = 15;
 
-type GroupBy = "none" | "assignee" | "priority";
+export type KanbanGroupBy = "none" | "assignee" | "priority";
 
 interface TaskKanbanBoardProps {
   tasks: EnhancedTask[];
   onTaskClick: (task: EnhancedTask) => void;
   onUpdateTask: (taskId: string, updates: Partial<EnhancedTask>) => void;
+  groupBy: KanbanGroupBy;
 }
 
-const TaskKanbanBoard = ({ tasks, onTaskClick, onUpdateTask }: TaskKanbanBoardProps) => {
-  const [groupBy, setGroupBy] = useState<GroupBy>("none");
+const TaskKanbanBoard = ({ tasks, onTaskClick, onUpdateTask, groupBy }: TaskKanbanBoardProps) => {
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
 
   const groupedTasks = useMemo(() => {
@@ -92,37 +90,7 @@ const TaskKanbanBoard = ({ tasks, onTaskClick, onUpdateTask }: TaskKanbanBoardPr
   };
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Toolbar */}
-      <div className="flex items-center gap-2 px-6 py-3 border-b bg-background">
-        <span className="text-xs font-medium text-muted-foreground mr-1">Group by:</span>
-        <Button
-          size="sm"
-          variant={groupBy === "none" ? "default" : "outline"}
-          className="h-7 text-xs gap-1"
-          onClick={() => setGroupBy("none")}
-        >
-          <Minus className="h-3 w-3" /> None
-        </Button>
-        <Button
-          size="sm"
-          variant={groupBy === "assignee" ? "default" : "outline"}
-          className="h-7 text-xs gap-1"
-          onClick={() => setGroupBy("assignee")}
-        >
-          <Users className="h-3 w-3" /> Assignee
-        </Button>
-        <Button
-          size="sm"
-          variant={groupBy === "priority" ? "default" : "outline"}
-          className="h-7 text-xs gap-1"
-          onClick={() => setGroupBy("priority")}
-        >
-          <Signal className="h-3 w-3" /> Priority
-        </Button>
-      </div>
-
-      {/* Board */}
+    <div className="flex flex-col flex-1 min-h-0">
       <div className="flex-1 overflow-y-auto">
         {swimlaneKeys.map((lane) => (
           <div key={lane}>
