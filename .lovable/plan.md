@@ -1,21 +1,32 @@
 
 
-## Remove Extra Status Filters from Chart Drill-Downs
+## Add SLA Segment Drill-Down Filtering
 
 ### Problem
-When clicking a segment on the **Type** or **Priority** charts, the drill-down adds an extra `status: openStatuses` filter (Not Started, In Progress, Pending Client). The user expects only the clicked dimension and the date range to be passed as filters.
+Currently the SLA Adherence card has a single `onClick` on the entire card that passes `status: openStatuses` -- it doesn't distinguish between which segment (Met, Breached, At Risk) was clicked. Clicking a specific segment should drill down showing only tasks matching that SLA status plus the date range.
 
-The screenshot confirms this: clicking "Client Complaint" on the Type chart should show only two filter chips -- "Client Complaint" and the date range.
+### Complexity
+SLA status ("Met", "Breached", "At Risk") is not a database column -- it's computed from `sla_deadline`, `status`, and `completed_at`. This means filtering must happen client-side after fetching tasks.
 
 ### Changes
 
-**File: `src/components/tasks/TaskDashboard.tsx`**
+**1. `src/hooks/useTasksEnhanced.ts`** -- Add `slaStatus` to `TaskFilters` and implement client-side filtering
 
-Remove the `status: openStatuses` from both chart click handlers:
+- Add `slaStatus?: string[]` to the `TaskFilters` interface
+- After fetching and transforming tasks, apply a client-side filter that computes SLA status for each task (using the same logic as the dashboard) and keeps only those matching the selected SLA statuses
 
-- **`handleTypeChartClick` (line 229)**: Change from `{ taskType: [params.name], status: openStatuses, dueDateFrom, dueDateTo }` to `{ taskType: [params.name], dueDateFrom, dueDateTo }`
-- **`handlePriorityChartClick` (line 232)**: Change from `{ priority: [params.name], status: openStatuses, dueDateFrom, dueDateTo }` to `{ priority: [params.name], dueDateFrom, dueDateTo }`
+**2. `src/components/tasks/TaskDashboard.tsx`** -- Add SLA chart click handler
 
-The **Status chart** handler already only passes the clicked status + date range, so no change needed there.
+- Remove the card-level `onClick` from the SLA card
+- Add a `handleSlaChartClick` function that maps clicked segment names ("Met", "Breached", "At Risk") to the new `slaStatus` filter
+- Pass `{ slaStatus: [params.name], dueDateFrom: periodFromStr, dueDateTo: periodToStr }` -- no extra status filter, matching the pattern of the other charts
+- Wire the handler into `onEvents={{ click: handleSlaChartClick }}`
 
-Single file, two one-line edits.
+**3. `src/components/tasks/TaskFilters.tsx`** -- Render SLA filter tags
+
+- Add the `slaStatus` field to `hasActiveFilters` check
+- Add filter tag rendering for each `slaStatus` value (e.g., "SLA: Met", "SLA: Breached")
+- Add removal logic for `slaStatus` tags
+
+### Result
+Clicking "Met" on the SLA semi-circle shows only two filter chips: "SLA: Met" and the date range -- consistent with how Type and Priority charts now work.
