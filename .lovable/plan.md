@@ -1,68 +1,63 @@
 
 
-## Refocus Client Dashboard on Next Best Actions
+## Convert Client Dashboard to Draggable Widget Grid
 
 ### Overview
-Transform the Client Dashboard tab to be opportunity-focused, replace the "Household Members" and "Selected Contracts" widget cards with multi-select dropdowns in the top toolbar area, and wire the Household badge in the ribbon to show the "Manage related entity" dropdown.
+Apply the same widget grid system used on the Advisor Dashboard to the Client Dashboard tab -- draggable cards with grip handles, a settings gear to show/hide widgets, and layout persistence per user.
 
 ### Changes
 
-**1. `src/components/client-detail/ClientDashboardTab.tsx` -- Major rewrite**
+**`src/components/client-detail/ClientDashboardTab.tsx` -- Major edit**
 
-**Top toolbar area** (replaces the widget grid's first row):
-- Add a toolbar row with two multi-select dropdowns:
-  - **Contracts** dropdown (replaces the Selected Contracts widget) -- multi-select list of client products (on-platform, external, cash, risk) using the existing `MultiSelect` component
-  - **Household Members** dropdown (replaces the Household Members widget) -- multi-select of family members/businesses from `useClientRelationships`, with an "Add member" option at the bottom
+1. **Import** `DraggableWidgetGrid`, `WidgetLayout`, `useWidgetLayout`, `WidgetSettingsDialog`, `WidgetConfig`, and icons (`GripVertical`, `X`, `Settings`)
 
-**Remove these widgets:**
-- "Household Members" card (widget 4) -- replaced by dropdown
-- "Selected Contracts" card (widget 5) -- replaced by dropdown
-
-**Refocus remaining widgets on Next Best Action / opportunities:**
-- Keep: Asset Allocation, Change in Valuation, Geographic Diversification (Row 1)
-- Replace Product Summary with: **Opportunity Breakdown** -- pie chart of opportunity types (Growth, Cross-sell, Migration, Platform, Tax Loss, etc.) with counts and values
-- Replace Income vs Expenses with: **Top Opportunities** -- list of highest-value next best action items (reusing the `buildGapOpportunitiesForProducts` logic from OpportunitiesTab) with type badges, opportunity sizes, and suggested actions
-- Replace Risk Cover Summary with: **Action Priority** -- grouped list showing Urgent/Important/Routine opportunities with color-coded priority indicators
-- Keep Key Dates & Milestones (relevant for triggering actions)
-- Add: **Opportunity Value Summary** -- total pipeline value, count by type, average confidence score
-
-**2. `src/components/client-detail/ClientRibbon.tsx` -- Wire Household badge**
-
-- When clicking the purple Household badge, instead of navigating to the Relationships tab, show the "Manage related entity" dropdown inline (the same dropdown that already exists in the ribbon's top-right)
-- Implementation: Convert the Household badge click to toggle a state that opens a Popover or reuses the existing DropdownMenu with the related entities list
-
-**3. `src/pages/ClientDetail.tsx` -- No structural changes needed**
-
-The ribbon already receives `relatedEntities` and `onTabChange`. The Dashboard tab already receives `onTabChange`. No tab changes needed.
-
-### Widget Layout After Changes
-
+2. **Define widget config and default layout** (same pattern as Dashboard.tsx):
 ```text
-Toolbar:
-[Contracts multi-select v]  [Household Members multi-select v]
+defaultClientDashboardLayout:
+  asset-allocation      x:0 y:0 w:3 h:3
+  valuation-change      x:3 y:0 w:3 h:3
+  geo-diversification   x:6 y:0 w:3 h:3
+  top-opportunities     x:0 y:3 w:3 h:3
+  opp-breakdown         x:3 y:3 w:3 h:3
+  opp-value-summary     x:6 y:3 w:3 h:3
+  action-priority       x:0 y:6 w:3 h:3
+  key-dates             x:3 y:6 w:3 h:3
 
-Row 1:
-[Asset Allocation]          [Change in Valuation]       [Geographic Diversification]
-
-Row 2:
-[Top Opportunities]         [Opportunity Breakdown]      [Opportunity Value Summary]
-
-Row 3:
-[Action Priority]           [Key Dates & Milestones]
+CLIENT_DASHBOARD_WIDGETS: WidgetConfig[] (8 entries matching above)
 ```
 
-### Technical Details
+3. **Hook up `useWidgetLayout`** with `pageId: 'dashboard'` and `userId` (passed as new prop from ClientDetail page)
 
-- **MultiSelect** component already exists at `src/components/ui/multi-select.tsx` -- reuse for both dropdowns
-- **Opportunity data** reuses the `buildGapOpportunitiesForProducts` function from `OpportunitiesTab.tsx` to derive opportunities from 360 View products
-- **Household badge popover**: Use `Popover` from radix to show related entities list on badge click, with navigation links to each member's profile
-- Charts use `EChartsWrapper` consistent with the rest of the app
-- The "Personal financial report" Select and "Manage related entity" Button remain in the ribbon (unchanged)
+4. **Replace the static CSS grid** with `DraggableWidgetGrid` component:
+   - Each widget card wrapped in a `<div key="widget-id">` with `isWidgetVisible()` guard
+   - Card headers get the `widget-drag-handle` class, `GripVertical` icon, and `cursor-move`
+   - Toolbar (contracts + household multi-selects) stays above the grid, unchanged
+
+5. **Add `WidgetSettingsDialog`** next to the toolbar area (right-aligned), wired to `hiddenWidgets` and `handleToggleWidget`
+
+6. **Widget card header pattern** (matching Advisor Dashboard exactly):
+```tsx
+<CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
+  <div className="flex items-center gap-2">
+    <GripVertical className="w-4 h-4 text-muted-foreground" />
+    <CardTitle className="text-sm font-medium">Widget Name</CardTitle>
+  </div>
+</CardHeader>
+```
+
+**`src/pages/ClientDetail.tsx` -- Minor edit**
+
+- Pass `userId={user?.id}` to `ClientDashboardTab` so it can persist layout per user
+
+### What stays the same
+- All widget content (charts, opportunity lists, key dates, etc.) remains identical
+- The toolbar with MultiSelect dropdowns and Add Member button stays above the grid
+- All data generation logic (seededRandom, opportunities, etc.) unchanged
 
 ### Files
 
 | File | Action |
 |------|--------|
-| `src/components/client-detail/ClientDashboardTab.tsx` | Major edit -- remove 2 widget cards, add toolbar dropdowns, replace 3 widgets with opportunity-focused ones |
-| `src/components/client-detail/ClientRibbon.tsx` | Edit -- wire Household badge to show related entity popover |
+| `src/components/client-detail/ClientDashboardTab.tsx` | Edit -- wrap widgets in DraggableWidgetGrid, add settings gear |
+| `src/pages/ClientDetail.tsx` | Edit -- pass userId prop |
 
