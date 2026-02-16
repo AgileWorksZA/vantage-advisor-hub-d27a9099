@@ -1,47 +1,21 @@
 
 
-## Fix Chart Drill-Down Filters to Include Date Range
+## Remove Extra Status Filters from Chart Drill-Downs
 
 ### Problem
-When clicking on any chart segment or stat card, the drill-down to the Overview table does not include the dashboard's selected date range. This means clicking "In Progress" on the Status chart (while viewing "This Week") shows all "In Progress" tasks across all time instead of just this week's tasks.
+When clicking a segment on the **Type** or **Priority** charts, the drill-down adds an extra `status: openStatuses` filter (Not Started, In Progress, Pending Client). The user expects only the clicked dimension and the date range to be passed as filters.
 
-### Affected Click Handlers
+The screenshot confirms this: clicking "Client Complaint" on the Type chart should show only two filter chips -- "Client Complaint" and the date range.
 
-| Widget | Current Filter | Missing |
-|--------|---------------|---------|
-| Total Open card | `status: openStatuses` | date range |
-| Due Today card | `dueDateFrom/To: today` | OK (has its own date logic) |
-| Overdue card | `dueDateTo: yesterday` | OK (has its own date logic) |
-| Completed card | `status: ["Completed"]` | date range |
-| Status chart | `status: [clicked]` | date range |
-| Type chart | `taskType: [clicked], status: openStatuses` | date range |
-| Priority chart | `priority: [clicked], status: openStatuses` | date range |
-| SLA card | `status: openStatuses` | date range |
-
-### Solution
+### Changes
 
 **File: `src/components/tasks/TaskDashboard.tsx`**
 
-1. Create formatted date strings from `periodStart` and `periodEnd` (yyyy-MM-dd format) using the existing `format` import.
+Remove the `status: openStatuses` from both chart click handlers:
 
-2. Update click handlers and card onClick callbacks to include `dueDateFrom` and `dueDateTo` in the filter object, so every drill-down is scoped to the selected date range.
+- **`handleTypeChartClick` (line 229)**: Change from `{ taskType: [params.name], status: openStatuses, dueDateFrom, dueDateTo }` to `{ taskType: [params.name], dueDateFrom, dueDateTo }`
+- **`handlePriorityChartClick` (line 232)**: Change from `{ priority: [params.name], status: openStatuses, dueDateFrom, dueDateTo }` to `{ priority: [params.name], dueDateFrom, dueDateTo }`
 
-3. The **Due Today** and **Overdue** cards already have their own specific date logic and should keep their existing behavior (they override the period range with their own more specific date constraints).
+The **Status chart** handler already only passes the clicked status + date range, so no change needed there.
 
-### Technical Detail
-
-Add two derived values after `periodLabel`:
-```typescript
-const periodFromStr = format(periodStart, "yyyy-MM-dd");
-const periodToStr = format(periodEnd, "yyyy-MM-dd");
-```
-
-Then update each handler/onClick to include these:
-- `handleStatusChartClick`: add `dueDateFrom: periodFromStr, dueDateTo: periodToStr`
-- `handleTypeChartClick`: add `dueDateFrom: periodFromStr, dueDateTo: periodToStr`
-- `handlePriorityChartClick`: add `dueDateFrom: periodFromStr, dueDateTo: periodToStr`
-- Total Open card: add `dueDateFrom: periodFromStr, dueDateTo: periodToStr`
-- Completed card: add `dueDateFrom: periodFromStr, dueDateTo: periodToStr`
-- SLA card: add `dueDateFrom: periodFromStr, dueDateTo: periodToStr`
-- Due Today and Overdue cards: no change (they have their own date constraints)
-
+Single file, two one-line edits.
