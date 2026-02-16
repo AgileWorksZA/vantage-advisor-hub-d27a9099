@@ -255,7 +255,7 @@ const ClientDetail = () => {
             <TabsList className="w-full justify-start h-auto p-0 bg-transparent rounded-none gap-0 flex-wrap px-6 mt-1">
               {[
                 { value: "dashboard", label: "Dashboard" },
-                { value: "summary", label: "Next Best Action" },
+                { value: "summary", label: "Opportunities" },
                 { value: "360-view", label: "360 View" },
                 { value: "performance", label: "Performance" },
                 
@@ -273,6 +273,9 @@ const ClientDetail = () => {
                   className="rounded-none border-b-2 border-transparent data-[state=active]:border-[hsl(180,70%,45%)] data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-2.5 text-sm"
                 >
                   {tab.label}
+                  {tab.value === "summary" && (
+                    <span className="inline-flex items-center px-1.5 py-0 text-[10px] font-bold bg-gradient-to-r from-violet-500 to-cyan-500 text-white rounded-full ml-1.5">AI</span>
+                  )}
                 </TabsTrigger>
               ))}
             </TabsList>
