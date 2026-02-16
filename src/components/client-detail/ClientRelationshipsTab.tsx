@@ -19,12 +19,15 @@ import AddContactDialog from "./AddContactDialog";
 import EditFamilyMemberDialog from "./EditFamilyMemberDialog";
 
 import { Badge } from "@/components/ui/badge";
+import { Client, getDisplayName, calculateAge, formatBirthday } from "@/types/client";
 
 interface ClientRelationshipsTabProps {
   householdGroup?: string | null;
+  client?: Client;
+  onTabChange?: (tab: string) => void;
 }
 
-const ClientRelationshipsTab = ({ householdGroup }: ClientRelationshipsTabProps) => {
+const ClientRelationshipsTab = ({ householdGroup, client, onTabChange }: ClientRelationshipsTabProps) => {
   const { clientId } = useParams<{ clientId: string }>();
   const navigate = useNavigate();
   const { 
@@ -63,6 +66,59 @@ const ClientRelationshipsTab = ({ householdGroup }: ClientRelationshipsTabProps)
 
   return (
     <div className="space-y-6">
+      {/* Main Member Section */}
+      {client && (
+        <Collapsible defaultOpen>
+          <div className="bg-background rounded-lg border border-border">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+              <CollapsibleTrigger className="flex items-center gap-2 font-medium">
+                <ChevronDown className="w-4 h-4" />
+                MAIN MEMBER (1)
+              </CollapsibleTrigger>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-1.5 h-7 text-xs"
+                onClick={() => onTabChange?.("details")}
+              >
+                <Pencil className="w-4 h-4" />
+                Edit
+              </Button>
+            </div>
+            <CollapsibleContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-xs font-normal text-muted-foreground">Name</TableHead>
+                    <TableHead className="text-xs font-normal text-muted-foreground">Title</TableHead>
+                    <TableHead className="text-xs font-normal text-muted-foreground">ID Number</TableHead>
+                    <TableHead className="text-xs font-normal text-muted-foreground">Gender</TableHead>
+                    <TableHead className="text-xs font-normal text-muted-foreground">Age</TableHead>
+                    <TableHead className="text-xs font-normal text-muted-foreground">Birthday</TableHead>
+                    <TableHead className="text-xs font-normal text-muted-foreground">Language</TableHead>
+                    <TableHead className="text-xs font-normal text-muted-foreground">Tax Number</TableHead>
+                    <TableHead className="text-xs font-normal text-muted-foreground">Country of Issue</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <TableRow>
+                    <TableCell className="text-sm font-medium">{getDisplayName(client)}</TableCell>
+                    <TableCell className="text-sm">{client.title || "-"}</TableCell>
+                    <TableCell className="text-sm">{client.id_number || "-"}</TableCell>
+                    <TableCell className="text-sm">{client.gender || "-"}</TableCell>
+                    <TableCell className="text-sm">{calculateAge(client.date_of_birth)}</TableCell>
+                    <TableCell className="text-sm">{formatBirthday(client.date_of_birth)}</TableCell>
+                    <TableCell className="text-sm">{client.language || "English"}</TableCell>
+                    <TableCell className="text-sm">{client.tax_number || "-"}</TableCell>
+                    <TableCell className="text-sm">{client.country_of_issue || "South Africa"}</TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </CollapsibleContent>
+          </div>
+        </Collapsible>
+      )}
+
       {/* Family Members Section */}
       <Collapsible open={familyOpen} onOpenChange={setFamilyOpen}>
         <div className="bg-background rounded-lg border border-border">
