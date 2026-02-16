@@ -17,7 +17,7 @@ export interface WidgetLayout {
 }
 
 interface UseWidgetLayoutProps {
-  pageId: 'dashboard' | 'insights';
+  pageId: 'dashboard' | 'insights' | 'client-dashboard';
   defaultLayout: WidgetLayout[];
   userId: string | undefined;
 }

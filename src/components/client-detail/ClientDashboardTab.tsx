@@ -100,7 +100,7 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
 
   // Widget layout persistence
   const { layout, onLayoutChange, hiddenWidgets, setHiddenWidgets, loading: layoutLoading } = useWidgetLayout({
-    pageId: 'dashboard',
+    pageId: 'client-dashboard',
     defaultLayout: defaultClientDashboardLayout,
     userId,
   });
@@ -360,7 +360,7 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
         {/* Asset Allocation */}
         {isWidgetVisible('asset-allocation') && (
           <div key="asset-allocation">
-            <Card className="border-0 shadow-sm h-full">
+            <Card className="h-full">
               <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
                 <div className="flex items-center gap-2">
                   <GripVertical className="w-4 h-4 text-muted-foreground" />
@@ -380,7 +380,7 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
         {/* Change in Valuation */}
         {isWidgetVisible('valuation-change') && (
           <div key="valuation-change">
-            <Card className="border-0 shadow-sm h-full">
+            <Card className="h-full">
               <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
                 <div className="flex items-center gap-2">
                   <GripVertical className="w-4 h-4 text-muted-foreground" />
@@ -416,7 +416,7 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
         {/* Geographic Diversification */}
         {isWidgetVisible('geo-diversification') && (
           <div key="geo-diversification">
-            <Card className="border-0 shadow-sm h-full">
+            <Card className="h-full">
               <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
                 <div className="flex items-center gap-2">
                   <GripVertical className="w-4 h-4 text-muted-foreground" />
@@ -436,7 +436,7 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
         {/* Top Opportunities */}
         {isWidgetVisible('top-opportunities') && (
           <div key="top-opportunities">
-            <Card className="border-0 shadow-sm h-full">
+            <Card className="h-full">
               <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
                 <div className="flex items-center gap-2">
                   <GripVertical className="w-4 h-4 text-muted-foreground" />
@@ -474,7 +474,7 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
         {/* Opportunity Breakdown */}
         {isWidgetVisible('opp-breakdown') && (
           <div key="opp-breakdown">
-            <Card className="border-0 shadow-sm h-full">
+            <Card className="h-full">
               <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
                 <div className="flex items-center gap-2">
                   <GripVertical className="w-4 h-4 text-muted-foreground" />
@@ -491,7 +491,7 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
         {/* Opportunity Value Summary */}
         {isWidgetVisible('opp-value-summary') && (
           <div key="opp-value-summary">
-            <Card className="border-0 shadow-sm h-full">
+            <Card className="h-full">
               <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
                 <div className="flex items-center gap-2">
                   <GripVertical className="w-4 h-4 text-muted-foreground" />
@@ -534,7 +534,7 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
         {/* Action Priority */}
         {isWidgetVisible('action-priority') && (
           <div key="action-priority">
-            <Card className="border-0 shadow-sm h-full">
+            <Card className="h-full">
               <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
                 <div className="flex items-center gap-2">
                   <GripVertical className="w-4 h-4 text-muted-foreground" />
@@ -578,7 +578,7 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
         {/* Key Dates & Milestones */}
         {isWidgetVisible('key-dates') && (
           <div key="key-dates">
-            <Card className="border-0 shadow-sm h-full">
+            <Card className="h-full">
               <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
                 <div className="flex items-center gap-2">
                   <GripVertical className="w-4 h-4 text-muted-foreground" />
