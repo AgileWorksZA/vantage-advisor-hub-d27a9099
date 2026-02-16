@@ -18,13 +18,14 @@ interface TaskDashboardProps {
 export function TaskDashboard({ stats, onViewDetail }: TaskDashboardProps) {
   const statusChartOption = useMemo(() => ({
     tooltip: { trigger: "item" as const },
-    legend: { bottom: 0, left: "center" },
+    legend: { bottom: "0%", left: "center", itemGap: 8, textStyle: { fontSize: 11 } },
     series: [
       {
         type: "pie" as const,
-        radius: ["40%", "70%"],
+        radius: ["35%", "60%"],
+        center: ["50%", "45%"],
         avoidLabelOverlap: false,
-        itemStyle: { borderRadius: 10, borderColor: "transparent", borderWidth: 2 },
+        itemStyle: { borderRadius: 0, borderColor: "transparent", borderWidth: 2 },
         label: { show: false },
         emphasis: { label: { show: true, fontSize: 14, fontWeight: "bold" as const } },
         data: Object.entries(stats.byStatus).map(([name, value]) => ({ name, value })),
