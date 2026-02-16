@@ -281,7 +281,7 @@ const ClientDetail = () => {
           {/* Scrollable tab content */}
           <main className="flex-1 p-6 overflow-auto">
             <TabsContent value="dashboard" className="mt-0">
-              <ClientDashboardTab client={client} clientId={clientId!} onTabChange={setActiveTab} />
+              <ClientDashboardTab client={client} clientId={clientId!} onTabChange={setActiveTab} userId={user?.id} />
             </TabsContent>
             <TabsContent value="summary" className="mt-0">
               <ClientSummaryTab
