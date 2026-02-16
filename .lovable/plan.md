@@ -1,35 +1,50 @@
 
 
-## Fix Corrupted Advisor Dashboard Layout
+## Rename Summary Tab to "Next Best Action" and Move Widgets
 
-### Root Cause
-When both dashboards previously shared `pageId: 'dashboard'`, the client dashboard wrote its widget IDs (`asset-allocation`, `valuation-change`, etc.) into the same DB row. After the `pageId` split, the advisor dashboard loads this stale layout. The auto-heal mechanism only checks width mismatches for widget IDs that exist in **both** the saved and default layouts -- since the client widget IDs don't exist in the advisor default layout, the check passes and the corrupted layout is used as-is.
-
-React-grid-layout then places the advisor dashboard's children (which have keys like `provider-view`) without matching layout entries, causing them to stack/overlap at position (0,0).
+### Overview
+Rename the "Summary" tab to "Next Best Action" and relocate the "Current Advisor and Accounts" and "Outstanding Documents" cards from the Summary/NBA page into the Client Dashboard as new draggable widgets.
 
 ### Changes
 
-**1. `src/hooks/useWidgetLayout.ts` -- Improve auto-heal logic**
+**1. `src/pages/ClientDetail.tsx` -- Minor edit**
+- Change the tab label from `"Summary"` to `"Next Best Action"` in the TabsList array (line 258)
 
-Add a check: if the saved layout contains widget IDs that are **not present** in the default layout (i.e., foreign widgets from another page), treat the layout as invalid and reset to defaults. This prevents any future cross-contamination.
+**2. `src/components/client-detail/ClientSummaryTab.tsx` -- Edit**
+- Remove the "Current Advisor and Accounts" card (lines 201-233) and the `advisorData` constant (lines 38-41)
+- Remove the "Outstanding Documents" card (lines 235-258) and the `outstandingDocs` constant (lines 43-47)
+- With those two cards removed, the left column will contain only "General details"; the right column stays as-is with the Next Best Action panel
+- Remove the now-unused `Table`, `TableBody`, `TableCell`, `TableHead`, `TableHeader`, `TableRow` imports
 
-Specifically, after the existing `isInvalidLayout` check, add:
+**3. `src/components/client-detail/ClientDashboardTab.tsx` -- Edit**
 
-```typescript
-// Check if saved layout contains widget IDs not in the default layout
-const hasForeignWidgets = savedLayout.some(item => !defaultLayoutMap.has(item.i));
-```
+Add two new widgets to the draggable grid:
 
-Then include `hasForeignWidgets` in the condition that triggers auto-heal (reset to defaults and persist).
+- **`advisor-accounts`** -- "Current Advisor & Accounts" widget showing the advisor table (same data/layout as the removed card, using the `client.advisor` prop)
+- **`outstanding-docs`** -- "Outstanding Documents" widget showing the static outstanding documents table
 
-**2. Database cleanup (one-time)**
+Specific changes:
+- Add `Table`, `TableBody`, `TableCell`, `TableHead`, `TableHeader`, `TableRow` imports
+- Add the `advisorData` and `outstandingDocs` constants (moved from SummaryTab)
+- Add two new entries to `defaultClientDashboardLayout`:
+  - `{ i: 'advisor-accounts', x: 6, y: 6, w: 3, h: 3 }`
+  - `{ i: 'outstanding-docs', x: 0, y: 9, w: 3, h: 3 }`
+- Add two new entries to `CLIENT_DASHBOARD_WIDGETS`:
+  - `{ id: 'advisor-accounts', label: 'Current Advisor & Accounts' }`
+  - `{ id: 'outstanding-docs', label: 'Outstanding Documents' }`
+- Add the two widget card blocks inside `DraggableWidgetGrid`, following the same drag-handle pattern as existing widgets
 
-Delete the corrupted row for user `fa9f27f6-b772-4edb-b95f-5331c7636e2d` with `page_id = 'dashboard'` so it gets recreated with the correct default layout on next load. (This will be done via a migration or manual SQL.)
+### What stays the same
+- All existing 8 dashboard widgets remain unchanged
+- The Next Best Action panel content (Opportunities, Outstanding, Recent Activity sub-tabs) stays in the renamed tab
+- The "General details" card stays on the renamed tab
+- All data generation and hook logic unchanged
 
-### Technical Detail
+### Files
 
-| File | Change |
+| File | Action |
 |------|--------|
-| `src/hooks/useWidgetLayout.ts` | Add `hasForeignWidgets` check to auto-heal logic so unrecognized widget IDs trigger a layout reset |
-| Database | Delete the corrupted `user_widget_layouts` row |
+| `src/pages/ClientDetail.tsx` | Rename tab label from "Summary" to "Next Best Action" |
+| `src/components/client-detail/ClientSummaryTab.tsx` | Remove Advisor/Accounts and Outstanding Docs cards and related imports |
+| `src/components/client-detail/ClientDashboardTab.tsx` | Add two new draggable widgets with the moved content |
 
