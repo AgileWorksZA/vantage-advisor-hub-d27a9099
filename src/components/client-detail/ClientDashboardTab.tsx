@@ -2,12 +2,17 @@ import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import { EChartsWrapper } from "@/components/ui/echarts-wrapper";
+import { MultiSelect } from "@/components/ui/multi-select";
 import { generateClient360Data, mapNationalityToJurisdiction, formatTotal } from "@/data/regional360ViewData";
 import { useClientRelationships } from "@/hooks/useClientRelationships";
 import { Client, calculateAge, formatBirthday } from "@/types/client";
-import { Plus, Users, Calendar, Gift, FileCheck, ShieldCheck, TrendingUp, TrendingDown, ArrowRight } from "lucide-react";
+import {
+  Calendar, Gift, FileCheck, TrendingUp, TrendingDown, ArrowRight,
+  Users, AlertTriangle, Clock, CheckCircle2, Target, Zap,
+  ArrowRightLeft, Layers, Building2, Briefcase, Landmark, Receipt, Banknote,
+} from "lucide-react";
 import AddFamilyMemberDialog from "./AddFamilyMemberDialog";
 
 interface ClientDashboardTabProps {
@@ -16,7 +21,6 @@ interface ClientDashboardTabProps {
   onTabChange?: (tab: string) => void;
 }
 
-// Deterministic seed helper (reuses the same pattern as regional360ViewData)
 function seededRandom(seed: string): () => number {
   let hash = 0;
   for (let i = 0; i < seed.length; i++) {
@@ -31,13 +35,41 @@ function seededRandom(seed: string): () => number {
   };
 }
 
+// Opportunity generation (reused from OpportunitiesTab logic)
+interface GapOpportunity {
+  id: string;
+  type: string;
+  description: string;
+  suggestedAction: string;
+  opportunitySize: number;
+  dateIdentified: string;
+  priority: "urgent" | "important" | "routine";
+}
+
+const typeConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
+  "Upsell": { label: "Growth", color: "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400", icon: <TrendingUp className="w-3.5 h-3.5" /> },
+  "Cross-sell": { label: "Cross-sell", color: "bg-cyan-100 text-cyan-700 border-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-400", icon: <ArrowRightLeft className="w-3.5 h-3.5" /> },
+  "Migration": { label: "Migration", color: "bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-900/30 dark:text-violet-400", icon: <Layers className="w-3.5 h-3.5" /> },
+  "Platform": { label: "Platform", color: "bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400", icon: <Building2 className="w-3.5 h-3.5" /> },
+  "New Business": { label: "New Business", color: "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400", icon: <Briefcase className="w-3.5 h-3.5" /> },
+  "Bank Scrape": { label: "Bank Scrape", color: "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400", icon: <Landmark className="w-3.5 h-3.5" /> },
+  "Tax Loss": { label: "Tax Loss", color: "bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400", icon: <Receipt className="w-3.5 h-3.5" /> },
+  "Idle Cash": { label: "Idle Cash", color: "bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400", icon: <Banknote className="w-3.5 h-3.5" /> },
+};
+
+const getConfig = (type: string) => {
+  const key = Object.keys(typeConfig).find(k => type.toLowerCase().includes(k.toLowerCase()));
+  return key ? typeConfig[key] : typeConfig["Upsell"];
+};
+
+import React from "react";
+
 const ClientDashboardTab = ({ client, clientId, onTabChange }: ClientDashboardTabProps) => {
   const navigate = useNavigate();
   const { familyMembers, businesses, refetch } = useClientRelationships(clientId);
   const [addMemberOpen, setAddMemberOpen] = useState(false);
-  const [selectedContracts, setSelectedContracts] = useState<Set<string>>(new Set());
-
-  const jurisdiction = mapNationalityToJurisdiction(client.nationality || null, client.country_of_issue || null);
+  const [selectedContracts, setSelectedContracts] = useState<string[]>([]);
+  const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
 
   const clientData = useMemo(() => {
     return generateClient360Data(clientId, client.nationality, client.country_of_issue);
@@ -54,12 +86,7 @@ const ClientDashboardTab = ({ client, clientId, onTabChange }: ClientDashboardTa
     const depositsWithdrawals = (rand() - 0.3) * totalInvestments * 0.1;
     const investmentReturns = totalInvestments * (0.04 + rand() * 0.08);
     const startingValue = totalInvestments - depositsWithdrawals - investmentReturns;
-    return {
-      startingValue,
-      depositsWithdrawals,
-      investmentReturns,
-      endingValue: totalInvestments,
-    };
+    return { startingValue, depositsWithdrawals, investmentReturns, endingValue: totalInvestments };
   }, [clientId, clientData]);
 
   // Asset allocation data
@@ -90,7 +117,7 @@ const ClientDashboardTab = ({ client, clientId, onTabChange }: ClientDashboardTa
     ];
   }, [assetAllocation]);
 
-  // All contracts for selection
+  // All contracts for multi-select
   const allContracts = useMemo(() => {
     const contracts: { id: string; name: string; provider: string; value: number; category: string }[] = [];
     clientData.onPlatformProducts.forEach((p, i) => {
@@ -108,22 +135,74 @@ const ClientDashboardTab = ({ client, clientId, onTabChange }: ClientDashboardTa
     return contracts;
   }, [clientData]);
 
-  // Product summary by category
-  const productSummary = useMemo(() => {
-    const cats: Record<string, number> = {};
-    allContracts.forEach(c => {
-      cats[c.category] = (cats[c.category] || 0) + c.value;
-    });
-    return Object.entries(cats).filter(([, v]) => v > 0).map(([name, value]) => ({ name, value }));
-  }, [allContracts]);
+  // Household members for multi-select
+  const householdMembers = useMemo(() => [
+    ...familyMembers.map(f => ({ id: f.id, name: f.name, type: f.familyType, relatedClientId: f.relatedClientId })),
+    ...businesses.map(b => ({ id: b.id, name: b.name, type: b.type, relatedClientId: b.relatedClientId })),
+  ], [familyMembers, businesses]);
 
-  // Income vs Expenses (deterministic)
-  const incomeExpenses = useMemo(() => {
-    const rand = seededRandom(clientId + "-income");
-    const income = 25000 + rand() * 75000;
-    const expenses = income * (0.5 + rand() * 0.3);
-    return { income: Math.round(income), expenses: Math.round(expenses) };
-  }, [clientId]);
+  // Build opportunities from products
+  const opportunities = useMemo(() => {
+    const gaps: GapOpportunity[] = [];
+    const products = [
+      ...clientData.onPlatformProducts.map(p => ({ category: "Investment", currentValue: p.amountValue, productName: p.product, provider: p.investmentHouse })),
+      ...clientData.externalProducts.map(p => ({ category: "External Investment", currentValue: p.amountValue, productName: p.product, provider: p.provider })),
+      ...clientData.platformCashAccounts.map(p => ({ category: "Cash", currentValue: p.amountValue, productName: p.name, provider: "Platform" })),
+      ...clientData.riskProducts.map(p => ({ category: "Risk/Insurance", currentValue: 0, productName: p.holdingName, provider: p.holdingName })),
+    ];
+    const categories = products.map(p => p.category.toLowerCase());
+    const hasInvestments = categories.some(c => c.includes("invest") || c.includes("retirement"));
+    const hasInsurance = categories.some(c => c.includes("insurance") || c.includes("risk"));
+    const hasMoneyMarketOrCash = categories.some(c => c.includes("cash"));
+    const providers = new Set(products.map(p => p.provider).filter(Boolean));
+    const totalValue = products.reduce((sum, p) => sum + (p.currentValue || 0), 0);
+    const investmentValue = products.filter(p => p.category.toLowerCase().includes("invest")).reduce((sum, p) => sum + (p.currentValue || 0), 0);
+    const cashValue = products.filter(p => p.category.toLowerCase().includes("cash")).reduce((sum, p) => sum + (p.currentValue || 0), 0);
+    const today = new Date().toISOString().split("T")[0];
+
+    if (products.length < 3) {
+      gaps.push({ id: "gap-newbiz", type: "New Business", description: `Client has only ${products.length} product${products.length !== 1 ? "s" : ""} — room to expand`, suggestedAction: "Explore new product opportunities", opportunitySize: Math.round(totalValue * 0.05), dateIdentified: today, priority: "important" });
+    }
+    if (hasInvestments && !hasInsurance) {
+      gaps.push({ id: "gap-cross", type: "Cross-sell", description: "Client has investments but no insurance products", suggestedAction: "Cross-sell insurance or risk cover", opportunitySize: Math.round(investmentValue * 0.03), dateIdentified: today, priority: "urgent" });
+    }
+    if (providers.size > 2) {
+      gaps.push({ id: "gap-platform", type: "Platform", description: `Assets spread across ${providers.size} providers`, suggestedAction: "Consolidate to preferred platform", opportunitySize: Math.round(totalValue * 0.03), dateIdentified: today, priority: "important" });
+    }
+    if (totalValue > 500000) {
+      gaps.push({ id: "gap-upsell", type: "Upsell", description: "High-value portfolio with contribution room", suggestedAction: "Drive additional contributions", opportunitySize: Math.round(totalValue * 0.05), dateIdentified: today, priority: "routine" });
+    }
+    if (investmentValue > 200000) {
+      gaps.push({ id: "gap-tlh", type: "Tax Loss", description: "Investment portfolio may have harvesting opportunities", suggestedAction: "Review portfolio for tax-loss harvesting", opportunitySize: Math.round(investmentValue * 0.02), dateIdentified: today, priority: "urgent" });
+    }
+    if (hasMoneyMarketOrCash && cashValue > 0) {
+      gaps.push({ id: "gap-idlecash", type: "Idle Cash", description: "Idle cash in money market or call accounts", suggestedAction: "Deploy idle cash into growth assets", opportunitySize: Math.round(cashValue * 0.8), dateIdentified: today, priority: "important" });
+    }
+    if (categories.some(c => c.includes("invest"))) {
+      gaps.push({ id: "gap-migration", type: "Migration", description: "External investments could be migrated on-platform", suggestedAction: "Present migration benefits and fee comparison", opportunitySize: Math.round(totalValue * 0.02), dateIdentified: today, priority: "routine" });
+    }
+    return gaps;
+  }, [clientData]);
+
+  // Opportunity breakdown by type
+  const opportunityBreakdown = useMemo(() => {
+    const map: Record<string, { count: number; value: number }> = {};
+    opportunities.forEach(o => {
+      const cfg = getConfig(o.type);
+      if (!map[cfg.label]) map[cfg.label] = { count: 0, value: 0 };
+      map[cfg.label].count++;
+      map[cfg.label].value += o.opportunitySize;
+    });
+    return Object.entries(map).map(([name, d]) => ({ name, count: d.count, value: d.value }));
+  }, [opportunities]);
+
+  // Summary metrics
+  const summaryMetrics = useMemo(() => {
+    const totalValue = opportunities.reduce((s, o) => s + o.opportunitySize, 0);
+    const urgent = opportunities.filter(o => o.priority === "urgent").length;
+    const important = opportunities.filter(o => o.priority === "important").length;
+    return { totalValue, totalCount: opportunities.length, urgent, important };
+  }, [opportunities]);
 
   // Key dates
   const keyDates = useMemo(() => {
@@ -131,49 +210,32 @@ const ClientDashboardTab = ({ client, clientId, onTabChange }: ClientDashboardTa
     if (client.date_of_birth) {
       dates.push({ label: "Birthday", date: formatBirthday(client.date_of_birth), icon: <Gift className="h-3.5 w-3.5 text-muted-foreground" /> });
     }
-    // Deterministic next review
     const rand = seededRandom(clientId + "-dates");
     const reviewMonths = Math.floor(rand() * 6) + 1;
     const reviewDate = new Date();
     reviewDate.setMonth(reviewDate.getMonth() + reviewMonths);
     dates.push({ label: "Next Review", date: reviewDate.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }), icon: <Calendar className="h-3.5 w-3.5 text-muted-foreground" /> });
-
     const renewalMonths = Math.floor(rand() * 8) + 2;
     const renewalDate = new Date();
     renewalDate.setMonth(renewalDate.getMonth() + renewalMonths);
     dates.push({ label: "Policy Renewal", date: renewalDate.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }), icon: <FileCheck className="h-3.5 w-3.5 text-muted-foreground" /> });
-
     return dates;
   }, [client.date_of_birth, clientId]);
 
-  const toggleContract = (id: string) => {
-    setSelectedContracts(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
-  // Chart colors
   const chartColors = [
     "hsl(180, 70%, 45%)", "hsl(210, 60%, 55%)", "hsl(30, 70%, 55%)",
     "hsl(150, 50%, 45%)", "hsl(260, 50%, 55%)", "hsl(0, 60%, 55%)",
+    "hsl(45, 70%, 50%)", "hsl(330, 50%, 55%)",
   ];
 
-  // Asset allocation bar chart option
   const assetAllocationOption = useMemo(() => ({
-    tooltip: { trigger: "axis" as const, formatter: (params: any) => {
-      const p = params[0];
-      return `${p.name}: ${(p.value as number).toFixed(1)}%`;
-    }},
+    tooltip: { trigger: "axis" as const, formatter: (params: any) => { const p = params[0]; return `${p.name}: ${(p.value as number).toFixed(1)}%`; } },
     grid: { left: 90, right: 30, top: 8, bottom: 8 },
     xAxis: { type: "value" as const, max: 100, show: false },
     yAxis: { type: "category" as const, data: assetAllocation.map(a => a.name), axisLine: { show: false }, axisTick: { show: false } },
     series: [{ type: "bar" as const, data: assetAllocation.map((a, i) => ({ value: Math.round(a.pct * 100), itemStyle: { color: chartColors[i] } })), barWidth: 16, borderRadius: 0 }],
   }), [assetAllocation]);
 
-  // Geo diversification donut
   const geoOption = useMemo(() => ({
     tooltip: { trigger: "item" as const },
     legend: { bottom: 0, textStyle: { fontSize: 11 } },
@@ -184,232 +246,259 @@ const ClientDashboardTab = ({ client, clientId, onTabChange }: ClientDashboardTa
     }],
   }), [geoDiversification]);
 
-  // Product summary pie
-  const productSummaryOption = useMemo(() => ({
-    tooltip: { trigger: "item" as const, formatter: (p: any) => `${p.name}: ${currencySymbol} ${(p.value as number).toLocaleString()}` },
+  const oppBreakdownOption = useMemo(() => ({
+    tooltip: { trigger: "item" as const, formatter: (p: any) => `${p.name}: ${p.data.count} (${currencySymbol} ${(p.value as number).toLocaleString()})` },
     legend: { bottom: 0, textStyle: { fontSize: 10 } },
     series: [{
       type: "pie" as const, radius: ["40%", "65%"], center: ["50%", "38%"],
-      data: productSummary.map((p, i) => ({ name: p.name, value: Math.round(p.value), itemStyle: { color: chartColors[i % chartColors.length] } })),
+      data: opportunityBreakdown.map((o, i) => ({ name: o.name, value: o.value, count: o.count, itemStyle: { color: chartColors[i % chartColors.length] } })),
       label: { show: false },
     }],
-  }), [productSummary, currencySymbol]);
+  }), [opportunityBreakdown, currencySymbol]);
 
-  // Income vs expenses bar
-  const incomeExpensesOption = useMemo(() => ({
-    tooltip: { trigger: "axis" as const },
-    grid: { left: 10, right: 10, top: 20, bottom: 30, containLabel: true },
-    xAxis: { type: "category" as const, data: ["Income", "Expenses"] },
-    yAxis: { type: "value" as const, show: false },
-    series: [{
-      type: "bar" as const, barWidth: 40,
-      data: [
-        { value: incomeExpenses.income, itemStyle: { color: "hsl(180, 70%, 45%)" } },
-        { value: incomeExpenses.expenses, itemStyle: { color: "hsl(0, 60%, 55%)" } },
-      ],
-      label: { show: true, position: "top" as const, formatter: (p: any) => `${currencySymbol} ${(p.value as number).toLocaleString()}`, fontSize: 10 },
-    }],
-  }), [incomeExpenses, currencySymbol]);
+  // Contract multi-select options
+  const contractOptions = useMemo(() =>
+    allContracts.map(c => ({ value: c.id, label: `${c.name} (${c.category})` })), [allContracts]);
 
-  const householdMembers = [...familyMembers.map(f => ({ ...f, kind: "family" as const })), ...businesses.map(b => ({ ...b, kind: "business" as const }))];
+  // Household multi-select options
+  const memberOptions = useMemo(() =>
+    householdMembers.map(m => ({ value: m.id, label: `${m.name} (${m.type})` })), [householdMembers]);
+
+  // Priority groups
+  const priorityGroups = useMemo(() => ({
+    urgent: opportunities.filter(o => o.priority === "urgent"),
+    important: opportunities.filter(o => o.priority === "important"),
+    routine: opportunities.filter(o => o.priority === "routine"),
+  }), [opportunities]);
+
+  const formatDate = (dateStr: string) => {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {/* 1. Asset Allocation */}
-      <Card className="border-0 shadow-sm">
-        <CardHeader className="py-3 pb-1">
-          <CardTitle className="text-sm font-semibold">Asset Allocation</CardTitle>
-        </CardHeader>
-        <CardContent className="pt-0">
-          <EChartsWrapper option={assetAllocationOption} height={180} />
-          <Button variant="link" className="p-0 h-auto text-xs text-[hsl(180,70%,45%)]" onClick={() => onTabChange?.("performance")}>
-            View analysis <ArrowRight className="h-3 w-3 ml-1" />
-          </Button>
-        </CardContent>
-      </Card>
+    <div className="space-y-4">
+      {/* Toolbar with multi-select dropdowns */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <MultiSelect
+          options={contractOptions}
+          selected={selectedContracts}
+          onChange={setSelectedContracts}
+          placeholder="Contracts"
+          className="min-w-[220px]"
+        />
+        <MultiSelect
+          options={memberOptions}
+          selected={selectedMembers}
+          onChange={setSelectedMembers}
+          placeholder="Household Members"
+          className="min-w-[220px]"
+        />
+        <Button variant="outline" size="sm" className="h-10 text-xs gap-1" onClick={() => setAddMemberOpen(true)}>
+          <Users className="h-3.5 w-3.5" /> Add Member
+        </Button>
+      </div>
 
-      {/* 2. Change in Valuation */}
-      <Card className="border-0 shadow-sm">
-        <CardHeader className="py-3 pb-1">
-          <CardTitle className="text-sm font-semibold">Change in Valuation</CardTitle>
-        </CardHeader>
-        <CardContent className="pt-1 space-y-2">
-          {[
-            { label: "Starting Value", value: valuationData.startingValue },
-            { label: "Deposits / Withdrawals", value: valuationData.depositsWithdrawals, highlight: true },
-            { label: "Investment Returns", value: valuationData.investmentReturns, highlight: true },
-          ].map(item => (
-            <div key={item.label} className="flex justify-between items-center py-1 border-b border-border/50">
-              <span className="text-xs text-muted-foreground">{item.label}</span>
-              <span className={`text-sm font-medium flex items-center gap-1 ${item.highlight ? (item.value >= 0 ? "text-emerald-600" : "text-red-500") : ""}`}>
-                {item.highlight && (item.value >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />)}
-                {formatTotal(item.value, currencySymbol)}
-              </span>
+      {/* Row 1: Asset Allocation, Change in Valuation, Geographic Diversification */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <Card className="border-0 shadow-sm">
+          <CardHeader className="py-3 pb-1">
+            <CardTitle className="text-sm font-semibold">Asset Allocation</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <EChartsWrapper option={assetAllocationOption} height={180} />
+            <Button variant="link" className="p-0 h-auto text-xs text-primary" onClick={() => onTabChange?.("performance")}>
+              View analysis <ArrowRight className="h-3 w-3 ml-1" />
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card className="border-0 shadow-sm">
+          <CardHeader className="py-3 pb-1">
+            <CardTitle className="text-sm font-semibold">Change in Valuation</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-1 space-y-2">
+            {[
+              { label: "Starting Value", value: valuationData.startingValue },
+              { label: "Deposits / Withdrawals", value: valuationData.depositsWithdrawals, highlight: true },
+              { label: "Investment Returns", value: valuationData.investmentReturns, highlight: true },
+            ].map(item => (
+              <div key={item.label} className="flex justify-between items-center py-1 border-b border-border/50">
+                <span className="text-xs text-muted-foreground">{item.label}</span>
+                <span className={`text-sm font-medium flex items-center gap-1 ${item.highlight ? (item.value >= 0 ? "text-emerald-600" : "text-red-500") : ""}`}>
+                  {item.highlight && (item.value >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />)}
+                  {formatTotal(item.value, currencySymbol)}
+                </span>
+              </div>
+            ))}
+            <div className="flex justify-between items-center pt-1">
+              <span className="text-xs font-semibold">Ending Value</span>
+              <span className="text-sm font-bold">{formatTotal(valuationData.endingValue, currencySymbol)}</span>
             </div>
-          ))}
-          <div className="flex justify-between items-center pt-1">
-            <span className="text-xs font-semibold">Ending Value</span>
-            <span className="text-sm font-bold">{formatTotal(valuationData.endingValue, currencySymbol)}</span>
-          </div>
-          <Button variant="link" className="p-0 h-auto text-xs text-[hsl(180,70%,45%)]" onClick={() => onTabChange?.("performance")}>
-            View performance <ArrowRight className="h-3 w-3 ml-1" />
-          </Button>
-        </CardContent>
-      </Card>
+            <Button variant="link" className="p-0 h-auto text-xs text-primary" onClick={() => onTabChange?.("performance")}>
+              View performance <ArrowRight className="h-3 w-3 ml-1" />
+            </Button>
+          </CardContent>
+        </Card>
 
-      {/* 3. Geographic Diversification */}
-      <Card className="border-0 shadow-sm">
-        <CardHeader className="py-3 pb-1">
-          <CardTitle className="text-sm font-semibold">Geographic Diversification</CardTitle>
-        </CardHeader>
-        <CardContent className="pt-0">
-          <EChartsWrapper option={geoOption} height={180} />
-          <Button variant="link" className="p-0 h-auto text-xs text-[hsl(180,70%,45%)]" onClick={() => onTabChange?.("360-view")}>
-            View diversification <ArrowRight className="h-3 w-3 ml-1" />
-          </Button>
-        </CardContent>
-      </Card>
+        <Card className="border-0 shadow-sm">
+          <CardHeader className="py-3 pb-1">
+            <CardTitle className="text-sm font-semibold">Geographic Diversification</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <EChartsWrapper option={geoOption} height={180} />
+            <Button variant="link" className="p-0 h-auto text-xs text-primary" onClick={() => onTabChange?.("360-view")}>
+              View diversification <ArrowRight className="h-3 w-3 ml-1" />
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
 
-      {/* 4. Household Members */}
-      <Card className="border-0 shadow-sm">
-        <CardHeader className="py-3 pb-1 flex flex-row items-center justify-between space-y-0">
-          <CardTitle className="text-sm font-semibold">Household Members</CardTitle>
-          <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={() => setAddMemberOpen(true)}>
-            <Plus className="h-3 w-3" /> Add
-          </Button>
-        </CardHeader>
-        <CardContent className="pt-0">
-          {householdMembers.length === 0 ? (
-            <p className="text-xs text-muted-foreground py-4 text-center">No household members linked</p>
-          ) : (
-            <div className="space-y-1.5 max-h-[180px] overflow-auto">
-              {householdMembers.map(m => (
-                <div key={m.id} className="flex items-center justify-between py-1.5 border-b border-border/50 last:border-0">
-                  <div className="flex items-center gap-2">
-                    <Users className="h-3.5 w-3.5 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm font-medium leading-tight">{m.name}</p>
-                      <p className="text-xs text-muted-foreground">{m.kind === "family" ? m.familyType : m.type}</p>
+      {/* Row 2: Top Opportunities, Opportunity Breakdown, Opportunity Value Summary */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <Card className="border-0 shadow-sm">
+          <CardHeader className="py-3 pb-1 flex flex-row items-center justify-between space-y-0">
+            <div className="flex items-center gap-1.5">
+              <Target className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-semibold">Top Opportunities</CardTitle>
+            </div>
+            <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-primary text-primary">{opportunities.length}</Badge>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="space-y-0 max-h-[220px] overflow-auto">
+              {opportunities.slice(0, 5).map(opp => {
+                const cfg = getConfig(opp.type);
+                return (
+                  <div key={opp.id} className="flex gap-2 py-1.5 border-b border-border/50 last:border-0">
+                    <div className="shrink-0 mt-0.5 text-muted-foreground">{cfg.icon}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <Badge variant="outline" className={`${cfg.color} text-[10px] px-1.5 py-0 font-medium`}>{cfg.label}</Badge>
+                        {opp.opportunitySize > 0 && (
+                          <span className="text-[10px] font-semibold text-emerald-600">{formatTotal(opp.opportunitySize, currencySymbol)}</span>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground truncate">{opp.description}</p>
+                      <p className="text-xs text-primary">{opp.suggestedAction}</p>
                     </div>
                   </div>
-                  {m.relatedClientId && (
-                    <Button variant="ghost" size="sm" className="h-6 text-xs text-[hsl(180,70%,45%)]" onClick={() => navigate(`/clients/${m.relatedClientId}`)}>
-                      View
-                    </Button>
-                  )}
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-0 shadow-sm">
+          <CardHeader className="py-3 pb-1">
+            <CardTitle className="text-sm font-semibold">Opportunity Breakdown</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <EChartsWrapper option={oppBreakdownOption} height={200} />
+          </CardContent>
+        </Card>
+
+        <Card className="border-0 shadow-sm">
+          <CardHeader className="py-3 pb-1">
+            <div className="flex items-center gap-1.5">
+              <Zap className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-semibold">Opportunity Value Summary</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-1 space-y-3">
+            <div className="text-center py-2">
+              <p className="text-2xl font-bold text-primary">{formatTotal(summaryMetrics.totalValue, currencySymbol)}</p>
+              <p className="text-xs text-muted-foreground">Total Pipeline Value</p>
+            </div>
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div className="rounded-lg bg-muted/50 p-2">
+                <p className="text-lg font-semibold">{summaryMetrics.totalCount}</p>
+                <p className="text-[10px] text-muted-foreground">Total</p>
+              </div>
+              <div className="rounded-lg bg-red-50 dark:bg-red-900/20 p-2">
+                <p className="text-lg font-semibold text-red-600 dark:text-red-400">{summaryMetrics.urgent}</p>
+                <p className="text-[10px] text-muted-foreground">Urgent</p>
+              </div>
+              <div className="rounded-lg bg-amber-50 dark:bg-amber-900/20 p-2">
+                <p className="text-lg font-semibold text-amber-600 dark:text-amber-400">{summaryMetrics.important}</p>
+                <p className="text-[10px] text-muted-foreground">Important</p>
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              {opportunityBreakdown.map((o, i) => (
+                <div key={o.name} className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">{o.name}</span>
+                  <span className="font-medium">{o.count} · {formatTotal(o.value, currencySymbol)}</span>
                 </div>
               ))}
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
 
-      {/* 5. Selected Contracts */}
-      <Card className="border-0 shadow-sm">
-        <CardHeader className="py-3 pb-1">
-          <CardTitle className="text-sm font-semibold">Selected Contracts</CardTitle>
-        </CardHeader>
-        <CardContent className="pt-0">
-          <div className="space-y-1 max-h-[200px] overflow-auto">
-            {allContracts.map(c => (
-              <label key={c.id} className="flex items-center gap-2 py-1.5 border-b border-border/50 last:border-0 cursor-pointer">
-                <Checkbox
-                  checked={selectedContracts.has(c.id)}
-                  onCheckedChange={() => toggleContract(c.id)}
-                />
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium truncate">{c.name}</p>
-                  <p className="text-[10px] text-muted-foreground">{c.provider} · {c.category}</p>
+      {/* Row 3: Action Priority, Key Dates */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card className="border-0 shadow-sm">
+          <CardHeader className="py-3 pb-1">
+            <CardTitle className="text-sm font-semibold">Action Priority</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0 space-y-3">
+            {([
+              { key: "urgent" as const, label: "Urgent", icon: <AlertTriangle className="h-3.5 w-3.5 text-red-500" />, items: priorityGroups.urgent, dotColor: "bg-red-500" },
+              { key: "important" as const, label: "Important", icon: <Clock className="h-3.5 w-3.5 text-amber-500" />, items: priorityGroups.important, dotColor: "bg-amber-500" },
+              { key: "routine" as const, label: "Routine", icon: <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />, items: priorityGroups.routine, dotColor: "bg-emerald-500" },
+            ]).map(group => (
+              <div key={group.key}>
+                <div className="flex items-center gap-1.5 mb-1">
+                  {group.icon}
+                  <span className="text-xs font-semibold">{group.label}</span>
+                  <Badge variant="outline" className="text-[10px] px-1 py-0 ml-auto">{group.items.length}</Badge>
                 </div>
-                {c.value > 0 && (
-                  <span className="text-xs text-muted-foreground whitespace-nowrap">{formatTotal(c.value, currencySymbol)}</span>
+                {group.items.length === 0 ? (
+                  <p className="text-[10px] text-muted-foreground pl-5">No items</p>
+                ) : (
+                  group.items.map(opp => (
+                    <div key={opp.id} className="flex items-center gap-2 pl-5 py-1 border-b border-border/30 last:border-0">
+                      <div className={`w-1.5 h-1.5 rounded-full ${group.dotColor} shrink-0`} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs truncate">{opp.description}</p>
+                      </div>
+                      {opp.opportunitySize > 0 && (
+                        <span className="text-[10px] text-emerald-600 font-medium whitespace-nowrap">{formatTotal(opp.opportunitySize, currencySymbol)}</span>
+                      )}
+                    </div>
+                  ))
                 )}
-              </label>
+              </div>
             ))}
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
-      {/* 6. Product Summary */}
-      <Card className="border-0 shadow-sm">
-        <CardHeader className="py-3 pb-1">
-          <CardTitle className="text-sm font-semibold">Product Summary</CardTitle>
-        </CardHeader>
-        <CardContent className="pt-0">
-          <EChartsWrapper option={productSummaryOption} height={200} />
-        </CardContent>
-      </Card>
-
-      {/* 7. Income vs Expenses */}
-      <Card className="border-0 shadow-sm">
-        <CardHeader className="py-3 pb-1">
-          <CardTitle className="text-sm font-semibold">Income vs Expenses</CardTitle>
-        </CardHeader>
-        <CardContent className="pt-0">
-          <EChartsWrapper option={incomeExpensesOption} height={180} />
-          <div className="flex justify-between text-xs text-muted-foreground mt-1">
-            <span>Surplus: <span className="font-medium text-emerald-600">{currencySymbol} {(incomeExpenses.income - incomeExpenses.expenses).toLocaleString()}</span></span>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* 8. Risk Cover Summary */}
-      <Card className="border-0 shadow-sm">
-        <CardHeader className="py-3 pb-1">
-          <div className="flex items-center gap-1.5">
-            <ShieldCheck className="h-4 w-4 text-muted-foreground" />
-            <CardTitle className="text-sm font-semibold">Risk Cover Summary</CardTitle>
-          </div>
-        </CardHeader>
-        <CardContent className="pt-0">
-          {clientData.riskProducts.length === 0 ? (
-            <p className="text-xs text-muted-foreground py-4 text-center">No risk products on record</p>
-          ) : (
-            <div className="space-y-1.5 max-h-[180px] overflow-auto">
-              {clientData.riskProducts.map((p, i) => (
-                <div key={i} className="flex justify-between items-center py-1.5 border-b border-border/50 last:border-0">
-                  <div>
-                    <p className="text-xs font-medium">{p.holdingName}</p>
-                    <p className="text-[10px] text-muted-foreground">{p.policyNumber}</p>
+        <Card className="border-0 shadow-sm">
+          <CardHeader className="py-3 pb-1">
+            <CardTitle className="text-sm font-semibold">Key Dates & Milestones</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="space-y-2">
+              {keyDates.map((d, i) => (
+                <div key={i} className="flex items-center gap-2 py-1.5 border-b border-border/50 last:border-0">
+                  {d.icon}
+                  <div className="flex-1">
+                    <p className="text-xs font-medium">{d.label}</p>
                   </div>
-                  <span className="text-xs text-emerald-600 font-medium">Active</span>
+                  <span className="text-xs text-muted-foreground">{d.date}</span>
                 </div>
               ))}
-            </div>
-          )}
-          <Button variant="link" className="p-0 h-auto text-xs text-[hsl(180,70%,45%)] mt-1" onClick={() => onTabChange?.("360-view")}>
-            View all products <ArrowRight className="h-3 w-3 ml-1" />
-          </Button>
-        </CardContent>
-      </Card>
-
-      {/* 9. Key Dates & Milestones */}
-      <Card className="border-0 shadow-sm">
-        <CardHeader className="py-3 pb-1">
-          <CardTitle className="text-sm font-semibold">Key Dates & Milestones</CardTitle>
-        </CardHeader>
-        <CardContent className="pt-0">
-          <div className="space-y-2">
-            {keyDates.map((d, i) => (
-              <div key={i} className="flex items-center gap-2 py-1.5 border-b border-border/50 last:border-0">
-                {d.icon}
-                <div className="flex-1">
-                  <p className="text-xs font-medium">{d.label}</p>
+              {client.date_of_birth && (
+                <div className="flex items-center gap-2 py-1.5">
+                  <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">Age: <span className="font-medium text-foreground">{calculateAge(client.date_of_birth)}</span></span>
                 </div>
-                <span className="text-xs text-muted-foreground">{d.date}</span>
-              </div>
-            ))}
-            {client.date_of_birth && (
-              <div className="flex items-center gap-2 py-1.5">
-                <Users className="h-3.5 w-3.5 text-muted-foreground" />
-                <span className="text-xs text-muted-foreground">Age: <span className="font-medium text-foreground">{calculateAge(client.date_of_birth)}</span></span>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
-      {/* Add Family Member Dialog */}
       <AddFamilyMemberDialog
         open={addMemberOpen}
         onOpenChange={setAddMemberOpen}
