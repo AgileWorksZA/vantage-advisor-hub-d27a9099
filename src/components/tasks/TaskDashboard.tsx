@@ -108,7 +108,7 @@ export function TaskDashboard({ tasks, onViewDetail }: TaskDashboardProps) {
   const slaData = useMemo(() => {
     const now = new Date();
     const threeDaysFromNow = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
-    const withSla = tasks.filter(t => t.sla_deadline);
+    const withSla = periodTasks.filter(t => t.sla_deadline);
     let adherent = 0;
     let breached = 0;
     let atRisk = 0;
@@ -127,7 +127,7 @@ export function TaskDashboard({ tasks, onViewDetail }: TaskDashboardProps) {
     });
     const pct = (adherent + breached) > 0 ? Math.round((adherent / (adherent + breached)) * 100) : 100;
     return { adherent, breached, atRisk, pct, total: withSla.length };
-  }, [tasks]);
+  }, [periodTasks]);
 
   const periodLabel = useMemo(() => `${format(periodStart, "d MMM")} – ${format(periodEnd, "d MMM yyyy")}`, [periodStart, periodEnd]);
 
@@ -179,40 +179,41 @@ export function TaskDashboard({ tasks, onViewDetail }: TaskDashboardProps) {
     }],
   }), [stats.byPriority]);
 
-  const slaGaugeOption = useMemo(() => ({
-    series: [{
-      type: "gauge" as const,
-      startAngle: 180,
-      endAngle: 0,
-      min: 0,
-      max: 100,
-      splitNumber: 4,
-      itemStyle: {
-        color: slaData.pct >= 80 ? "hsl(var(--chart-2))" : slaData.pct >= 50 ? "hsl(var(--chart-4))" : "hsl(var(--destructive))",
-      },
-      progress: { show: true, width: 18 },
-      pointer: { show: false },
-      axisLine: { lineStyle: { width: 18 } },
-      axisTick: { show: false },
-      splitLine: { show: false },
-      axisLabel: { show: false },
-      title: {
-        show: true,
-        offsetCenter: [0, "25%"],
-        fontSize: 12,
-        color: "hsl(var(--muted-foreground))",
-      },
-      detail: {
-        valueAnimation: true,
-        offsetCenter: [0, "0%"],
-        fontSize: 24,
-        fontWeight: "bold" as const,
-        formatter: "{value}%",
-        color: "auto",
-      },
-      data: [{ value: slaData.pct, name: "SLA Met" }],
-    }],
-  }), [slaData.pct]);
+  const slaGaugeOption = useMemo(() => {
+    const visible = slaData.adherent + slaData.breached + slaData.atRisk;
+    const phantomValue = visible > 0 ? visible : 1;
+    const dataItems = visible > 0
+      ? [
+          { value: slaData.adherent, name: "Met", itemStyle: { color: "#10b981" } },
+          { value: slaData.breached, name: "Breached", itemStyle: { color: "#ef4444" } },
+          { value: slaData.atRisk, name: "At Risk", itemStyle: { color: "#f59e0b" } },
+          { value: phantomValue, name: "", itemStyle: { color: "transparent" }, label: { show: false }, emphasis: { disabled: true } },
+        ]
+      : [
+          { value: 1, name: "No Data", itemStyle: { color: "hsl(var(--muted))" } },
+          { value: 1, name: "", itemStyle: { color: "transparent" }, label: { show: false }, emphasis: { disabled: true } },
+        ];
+    return {
+      tooltip: { show: false },
+      legend: { show: false },
+      graphic: [
+        { type: "text", left: "center", top: "55%", style: { text: `${slaData.pct}%`, fontSize: 24, fontWeight: "bold", fill: "#10b981", textAlign: "center" } },
+        { type: "text", left: "center", top: "70%", style: { text: "SLA Met", fontSize: 12, fill: "hsl(var(--muted-foreground))", textAlign: "center" } },
+      ],
+      series: [{
+        type: "pie" as const,
+        radius: ["50%", "80%"],
+        center: ["50%", "70%"],
+        startAngle: 180,
+        endAngle: 0,
+        avoidLabelOverlap: false,
+        itemStyle: { borderRadius: 0, borderColor: "transparent", borderWidth: 0 },
+        label: { show: false },
+        emphasis: { scale: false },
+        data: dataItems,
+      }],
+    };
+  }, [slaData]);
 
   const todayStr = format(new Date(), "yyyy-MM-dd");
   const yesterday = new Date();
@@ -373,7 +374,7 @@ export function TaskDashboard({ tasks, onViewDetail }: TaskDashboardProps) {
             <CardTitle className="text-sm font-medium">SLA Adherence</CardTitle>
           </CardHeader>
           <CardContent>
-            <EChartsWrapper option={slaGaugeOption} height={160} />
+            <EChartsWrapper option={slaGaugeOption} height={160} onEvents={{}} />
             <div className="flex justify-center gap-4 mt-1 text-xs">
               <span className="flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full bg-emerald-500" />
