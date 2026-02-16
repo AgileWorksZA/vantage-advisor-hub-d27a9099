@@ -371,12 +371,12 @@ export function TaskDashboard({ tasks, onViewDetail }: TaskDashboardProps) {
           </CardContent>
         </Card>
 
-        <Card className="cursor-pointer" onClick={() => onViewDetail({ status: openStatuses, dueDateFrom: periodFromStr, dueDateTo: periodToStr })}>
+        <Card className="cursor-pointer">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">SLA Adherence</CardTitle>
           </CardHeader>
           <CardContent>
-            <EChartsWrapper option={slaGaugeOption} height={160} onEvents={{}} />
+            <EChartsWrapper option={slaGaugeOption} height={160} onEvents={{ click: (params: any) => { if (params?.name && params.name !== "No Data") onViewDetail({ slaStatus: [params.name], dueDateFrom: periodFromStr, dueDateTo: periodToStr }); } }} />
             <div className="flex justify-center gap-4 mt-1 text-xs">
               <span className="flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full bg-emerald-500" />

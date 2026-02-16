@@ -90,6 +90,7 @@ export function TaskFilters({ filters, onFiltersChange }: TaskFiltersProps) {
     (filters.priority && filters.priority.length > 0) ||
     (filters.taskType && filters.taskType.length > 0) ||
     (filters.category && filters.category.length > 0) ||
+    (filters.slaStatus && filters.slaStatus.length > 0) ||
     filters.dueDateFrom ||
     filters.dueDateTo;
 
@@ -111,6 +112,16 @@ export function TaskFilters({ filters, onFiltersChange }: TaskFiltersProps) {
   (filters.category || []).forEach((v) => {
     const name = categoryOptions.find((o) => o.value === v)?.label || v;
     filterTags.push({ label: name, onRemove: () => removeFilterValue("category", v) });
+  });
+  (filters.slaStatus || []).forEach((v) => {
+    filterTags.push({
+      label: `SLA: ${v}`,
+      onRemove: () => {
+        const current = filters.slaStatus || [];
+        const updated = current.filter((s) => s !== v);
+        onFiltersChange({ ...filters, slaStatus: updated.length ? updated : undefined });
+      },
+    });
   });
   if (filters.dueDateFrom || filters.dueDateTo) {
     const fromStr = filters.dueDateFrom ? format(new Date(filters.dueDateFrom), "MMM d, yyyy") : "";
