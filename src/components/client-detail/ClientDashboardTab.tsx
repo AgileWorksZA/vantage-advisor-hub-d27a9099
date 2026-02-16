@@ -45,8 +45,8 @@ const defaultClientDashboardLayout: WidgetLayout[] = [
   { i: 'opp-value-summary', x: 6, y: 3, w: 3, h: 3 },
   { i: 'action-priority', x: 0, y: 6, w: 3, h: 3 },
   { i: 'key-dates', x: 3, y: 6, w: 3, h: 3 },
-  { i: 'advisor-accounts', x: 6, y: 6, w: 3, h: 3 },
-  { i: 'outstanding-docs', x: 0, y: 9, w: 3, h: 3 },
+  { i: 'advisor-accounts', x: 6, y: 6, w: 3, h: 2 },
+  { i: 'outstanding-docs', x: 0, y: 9, w: 3, h: 2 },
 ];
 
 const CLIENT_DASHBOARD_WIDGETS: WidgetConfig[] = [
