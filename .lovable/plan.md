@@ -1,56 +1,31 @@
 
 
-## Fix Analytics Drill-Down, Add SLA/Utilisation to Task Table, Rename Button
+## Fix "Tasks by Status" Donut Chart Layout
 
-### 1. Rename "All Tasks" to "Overview"
+### Changes
 
-**File: `src/pages/Tasks.tsx` (line 238)**
+**File: `src/components/tasks/TaskDashboard.tsx`**
 
-Change the button label from "All Tasks" to "Overview". Also update any references in `handleViewChange` and URL params that use "detail" display text.
+1. **Remove rounded edges** on donut segments by changing `borderRadius: 10` to `borderRadius: 0` in the pie series `itemStyle` (line 27).
 
----
+2. **Tighten chart layout** to fit the widget card:
+   - Reduce the donut radius from `["40%", "70%"]` to `["35%", "60%"]` so the chart does not overflow.
+   - Move the legend closer by adjusting `bottom: 0` to `bottom: "0%"` and adding `itemGap: 8` and smaller font.
+   - Add a `grid` with zero padding to maximize space usage.
 
-### 2. Fix Analytics Click-to-Filter (Column-Aware Drill-Down)
+### Technical Detail
 
-**Problem**: Clicking any number in a row (e.g., the "Overdue" count for "Annual Review") only filters by the row label (task type or person name). It does not filter by the specific column (overdue, due today, etc.), so all tasks for that category appear.
+Only one file changes -- the `statusChartOption` useMemo block in `TaskDashboard.tsx`:
 
-**Fix in `src/components/tasks/TaskAnalyticsTab.tsx`:**
+```typescript
+// Before
+radius: ["40%", "70%"],
+itemStyle: { borderRadius: 10, borderColor: "transparent", borderWidth: 2 },
 
-- Update `AnalyticsDataRow` so each cell has its own click handler that passes both the row filter AND the column-specific date/status filter
-- Each clickable cell will call `onDrillDown` with combined filters:
-  - "Overdue" cell: adds `dueDateTo: yesterday` + excludes completed
-  - "Due Today" cell: adds `dueDateFrom: today, dueDateTo: today`
-  - "Due Tomorrow" cell: adds `dueDateFrom: tomorrow, dueDateTo: tomorrow`
-  - "Due This Week" cell: adds `dueDateFrom: weekStart, dueDateTo: weekEnd`
-  - "Due Next Week" cell: adds `dueDateFrom: nextWeekStart, dueDateTo: nextWeekEnd`
-  - "Completed in Period" cell: adds `status: ["Completed"]` + period date range
-  - "Due Items" cell: filters by row only (current behavior)
-- Pass `onCellClick(row, column)` instead of a single `onClick` per row
-- The same logic applies to `AdviserGroupRow` header cells
+// After
+radius: ["35%", "60%"],
+itemStyle: { borderRadius: 0, borderColor: "transparent", borderWidth: 2 },
+```
 
----
-
-### 3. Show SLA and Utilisation Columns on the Overview (Task Table)
-
-**File: `src/components/tasks/TaskTable.tsx`:**
-
-- Add a "Utilisation" column next to the existing "SLA" column
-- Display the `standard_execution_minutes` value from each task (e.g., "120 min" or "2h")
-- The SLA column already shows "On Track" / "Breached" -- keep as is
-
-**File: `src/hooks/useTasksEnhanced.ts`:**
-
-- Ensure `standard_execution_minutes` is included in the `EnhancedTask` interface (it comes from the DB but is currently accessed via `(t as any).standard_execution_minutes`)
-- Add `standard_execution_minutes` to the `EnhancedTask` type definition so it is properly typed
-
----
-
-### Technical Summary
-
-| File | Changes |
-|---|---|
-| `src/pages/Tasks.tsx` | Rename "All Tasks" button to "Overview" (line 238) |
-| `src/components/tasks/TaskAnalyticsTab.tsx` | Refactor `AnalyticsDataRow` to pass column-specific filters on each cell click; update `handleRowClick` to accept a column parameter |
-| `src/components/tasks/TaskTable.tsx` | Add "Utilisation" column showing `standard_execution_minutes` |
-| `src/hooks/useTasksEnhanced.ts` | Add `standard_execution_minutes: number | null` to `EnhancedTask` interface |
+Also add `center: ["50%", "45%"]` to shift the donut up slightly to make room for the legend below.
 
