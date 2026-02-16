@@ -256,7 +256,7 @@ const ClientDetail = () => {
                 { value: "summary", label: "Summary" },
                 { value: "360-view", label: "360 View" },
                 { value: "performance", label: "Performance" },
-                { value: "details", label: "Details" },
+                
                 { value: "meetings", label: "Meetings" },
                 { value: "relationships", label: "Relationships" },
                 { value: "workflows", label: "Workflows" },

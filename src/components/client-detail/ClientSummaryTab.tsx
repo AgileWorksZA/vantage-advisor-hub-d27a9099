@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
 import { generateClient360Data, mapNationalityToJurisdiction } from "@/data/regional360ViewData";
 import type { PrepProduct, PrepOpportunity } from "@/hooks/useClientMeetingPrep";
-import { CheckCircle } from "lucide-react";
+import { CheckCircle, Pencil } from "lucide-react";
 
 import {
   Table,
@@ -168,8 +168,11 @@ const ClientSummaryTab = ({ client, clientId, onShowMoreActivity, onTabChange }:
       <div className="space-y-4">
         {/* General Details */}
         <Card>
-          <CardHeader className="py-2">
+         <CardHeader className="py-2 flex flex-row items-center justify-between space-y-0">
             <CardTitle className="text-lg">General details</CardTitle>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onTabChange?.("details")} title="Edit details">
+              <Pencil className="h-3.5 w-3.5" />
+            </Button>
           </CardHeader>
           <CardContent>
             <div className="space-y-1">
