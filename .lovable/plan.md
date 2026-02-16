@@ -1,43 +1,77 @@
 
 
-## Add Edit Button to General Details and Remove Details Tab from Ribbon
+## Create Client Dashboard Tab
 
-### What Changes
+### Overview
+Add a new "Dashboard" tab as the default landing tab for the client detail page, positioned to the left of "Summary". It provides a client-focused overview similar to the Advisor Dashboard, with widgets for asset allocation, valuation changes, geographic diversification, household members, and contract selection.
 
-1. **General Details card** on the Summary tab gets an "Edit" pencil/button next to the title
-2. Clicking it switches to the Details tab (which stays functional but is hidden from the tab ribbon)
-3. The "Details" tab entry is removed from the visible tab ribbon
-4. The `tax_number` field (shown in General details but missing from the edit form) is added to the Details tab
-
-### Layout After
-
-**Summary tab - General Details card header:**
+### New Tab Position
 ```text
-General details                              [Edit pencil icon]
+Dashboard | Summary | 360 View | Performance | Meetings | Relationships | ...
 ```
 
-**Tab ribbon (Details removed):**
+The default active tab changes from "summary" to "dashboard".
+
+### Widget Layout (3-column card grid)
 ```text
-Summary | 360 View | Performance | Meetings | Relationships | Workflows | ...
+Row 1:
+[Asset Allocation]         [Change in Valuation]      [Geographic Diversification]
+
+Row 2:
+[Household Members]        [Selected Contracts]        [Product Summary]
+
+Row 3:
+[Income vs Expenses]       [Risk Cover Summary]        [Key Dates & Milestones]
 ```
 
-Clicking "Edit" sets the active tab to "details", which still renders but is no longer in the ribbon. The only way to reach it is via the edit button.
+### Widget Details
+
+1. **Asset Allocation** -- Horizontal bar chart showing asset class breakdown (Equities, Fixed Income, Cash, Property, International) derived from the client's 360 View product data. "View analysis" link navigates to the Performance tab.
+
+2. **Change in Account Valuation** -- Summary card showing: starting value, deposits/withdrawals, investment returns, and ending value. Data generated deterministically from client UUID (same pattern as 360 View). "View performance" link navigates to Performance tab.
+
+3. **Geographic Diversification** -- Donut or horizontal bar chart showing domestic vs international split derived from product names/types. "View diversification" link navigates to 360 View tab.
+
+4. **Household Members** -- Lists current household members from `useClientRelationships`. Includes an "Add member" button that opens the existing AddFamilyMemberDialog. Links navigate to member profiles.
+
+5. **Selected Contracts** -- Multi-select list of the client's on-platform and external products (from 360 View data). Users can tick/untick contracts to mark which are "applicable" (state local to the tab). Displays product name, provider, and value.
+
+6. **Product Summary** -- Pie chart of product values grouped by category (On-Platform, External, Cash, Risk, Medical, Short-Term) using ECharts.
+
+7. **Income vs Expenses** -- Simple bar chart or summary card using deterministic seed data for monthly income and expenses.
+
+8. **Risk Cover Summary** -- Table card listing active risk/insurance products with policy type and status from 360 View data.
+
+9. **Key Dates & Milestones** -- Upcoming review dates, policy renewal dates, birthday, and next meeting derived from existing client data.
 
 ### Technical Changes
 
-**1. `src/components/client-detail/ClientSummaryTab.tsx`**
-- Import `Pencil` icon from lucide-react
-- Add a small ghost button with pencil icon in the General Details `CardHeader`, next to the title
-- On click, call `onTabChange?.("details")`
+**1. New file: `src/components/client-detail/ClientDashboardTab.tsx`**
+- Props: `client`, `clientId`, `onTabChange`
+- Uses `generateClient360Data` to derive product/asset data
+- Uses `useClientRelationships` for household members
+- Uses `EChartsWrapper` for charts (consistent with rest of app)
+- Renders a 3-column CSS grid of Card widgets
+- Local state for "selected contracts" checkboxes
+- Imports existing `AddFamilyMemberDialog` for the "Add member" flow
+- Deterministic value generation (seeded from clientId hash) for valuation changes, income/expenses
 
-**2. `src/pages/ClientDetail.tsx`**
-- Remove `{ value: "details", label: "Details" }` from the tabs array in the ribbon
-- Keep the `<TabsContent value="details">` so it still renders when programmatically activated
+**2. Edit: `src/pages/ClientDetail.tsx`**
+- Import `ClientDashboardTab`
+- Change `useState("summary")` to `useState("dashboard")`
+- Add `{ value: "dashboard", label: "Dashboard" }` as first entry in tabs array
+- Add `<TabsContent value="dashboard">` rendering `ClientDashboardTab`
 
-**3. `src/components/client-detail/ClientDetailsTab.tsx`**
-- Add `tax_number` to `formData` initial state
-- Add `tax_number` to the `useEffect` sync block
-- Add `tax_number` to `handleSave` updates
-- Add a "Tax number" input field in the Identification details card (after nationality)
+### Data Strategy
+All widget data is derived from existing sources (no new database tables needed):
+- Asset allocation and product data: `generateClient360Data()` (already used in 360 View and Summary)
+- Household members: `useClientRelationships()` (already used in ClientDetail)
+- Valuation change numbers: deterministic generation from client UUID (same seeding pattern used throughout the app)
+- Key dates: from the `client` object fields (date_of_birth, review dates) and 360 View product dates
 
-Four small edits across three files.
+### Files
+| File | Action |
+|------|--------|
+| `src/components/client-detail/ClientDashboardTab.tsx` | Create |
+| `src/pages/ClientDetail.tsx` | Edit (add tab, change default) |
+
