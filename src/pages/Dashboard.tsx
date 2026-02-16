@@ -60,7 +60,7 @@ const defaultDashboardLayout: WidgetLayout[] = [
   { i: 'clients-value', x: 3, y: 3, w: 3, h: 3 },
   { i: 'corporate-actions', x: 6, y: 3, w: 3, h: 3 },
   { i: 'onboarding-progress', x: 0, y: 6, w: 3, h: 3 },
-  { i: 'age-groups', x: 3, y: 6, w: 3, h: 3 },
+  { i: 'age-groups', x: 3, y: 6, w: 3, h: 4 },
 ];
 
 const DASHBOARD_WIDGETS: WidgetConfig[] = [
@@ -631,7 +631,7 @@ const Dashboard = () => {
 
             {/* Clients by Age Group */}
             {isWidgetVisible('age-groups') && <div key="age-groups">
-              <Card className="h-full overflow-hidden flex flex-col">
+              <Card className="h-full">
                 <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
                   <div className="flex items-center gap-2">
                     <GripVertical className="w-4 h-4 text-muted-foreground" />
@@ -641,7 +641,7 @@ const Dashboard = () => {
                     <X className="w-4 h-4" />
                   </Button>
                 </CardHeader>
-                <CardContent className="px-4 pb-4 flex-1 overflow-y-auto min-h-0">
+                <CardContent className="px-4 pb-4">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="text-muted-foreground text-xs">
