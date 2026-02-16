@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { isBefore } from "date-fns";
 
 export interface EnhancedTask {
   id: string;
@@ -55,6 +56,7 @@ export interface TaskFilters {
   dueDateTo?: string;
   assignedTo?: string;
   isPinned?: boolean;
+  slaStatus?: string[];
 }
 
 export interface TaskStats {
@@ -168,7 +170,7 @@ export const useTasksEnhanced = (filters?: TaskFilters) => {
         }
       }
 
-      const transformedTasks: EnhancedTask[] = (data || []).map((task: any) => ({
+      let transformedTasks: EnhancedTask[] = (data || []).map((task: any) => ({
         ...task,
         client_name: task.clients
           ? `${task.clients.first_name} ${task.clients.surname}`
@@ -181,6 +183,29 @@ export const useTasksEnhanced = (filters?: TaskFilters) => {
         tags: Array.isArray(task.tags) ? task.tags : [],
         watchers: Array.isArray(task.watchers) ? task.watchers : [],
       }));
+
+      // Client-side SLA status filtering
+      if (filters?.slaStatus && filters.slaStatus.length > 0) {
+        const now = new Date();
+        const threeDaysFromNow = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+        transformedTasks = transformedTasks.filter(t => {
+          if (!t.sla_deadline) return false;
+          const deadline = new Date(t.sla_deadline);
+          let sla: string;
+          if (t.status === "Completed" && t.completed_at) {
+            sla = new Date(t.completed_at) <= deadline ? "Met" : "Breached";
+          } else if (!["Completed", "Cancelled"].includes(t.status) && isBefore(deadline, now)) {
+            sla = "Breached";
+          } else if (!["Completed", "Cancelled"].includes(t.status) && isBefore(deadline, threeDaysFromNow)) {
+            sla = "At Risk";
+          } else if (t.status === "Completed") {
+            sla = "Met";
+          } else {
+            sla = "Met";
+          }
+          return filters.slaStatus!.includes(sla);
+        });
+      }
 
       setTasks(transformedTasks);
 
