@@ -255,7 +255,7 @@ const ClientDetail = () => {
             <TabsList className="w-full justify-start h-auto p-0 bg-transparent rounded-none gap-0 flex-wrap px-6 mt-1">
               {[
                 { value: "dashboard", label: "Dashboard" },
-                { value: "summary", label: "Summary" },
+                { value: "summary", label: "Next Best Action" },
                 { value: "360-view", label: "360 View" },
                 { value: "performance", label: "Performance" },
                 

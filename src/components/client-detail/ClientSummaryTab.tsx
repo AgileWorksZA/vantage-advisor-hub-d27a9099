@@ -5,15 +5,6 @@ import { generateClient360Data, mapNationalityToJurisdiction } from "@/data/regi
 import type { PrepProduct, PrepOpportunity } from "@/hooks/useClientMeetingPrep";
 import { CheckCircle, Pencil } from "lucide-react";
 
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Client, getDisplayName, getInitials, calculateAge, formatBirthday } from "@/types/client";
 import { Button } from "@/components/ui/button";
@@ -34,17 +25,6 @@ interface ClientSummaryTabProps {
   onShowMoreActivity?: () => void;
   onTabChange?: (tab: string) => void;
 }
-
-const advisorData = [
-  { type: "Primary", advisor: "Jordaan, Danile", relationship: "Owner", rating: "5", role: "Financial Planner" },
-  { type: "Secondary", advisor: "Van Zyl, Christo", relationship: "Shared", rating: "4", role: "Investment Advisor" },
-];
-
-const outstandingDocs = [
-  { document: "FICA - Address verification", workflow: "FICA - Individual" },
-  { document: "Proof of income", workflow: "Annual Review" },
-  { document: "Risk profile questionnaire", workflow: "Advice Cycle" },
-];
 
 const ClientSummaryTab = ({ client, clientId, onShowMoreActivity, onTabChange }: ClientSummaryTabProps) => {
   const displayName = getDisplayName(client);
@@ -198,64 +178,6 @@ const ClientSummaryTab = ({ client, clientId, onShowMoreActivity, onTabChange }:
           </CardContent>
         </Card>
 
-        {/* Current Advisor and Accounts */}
-        <Card>
-          <CardHeader className="py-2">
-            <CardTitle className="text-lg">Current Advisor and Accounts</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-xs h-8 px-3">Primary/Advisor</TableHead>
-                  <TableHead className="text-xs h-8 px-3">Relationship</TableHead>
-                  <TableHead className="text-xs h-8 px-3">Risk Rating</TableHead>
-                  <TableHead className="text-xs h-8 px-3">Role</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {advisorData.map((row, index) => (
-                  <TableRow key={index}>
-                    <TableCell className="text-sm py-1.5 px-3">
-                      <div>
-                        <span className="text-xs text-muted-foreground">{row.type}</span>
-                        <div>{client.advisor || row.advisor}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-sm py-1.5 px-3">{client.relationship || row.relationship}</TableCell>
-                    <TableCell className="text-sm py-1.5 px-3">{client.rating || row.rating}</TableCell>
-                    <TableCell className="text-sm py-1.5 px-3">{row.role}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-
-        {/* Outstanding Documents */}
-        <Card>
-          <CardHeader className="py-2">
-            <CardTitle className="text-lg">Outstanding documents</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-xs h-8 px-3">Document</TableHead>
-                  <TableHead className="text-xs h-8 px-3">Workflow</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {outstandingDocs.map((doc, index) => (
-                  <TableRow key={index}>
-                    <TableCell className="text-sm py-1.5 px-3">{doc.document}</TableCell>
-                    <TableCell className="text-sm py-1.5 px-3">{doc.workflow}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Right Column */}

@@ -17,6 +17,14 @@ import {
   ArrowRightLeft, Layers, Building2, Briefcase, Landmark, Receipt, Banknote,
   GripVertical,
 } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import AddFamilyMemberDialog from "./AddFamilyMemberDialog";
 import React from "react";
 
@@ -37,6 +45,8 @@ const defaultClientDashboardLayout: WidgetLayout[] = [
   { i: 'opp-value-summary', x: 6, y: 3, w: 3, h: 3 },
   { i: 'action-priority', x: 0, y: 6, w: 3, h: 3 },
   { i: 'key-dates', x: 3, y: 6, w: 3, h: 3 },
+  { i: 'advisor-accounts', x: 6, y: 6, w: 3, h: 3 },
+  { i: 'outstanding-docs', x: 0, y: 9, w: 3, h: 3 },
 ];
 
 const CLIENT_DASHBOARD_WIDGETS: WidgetConfig[] = [
@@ -48,6 +58,19 @@ const CLIENT_DASHBOARD_WIDGETS: WidgetConfig[] = [
   { id: 'opp-value-summary', label: 'Opportunity Value Summary' },
   { id: 'action-priority', label: 'Action Priority' },
   { id: 'key-dates', label: 'Key Dates & Milestones' },
+  { id: 'advisor-accounts', label: 'Current Advisor & Accounts' },
+  { id: 'outstanding-docs', label: 'Outstanding Documents' },
+];
+
+const advisorData = [
+  { type: "Primary", advisor: "Jordaan, Danile", relationship: "Owner", rating: "5", role: "Financial Planner" },
+  { type: "Secondary", advisor: "Van Zyl, Christo", relationship: "Shared", rating: "4", role: "Investment Advisor" },
+];
+
+const outstandingDocs = [
+  { document: "FICA - Address verification", workflow: "FICA - Individual" },
+  { document: "Proof of income", workflow: "Annual Review" },
+  { document: "Risk profile questionnaire", workflow: "Advice Cycle" },
 ];
 
 // --- Helpers ---
@@ -603,6 +626,78 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
                     </div>
                   )}
                 </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+        {/* Current Advisor & Accounts */}
+        {isWidgetVisible('advisor-accounts') && (
+          <div key="advisor-accounts">
+            <Card className="h-full">
+              <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
+                <div className="flex items-center gap-2">
+                  <GripVertical className="w-4 h-4 text-muted-foreground" />
+                  <CardTitle className="text-sm font-medium">Current Advisor & Accounts</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-xs h-8 px-3">Primary/Advisor</TableHead>
+                      <TableHead className="text-xs h-8 px-3">Relationship</TableHead>
+                      <TableHead className="text-xs h-8 px-3">Risk Rating</TableHead>
+                      <TableHead className="text-xs h-8 px-3">Role</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {advisorData.map((row, index) => (
+                      <TableRow key={index}>
+                        <TableCell className="text-sm py-1.5 px-3">
+                          <div>
+                            <span className="text-xs text-muted-foreground">{row.type}</span>
+                            <div>{client.advisor || row.advisor}</div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-sm py-1.5 px-3">{client.relationship || row.relationship}</TableCell>
+                        <TableCell className="text-sm py-1.5 px-3">{client.rating || row.rating}</TableCell>
+                        <TableCell className="text-sm py-1.5 px-3">{row.role}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Outstanding Documents */}
+        {isWidgetVisible('outstanding-docs') && (
+          <div key="outstanding-docs">
+            <Card className="h-full">
+              <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
+                <div className="flex items-center gap-2">
+                  <GripVertical className="w-4 h-4 text-muted-foreground" />
+                  <CardTitle className="text-sm font-medium">Outstanding Documents</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-xs h-8 px-3">Document</TableHead>
+                      <TableHead className="text-xs h-8 px-3">Workflow</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {outstandingDocs.map((doc, index) => (
+                      <TableRow key={index}>
+                        <TableCell className="text-sm py-1.5 px-3">{doc.document}</TableCell>
+                        <TableCell className="text-sm py-1.5 px-3">{doc.workflow}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </CardContent>
             </Card>
           </div>
