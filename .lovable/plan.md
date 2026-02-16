@@ -1,58 +1,65 @@
 
 
-## Remove General Details from NBA, Add Main Member Table, Wire Up Edit from Ribbon
+## Add Opportunity Status Summary Tiles to Next Best Action
 
 ### Overview
-Three changes:
-1. Remove the "General details" card from the Next Best Action tab -- make it a full-width NBA panel
-2. Add a "Main Member" read-only details table at the top of the Relationships tab (showing the current client's key info)
-3. Expand the client ribbon's collapsed details to show all the General Details info plus an Edit button that navigates to the Details tab
+Add 3 compact summary tiles at the top of the Next Best Action card (above the tabs) showing opportunity counts and total potential value grouped by status: **Identified**, **In Progress**, and **Completed**. Each tile shows the count + total potential revenue benefit if action is taken.
+
+### Design
+Three side-by-side mini-cards in a horizontal row, each with:
+- Status label + icon
+- Count of opportunities in that status
+- Total potential revenue (formatted with jurisdiction currency)
+- Subtle color coding: Blue (Identified), Amber (In Progress), Green (Completed)
+
+### Data Logic
+Since opportunities don't currently have a persistent `status` field tracked in the DB, we'll derive demo data deterministically from existing opportunities:
+- **Identified**: All gap-detected opportunities + scan results (status = "identified") -- these are new/unactioned
+- **In Progress**: A deterministic subset of the existing `PrepOpportunity` items (seeded by index, e.g. every 3rd opportunity)
+- **Completed**: Another deterministic subset (e.g. every 5th opportunity), representing already-actioned items with realized value
+
+The tiles will recalculate when household view toggles or new scan results arrive.
 
 ### Changes
 
-**1. `src/components/client-detail/ClientSummaryTab.tsx` -- Remove General Details card**
+**1. `src/components/client-detail/next-best-action/OpportunitySummaryTiles.tsx` (NEW)**
 
-- Remove the entire left column (`<div className="space-y-4">` containing the General Details `<Card>`)
-- Change the outer layout from `grid grid-cols-1 lg:grid-cols-2 gap-4` to a single-column layout
-- The Next Best Action card becomes full-width, removing the 2-column split
-- Remove unused imports: `Pencil`, `calculateAge`, `formatBirthday`, `getInitials`, `getDisplayName` (keep only what NBA panel needs)
+Create a new component with:
+- Props: `opportunities: PrepOpportunity[]`, `gapOpportunities: GapOpportunity[]`, `jurisdiction?: string`
+- Three tiles in a `grid grid-cols-3 gap-2` layout
+- Each tile: small `div` with rounded border, icon, count, and currency-formatted total value
+- Icons: `Lightbulb` (Identified), `Clock` (In Progress), `CheckCircle2` (Completed)
+- Reuse the `currencyMap` + `formatCurrency` pattern from OpportunitiesTab
 
-**2. `src/components/client-detail/ClientRelationshipsTab.tsx` -- Add Main Member table**
+**2. `src/components/client-detail/ClientSummaryTab.tsx`**
 
-- Accept new props: `client: Client` and `onTabChange?: (tab: string) => void`
-- Add a new collapsible section at the top titled "MAIN MEMBER (1)" above the existing Household Members section
-- Display a read-only table with key client fields: Name, Title, ID Number, Gender, Age, Birthday, Language, Tax Number, Country of Issue
-- Include an Edit (pencil) button in the header that calls `onTabChange?.("details")` to open the edit form
-- Import `Client`, `getDisplayName`, `calculateAge`, `formatBirthday` from `@/types/client` and `Pencil` from lucide
+- Import the new `OpportunitySummaryTiles` component
+- Render it inside the `CardContent`, above the `<Tabs>` component
+- Pass `activeOpps`, gap opportunities (derived from `activeProducts`), and `clientJurisdiction`
+- To get gap counts, export `buildGapOpportunities` from `OpportunitiesTab.tsx` and call it here
 
-**3. `src/pages/ClientDetail.tsx` -- Pass client + onTabChange to RelationshipsTab**
+**3. `src/components/client-detail/next-best-action/OpportunitiesTab.tsx`**
 
-- Update the `<ClientRelationshipsTab>` usage to pass `client={client}` and `onTabChange={setActiveTab}`
+- Export `buildGapOpportunities` function (currently private) and the `GapOpportunity` interface so `ClientSummaryTab` can use them for tile calculations
 
-**4. `src/components/client-detail/ClientRibbonExpandedDetails.tsx` -- Show all General Details + Edit button**
+### Visual Layout
 
-- Add all fields that were in the General Details card: Name, Title, Initials, Person type, ID Number, Country of issue, Gender, Age, Birthday, Language, Tax number
-- Replace the current 3-column sparse layout with a dense key-value grid (similar to the General Details card style)
-- Keep the existing copyable fields (address, phone, email) as additional rows
-- Accept new prop `onEdit?: () => void` and render an Edit (pencil) button in the top-right corner
-
-**5. `src/components/client-detail/ClientRibbon.tsx` -- Pass onEdit to expanded details**
-
-- Pass `onEdit={() => onTabChange?.("details")}` to `<ClientRibbonExpandedDetails>`
-
-### What stays the same
-- The Next Best Action panel content (Opportunities, Outstanding, Recent Activity) is unchanged
-- All existing Relationship tab sections (Household Members, Businesses, Professional Contacts) remain
-- The hidden "details" tab with `ClientDetailsTab` still works as the edit form
-- The Dashboard tab and its widgets are untouched
+```text
++--------------------------------------------------+
+| Next Best Action          [Household] [Optimize]  |
++--------------------------------------------------+
+| [Identified: 5]   [In Progress: 3]  [Completed: 2]|
+| R125,000 benefit   R85,000 benefit   R42,000 done |
++--------------------------------------------------+
+| [Opportunities (10)] [Outstanding (4)] [Recent (5)]|
+| ...tab content...                                  |
++--------------------------------------------------+
+```
 
 ### Files
 
 | File | Change |
 |------|--------|
-| `src/components/client-detail/ClientSummaryTab.tsx` | Remove General Details card; make NBA full-width |
-| `src/components/client-detail/ClientRelationshipsTab.tsx` | Add Main Member read-only table at top with Edit button |
-| `src/pages/ClientDetail.tsx` | Pass `client` and `onTabChange` props to RelationshipsTab |
-| `src/components/client-detail/ClientRibbonExpandedDetails.tsx` | Show all client details + Edit button |
-| `src/components/client-detail/ClientRibbon.tsx` | Pass `onEdit` callback to expanded details |
-
+| `src/components/client-detail/next-best-action/OpportunitySummaryTiles.tsx` | New component -- 3 status tiles |
+| `src/components/client-detail/ClientSummaryTab.tsx` | Import + render tiles above tabs |
+| `src/components/client-detail/next-best-action/OpportunitiesTab.tsx` | Export `buildGapOpportunities` and `GapOpportunity` |
