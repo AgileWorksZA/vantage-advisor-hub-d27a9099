@@ -2,7 +2,7 @@ import React, { useEffect, useMemo } from 'react';
 import { useTheme } from 'next-themes';
 import ReactECharts from 'echarts-for-react';
 import * as echarts from 'echarts/core';
-import { BarChart, PieChart, LineChart } from 'echarts/charts';
+import { BarChart, PieChart, LineChart, GaugeChart } from 'echarts/charts';
 import {
   GridComponent,
   TooltipComponent,
@@ -19,6 +19,7 @@ echarts.use([
   BarChart,
   PieChart,
   LineChart,
+  GaugeChart,
   GridComponent,
   TooltipComponent,
   LegendComponent,
