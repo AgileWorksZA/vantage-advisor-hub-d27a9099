@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,19 +8,49 @@ import { MultiSelect } from "@/components/ui/multi-select";
 import { generateClient360Data, mapNationalityToJurisdiction, formatTotal } from "@/data/regional360ViewData";
 import { useClientRelationships } from "@/hooks/useClientRelationships";
 import { Client, calculateAge, formatBirthday } from "@/types/client";
+import { DraggableWidgetGrid } from "@/components/widgets/DraggableWidgetGrid";
+import { useWidgetLayout, WidgetLayout } from "@/hooks/useWidgetLayout";
+import { WidgetSettingsDialog, WidgetConfig } from "@/components/widgets/WidgetSettingsDialog";
 import {
   Calendar, Gift, FileCheck, TrendingUp, TrendingDown, ArrowRight,
   Users, AlertTriangle, Clock, CheckCircle2, Target, Zap,
   ArrowRightLeft, Layers, Building2, Briefcase, Landmark, Receipt, Banknote,
+  GripVertical,
 } from "lucide-react";
 import AddFamilyMemberDialog from "./AddFamilyMemberDialog";
+import React from "react";
 
 interface ClientDashboardTabProps {
   client: Client;
   clientId: string;
   onTabChange?: (tab: string) => void;
+  userId?: string;
 }
 
+// --- Widget layout config ---
+const defaultClientDashboardLayout: WidgetLayout[] = [
+  { i: 'asset-allocation', x: 0, y: 0, w: 3, h: 3 },
+  { i: 'valuation-change', x: 3, y: 0, w: 3, h: 3 },
+  { i: 'geo-diversification', x: 6, y: 0, w: 3, h: 3 },
+  { i: 'top-opportunities', x: 0, y: 3, w: 3, h: 3 },
+  { i: 'opp-breakdown', x: 3, y: 3, w: 3, h: 3 },
+  { i: 'opp-value-summary', x: 6, y: 3, w: 3, h: 3 },
+  { i: 'action-priority', x: 0, y: 6, w: 3, h: 3 },
+  { i: 'key-dates', x: 3, y: 6, w: 3, h: 3 },
+];
+
+const CLIENT_DASHBOARD_WIDGETS: WidgetConfig[] = [
+  { id: 'asset-allocation', label: 'Asset Allocation' },
+  { id: 'valuation-change', label: 'Change in Valuation' },
+  { id: 'geo-diversification', label: 'Geographic Diversification' },
+  { id: 'top-opportunities', label: 'Top Opportunities' },
+  { id: 'opp-breakdown', label: 'Opportunity Breakdown' },
+  { id: 'opp-value-summary', label: 'Opportunity Value Summary' },
+  { id: 'action-priority', label: 'Action Priority' },
+  { id: 'key-dates', label: 'Key Dates & Milestones' },
+];
+
+// --- Helpers ---
 function seededRandom(seed: string): () => number {
   let hash = 0;
   for (let i = 0; i < seed.length; i++) {
@@ -35,7 +65,6 @@ function seededRandom(seed: string): () => number {
   };
 }
 
-// Opportunity generation (reused from OpportunitiesTab logic)
 interface GapOpportunity {
   id: string;
   type: string;
@@ -62,14 +91,34 @@ const getConfig = (type: string) => {
   return key ? typeConfig[key] : typeConfig["Upsell"];
 };
 
-import React from "react";
-
-const ClientDashboardTab = ({ client, clientId, onTabChange }: ClientDashboardTabProps) => {
+const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDashboardTabProps) => {
   const navigate = useNavigate();
   const { familyMembers, businesses, refetch } = useClientRelationships(clientId);
   const [addMemberOpen, setAddMemberOpen] = useState(false);
   const [selectedContracts, setSelectedContracts] = useState<string[]>([]);
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
+
+  // Widget layout persistence
+  const { layout, onLayoutChange, hiddenWidgets, setHiddenWidgets, loading: layoutLoading } = useWidgetLayout({
+    pageId: 'dashboard',
+    defaultLayout: defaultClientDashboardLayout,
+    userId,
+  });
+
+  const handleToggleWidget = useCallback((widgetId: string, visible: boolean) => {
+    if (visible) {
+      setHiddenWidgets(hiddenWidgets.filter(id => id !== widgetId));
+    } else {
+      setHiddenWidgets([...hiddenWidgets, widgetId]);
+    }
+  }, [hiddenWidgets, setHiddenWidgets]);
+
+  const visibleLayout = useMemo(() =>
+    layout.filter(item => !hiddenWidgets.includes(item.i)),
+    [layout, hiddenWidgets]
+  );
+
+  const isWidgetVisible = useCallback((id: string) => !hiddenWidgets.includes(id), [hiddenWidgets]);
 
   const clientData = useMemo(() => {
     return generateClient360Data(clientId, client.nationality, client.country_of_issue);
@@ -278,7 +327,7 @@ const ClientDashboardTab = ({ client, clientId, onTabChange }: ClientDashboardTa
 
   return (
     <div className="space-y-4">
-      {/* Toolbar with multi-select dropdowns */}
+      {/* Toolbar with multi-select dropdowns + settings gear */}
       <div className="flex items-center gap-3 flex-wrap">
         <MultiSelect
           options={contractOptions}
@@ -297,207 +346,268 @@ const ClientDashboardTab = ({ client, clientId, onTabChange }: ClientDashboardTa
         <Button variant="outline" size="sm" className="h-10 text-xs gap-1" onClick={() => setAddMemberOpen(true)}>
           <Users className="h-3.5 w-3.5" /> Add Member
         </Button>
+        <div className="ml-auto">
+          <WidgetSettingsDialog
+            widgets={CLIENT_DASHBOARD_WIDGETS}
+            hiddenWidgets={hiddenWidgets}
+            onToggleWidget={handleToggleWidget}
+          />
+        </div>
       </div>
 
-      {/* Row 1: Asset Allocation, Change in Valuation, Geographic Diversification */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <Card className="border-0 shadow-sm">
-          <CardHeader className="py-3 pb-1">
-            <CardTitle className="text-sm font-semibold">Asset Allocation</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <EChartsWrapper option={assetAllocationOption} height={180} />
-            <Button variant="link" className="p-0 h-auto text-xs text-primary" onClick={() => onTabChange?.("performance")}>
-              View analysis <ArrowRight className="h-3 w-3 ml-1" />
-            </Button>
-          </CardContent>
-        </Card>
+      {/* Draggable Widget Grid */}
+      <DraggableWidgetGrid layout={visibleLayout} onLayoutChange={onLayoutChange}>
+        {/* Asset Allocation */}
+        {isWidgetVisible('asset-allocation') && (
+          <div key="asset-allocation">
+            <Card className="border-0 shadow-sm h-full">
+              <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
+                <div className="flex items-center gap-2">
+                  <GripVertical className="w-4 h-4 text-muted-foreground" />
+                  <CardTitle className="text-sm font-medium">Asset Allocation</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <EChartsWrapper option={assetAllocationOption} height={180} />
+                <Button variant="link" className="p-0 h-auto text-xs text-primary" onClick={() => onTabChange?.("performance")}>
+                  View analysis <ArrowRight className="h-3 w-3 ml-1" />
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
-        <Card className="border-0 shadow-sm">
-          <CardHeader className="py-3 pb-1">
-            <CardTitle className="text-sm font-semibold">Change in Valuation</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-1 space-y-2">
-            {[
-              { label: "Starting Value", value: valuationData.startingValue },
-              { label: "Deposits / Withdrawals", value: valuationData.depositsWithdrawals, highlight: true },
-              { label: "Investment Returns", value: valuationData.investmentReturns, highlight: true },
-            ].map(item => (
-              <div key={item.label} className="flex justify-between items-center py-1 border-b border-border/50">
-                <span className="text-xs text-muted-foreground">{item.label}</span>
-                <span className={`text-sm font-medium flex items-center gap-1 ${item.highlight ? (item.value >= 0 ? "text-emerald-600" : "text-red-500") : ""}`}>
-                  {item.highlight && (item.value >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />)}
-                  {formatTotal(item.value, currencySymbol)}
-                </span>
-              </div>
-            ))}
-            <div className="flex justify-between items-center pt-1">
-              <span className="text-xs font-semibold">Ending Value</span>
-              <span className="text-sm font-bold">{formatTotal(valuationData.endingValue, currencySymbol)}</span>
-            </div>
-            <Button variant="link" className="p-0 h-auto text-xs text-primary" onClick={() => onTabChange?.("performance")}>
-              View performance <ArrowRight className="h-3 w-3 ml-1" />
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card className="border-0 shadow-sm">
-          <CardHeader className="py-3 pb-1">
-            <CardTitle className="text-sm font-semibold">Geographic Diversification</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <EChartsWrapper option={geoOption} height={180} />
-            <Button variant="link" className="p-0 h-auto text-xs text-primary" onClick={() => onTabChange?.("360-view")}>
-              View diversification <ArrowRight className="h-3 w-3 ml-1" />
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Row 2: Top Opportunities, Opportunity Breakdown, Opportunity Value Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <Card className="border-0 shadow-sm">
-          <CardHeader className="py-3 pb-1 flex flex-row items-center justify-between space-y-0">
-            <div className="flex items-center gap-1.5">
-              <Target className="h-4 w-4 text-muted-foreground" />
-              <CardTitle className="text-sm font-semibold">Top Opportunities</CardTitle>
-            </div>
-            <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-primary text-primary">{opportunities.length}</Badge>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="space-y-0 max-h-[220px] overflow-auto">
-              {opportunities.slice(0, 5).map(opp => {
-                const cfg = getConfig(opp.type);
-                return (
-                  <div key={opp.id} className="flex gap-2 py-1.5 border-b border-border/50 last:border-0">
-                    <div className="shrink-0 mt-0.5 text-muted-foreground">{cfg.icon}</div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <Badge variant="outline" className={`${cfg.color} text-[10px] px-1.5 py-0 font-medium`}>{cfg.label}</Badge>
-                        {opp.opportunitySize > 0 && (
-                          <span className="text-[10px] font-semibold text-emerald-600">{formatTotal(opp.opportunitySize, currencySymbol)}</span>
-                        )}
-                      </div>
-                      <p className="text-xs text-muted-foreground truncate">{opp.description}</p>
-                      <p className="text-xs text-primary">{opp.suggestedAction}</p>
-                    </div>
+        {/* Change in Valuation */}
+        {isWidgetVisible('valuation-change') && (
+          <div key="valuation-change">
+            <Card className="border-0 shadow-sm h-full">
+              <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
+                <div className="flex items-center gap-2">
+                  <GripVertical className="w-4 h-4 text-muted-foreground" />
+                  <CardTitle className="text-sm font-medium">Change in Valuation</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-1 space-y-2">
+                {[
+                  { label: "Starting Value", value: valuationData.startingValue },
+                  { label: "Deposits / Withdrawals", value: valuationData.depositsWithdrawals, highlight: true },
+                  { label: "Investment Returns", value: valuationData.investmentReturns, highlight: true },
+                ].map(item => (
+                  <div key={item.label} className="flex justify-between items-center py-1 border-b border-border/50">
+                    <span className="text-xs text-muted-foreground">{item.label}</span>
+                    <span className={`text-sm font-medium flex items-center gap-1 ${item.highlight ? (item.value >= 0 ? "text-emerald-600" : "text-red-500") : ""}`}>
+                      {item.highlight && (item.value >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />)}
+                      {formatTotal(item.value, currencySymbol)}
+                    </span>
                   </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-0 shadow-sm">
-          <CardHeader className="py-3 pb-1">
-            <CardTitle className="text-sm font-semibold">Opportunity Breakdown</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <EChartsWrapper option={oppBreakdownOption} height={200} />
-          </CardContent>
-        </Card>
-
-        <Card className="border-0 shadow-sm">
-          <CardHeader className="py-3 pb-1">
-            <div className="flex items-center gap-1.5">
-              <Zap className="h-4 w-4 text-muted-foreground" />
-              <CardTitle className="text-sm font-semibold">Opportunity Value Summary</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent className="pt-1 space-y-3">
-            <div className="text-center py-2">
-              <p className="text-2xl font-bold text-primary">{formatTotal(summaryMetrics.totalValue, currencySymbol)}</p>
-              <p className="text-xs text-muted-foreground">Total Pipeline Value</p>
-            </div>
-            <div className="grid grid-cols-3 gap-2 text-center">
-              <div className="rounded-lg bg-muted/50 p-2">
-                <p className="text-lg font-semibold">{summaryMetrics.totalCount}</p>
-                <p className="text-[10px] text-muted-foreground">Total</p>
-              </div>
-              <div className="rounded-lg bg-red-50 dark:bg-red-900/20 p-2">
-                <p className="text-lg font-semibold text-red-600 dark:text-red-400">{summaryMetrics.urgent}</p>
-                <p className="text-[10px] text-muted-foreground">Urgent</p>
-              </div>
-              <div className="rounded-lg bg-amber-50 dark:bg-amber-900/20 p-2">
-                <p className="text-lg font-semibold text-amber-600 dark:text-amber-400">{summaryMetrics.important}</p>
-                <p className="text-[10px] text-muted-foreground">Important</p>
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              {opportunityBreakdown.map((o, i) => (
-                <div key={o.name} className="flex justify-between text-xs">
-                  <span className="text-muted-foreground">{o.name}</span>
-                  <span className="font-medium">{o.count} · {formatTotal(o.value, currencySymbol)}</span>
+                ))}
+                <div className="flex justify-between items-center pt-1">
+                  <span className="text-xs font-semibold">Ending Value</span>
+                  <span className="text-sm font-bold">{formatTotal(valuationData.endingValue, currencySymbol)}</span>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+                <Button variant="link" className="p-0 h-auto text-xs text-primary" onClick={() => onTabChange?.("performance")}>
+                  View performance <ArrowRight className="h-3 w-3 ml-1" />
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
-      {/* Row 3: Action Priority, Key Dates */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card className="border-0 shadow-sm">
-          <CardHeader className="py-3 pb-1">
-            <CardTitle className="text-sm font-semibold">Action Priority</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0 space-y-3">
-            {([
-              { key: "urgent" as const, label: "Urgent", icon: <AlertTriangle className="h-3.5 w-3.5 text-red-500" />, items: priorityGroups.urgent, dotColor: "bg-red-500" },
-              { key: "important" as const, label: "Important", icon: <Clock className="h-3.5 w-3.5 text-amber-500" />, items: priorityGroups.important, dotColor: "bg-amber-500" },
-              { key: "routine" as const, label: "Routine", icon: <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />, items: priorityGroups.routine, dotColor: "bg-emerald-500" },
-            ]).map(group => (
-              <div key={group.key}>
-                <div className="flex items-center gap-1.5 mb-1">
-                  {group.icon}
-                  <span className="text-xs font-semibold">{group.label}</span>
-                  <Badge variant="outline" className="text-[10px] px-1 py-0 ml-auto">{group.items.length}</Badge>
+        {/* Geographic Diversification */}
+        {isWidgetVisible('geo-diversification') && (
+          <div key="geo-diversification">
+            <Card className="border-0 shadow-sm h-full">
+              <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
+                <div className="flex items-center gap-2">
+                  <GripVertical className="w-4 h-4 text-muted-foreground" />
+                  <CardTitle className="text-sm font-medium">Geographic Diversification</CardTitle>
                 </div>
-                {group.items.length === 0 ? (
-                  <p className="text-[10px] text-muted-foreground pl-5">No items</p>
-                ) : (
-                  group.items.map(opp => (
-                    <div key={opp.id} className="flex items-center gap-2 pl-5 py-1 border-b border-border/30 last:border-0">
-                      <div className={`w-1.5 h-1.5 rounded-full ${group.dotColor} shrink-0`} />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs truncate">{opp.description}</p>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <EChartsWrapper option={geoOption} height={180} />
+                <Button variant="link" className="p-0 h-auto text-xs text-primary" onClick={() => onTabChange?.("360-view")}>
+                  View diversification <ArrowRight className="h-3 w-3 ml-1" />
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Top Opportunities */}
+        {isWidgetVisible('top-opportunities') && (
+          <div key="top-opportunities">
+            <Card className="border-0 shadow-sm h-full">
+              <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
+                <div className="flex items-center gap-2">
+                  <GripVertical className="w-4 h-4 text-muted-foreground" />
+                  <Target className="h-4 w-4 text-muted-foreground" />
+                  <CardTitle className="text-sm font-medium">Top Opportunities</CardTitle>
+                </div>
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-primary text-primary">{opportunities.length}</Badge>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="space-y-0 max-h-[220px] overflow-auto">
+                  {opportunities.slice(0, 5).map(opp => {
+                    const cfg = getConfig(opp.type);
+                    return (
+                      <div key={opp.id} className="flex gap-2 py-1.5 border-b border-border/50 last:border-0">
+                        <div className="shrink-0 mt-0.5 text-muted-foreground">{cfg.icon}</div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <Badge variant="outline" className={`${cfg.color} text-[10px] px-1.5 py-0 font-medium`}>{cfg.label}</Badge>
+                            {opp.opportunitySize > 0 && (
+                              <span className="text-[10px] font-semibold text-emerald-600">{formatTotal(opp.opportunitySize, currencySymbol)}</span>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground truncate">{opp.description}</p>
+                          <p className="text-xs text-primary">{opp.suggestedAction}</p>
+                        </div>
                       </div>
-                      {opp.opportunitySize > 0 && (
-                        <span className="text-[10px] text-emerald-600 font-medium whitespace-nowrap">{formatTotal(opp.opportunitySize, currencySymbol)}</span>
-                      )}
-                    </div>
-                  ))
-                )}
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
-        <Card className="border-0 shadow-sm">
-          <CardHeader className="py-3 pb-1">
-            <CardTitle className="text-sm font-semibold">Key Dates & Milestones</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="space-y-2">
-              {keyDates.map((d, i) => (
-                <div key={i} className="flex items-center gap-2 py-1.5 border-b border-border/50 last:border-0">
-                  {d.icon}
-                  <div className="flex-1">
-                    <p className="text-xs font-medium">{d.label}</p>
+        {/* Opportunity Breakdown */}
+        {isWidgetVisible('opp-breakdown') && (
+          <div key="opp-breakdown">
+            <Card className="border-0 shadow-sm h-full">
+              <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
+                <div className="flex items-center gap-2">
+                  <GripVertical className="w-4 h-4 text-muted-foreground" />
+                  <CardTitle className="text-sm font-medium">Opportunity Breakdown</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <EChartsWrapper option={oppBreakdownOption} height={200} />
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Opportunity Value Summary */}
+        {isWidgetVisible('opp-value-summary') && (
+          <div key="opp-value-summary">
+            <Card className="border-0 shadow-sm h-full">
+              <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
+                <div className="flex items-center gap-2">
+                  <GripVertical className="w-4 h-4 text-muted-foreground" />
+                  <Zap className="h-4 w-4 text-muted-foreground" />
+                  <CardTitle className="text-sm font-medium">Opportunity Value Summary</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-1 space-y-3">
+                <div className="text-center py-2">
+                  <p className="text-2xl font-bold text-primary">{formatTotal(summaryMetrics.totalValue, currencySymbol)}</p>
+                  <p className="text-xs text-muted-foreground">Total Pipeline Value</p>
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div className="rounded-lg bg-muted/50 p-2">
+                    <p className="text-lg font-semibold">{summaryMetrics.totalCount}</p>
+                    <p className="text-[10px] text-muted-foreground">Total</p>
                   </div>
-                  <span className="text-xs text-muted-foreground">{d.date}</span>
+                  <div className="rounded-lg bg-red-50 dark:bg-red-900/20 p-2">
+                    <p className="text-lg font-semibold text-red-600 dark:text-red-400">{summaryMetrics.urgent}</p>
+                    <p className="text-[10px] text-muted-foreground">Urgent</p>
+                  </div>
+                  <div className="rounded-lg bg-amber-50 dark:bg-amber-900/20 p-2">
+                    <p className="text-lg font-semibold text-amber-600 dark:text-amber-400">{summaryMetrics.important}</p>
+                    <p className="text-[10px] text-muted-foreground">Important</p>
+                  </div>
                 </div>
-              ))}
-              {client.date_of_birth && (
-                <div className="flex items-center gap-2 py-1.5">
-                  <Users className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">Age: <span className="font-medium text-foreground">{calculateAge(client.date_of_birth)}</span></span>
+                <div className="space-y-1.5">
+                  {opportunityBreakdown.map((o, i) => (
+                    <div key={o.name} className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">{o.name}</span>
+                      <span className="font-medium">{o.count} · {formatTotal(o.value, currencySymbol)}</span>
+                    </div>
+                  ))}
                 </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Action Priority */}
+        {isWidgetVisible('action-priority') && (
+          <div key="action-priority">
+            <Card className="border-0 shadow-sm h-full">
+              <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
+                <div className="flex items-center gap-2">
+                  <GripVertical className="w-4 h-4 text-muted-foreground" />
+                  <CardTitle className="text-sm font-medium">Action Priority</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0 space-y-3">
+                {([
+                  { key: "urgent" as const, label: "Urgent", icon: <AlertTriangle className="h-3.5 w-3.5 text-red-500" />, items: priorityGroups.urgent, dotColor: "bg-red-500" },
+                  { key: "important" as const, label: "Important", icon: <Clock className="h-3.5 w-3.5 text-amber-500" />, items: priorityGroups.important, dotColor: "bg-amber-500" },
+                  { key: "routine" as const, label: "Routine", icon: <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />, items: priorityGroups.routine, dotColor: "bg-emerald-500" },
+                ]).map(group => (
+                  <div key={group.key}>
+                    <div className="flex items-center gap-1.5 mb-1">
+                      {group.icon}
+                      <span className="text-xs font-semibold">{group.label}</span>
+                      <Badge variant="outline" className="text-[10px] px-1 py-0 ml-auto">{group.items.length}</Badge>
+                    </div>
+                    {group.items.length === 0 ? (
+                      <p className="text-[10px] text-muted-foreground pl-5">No items</p>
+                    ) : (
+                      group.items.map(opp => (
+                        <div key={opp.id} className="flex items-center gap-2 pl-5 py-1 border-b border-border/30 last:border-0">
+                          <div className={`w-1.5 h-1.5 rounded-full ${group.dotColor} shrink-0`} />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs truncate">{opp.description}</p>
+                          </div>
+                          {opp.opportunitySize > 0 && (
+                            <span className="text-[10px] text-emerald-600 font-medium whitespace-nowrap">{formatTotal(opp.opportunitySize, currencySymbol)}</span>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Key Dates & Milestones */}
+        {isWidgetVisible('key-dates') && (
+          <div key="key-dates">
+            <Card className="border-0 shadow-sm h-full">
+              <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
+                <div className="flex items-center gap-2">
+                  <GripVertical className="w-4 h-4 text-muted-foreground" />
+                  <CardTitle className="text-sm font-medium">Key Dates & Milestones</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="space-y-2">
+                  {keyDates.map((d, i) => (
+                    <div key={i} className="flex items-center gap-2 py-1.5 border-b border-border/50 last:border-0">
+                      {d.icon}
+                      <div className="flex-1">
+                        <p className="text-xs font-medium">{d.label}</p>
+                      </div>
+                      <span className="text-xs text-muted-foreground">{d.date}</span>
+                    </div>
+                  ))}
+                  {client.date_of_birth && (
+                    <div className="flex items-center gap-2 py-1.5">
+                      <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground">Age: <span className="font-medium text-foreground">{calculateAge(client.date_of_birth)}</span></span>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+      </DraggableWidgetGrid>
 
       <AddFamilyMemberDialog
         open={addMemberOpen}
