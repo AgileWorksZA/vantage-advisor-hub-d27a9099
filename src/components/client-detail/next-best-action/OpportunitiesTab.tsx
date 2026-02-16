@@ -15,7 +15,7 @@ interface OpportunitiesTabProps {
   jurisdiction?: string;
 }
 
-interface GapOpportunity {
+export interface GapOpportunity {
   id: string;
   type: string;
   description: string;
@@ -106,7 +106,7 @@ function buildGapOpportunitiesForProducts(products: PrepProduct[], clientName?: 
   return gaps;
 }
 
-function buildGapOpportunities(products: PrepProduct[], householdView?: boolean): GapOpportunity[] {
+export function buildGapOpportunities(products: PrepProduct[], householdView?: boolean): GapOpportunity[] {
   if (householdView) {
     const memberMap = new Map<string, PrepProduct[]>();
     products.forEach(p => {
