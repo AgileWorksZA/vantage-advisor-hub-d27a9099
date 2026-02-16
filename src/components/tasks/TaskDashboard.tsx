@@ -130,6 +130,8 @@ export function TaskDashboard({ tasks, onViewDetail }: TaskDashboardProps) {
   }, [periodTasks]);
 
   const periodLabel = useMemo(() => `${format(periodStart, "d MMM")} – ${format(periodEnd, "d MMM yyyy")}`, [periodStart, periodEnd]);
+  const periodFromStr = format(periodStart, "yyyy-MM-dd");
+  const periodToStr = format(periodEnd, "yyyy-MM-dd");
 
   const openStatuses = ["Not Started", "In Progress", "Pending Client"];
 
@@ -221,13 +223,13 @@ export function TaskDashboard({ tasks, onViewDetail }: TaskDashboardProps) {
   const yesterdayStr = format(yesterday, "yyyy-MM-dd");
 
   const handleStatusChartClick = (params: any) => {
-    if (params?.name) onViewDetail({ status: [params.name] });
+    if (params?.name) onViewDetail({ status: [params.name], dueDateFrom: periodFromStr, dueDateTo: periodToStr });
   };
   const handleTypeChartClick = (params: any) => {
-    if (params?.name) onViewDetail({ taskType: [params.name], status: openStatuses });
+    if (params?.name) onViewDetail({ taskType: [params.name], status: openStatuses, dueDateFrom: periodFromStr, dueDateTo: periodToStr });
   };
   const handlePriorityChartClick = (params: any) => {
-    if (params?.name) onViewDetail({ priority: [params.name], status: openStatuses });
+    if (params?.name) onViewDetail({ priority: [params.name], status: openStatuses, dueDateFrom: periodFromStr, dueDateTo: periodToStr });
   };
 
   return (
@@ -283,7 +285,7 @@ export function TaskDashboard({ tasks, onViewDetail }: TaskDashboardProps) {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => onViewDetail({ status: openStatuses })}>
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => onViewDetail({ status: openStatuses, dueDateFrom: periodFromStr, dueDateTo: periodToStr })}>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-primary/10 rounded-full">
@@ -325,7 +327,7 @@ export function TaskDashboard({ tasks, onViewDetail }: TaskDashboardProps) {
           </CardContent>
         </Card>
 
-        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => onViewDetail({ status: ["Completed"] })}>
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => onViewDetail({ status: ["Completed"], dueDateFrom: periodFromStr, dueDateTo: periodToStr })}>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-emerald-500/10 rounded-full">
@@ -369,7 +371,7 @@ export function TaskDashboard({ tasks, onViewDetail }: TaskDashboardProps) {
           </CardContent>
         </Card>
 
-        <Card className="cursor-pointer" onClick={() => onViewDetail({ status: openStatuses })}>
+        <Card className="cursor-pointer" onClick={() => onViewDetail({ status: openStatuses, dueDateFrom: periodFromStr, dueDateTo: periodToStr })}>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">SLA Adherence</CardTitle>
           </CardHeader>
