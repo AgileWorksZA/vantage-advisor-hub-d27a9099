@@ -631,7 +631,7 @@ const Dashboard = () => {
 
             {/* Clients by Age Group */}
             {isWidgetVisible('age-groups') && <div key="age-groups">
-              <Card className="h-full">
+              <Card className="h-full overflow-hidden flex flex-col">
                 <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
                   <div className="flex items-center gap-2">
                     <GripVertical className="w-4 h-4 text-muted-foreground" />
@@ -641,7 +641,7 @@ const Dashboard = () => {
                     <X className="w-4 h-4" />
                   </Button>
                 </CardHeader>
-                <CardContent className="px-4 pb-4">
+                <CardContent className="px-4 pb-4 flex-1 overflow-y-auto min-h-0">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="text-muted-foreground text-xs">
