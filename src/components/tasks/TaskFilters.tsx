@@ -144,7 +144,7 @@ export function TaskFilters({ filters, onFiltersChange }: TaskFiltersProps) {
 
   return (
     <div className="space-y-2">
-      <div className="flex flex-wrap items-center gap-3 p-4 bg-muted/30 rounded-lg border">
+      <div className="flex flex-wrap items-center gap-2 px-3 py-2 bg-muted/30 rounded-lg border">
         {/* Saved Filters Dropdown */}
         {savedFilters.length > 0 && (
           <DropdownMenu>

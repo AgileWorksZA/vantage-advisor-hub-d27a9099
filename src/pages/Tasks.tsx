@@ -29,7 +29,7 @@ import { TaskFilters as TaskFiltersComponent } from "@/components/tasks/TaskFilt
 import { TaskDetailSheet } from "@/components/tasks/TaskDetailSheet";
 import { CreateTaskDialog } from "@/components/tasks/CreateTaskDialog";
 import { TaskAnalyticsTab } from "@/components/tasks/TaskAnalyticsTab";
-import TaskKanbanBoard from "@/components/tasks/TaskKanbanBoard";
+import TaskKanbanBoard, { KanbanGroupBy } from "@/components/tasks/TaskKanbanBoard";
 import GlobalAIChat from "@/components/ai-assistant/GlobalAIChat";
 
 const sidebarItems = [
@@ -115,6 +115,7 @@ const Tasks = () => {
   const [detailSheetOpen, setDetailSheetOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
+  const [kanbanGroupBy, setKanbanGroupBy] = useState<KanbanGroupBy>("none");
 
   // Fetch ALL tasks (no filters) - dashboard & analytics always see everything
   const { tasks: allTasks, loading, createTask, updateTask, deleteTask, togglePin, addNote } = useTasksEnhanced();
@@ -264,17 +265,27 @@ const Tasks = () => {
           </Button>
         </div>
 
-        <main className="flex-1 overflow-y-auto">
+        <main className={`flex-1 ${view === "kanban" ? "flex flex-col min-h-0" : "overflow-y-auto"}`}>
           {view === "dashboard" ? (
             <TaskDashboard tasks={advisorFilteredTasks} onViewDetail={(f) => handleViewChange("detail", f)} />
           ) : view === "analytics" ? (
             <TaskAnalyticsTab tasks={advisorFilteredTasks} onDrillDown={(f) => handleViewChange("detail", f)} />
           ) : view === "kanban" ? (
-            <div className="flex flex-col h-full">
-              <div className="px-6 pt-4">
-                <TaskFiltersComponent filters={filters} onFiltersChange={setFilters} />
+            <div className="flex flex-col flex-1 min-h-0 h-full">
+              <div className="flex items-center gap-3 px-6 py-2 border-b bg-background">
+                <div className="flex-1 min-w-0">
+                  <TaskFiltersComponent filters={filters} onFiltersChange={setFilters} />
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <span className="text-xs font-medium text-muted-foreground mr-1">Group:</span>
+                  {(["none", "assignee", "priority"] as KanbanGroupBy[]).map((g) => (
+                    <Button key={g} size="sm" variant={kanbanGroupBy === g ? "default" : "outline"} className="h-7 text-xs" onClick={() => setKanbanGroupBy(g)}>
+                      {g === "none" ? "None" : g === "assignee" ? "Assignee" : "Priority"}
+                    </Button>
+                  ))}
+                </div>
               </div>
-              <TaskKanbanBoard tasks={filteredTasks} onTaskClick={handleTaskClick} onUpdateTask={updateTask} />
+              <TaskKanbanBoard tasks={filteredTasks} onTaskClick={handleTaskClick} onUpdateTask={updateTask} groupBy={kanbanGroupBy} />
             </div>
           ) : (
             <div className="p-6 space-y-4">
