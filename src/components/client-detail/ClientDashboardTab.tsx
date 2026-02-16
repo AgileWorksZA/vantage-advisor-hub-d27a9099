@@ -45,8 +45,8 @@ const defaultClientDashboardLayout: WidgetLayout[] = [
   { i: 'opp-value-summary', x: 6, y: 3, w: 3, h: 3 },
   { i: 'action-priority', x: 0, y: 6, w: 3, h: 3 },
   { i: 'key-dates', x: 3, y: 6, w: 3, h: 3 },
-  { i: 'advisor-accounts', x: 6, y: 6, w: 3, h: 2 },
-  { i: 'outstanding-docs', x: 0, y: 9, w: 3, h: 2 },
+  { i: 'advisor-accounts', x: 6, y: 6, w: 3, h: 3 },
+  { i: 'outstanding-docs', x: 0, y: 9, w: 3, h: 3 },
 ];
 
 const CLIENT_DASHBOARD_WIDGETS: WidgetConfig[] = [
@@ -640,28 +640,28 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
                   <CardTitle className="text-sm font-medium">Current Advisor & Accounts</CardTitle>
                 </div>
               </CardHeader>
-              <CardContent className="p-0">
+              <CardContent className="px-4 pb-4">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="text-xs h-8 px-3">Primary/Advisor</TableHead>
-                      <TableHead className="text-xs h-8 px-3">Relationship</TableHead>
-                      <TableHead className="text-xs h-8 px-3">Risk Rating</TableHead>
-                      <TableHead className="text-xs h-8 px-3">Role</TableHead>
+                      <TableHead className="text-xs font-normal h-8 px-3">Primary/Advisor</TableHead>
+                      <TableHead className="text-xs font-normal h-8 px-3">Relationship</TableHead>
+                      <TableHead className="text-xs font-normal h-8 px-3">Risk Rating</TableHead>
+                      <TableHead className="text-xs font-normal h-8 px-3">Role</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {advisorData.map((row, index) => (
                       <TableRow key={index}>
-                        <TableCell className="text-sm py-1.5 px-3">
+                        <TableCell className="text-sm py-2 px-3">
                           <div>
                             <span className="text-xs text-muted-foreground">{row.type}</span>
                             <div>{client.advisor || row.advisor}</div>
                           </div>
                         </TableCell>
-                        <TableCell className="text-sm py-1.5 px-3">{client.relationship || row.relationship}</TableCell>
-                        <TableCell className="text-sm py-1.5 px-3">{client.rating || row.rating}</TableCell>
-                        <TableCell className="text-sm py-1.5 px-3">{row.role}</TableCell>
+                        <TableCell className="text-sm py-2 px-3">{client.relationship || row.relationship}</TableCell>
+                        <TableCell className="text-sm py-2 px-3">{client.rating || row.rating}</TableCell>
+                        <TableCell className="text-sm py-2 px-3">{row.role}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -681,19 +681,19 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
                   <CardTitle className="text-sm font-medium">Outstanding Documents</CardTitle>
                 </div>
               </CardHeader>
-              <CardContent className="p-0">
+              <CardContent className="px-4 pb-4">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="text-xs h-8 px-3">Document</TableHead>
-                      <TableHead className="text-xs h-8 px-3">Workflow</TableHead>
+                      <TableHead className="text-xs font-normal h-8 px-3">Document</TableHead>
+                      <TableHead className="text-xs font-normal h-8 px-3">Workflow</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {outstandingDocs.map((doc, index) => (
                       <TableRow key={index}>
-                        <TableCell className="text-sm py-1.5 px-3">{doc.document}</TableCell>
-                        <TableCell className="text-sm py-1.5 px-3">{doc.workflow}</TableCell>
+                        <TableCell className="text-sm py-2 px-3">{doc.document}</TableCell>
+                        <TableCell className="text-sm py-2 px-3">{doc.workflow}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
