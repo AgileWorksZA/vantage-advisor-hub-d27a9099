@@ -1,28 +1,32 @@
 
 
-## Add "% SLA Met" Label to SLA Gauge
+## Fix: SLA Gauge Not Showing Percentage Value
 
-### Problem
-The SLA Adherence gauge displays a percentage number but does not indicate what the percentage represents. Users cannot tell at a glance that it shows the percentage of SLA targets met.
+### Root Cause
+The ECharts wrapper (`src/components/ui/echarts-wrapper.tsx`) uses tree-shaking and only registers `BarChart`, `PieChart`, and `LineChart`. The `GaugeChart` component is **not registered**, so ECharts silently fails to render the gauge data/detail -- it only shows the title label because that's a generic series property.
 
-### Change
+### Fix
 
-**File: `src/components/tasks/TaskDashboard.tsx`**
+**File: `src/components/ui/echarts-wrapper.tsx`**
 
-Update the `slaGaugeOption` to add a title element inside the gauge that reads "SLA Met" beneath the percentage value. This uses ECharts' built-in gauge `title` property:
+1. Import `GaugeChart` from `echarts/charts`
+2. Add it to the `echarts.use([...])` registration array
 
 ```typescript
-// In slaGaugeOption, update the series data to include a name
-data: [{ value: slaData.pct, name: "SLA Met" }],
+import { BarChart, PieChart, LineChart, GaugeChart } from 'echarts/charts';
 
-// And enable the title display
-title: {
-  show: true,
-  offsetCenter: [0, "25%"],
-  fontSize: 12,
-  color: "hsl(var(--muted-foreground))",
-},
+echarts.use([
+  BarChart,
+  PieChart,
+  LineChart,
+  GaugeChart,   // <-- add this
+  GridComponent,
+  TooltipComponent,
+  LegendComponent,
+  DataZoomComponent,
+  CanvasRenderer,
+]);
 ```
 
-This places a "SLA Met" label directly below the percentage inside the gauge arc, making the metric self-explanatory. No other files need changes.
+This single change will make the gauge render correctly, showing the percentage value, the progress arc, and the "SLA Met" label as intended. No other files need changes -- the `TaskDashboard.tsx` configuration is already correct.
 
