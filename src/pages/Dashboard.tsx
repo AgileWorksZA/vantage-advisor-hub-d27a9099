@@ -348,7 +348,7 @@ const Dashboard = () => {
                     const isUp = providerGrowth >= 0;
                     const sparkPts = isUp ? "0,16 12,12 24,14 36,8 48,10 60,2" : "0,4 12,8 24,6 36,12 48,10 60,18";
                     return (
-                      <div className="flex items-center gap-1 mb-2">
+                      <div className="flex items-center gap-0.5 mb-2">
                         <span className="text-sm font-semibold">{filteredRegionalData.currencySymbol} {filteredRegionalData.totalAUM}</span>
                         <svg width="60" height="20" className="overflow-visible flex-shrink-0">
                           <polyline points={sparkPts} fill="none" stroke={isUp ? "hsl(var(--chart-2))" : "hsl(var(--destructive))"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -419,7 +419,7 @@ const Dashboard = () => {
                     const sparkPts = isUp ? "0,16 12,12 24,14 36,8 48,10 60,2" : "0,4 12,8 24,6 36,12 48,10 60,18";
                     return (
                       <>
-                        <div className="flex items-center gap-1 mb-2">
+                        <div className="flex items-center gap-0.5 mb-2">
                           <span className="text-sm font-semibold">Top 5</span>
                           <svg width="60" height="20" className="overflow-visible flex-shrink-0">
                             <polyline points={sparkPts} fill="none" stroke={isUp ? "hsl(var(--chart-2))" : "hsl(var(--destructive))"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -492,7 +492,7 @@ const Dashboard = () => {
                     const isUp = totalGrowth >= 0;
                     const sparkPoints = isUp ? "0,16 12,12 24,14 36,8 48,10 60,2" : "0,4 12,8 24,6 36,12 48,10 60,18";
                     return (
-                      <div className="flex items-center gap-1 mb-1">
+                      <div className="flex items-center gap-0.5 mb-1">
                         <span className="text-xl font-semibold">{filteredRegionalData.currencySymbol} {filteredRegionalData.totalAUM}</span>
                         <svg width="60" height="20" className="overflow-visible flex-shrink-0">
                           <polyline points={sparkPoints} fill="none" stroke={isUp ? "hsl(var(--chart-2))" : "hsl(var(--destructive))"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -649,7 +649,7 @@ const Dashboard = () => {
                     const isUp = cbvGrowth >= 0;
                     const sparkPts = isUp ? "0,16 12,12 24,14 36,8 48,10 60,2" : "0,4 12,8 24,6 36,12 48,10 60,18";
                     return (
-                      <div className="flex items-center gap-1 mb-2">
+                      <div className="flex items-center gap-0.5 mb-2">
                         <span className="text-sm font-semibold">{filteredRegionalData.currencySymbol} {filteredRegionalData.totalAUM}</span>
                         <svg width="60" height="20" className="overflow-visible flex-shrink-0">
                           <polyline points={sparkPts} fill="none" stroke={isUp ? "hsl(var(--chart-2))" : "hsl(var(--destructive))"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
