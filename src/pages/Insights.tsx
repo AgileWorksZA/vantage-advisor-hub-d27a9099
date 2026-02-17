@@ -139,7 +139,7 @@ const sidebarItems = [{
   path: "/calendar"
 }, {
   icon: ListTodo,
-  label: "Tasks",
+  label: "Workflows",
   path: "/tasks"
 }, {
   icon: Briefcase,

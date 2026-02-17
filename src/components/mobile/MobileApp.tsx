@@ -20,7 +20,7 @@ type MobileTab = "today" | "clients" | "tasks" | "insights" | "ai";
 const tabs: { id: MobileTab; label: string; icon: typeof CalendarDays }[] = [
   { id: "today", label: "Today", icon: CalendarDays },
   { id: "clients", label: "Clients", icon: Users },
-  { id: "tasks", label: "Tasks", icon: CheckSquare },
+  { id: "tasks", label: "Workflows", icon: CheckSquare },
   { id: "insights", label: "Insights", icon: BarChart3 },
   { id: "ai", label: "AI", icon: Sparkles },
 ];
