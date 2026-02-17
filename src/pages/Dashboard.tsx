@@ -758,7 +758,7 @@ const Dashboard = () => {
 
             {/* Portfolio Analysis */}
             {isWidgetVisible('portfolio-analysis') && <div key="portfolio-analysis">
-              <PortfolioAnalysisWidget region={selectedRegion} />
+              <PortfolioAnalysisWidget region={selectedRegion} selectedAdvisors={selectedAdvisors} />
             </div>}
 
           </DraggableWidgetGrid>
