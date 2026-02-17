@@ -45,6 +45,7 @@ interface ClientRibbonProps {
   clientName: string;
   relatedEntities: RelatedEntity[];
   onTabChange?: (tab: string) => void;
+  statusDotColor?: "red" | "orange" | "green";
 }
 
 const getProfileTypeBadgeClass = (profileType: string) => {
@@ -78,7 +79,13 @@ const formatRibbonName = (client: Client): string => {
   return `${client.surname}, ${initial} (${displayName})`;
 };
 
-const ClientRibbon = ({ client, clientName, relatedEntities, onTabChange }: ClientRibbonProps) => {
+const statusDotClasses: Record<string, string> = {
+  red: "bg-red-500",
+  orange: "bg-orange-500",
+  green: "bg-emerald-500",
+};
+
+const ClientRibbon = ({ client, clientName, relatedEntities, onTabChange, statusDotColor = "green" }: ClientRibbonProps) => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [isExpanded, setIsExpanded] = useState(false);
@@ -182,7 +189,7 @@ const ClientRibbon = ({ client, clientName, relatedEntities, onTabChange }: Clie
               <div className="w-10 h-10 rounded-full bg-[hsl(180,25%,25%)] flex items-center justify-center text-white text-sm font-semibold">
                 {initials}
               </div>
-              <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-background" />
+              <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 ${statusDotClasses[statusDotColor]} rounded-full border-2 border-background`} />
             </div>
 
             {/* Info columns */}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
@@ -41,6 +41,9 @@ import { useClientRelationships } from "@/hooks/useClientRelationships";
 import { getDisplayName } from "@/types/client";
 import GlobalAIChat from "@/components/ai-assistant/GlobalAIChat";
 import { useRecentlyViewedClients } from "@/hooks/useRecentlyViewedClients";
+import { generateClient360Data } from "@/data/regional360ViewData";
+import { getOpportunityPriority } from "@/lib/opportunity-priority";
+import { buildGapOpportunities } from "@/components/client-detail/next-best-action/OpportunitiesTab";
 
 const sidebarItems = [
   { icon: LayoutDashboard, label: "Dash", path: "/dashboard" },
@@ -92,6 +95,24 @@ const ClientDetail = () => {
   ];
   
   const clientName = client ? getDisplayName(client) : "Loading...";
+
+  // Compute status dot color based on opportunity urgency
+  const statusDotColor = useMemo(() => {
+    if (!client || !clientId) return "green" as const;
+    const clientData = generateClient360Data(clientId, client.nationality, client.country_of_issue);
+    // Build product list matching the format expected by buildGapOpportunities
+    const products = [
+      ...clientData.onPlatformProducts.map(p => ({ category: "Investment", currentValue: p.amountValue, productName: p.product } as any)),
+      ...clientData.externalProducts.map(p => ({ category: "External Investment", currentValue: p.amountValue, productName: p.product } as any)),
+      ...clientData.platformCashAccounts.map(p => ({ category: "Cash", currentValue: p.amountValue, productName: p.name } as any)),
+      ...clientData.riskProducts.map(p => ({ category: "Risk/Insurance", currentValue: 0, productName: p.holdingName } as any)),
+    ];
+    const gaps = buildGapOpportunities(products);
+    const types = gaps.map(g => g.type);
+    if (types.some(t => getOpportunityPriority(t) === "urgent")) return "red" as const;
+    if (types.some(t => getOpportunityPriority(t) === "important")) return "orange" as const;
+    return "green" as const;
+  }, [client, clientId]);
 
   // Check if client's advisor is in the current selection
   const clientAdvisorInitials = client?.advisor
@@ -252,6 +273,7 @@ const ClientDetail = () => {
               clientName={clientName}
               relatedEntities={relatedEntities}
               onTabChange={setActiveTab}
+              statusDotColor={statusDotColor}
             />
             <TabsList className="w-full justify-start h-auto p-0 bg-transparent rounded-none gap-0 flex-wrap px-6 mt-1">
               {[

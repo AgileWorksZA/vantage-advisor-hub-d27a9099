@@ -1,8 +1,10 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TrendingUp, ArrowRightLeft, Layers, Building2, Briefcase, Landmark, Receipt, Banknote } from "lucide-react";
 import type { PrepOpportunity, PrepProduct } from "@/hooks/useClientMeetingPrep";
+import { getOpportunityPriority, type Priority } from "@/lib/opportunity-priority";
+import PrioritySectionHeader from "./PrioritySectionHeader";
 
 interface OpportunitiesTabProps {
   opportunities: PrepOpportunity[];
@@ -131,22 +133,28 @@ const ClientNameTag = ({ name }: { name: string }) => (
   <span className="text-[10px] px-1.5 py-0 rounded bg-muted text-muted-foreground font-medium">{name}</span>
 );
 
+interface ItemWithPriority {
+  id: string;
+  type: string;
+  priority: Priority;
+  render: React.ReactNode;
+}
+
 const OpportunitiesTab = ({ opportunities, products, householdView, onOptimise, hasScanned, isScanning, onTaxLossClick, jurisdiction }: OpportunitiesTabProps) => {
   const gaps = buildGapOpportunities(products, householdView);
 
-  if (opportunities.length === 0 && gaps.length === 0) {
-    return (
-      <div className="flex flex-col items-center py-4 gap-2">
-        <p className="text-xs text-muted-foreground text-center">No opportunities identified yet.</p>
-      </div>
-    );
-  }
+  // Build unified list with priorities
+  const allItems = useMemo(() => {
+    const items: ItemWithPriority[] = [];
 
-  return (
-    <div className="space-y-0">
-      {opportunities.map(opp => {
-        const cfg = getConfig(opp.opportunityType);
-        return (
+    opportunities.forEach(opp => {
+      const cfg = getConfig(opp.opportunityType);
+      const priority = getOpportunityPriority(opp.opportunityType);
+      items.push({
+        id: opp.id,
+        type: opp.opportunityType,
+        priority,
+        render: (
           <div key={opp.id} className={`flex gap-2 py-1.5 border-b border-border/50 last:border-0 ${opp.opportunityType.toLowerCase().includes("tax loss") && onTaxLossClick ? "cursor-pointer hover:bg-muted/50 rounded" : ""}`} onClick={opp.opportunityType.toLowerCase().includes("tax loss") && onTaxLossClick ? onTaxLossClick : undefined}>
             <div className="shrink-0 mt-0.5 text-muted-foreground">{cfg.icon}</div>
             <div className="flex-1 min-w-0">
@@ -169,11 +177,18 @@ const OpportunitiesTab = ({ opportunities, products, householdView, onOptimise, 
               )}
             </div>
           </div>
-        );
-      })}
-      {gaps.map(gap => {
-        const cfg = getConfig(gap.type);
-        return (
+        ),
+      });
+    });
+
+    gaps.forEach(gap => {
+      const cfg = getConfig(gap.type);
+      const priority = getOpportunityPriority(gap.type);
+      items.push({
+        id: gap.id,
+        type: gap.type,
+        priority,
+        render: (
           <div key={gap.id} className={`flex gap-2 py-1.5 border-b border-border/50 last:border-0 ${gap.type.toLowerCase().includes("tax loss") && onTaxLossClick ? "cursor-pointer hover:bg-muted/50 rounded" : ""}`} onClick={gap.type.toLowerCase().includes("tax loss") && onTaxLossClick ? onTaxLossClick : undefined}>
             <div className="shrink-0 mt-0.5 text-muted-foreground">{cfg.icon}</div>
             <div className="flex-1 min-w-0">
@@ -193,8 +208,45 @@ const OpportunitiesTab = ({ opportunities, products, householdView, onOptimise, 
               </div>
             </div>
           </div>
-        );
-      })}
+        ),
+      });
+    });
+
+    return items;
+  }, [opportunities, gaps, householdView, onTaxLossClick, jurisdiction]);
+
+  if (allItems.length === 0) {
+    return (
+      <div className="flex flex-col items-center py-4 gap-2">
+        <p className="text-xs text-muted-foreground text-center">No opportunities identified yet.</p>
+      </div>
+    );
+  }
+
+  const urgent = allItems.filter(i => i.priority === "urgent");
+  const important = allItems.filter(i => i.priority === "important");
+  const routine = allItems.filter(i => i.priority === "routine");
+
+  return (
+    <div className="space-y-1">
+      {urgent.length > 0 && (
+        <div>
+          <PrioritySectionHeader priority="urgent" count={urgent.length} />
+          {urgent.map(i => i.render)}
+        </div>
+      )}
+      {important.length > 0 && (
+        <div>
+          <PrioritySectionHeader priority="important" count={important.length} />
+          {important.map(i => i.render)}
+        </div>
+      )}
+      {routine.length > 0 && (
+        <div>
+          <PrioritySectionHeader priority="routine" count={routine.length} />
+          {routine.map(i => i.render)}
+        </div>
+      )}
     </div>
   );
 };

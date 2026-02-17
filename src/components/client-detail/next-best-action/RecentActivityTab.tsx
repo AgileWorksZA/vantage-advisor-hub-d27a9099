@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { DollarSign, Image, MessageSquare, User, FileCheck, Calendar } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import { useClientCalendarEvents, ClientCalendarEvent } from "@/hooks/useClientCalendarEvents";
+import PrioritySectionHeader from "./PrioritySectionHeader";
 
 interface RecentActivityTabProps {
   householdView?: boolean;
@@ -61,7 +62,6 @@ export const RECENT_ACTIVITY_COUNT = 8;
 const RecentActivityTab = ({ householdView, clientId, onCalendarEventClick, onActivityClick }: RecentActivityTabProps) => {
   const { events: calendarEvents } = useClientCalendarEvents(clientId);
 
-  // Merge calendar events with static activities
   const calendarItems: Array<{id: string; type: string; title: string; description: string; timestamp: Date; calendarEvent?: ClientCalendarEvent}> = calendarEvents.map(e => ({
     id: e.id,
     type: "calendar_event",
@@ -76,36 +76,39 @@ const RecentActivityTab = ({ householdView, clientId, onCalendarEventClick, onAc
     .slice(0, 10);
 
   return (
-    <div className="space-y-0">
-      {allItems.map((activity) => {
-        const navType = activity.type === "calendar_event" ? null : getNavigationType(activity.type);
-        const isClickable = activity.type === "calendar_event" || navType;
+    <div className="space-y-1">
+      <PrioritySectionHeader priority="routine" count={allItems.length} />
+      <div className="space-y-0">
+        {allItems.map((activity) => {
+          const navType = activity.type === "calendar_event" ? null : getNavigationType(activity.type);
+          const isClickable = activity.type === "calendar_event" || navType;
 
-        return (
-          <div
-            key={activity.id}
-            className={`flex gap-2 py-1.5 border-b border-border/50 last:border-0 ${isClickable ? 'cursor-pointer hover:bg-muted/50 rounded transition-colors px-1 -mx-1' : ''}`}
-            onClick={() => {
-              if (activity.type === "calendar_event" && activity.calendarEvent) {
-                onCalendarEventClick?.(activity.calendarEvent);
-              } else if (navType) {
-                onActivityClick?.(navType);
-              }
-            }}
-          >
-            <div className="shrink-0 mt-0.5">{getActivityIcon(activity.type)}</div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between gap-2">
-                <p className={`font-medium text-xs ${getTitleColor(activity.type)}`}>{activity.title}</p>
-                <span className="text-[10px] text-muted-foreground whitespace-nowrap">
-                  {formatDistanceToNow(activity.timestamp, { addSuffix: true })}
-                </span>
+          return (
+            <div
+              key={activity.id}
+              className={`flex gap-2 py-1.5 border-b border-border/50 last:border-0 ${isClickable ? 'cursor-pointer hover:bg-muted/50 rounded transition-colors px-1 -mx-1' : ''}`}
+              onClick={() => {
+                if (activity.type === "calendar_event" && activity.calendarEvent) {
+                  onCalendarEventClick?.(activity.calendarEvent);
+                } else if (navType) {
+                  onActivityClick?.(navType);
+                }
+              }}
+            >
+              <div className="shrink-0 mt-0.5">{getActivityIcon(activity.type)}</div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-2">
+                  <p className={`font-medium text-xs ${getTitleColor(activity.type)}`}>{activity.title}</p>
+                  <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                    {formatDistanceToNow(activity.timestamp, { addSuffix: true })}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground truncate">{activity.description}</p>
               </div>
-              <p className="text-xs text-muted-foreground truncate">{activity.description}</p>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 };
