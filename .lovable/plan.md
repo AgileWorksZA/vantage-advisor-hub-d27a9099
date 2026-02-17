@@ -1,61 +1,45 @@
 
 
-## Show Loading State in Widgets Instead of Layout Rearrangement
+## Fix Widget Layout Swap on Both Dashboards
 
 ### Problem
-When the dashboard loads, widgets initially render in their default grid positions with full content, then abruptly rearrange to the user's saved layout once it loads from the database. This causes a jarring visual "swap" effect.
+The current skeleton approach puts loading placeholders **inside** each widget's CardContent, but the `DraggableWidgetGrid` still renders with the default layout first, then jumps to the saved layout once it loads from the database. This causes the visible "swapping around" effect even though skeletons are showing.
 
 ### Solution
-Instead of rendering widget content during layout loading, show skeleton placeholders inside each widget card. The grid will use the default layout positions (which is fine since they'll just be grey loading cards), and once the saved layout loads, the skeletons are replaced with real content already in the correct positions.
+Instead of rendering the real `DraggableWidgetGrid` while the layout is loading, render a **static CSS grid of skeleton cards** that matches the visual shape of the dashboard. Once the layout finishes loading, swap in the real draggable grid with the correct saved positions and full widget content. This eliminates the layout jump entirely.
 
 ### Changes
 
-**1. `src/pages/Dashboard.tsx` -- Add loading skeletons to adviser dashboard**
+**1. `src/pages/Dashboard.tsx` -- Replace grid with skeleton placeholder during load**
 
-- When `layoutLoading` is true, render each visible widget card with its header (title + drag handle) but replace the `CardContent` with a `Skeleton` placeholder
-- This keeps the grid structure stable while clearly indicating data is loading
-- Once `layoutLoading` is false, render the normal widget content
+- When `layoutLoading` is true, render a static grid of skeleton cards (3 columns, matching the typical dashboard appearance) instead of the `DraggableWidgetGrid`
+- Remove the per-widget `layoutLoading` skeleton checks inside CardContent (no longer needed)
+- When `layoutLoading` is false, render the `DraggableWidgetGrid` as normal with full widget content
 
-**2. `src/components/client-detail/ClientDashboardTab.tsx` -- Add loading skeletons to client dashboard**
+**2. `src/components/client-detail/ClientDashboardTab.tsx` -- Same pattern**
 
-- Same pattern: when `layoutLoading` is true, render skeleton cards instead of full widget content
-- Each skeleton card matches the widget card structure (CardHeader with title, CardContent with Skeleton block)
+- When `layoutLoading` is true, render static skeleton cards in a CSS grid
+- Remove per-widget skeleton checks inside CardContent
+- When `layoutLoading` is false, render the real `DraggableWidgetGrid`
 
-### Technical Approach
+### Visual Result
 
-Both dashboards will use the same pattern. Each widget render block changes from:
-
+While loading:
 ```text
-{isWidgetVisible('widget-id') && <div key="widget-id">
-  <Card>
-    <CardHeader>...</CardHeader>
-    <CardContent>...full content...</CardContent>
-  </Card>
-</div>}
++--skeleton--+  +--skeleton--+  +--skeleton--+
+|             |  |             |  |             |
++-------------+  +-------------+  +-------------+
++--skeleton--+  +--skeleton--+  +--skeleton--+
+|             |  |             |  |             |
++-------------+  +-------------+  +-------------+
 ```
 
-to:
-
-```text
-{isWidgetVisible('widget-id') && <div key="widget-id">
-  <Card>
-    <CardHeader>...title + drag handle...</CardHeader>
-    <CardContent>
-      {layoutLoading ? (
-        <Skeleton className="w-full h-full min-h-[200px]" />
-      ) : (
-        ...full content...
-      )}
-    </CardContent>
-  </Card>
-</div>}
-```
-
-The `Skeleton` component from `src/components/ui/skeleton.tsx` is already available in the project.
+After load: real widgets appear in their saved positions with no jump.
 
 ### Files
 
 | File | Change |
 |------|--------|
-| `src/pages/Dashboard.tsx` | Import Skeleton, wrap each widget's CardContent in a layoutLoading check |
-| `src/components/client-detail/ClientDashboardTab.tsx` | Import Skeleton, wrap each widget's CardContent in a layoutLoading check |
+| `src/pages/Dashboard.tsx` | Wrap `DraggableWidgetGrid` in `!layoutLoading` check; add static skeleton grid for loading state |
+| `src/components/client-detail/ClientDashboardTab.tsx` | Same pattern as above |
+
