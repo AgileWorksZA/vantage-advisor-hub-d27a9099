@@ -1,59 +1,84 @@
 
 
-## Add Medical Aid Form Screen
+## Add Risk Products, Short Term, and Will Product Forms
 
-When clicking the "+ Medical Aid" link in the Products (360 View) tab, open a full-page form matching the reference design. This is a UI-only form initially (saving to local state / demo data).
+Create three new product form components following the same pattern as the existing `AddMedicalAidForm`, each matching their respective reference screenshots. Wire them to the corresponding "+" buttons in the Products tab.
 
-### Form Layout (matching the screenshot)
+### 1. Risk Product Form (`AddRiskProductForm.tsx`)
 
-**Section 1: "Medical Aid Details" header badge (teal)**
+**Header badge**: "Risk Product Details" (teal)
 
-Two-column form with:
-- Left column: Medical scheme name (required), Membership number (required), Total contribution (default 0.00), Date data received (date picker)
-- Right column: Medical scheme plan name (required), Policy active (Yes/No radio, default Yes), Hospital Plan (Yes/No radio, default No), Hospital Plan with Day to Day (Yes/No radio, default No)
+**Two-column form fields**:
+| Field | Type | Required | Default |
+|-------|------|----------|---------|
+| Product Provider | Text input | Yes | - |
+| Product Name | Text input | Yes | - |
+| Total Premium | Number input | No | 0.00 |
+| Premium Frequency | Select dropdown | No | - |
+| Policy number | Text input | Yes | - |
+| Payment due date | Date picker | No | - |
+| Effective date | Date picker | Yes | - |
+| Termination date | Date picker | No | - |
+| Data date | Date picker | No | - |
+| Policy Active | Radio (Yes/No) | No | No |
 
-**Notes** - full-width textarea below the form fields
+**Notes** textarea, **Documents** table with upload zone, **Save/Cancel** buttons, **Product History** collapsible section.
 
-**Section 2: "Medical Members" collapsible accordion** (empty by default)
+### 2. Short Term Product Form (`AddShortTermForm.tsx`)
 
-**Section 3: Documents table** with columns: Document Name, Document Title, Document Category, Upload date, Archived, Manage upload. Includes a dashed "Upload" drop zone.
+**Header badge**: "Short Term Product Details" (teal)
 
-**Section 4: Save and Cancel buttons** (teal Save, outline Cancel)
+**Two-column form fields**:
+| Field | Type | Required | Default |
+|-------|------|----------|---------|
+| Product Provider | Text input | Yes | - |
+| Product Name | Text input | Yes | - |
+| Policy number | Text input | Yes | - |
+| Policy Type | Select dropdown | No | - |
+| Total premium (ZAR) | Number input | No | 0.00 |
+| Status | Select dropdown | No | Active |
+| Review date | Date picker | No | - |
+| Policy Owner | Text input | Yes | - |
+| Broker | Text input | No | - |
+| Start date | Date picker | No | - |
+| Data date | Date picker | No | - |
+| Payment Method | Select dropdown | No | - |
 
-**Section 5: "Product History" collapsible section** with text filter and action icons, showing "No items found"
+**Notes** textarea, **Documents** table with upload zone, **Save/Cancel** buttons, **Product History** collapsible section.
 
-### Technical Approach
+### 3. Will Form (`AddWillForm.tsx`)
 
-1. **New component**: `src/components/client-detail/AddMedicalAidDialog.tsx`
-   - Full-screen dialog (similar to existing wizard patterns)
-   - Uses react-hook-form with zod validation for required fields
-   - Radio groups for Yes/No toggles
-   - Accordion for Medical Members and Product History sections
-   - Cancel returns to the 360 View tab
+**Header badge**: "Will Details" (teal)
 
-2. **Update**: `src/components/client-detail/Client360ViewTab.tsx`
-   - Add state for `showMedicalAidForm`
-   - Wire the "+ Medical Aid" button onClick to toggle the form
-   - When form is open, render the AddMedicalAidDialog component
-   - On save, add to the local medicalAid array and show toast
+**Two-column form fields**:
+| Field | Type | Required | Default |
+|-------|------|----------|---------|
+| Client has will | Radio (Yes/No) | No | No |
+| EFW receipt number | Text input | No | - |
+| Place kept | Text input | Yes | - |
+| Executors | Text input | No | - |
+| Date of will | Date picker | Yes | - |
+| Last review date | Date picker | No | - |
+
+**Notes** textarea, **Documents** table with upload zone, **Save/Cancel** buttons, **Product History** collapsible section.
+
+### 4. Wire buttons in `Client360ViewTab.tsx`
+
+- Add three new state variables: `showRiskProductForm`, `showShortTermForm`, `showWillForm`
+- Add conditional rendering blocks (same pattern as `showMedicalAidForm`)
+- Wire onClick handlers on the `+ Risk Products`, `+ Short Term`, and `+ Will` buttons
 
 ### Files Changed
 | File | Action |
 |------|--------|
-| `src/components/client-detail/AddMedicalAidDialog.tsx` | Create - new full-page form component |
-| `src/components/client-detail/Client360ViewTab.tsx` | Edit - wire "+ Medical Aid" button to open the form |
+| `src/components/client-detail/AddRiskProductForm.tsx` | Create |
+| `src/components/client-detail/AddShortTermForm.tsx` | Create |
+| `src/components/client-detail/AddWillForm.tsx` | Create |
+| `src/components/client-detail/Client360ViewTab.tsx` | Edit - add state + wiring for all 3 forms |
 
-### Form Fields Mapping
-
-| Field | Type | Required | Default |
-|-------|------|----------|---------|
-| Medical scheme name | Text input | Yes | - |
-| Medical scheme plan name | Text input | Yes | - |
-| Membership number | Text input | Yes | - |
-| Total contribution | Number input | No | 0.00 |
-| Date data received | Date input | No | - |
-| Policy active | Radio (Yes/No) | No | Yes |
-| Hospital Plan | Radio (Yes/No) | No | No |
-| Hospital Plan with Day to Day | Radio (Yes/No) | No | No |
-| Notes | Textarea | No | - |
+### Technical Notes
+- All three forms follow the identical structure as `AddMedicalAidForm.tsx` (react-hook-form + zod validation, Collapsible sections, document table, product history)
+- Select dropdowns use the existing Shadcn Select component
+- Date pickers use the existing Popover + Calendar pattern with `pointer-events-auto`
+- UI-only (local state/demo data), no database changes required
 
