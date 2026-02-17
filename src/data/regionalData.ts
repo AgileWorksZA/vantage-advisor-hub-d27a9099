@@ -97,7 +97,7 @@ function formatCurrency(value: number, symbol: string): string {
 
 // Helper to format AUM with decimals
 function formatAUM(value: number): string {
-  return value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return value.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
 
 // Helper to calculate book percentage
@@ -107,7 +107,7 @@ function calcBookPercent(value: number, total: number): string {
 
 const southAfricaData: RegionalData = {
   currencySymbol: "R",
-  totalAUM: "3,667,726,572.38",
+  totalAUM: "3,667,726,572",
   totalAUMNumber: 3667726572.38,
   providers: [
     { name: "Ninety One", bookPercent: "55.3 %", value: "R 2,026,539,331", growth1m: 1.2, growth6m: 4.3, growthYtd: 6.1 },
@@ -242,7 +242,7 @@ const southAfricaData: RegionalData = {
 
 const australiaData: RegionalData = {
   currencySymbol: "A$",
-  totalAUM: "4,389,625,872.00",
+  totalAUM: "4,389,625,872",
   totalAUMNumber: 4389625872,
   providers: [
     { name: "Macquarie Wrap", bookPercent: "42.1 %", value: "A$ 1,847,293,441", growth1m: 0.9, growth6m: 3.8, growthYtd: 5.7 },
@@ -375,7 +375,7 @@ const australiaData: RegionalData = {
 
 const canadaData: RegionalData = {
   currencySymbol: "C$",
-  totalAUM: "5,572,649,990.00",
+  totalAUM: "5,572,649,990",
   totalAUMNumber: 5572649990,
   providers: [
     { name: "RBC Dominion Securities", bookPercent: "32.4 %", value: "C$ 1,805,538,597", growth1m: 0.7, growth6m: 3.5, growthYtd: 5.4 },
@@ -507,7 +507,7 @@ const canadaData: RegionalData = {
 
 const unitedKingdomData: RegionalData = {
   currencySymbol: "£",
-  totalAUM: "2,847,392,156.00",
+  totalAUM: "2,847,392,156",
   totalAUMNumber: 2847392156,
   providers: [
     { name: "Hargreaves Lansdown", bookPercent: "36.2 %", value: "£ 1,030,755,960", growth1m: 0.8, growth6m: 3.4, growthYtd: 5.1 },
@@ -640,7 +640,7 @@ const unitedKingdomData: RegionalData = {
 
 const unitedStatesData: RegionalData = {
   currencySymbol: "$",
-  totalAUM: "5,572,649,990.00",
+  totalAUM: "5,572,649,990",
   totalAUMNumber: 5572649990,
   providers: [
     { name: "Fidelity Investments", bookPercent: "38.7 %", value: "$ 2,156,595,346", growth1m: 1.0, growth6m: 4.0, growthYtd: 6.0 },
