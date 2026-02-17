@@ -5,6 +5,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from "@/components/ui/dialog";
+import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
@@ -162,6 +165,8 @@ const AstuteRequestView = ({ onClose }: AstuteRequestViewProps) => {
   const [medicalAidOpen, setMedicalAidOpen] = useState(false);
   const [expandedProviders, setExpandedProviders] = useState<Set<string>>(new Set());
   const [consentChecked, setConsentChecked] = useState(true);
+  const [showConsentDialog, setShowConsentDialog] = useState(false);
+  const [adviserConsentCompleted, setAdviserConsentCompleted] = useState(true);
 
   const toggleProvider = (name: string) => {
     setExpandedProviders(prev => {
@@ -201,10 +206,44 @@ const AstuteRequestView = ({ onClose }: AstuteRequestViewProps) => {
               <Badge className="bg-green-100 text-green-700 border-green-200 text-xs">Completed</Badge>
             </div>
             <div className="ml-10 space-y-2">
-              <button className="text-sm text-[hsl(180,70%,45%)] hover:underline">View and accept digital consent</button>
-              <p className="text-sm text-muted-foreground">Accepted on: <span className="text-foreground">2024/06/15 09:30</span></p>
+              <button className="text-sm text-[hsl(180,70%,45%)] hover:underline" onClick={() => setShowConsentDialog(true)}>View and accept digital consent</button>
+              {adviserConsentCompleted && (
+                <p className="text-sm text-muted-foreground">Accepted on: <span className="text-foreground">2024/06/15 09:30</span></p>
+              )}
             </div>
           </div>
+
+          {/* Digital Consent Declaration Dialog */}
+          <Dialog open={showConsentDialog} onOpenChange={setShowConsentDialog}>
+            <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Astute Digital Consent Declaration</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 text-sm text-muted-foreground leading-relaxed">
+                <p>
+                  I, the undersigned, hereby declare that I am an authorised user of the Astute system and that I have been duly authorised by my Financial Services Provider (FSP) to access and utilise the Astute platform for the purposes of obtaining client financial data.
+                </p>
+                <p>
+                  I warrant that all information submitted through the Astute system is true, accurate, and complete to the best of my knowledge. I understand that any misrepresentation of information may result in the suspension or termination of my access to the Astute system.
+                </p>
+                <p>
+                  I acknowledge that the data obtained through the Astute system is for the sole purpose of rendering financial advice and services to clients as contemplated in the Long-Term Insurance Act, the Short-Term Insurance Act, and the Financial Advisory and Intermediary Services Act (FAIS Act).
+                </p>
+                <p>
+                  I hereby indemnify and hold harmless Astute Financial Services (Pty) Ltd, its directors, employees, and agents against any and all claims, losses, damages, liabilities, and expenses arising from or in connection with my use of the Astute system, including but not limited to any unauthorised access or misuse of client data.
+                </p>
+                <p>
+                  I further authorise the Financial Sector Conduct Authority (FSCA) to verify my credentials and registration status as a financial services provider or representative, and I consent to such verification being conducted through the Astute system.
+                </p>
+              </div>
+              {!adviserConsentCompleted && (
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setShowConsentDialog(false)}>Cancel</Button>
+                  <Button onClick={() => { setAdviserConsentCompleted(true); setShowConsentDialog(false); }}>Accept</Button>
+                </DialogFooter>
+              )}
+            </DialogContent>
+          </Dialog>
 
           {/* Section 2: Client Consent */}
           <div className="mb-6">
