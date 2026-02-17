@@ -1,43 +1,85 @@
 
 
-## Risk Product Detail View
+## Add Urgency Categorization to Opportunities Tab and Dynamic Status Dot
 
-When clicking on a risk product row in the Products tab, open the existing `AddRiskProductForm` pre-populated with that product's data -- same pattern used for Medical Aid.
+### Overview
+Apply the same Urgent / Important / Routine segmentation (used in the Action Priority dashboard widget) to each of the three sub-tabs under "Opportunities": Opportunities, Outstanding, and Recent Activity. Additionally, make the client avatar status dot in the ribbon dynamically reflect the highest urgency level.
 
-### Changes
+### Part 1: Extract Priority Assignment Logic
 
-**File: `src/components/client-detail/Client360ViewTab.tsx`**
+**New file: `src/lib/opportunity-priority.ts`**
 
-1. Add state: `const [selectedRiskProduct, setSelectedRiskProduct] = useState<RiskProduct | null>(null)`
-2. Import `RiskProduct` type from `regional360ViewData`
-3. Add conditional render: when `selectedRiskProduct` is set, render `AddRiskProductForm` with `initialData` prop
-4. Make risk product holding name clickable (line 527) with `onClick` to set `selectedRiskProduct` and `scrollToTop()`
+Create a shared utility that assigns a priority ("urgent" | "important" | "routine") to each opportunity/gap and outstanding item. This reuses the same rules already in `ClientDashboardTab`:
 
-**File: `src/components/client-detail/AddRiskProductForm.tsx`**
+- **Opportunities**: Tax Loss and Cross-sell = urgent; Platform, Idle Cash, New Business = important; Upsell, Migration, Bank Scrape = routine
+- **Outstanding tasks**: High priority or overdue = urgent; Medium priority = important; Low priority or no priority = routine
+- **Outstanding documents**: Expired = urgent; Expiring soon = important; other = routine
+- **Recent Activity**: all items default to routine (informational)
 
-1. Update props to accept optional `initialData` of type `RiskProduct`
-2. When `initialData` is provided, pre-populate form defaults:
-   - `productProvider` from `holdingName`
-   - `policyNumber` from `policyNumber`
-   - `effectiveDate` parsed from `effectiveDate`
-   - `terminationDate` parsed from `terminationDate`
-   - `totalPremium` from `paymentAmount`
-   - `paymentDueDate` parsed from `paymentDueDate`
-   - `notes` from `notes`
-   - `policyActive` set to "No" (matching demo data)
-   - `dataDate` set to current date
-3. When `initialData` is provided, show "Astute" badge below the header
-4. Add expandable **Plan details** section (matching reference image):
-   - Plan name, Cover amount, Premium amount, Termination date, Life cover status, Effective date fields
-   - **Participants** table header (Role, Full name, ID number, Gender, Date of birth, Participant percentage, Smoking status, Marital status, Occupation)
-   - **Related Parties** table with demo rows (Planholder, Beneficiary, Insured) matching the screenshot data
-5. When `initialData` is provided, pre-populate Product History with "Data retrieved from Astute" entry (same pattern as Medical Aid form)
+Also export a helper `getHighestUrgency(opportunities, outstandingTasks, outstandingDocs)` that returns `"urgent" | "important" | "routine" | "green"` for the status dot color.
+
+### Part 2: Update OpportunitiesTab
+
+**File: `src/components/client-detail/next-best-action/OpportunitiesTab.tsx`**
+
+- Import the priority utility
+- Group opportunities and gaps into three segments: Urgent, Important, Routine
+- Render each segment with the same visual treatment as the Action Priority widget:
+  - Section header with colored icon (red triangle for Urgent, amber clock for Important, green check for Routine) + count badge
+  - Items listed under each section with colored dot prefix
+- Preserve existing badges (Growth, Cross-sell, etc.) and currency values within each item
+
+### Part 3: Update OutstandingTab
+
+**File: `src/components/client-detail/next-best-action/OutstandingTab.tsx`**
+
+- Import the priority utility
+- Group tasks and documents into Urgent / Important / Routine segments
+- Same section header pattern with icons and count badges
+- Tasks: overdue or High priority = Urgent, Medium = Important, Low = Routine
+- Documents: Expired = Urgent, Expiring = Important
+
+### Part 4: Update RecentActivityTab
+
+**File: `src/components/client-detail/next-best-action/RecentActivityTab.tsx`**
+
+- All recent activity items are informational, so group them all under "Routine"
+- Add the green Routine section header for consistency
+
+### Part 5: Dynamic Status Dot on Client Ribbon
+
+**File: `src/components/client-detail/ClientRibbon.tsx`**
+
+- Add a new optional prop: `statusDotColor?: "red" | "orange" | "green"`
+- Replace the hardcoded `bg-emerald-500` dot with a dynamic class:
+  - `"red"` = `bg-red-500`
+  - `"orange"` = `bg-orange-500`  
+  - `"green"` (default) = `bg-emerald-500`
+
+**File: `src/pages/ClientDetail.tsx`**
+
+- Compute the highest urgency level using the same product/opportunity data already available in `ClientSummaryTab`
+- Generate the 360 view products + gap opportunities at the `ClientDetail` level (or pass computed status up)
+- Pass the resulting `statusDotColor` to `ClientRibbon`
+
+To keep this clean, the simplest approach: replicate the lightweight gap-detection logic in `ClientDetail` using `generateClient360Data` and the priority utility, then pass the color down.
+
+### Part 6: Update ClientDashboardTab
+
+**File: `src/components/client-detail/ClientDashboardTab.tsx`**
+
+- Refactor the inline priority assignment to use the shared `opportunity-priority.ts` utility (removing duplication)
 
 ### Files Changed
+
 | File | Action |
 |------|--------|
-| `src/components/client-detail/Client360ViewTab.tsx` | Edit - add click handler + state |
-| `src/components/client-detail/AddRiskProductForm.tsx` | Edit - accept `initialData`, add plan/participants sections |
+| `src/lib/opportunity-priority.ts` | **New** - shared priority assignment utility |
+| `src/components/client-detail/next-best-action/OpportunitiesTab.tsx` | **Edit** - group items by urgency with section headers |
+| `src/components/client-detail/next-best-action/OutstandingTab.tsx` | **Edit** - group items by urgency with section headers |
+| `src/components/client-detail/next-best-action/RecentActivityTab.tsx` | **Edit** - add routine section header |
+| `src/components/client-detail/ClientRibbon.tsx` | **Edit** - dynamic status dot color prop |
+| `src/pages/ClientDetail.tsx` | **Edit** - compute urgency, pass to ribbon |
+| `src/components/client-detail/ClientDashboardTab.tsx` | **Edit** - use shared utility |
 
-No new files, no database changes. Demo data only.
-
+No database or backend changes required. All logic is client-side using existing demo data.
