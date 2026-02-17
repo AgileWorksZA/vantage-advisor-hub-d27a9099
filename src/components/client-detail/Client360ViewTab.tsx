@@ -25,6 +25,7 @@ import AddMedicalAidForm from "./AddMedicalAidForm";
 import AddRiskProductForm from "./AddRiskProductForm";
 import AddShortTermForm from "./AddShortTermForm";
 import AddWillForm from "./AddWillForm";
+import AstuteRequestView from "./AstuteRequestView";
 
 const Client360ViewTab = () => {
   const { clientId } = useParams<{ clientId: string }>();
@@ -44,6 +45,7 @@ const Client360ViewTab = () => {
   const [showRiskProductForm, setShowRiskProductForm] = useState(false);
   const [showShortTermForm, setShowShortTermForm] = useState(false);
   const [showWillForm, setShowWillForm] = useState(false);
+  const [showAstuteRequest, setShowAstuteRequest] = useState(false);
 
   const jurisdiction = mapNationalityToJurisdiction(client?.nationality || null, client?.country_of_issue || null);
   
@@ -126,6 +128,10 @@ const Client360ViewTab = () => {
         onSave={() => setShowWillForm(false)}
       />
     );
+  }
+
+  if (showAstuteRequest) {
+    return <AstuteRequestView onClose={() => setShowAstuteRequest(false)} />;
   }
 
   if (showQuoteWizard) {
@@ -483,7 +489,7 @@ const Client360ViewTab = () => {
               {jurisdiction === "ZA" && (
                 <>
                   <span className="text-muted-foreground">|</span>
-                  <Button variant="link" className="text-[hsl(180,70%,45%)] p-0 h-auto font-normal">Request Astute</Button>
+                  <Button variant="link" className="text-[hsl(180,70%,45%)] p-0 h-auto font-normal" onClick={() => { setShowAstuteRequest(true); scrollToTop(); }}>Request Astute</Button>
                 </>
               )}
             </div>
@@ -542,7 +548,7 @@ const Client360ViewTab = () => {
               {jurisdiction === "ZA" && (
                 <>
                   <span className="text-muted-foreground">|</span>
-                  <Button variant="link" className="text-[hsl(180,70%,45%)] p-0 h-auto font-normal">Request Astute</Button>
+                  <Button variant="link" className="text-[hsl(180,70%,45%)] p-0 h-auto font-normal" onClick={() => { setShowAstuteRequest(true); scrollToTop(); }}>Request Astute</Button>
                 </>
               )}
             </div>
