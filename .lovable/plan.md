@@ -1,32 +1,52 @@
 
 
-## Add Digital Consent Declaration Dialog
+## Medical Aid Product Detail View
 
-When clicking "View and accept digital consent" in the Adviser Consent section, show a dialog popup with the full consent declaration text.
+When clicking on a medical aid row in the Products (360 View) tab, open a full-screen detail view pre-populated with that item's data, matching the reference screenshots.
 
-### Behavior
-- If adviser consent is **not yet completed**: show "Accept" and "Cancel" buttons at the bottom
-- If adviser consent is **already completed** (current demo state): show only the X close button, no action buttons
+### Layout
+
+The view follows the same pattern as `AddMedicalAidForm` but opens pre-populated with the clicked row's data:
+
+- **Header**: "Medical Aid Details" teal badge
+- **"Astute" badge** in top-left of form card
+- **Two-column form** with fields: Medical scheme name, Medical scheme plan name, Membership number, Total contribution, Date data received, Policy active (Yes/No radio), Hospital Plan (Yes/No), Hospital Plan with Day to Day (Yes/No)
+- **Notes** textarea
+- **Medical Members** collapsible section with "+ New Medical members" button and table
+- **Documents** section with upload area
+- **Product History** collapsible section
+- **Save** and **Cancel** buttons at bottom
 
 ### Changes
 
-**File: `src/components/client-detail/AstuteRequestView.tsx`**
+**File: `src/components/client-detail/Client360ViewTab.tsx`**
 
-1. Add `Dialog` imports from `@/components/ui/dialog`
-2. Add state: `const [showConsentDialog, setShowConsentDialog] = useState(false)`
-3. Add a prop or state to track adviser consent status (currently hardcoded as "Completed" in demo data, so we can use a state variable `adviserConsentCompleted` defaulting to `true`)
-4. Wire the "View and accept digital consent" button (line 204) to open the dialog
-5. Add the Dialog component with:
-   - Title: "Astute Digital Consent Declaration"
-   - Body: The full legal declaration text (from the reference image), including paragraphs about:
-     - Authorised user declaration
-     - Information warranty
-     - Long-Term Insurance Act purposes
-     - Indemnification clause
-     - FSCA verification authorization
-   - Footer: Conditionally render "Accept" + "Cancel" buttons only when `adviserConsentCompleted` is `false`; otherwise just the X close button suffices
+1. Add state: `const [selectedMedicalAid, setSelectedMedicalAid] = useState<MedicalAid | null>(null)`
+2. Add conditional render: when `selectedMedicalAid` is set, render `AddMedicalAidForm` in "view/edit" mode passing the medical aid data
+3. Make medical aid row names clickable (the scheme name cell already has teal text styling) -- add `onClick` to open the detail view with that row's data, plus `scrollToTop()`
+4. Import `MedicalAid` type from `regional360ViewData`
 
-### Scope
-- 1 file modified: `AstuteRequestView.tsx`
-- No database or backend changes
+**File: `src/components/client-detail/AddMedicalAidForm.tsx`**
+
+1. Update props interface to accept optional `initialData` of type `MedicalAid` for pre-populating the form
+2. When `initialData` is provided, set form default values from the medical aid data:
+   - `schemeName` from `initialData.schemeName`
+   - `planName` from `initialData.planName`
+   - `membershipNumber` from `initialData.membershipNumber`
+   - `totalContribution` from `initialData.premium` (strip currency symbol)
+   - `policyActive` from `initialData.policyActive`
+   - `dateDataReceived` parsed from `initialData.dateReceived`
+3. When `initialData` is provided, pre-populate the Medical Members table with a demo "Principal Member" row (matching the reference: member type, ID number, initials, full name, surname, DOB, effective from, indicative member covered, contribution)
+4. When `initialData` is provided, pre-populate Product History with a "Data retrieved from Astute" entry
+
+### Technical Details
+
+| File | Action |
+|------|--------|
+| `src/components/client-detail/Client360ViewTab.tsx` | Edit - add click handler on medical aid rows |
+| `src/components/client-detail/AddMedicalAidForm.tsx` | Edit - accept optional `initialData` prop for pre-population |
+
+- No new files needed -- reuses existing `AddMedicalAidForm`
+- No database changes
+- Demo data only (hardcoded member row when viewing existing medical aid)
 
