@@ -1,34 +1,29 @@
 
 
-## Export Analytics Table to Excel
+## Rename "Tasks" to "Workflows" in Sidebar Navigation Across All Pages
 
-### What It Does
-When clicking "Export Report", the system will generate a proper `.xlsx` Excel file (instead of the current CSV) containing the analytics table data as currently filtered (by user/type view, date range, etc.), with formatting for headers and a totals row.
+The sidebar navigation label is duplicated in 13 files. Each one still says "Tasks" instead of "Workflows". This is a simple find-and-replace of the label string in each file's sidebar items array.
 
-### Technical Approach
+### Files to Update
 
-**Install dependency**: Add the `xlsx` (SheetJS) package -- a lightweight, zero-dependency library for generating Excel files in the browser.
+| File | Line | Change |
+|------|------|--------|
+| `src/pages/Practice.tsx` | 44 | `"Tasks"` -> `"Workflows"` |
+| `src/pages/Insights.tsx` | 142 | `"Tasks"` -> `"Workflows"` |
+| `src/pages/AccountSettings.tsx` | 55 | `"Tasks"` -> `"Workflows"` |
+| `src/pages/EmailView.tsx` | 53 | `"Tasks"` -> `"Workflows"` |
+| `src/pages/Clients.tsx` | 67 | `"Tasks"` -> `"Workflows"` |
+| `src/pages/Email.tsx` | 69 | `"Tasks"` -> `"Workflows"` |
+| `src/pages/Calendar.tsx` | 102 | `"Tasks"` -> `"Workflows"` |
+| `src/pages/Dashboard.tsx` | 44 | `"Tasks"` -> `"Workflows"` |
+| `src/pages/Administration.tsx` | 33 | `"Tasks"` -> `"Workflows"` |
+| `src/pages/ComposeEmail.tsx` | 59 | `"Tasks"` -> `"Workflows"` |
+| `src/pages/Portfolio.tsx` | 32 | `"Tasks"` -> `"Workflows"` |
+| `src/pages/ClientDetail.tsx` | 51 | `"Tasks"` -> `"Workflows"` |
+| `src/components/mobile/MobileApp.tsx` | 23 | `"Tasks"` -> `"Workflows"` |
 
-**Replace `exportToCsv` with `exportToExcel`** in `src/components/tasks/TaskAnalyticsTab.tsx`:
+`src/pages/Tasks.tsx` and `src/components/layout/AppLayout.tsx` were already updated in the previous change and are not included.
 
-| Step | Detail |
-|------|--------|
-| 1. Import `xlsx` | `import * as XLSX from "xlsx"` |
-| 2. Replace export function | Build a worksheet from the same `rows` array + totals row, with proper column headers matching the table ("Assigned To" or "Workflow Type", "Due Items", "Overdue", etc.) |
-| 3. Column widths | Set reasonable auto-widths so the spreadsheet is readable on open |
-| 4. File naming | `workflow-analytics-by-user-2026-02-17.xlsx` (matches current CSV naming pattern but with `.xlsx`) |
-| 5. Download trigger | Use `XLSX.writeFile()` to trigger browser download |
-
-**Data included in export:**
-- All currently visible rows (respecting the "By User" or "By Workflow Type" grouping)
-- For the "By User" view: adviser group headers with their members indented beneath (flattened into rows)
-- A totals row at the bottom
-- Columns: Group label, Due Items, Overdue, Due Today, Due Tomorrow, Due This Week, Due Next Week, Completed in Period, Completed Prior Period, Utilisation %, SLA Adherence %
-
-### Files Changed
-
-| File | Change |
-|------|--------|
-| `package.json` | Add `xlsx` dependency |
-| `src/components/tasks/TaskAnalyticsTab.tsx` | Replace `exportToCsv` function with `exportToExcel` using the `xlsx` library; update the button's onClick |
-
+### Scope
+- Only the sidebar `label` string changes -- no route, icon, or internal logic changes.
+- 13 files, one line each.
