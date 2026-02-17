@@ -113,7 +113,7 @@ export function TaskTable({
   if (tasks.length === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground">
-        No tasks found. Create your first task to get started.
+        No workflows found. Create your first workflow to get started.
       </div>
     );
   }

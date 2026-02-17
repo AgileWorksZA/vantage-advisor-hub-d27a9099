@@ -138,7 +138,7 @@ export function CreateTaskDialog({ open, onClose, onCreate }: CreateTaskDialogPr
     <Dialog open={open} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Create New Task</DialogTitle>
+          <DialogTitle>Create New Workflow</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
@@ -149,7 +149,7 @@ export function CreateTaskDialog({ open, onClose, onCreate }: CreateTaskDialogPr
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Task title..."
+              placeholder="Workflow title..."
             />
           </div>
 
@@ -160,7 +160,7 @@ export function CreateTaskDialog({ open, onClose, onCreate }: CreateTaskDialogPr
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Task description..."
+              placeholder="Workflow description..."
               rows={3}
             />
           </div>
@@ -320,7 +320,7 @@ export function CreateTaskDialog({ open, onClose, onCreate }: CreateTaskDialogPr
             Cancel
           </Button>
           <Button onClick={handleCreate} disabled={!title.trim() || isSubmitting}>
-            {isSubmitting ? "Creating..." : "Create Task"}
+            {isSubmitting ? "Creating..." : "Create Workflow"}
           </Button>
         </DialogFooter>
       </DialogContent>

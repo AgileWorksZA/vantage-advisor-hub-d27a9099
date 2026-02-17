@@ -521,7 +521,7 @@ export function TaskAnalyticsTab({ tasks, onDrillDown }: TaskAnalyticsTabProps) 
 
 
 
-  const groupLabel = subView === "user" ? "Assigned To" : "Task Type";
+  const groupLabel = subView === "user" ? "Assigned To" : "Workflow Type";
   const presetLabels: Record<DatePreset, string> = {
     this_week: "This Week", last_week: "Last Week",
     this_month: "This Month", last_month: "Last Month",
@@ -577,7 +577,7 @@ export function TaskAnalyticsTab({ tasks, onDrillDown }: TaskAnalyticsTabProps) 
           <Tabs value={subView} onValueChange={(v) => setSubView(v as "user" | "type")}>
             <TabsList>
               <TabsTrigger value="user" className="gap-2"><Users className="h-4 w-4" />By User</TabsTrigger>
-              <TabsTrigger value="type" className="gap-2"><ListTodo className="h-4 w-4" />By Task Type</TabsTrigger>
+              <TabsTrigger value="type" className="gap-2"><ListTodo className="h-4 w-4" />By Workflow Type</TabsTrigger>
             </TabsList>
           </Tabs>
 
@@ -709,7 +709,7 @@ export function TaskAnalyticsTab({ tasks, onDrillDown }: TaskAnalyticsTabProps) 
       <Card>
          <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center justify-between">
-            <span>Task Analytics — {subView === "user" ? "By User" : "By Task Type"}</span>
+            <span>Workflow Analytics — {subView === "user" ? "By User" : "By Workflow Type"}</span>
             <div className="flex items-center gap-2">
               {subView === "user" && groupedByAdviser && Object.keys(groupedByAdviser).length > 0 && (
                 <>
@@ -809,7 +809,7 @@ export function TaskAnalyticsTab({ tasks, onDrillDown }: TaskAnalyticsTabProps) 
           <CardTitle className="text-base flex items-center justify-between">
             <span className="flex items-center gap-2">
               <Settings2 className="h-4 w-4" />
-              Task Type Standards
+              Workflow Type Standards
             </span>
             <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setShowStandards(!showStandards)}>
               {showStandards ? "Hide" : "Show"}
@@ -822,7 +822,7 @@ export function TaskAnalyticsTab({ tasks, onDrillDown }: TaskAnalyticsTabProps) 
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/50">
-                    <TableHead className="font-semibold min-w-[180px]">Task Type</TableHead>
+                    <TableHead className="font-semibold min-w-[180px]">Workflow Type</TableHead>
                     <TableHead className="text-center font-semibold min-w-[160px]">Standard Execution (mins)</TableHead>
                     <TableHead className="text-center font-semibold min-w-[140px]">SLA Target (hours)</TableHead>
                     <TableHead className="text-center font-semibold min-w-[80px]">Action</TableHead>
