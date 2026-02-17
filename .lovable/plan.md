@@ -1,38 +1,34 @@
 
 
-## Rename "Tasks" to "Workflows" Across the Module
+## Export Analytics Table to Excel
 
-This plan updates all user-visible references from "Tasks"/"Task" to "Workflows"/"Workflow" in the sidebar, page header, tab buttons, dashboard, analytics, kanban, overview, and the create dialog. Internal variable names, component filenames, and database columns remain unchanged.
+### What It Does
+When clicking "Export Report", the system will generate a proper `.xlsx` Excel file (instead of the current CSV) containing the analytics table data as currently filtered (by user/type view, date range, etc.), with formatting for headers and a totals row.
 
-### Changes by File
+### Technical Approach
 
-| File | Line(s) | Change |
-|------|---------|--------|
-| **src/pages/Tasks.tsx** | 41 | Sidebar label: `"Tasks"` to `"Workflows"` |
-| **src/pages/Tasks.tsx** | 246 | Search placeholder: `"Search tasks..."` to `"Search workflows..."` |
-| **src/pages/Tasks.tsx** | 264 | Button text: `New Task` to `New Workflow` |
-| **src/pages/Tasks.tsx** | 299 | Pagination text: `"of {n} tasks"` to `"of {n} workflows"` |
-| **src/components/layout/AppLayout.tsx** | 25 | Sidebar label: `"Tasks"` to `"Workflows"` |
-| **src/components/tasks/TaskDashboard.tsx** | 240 | Page heading: `"Tasks Dashboard"` to `"Workflows Dashboard"` |
-| **src/components/tasks/TaskDashboard.tsx** | 241 | Subheading: `"task performance"` to `"workflow performance"` |
-| **src/components/tasks/TaskDashboard.tsx** | 349 | Card title: `"Tasks by Status"` to `"Workflows by Status"` |
-| **src/components/tasks/TaskDashboard.tsx** | 358 | Card title: `"Tasks by Type"` to `"Workflows by Type"` |
-| **src/components/tasks/TaskDashboard.tsx** | 367 | Card title: `"Tasks by Priority"` to `"Workflows by Priority"` |
-| **src/components/tasks/TaskAnalyticsTab.tsx** | 524 | Group label: `"Task Type"` to `"Workflow Type"` |
-| **src/components/tasks/TaskAnalyticsTab.tsx** | 580 | Tab trigger: `"By Task Type"` to `"By Workflow Type"` |
-| **src/components/tasks/TaskAnalyticsTab.tsx** | 712 | Card title: `"Task Analytics"` / `"By Task Type"` to `"Workflow Analytics"` / `"By Workflow Type"` |
-| **src/components/tasks/TaskAnalyticsTab.tsx** | 806-812 | Section heading: `"Task Type Standards"` to `"Workflow Type Standards"` |
-| **src/components/tasks/TaskAnalyticsTab.tsx** | 825 | Table header: `"Task Type"` to `"Workflow Type"` |
-| **src/components/tasks/TaskKanbanBoard.tsx** | 138 | Empty state: `"No tasks"` to `"No workflows"` |
-| **src/components/tasks/TaskTable.tsx** | 116 | Empty state: `"No tasks found..."` to `"No workflows found..."` |
-| **src/components/tasks/CreateTaskDialog.tsx** | 141 | Dialog title: `"Create New Task"` to `"Create New Workflow"` |
-| **src/components/tasks/CreateTaskDialog.tsx** | 152 | Placeholder: `"Task title..."` to `"Workflow title..."` |
-| **src/components/tasks/CreateTaskDialog.tsx** | 163 | Placeholder: `"Task description..."` to `"Workflow description..."` |
-| **src/components/tasks/CreateTaskDialog.tsx** | ~325 | Submit button: `"Create Task"` to `"Create Workflow"` |
+**Install dependency**: Add the `xlsx` (SheetJS) package -- a lightweight, zero-dependency library for generating Excel files in the browser.
 
-### What stays the same
+**Replace `exportToCsv` with `exportToExcel`** in `src/components/tasks/TaskAnalyticsTab.tsx`:
 
-- All component filenames, variable names, database columns, and internal identifiers remain as-is (no refactor of code internals)
-- The URL route stays `/tasks`
-- The `currentPage="tasks"` prop for GlobalAIChat is unchanged
+| Step | Detail |
+|------|--------|
+| 1. Import `xlsx` | `import * as XLSX from "xlsx"` |
+| 2. Replace export function | Build a worksheet from the same `rows` array + totals row, with proper column headers matching the table ("Assigned To" or "Workflow Type", "Due Items", "Overdue", etc.) |
+| 3. Column widths | Set reasonable auto-widths so the spreadsheet is readable on open |
+| 4. File naming | `workflow-analytics-by-user-2026-02-17.xlsx` (matches current CSV naming pattern but with `.xlsx`) |
+| 5. Download trigger | Use `XLSX.writeFile()` to trigger browser download |
+
+**Data included in export:**
+- All currently visible rows (respecting the "By User" or "By Workflow Type" grouping)
+- For the "By User" view: adviser group headers with their members indented beneath (flattened into rows)
+- A totals row at the bottom
+- Columns: Group label, Due Items, Overdue, Due Today, Due Tomorrow, Due This Week, Due Next Week, Completed in Period, Completed Prior Period, Utilisation %, SLA Adherence %
+
+### Files Changed
+
+| File | Change |
+|------|--------|
+| `package.json` | Add `xlsx` dependency |
+| `src/components/tasks/TaskAnalyticsTab.tsx` | Replace `exportToCsv` function with `exportToExcel` using the `xlsx` library; update the button's onClick |
 
