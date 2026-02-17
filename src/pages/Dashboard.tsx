@@ -340,6 +340,26 @@ const Dashboard = () => {
                   </Button>
                 </CardHeader>
                 <CardContent className="px-4 pb-4">
+                  {(() => {
+                    const providerGrowth = filteredRegionalData.providers.reduce((acc, p) => {
+                      const g = aumGrowthPeriod === '1m' ? p.growth1m : aumGrowthPeriod === '6m' ? p.growth6m : p.growthYtd;
+                      return acc + (g ?? 0);
+                    }, 0) / filteredRegionalData.providers.length;
+                    const isUp = providerGrowth >= 0;
+                    const sparkPts = isUp ? "0,16 12,12 24,14 36,8 48,10 60,2" : "0,4 12,8 24,6 36,12 48,10 60,18";
+                    return (
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-sm font-semibold">{filteredRegionalData.currencySymbol} {filteredRegionalData.totalAUM}</span>
+                        <svg width="60" height="20" className="overflow-visible flex-shrink-0">
+                          <polyline points={sparkPts} fill="none" stroke={isUp ? "hsl(var(--chart-2))" : "hsl(var(--destructive))"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        <span className={`text-xs font-medium flex items-center gap-0.5 ${isUp ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                          {isUp ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                          {isUp ? '+' : ''}{providerGrowth.toFixed(1)}%
+                        </span>
+                      </div>
+                    );
+                  })()}
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="text-muted-foreground text-xs">
@@ -349,11 +369,26 @@ const Dashboard = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredRegionalData.providers.map(provider => <tr key={provider.name} className="border-t border-border">
-                          <td className="py-2">{provider.name}</td>
-                          <td className="py-2 text-right text-muted-foreground">{provider.bookPercent}</td>
-                          <td className="py-2 text-right">{provider.value}</td>
-                        </tr>)}
+                      {filteredRegionalData.providers.map(provider => {
+                        const g = aumGrowthPeriod === '1m' ? provider.growth1m : aumGrowthPeriod === '6m' ? provider.growth6m : provider.growthYtd;
+                        const pos = g !== undefined && g >= 0;
+                        return (
+                          <tr key={provider.name} className="border-t border-border">
+                            <td className="py-2">{provider.name}</td>
+                            <td className="py-2 text-right text-muted-foreground">{provider.bookPercent}</td>
+                            <td className="py-2 text-right">
+                              <div className="flex items-center justify-end gap-1">
+                                {provider.value}
+                                {g !== undefined && (
+                                  <span className={`text-[10px] font-medium ${pos ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                                    {pos ? '+' : ''}{g.toFixed(1)}%
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </CardContent>
@@ -372,34 +407,66 @@ const Dashboard = () => {
                   </Button>
                 </CardHeader>
                 <CardContent className="px-4 pb-4">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="text-muted-foreground text-xs">
-                        <th className="text-left pb-2 font-normal">Investor</th>
-                        <th className="text-right pb-2 font-normal">Book %</th>
-                        <th className="text-right pb-2 font-normal">Value</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {[...filteredRegionalData.topAccounts]
-                        .sort((a, b) => {
-                          const parseValue = (v: string) => parseFloat(v.replace(/[^0-9.-]/g, ''));
-                          return parseValue(b.value) - parseValue(a.value);
-                        })
-                        .slice(0, 5)
-                        .map(account => (
-                          <tr 
-                            key={account.investor} 
-                            className="border-t border-border hover:bg-muted/50 cursor-pointer"
-                            onClick={() => handleClientClick(account.investor)}
-                          >
-                            <td className="py-2 max-w-[120px] truncate" title={account.investor}>{account.investor}</td>
-                            <td className="py-2 text-right text-muted-foreground whitespace-nowrap">{account.bookPercent}</td>
-                            <td className="py-2 text-right whitespace-nowrap">{account.value}</td>
-                          </tr>
-                        ))}
-                    </tbody>
-                  </table>
+                  {(() => {
+                    const top5 = [...filteredRegionalData.topAccounts]
+                      .sort((a, b) => parseFloat(b.value.replace(/[^0-9.-]/g, '')) - parseFloat(a.value.replace(/[^0-9.-]/g, '')))
+                      .slice(0, 5);
+                    const top5Growth = top5.reduce((acc, a) => {
+                      const g = aumGrowthPeriod === '1m' ? a.growth1m : aumGrowthPeriod === '6m' ? a.growth6m : a.growthYtd;
+                      return acc + (g ?? 0);
+                    }, 0) / top5.length;
+                    const isUp = top5Growth >= 0;
+                    const sparkPts = isUp ? "0,16 12,12 24,14 36,8 48,10 60,2" : "0,4 12,8 24,6 36,12 48,10 60,18";
+                    return (
+                      <>
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-sm font-semibold">Top 5</span>
+                          <svg width="60" height="20" className="overflow-visible flex-shrink-0">
+                            <polyline points={sparkPts} fill="none" stroke={isUp ? "hsl(var(--chart-2))" : "hsl(var(--destructive))"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                          <span className={`text-xs font-medium flex items-center gap-0.5 ${isUp ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                            {isUp ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                            {isUp ? '+' : ''}{top5Growth.toFixed(1)}%
+                          </span>
+                        </div>
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="text-muted-foreground text-xs">
+                              <th className="text-left pb-2 font-normal">Investor</th>
+                              <th className="text-right pb-2 font-normal">Book %</th>
+                              <th className="text-right pb-2 font-normal">Value</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {top5.map(account => {
+                              const g = aumGrowthPeriod === '1m' ? account.growth1m : aumGrowthPeriod === '6m' ? account.growth6m : account.growthYtd;
+                              const pos = g !== undefined && g >= 0;
+                              return (
+                                <tr 
+                                  key={account.investor} 
+                                  className="border-t border-border hover:bg-muted/50 cursor-pointer"
+                                  onClick={() => handleClientClick(account.investor)}
+                                >
+                                  <td className="py-2 max-w-[120px] truncate" title={account.investor}>{account.investor}</td>
+                                  <td className="py-2 text-right text-muted-foreground whitespace-nowrap">{account.bookPercent}</td>
+                                  <td className="py-2 text-right whitespace-nowrap">
+                                    <div className="flex items-center justify-end gap-1">
+                                      {account.value}
+                                      {g !== undefined && (
+                                        <span className={`text-[10px] font-medium ${pos ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                                          {pos ? '+' : ''}{g.toFixed(1)}%
+                                        </span>
+                                      )}
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </>
+                    );
+                  })()}
                 </CardContent>
               </Card>
             </div>}
@@ -574,6 +641,26 @@ const Dashboard = () => {
                   </Button>
                 </CardHeader>
                 <CardContent className="px-4 pb-4">
+                  {(() => {
+                    const cbvGrowth = filteredRegionalData.clientsByValue.reduce((acc, r) => {
+                      const g = aumGrowthPeriod === '1m' ? r.growth1m : aumGrowthPeriod === '6m' ? r.growth6m : r.growthYtd;
+                      return acc + (g ?? 0);
+                    }, 0) / filteredRegionalData.clientsByValue.length;
+                    const isUp = cbvGrowth >= 0;
+                    const sparkPts = isUp ? "0,16 12,12 24,14 36,8 48,10 60,2" : "0,4 12,8 24,6 36,12 48,10 60,18";
+                    return (
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-sm font-semibold">{filteredRegionalData.currencySymbol} {filteredRegionalData.totalAUM}</span>
+                        <svg width="60" height="20" className="overflow-visible flex-shrink-0">
+                          <polyline points={sparkPts} fill="none" stroke={isUp ? "hsl(var(--chart-2))" : "hsl(var(--destructive))"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        <span className={`text-xs font-medium flex items-center gap-0.5 ${isUp ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                          {isUp ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                          {isUp ? '+' : ''}{cbvGrowth.toFixed(1)}%
+                        </span>
+                      </div>
+                    );
+                  })()}
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="text-muted-foreground text-xs">
@@ -583,11 +670,26 @@ const Dashboard = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredRegionalData.clientsByValue.map(row => <tr key={row.range} className="border-t border-border">
-                          <td className="py-2">{row.range}</td>
-                          <td className="py-2 text-right">{row.value}</td>
-                          <td className="py-2 text-right text-muted-foreground">{row.investors}</td>
-                        </tr>)}
+                      {filteredRegionalData.clientsByValue.map(row => {
+                        const g = aumGrowthPeriod === '1m' ? row.growth1m : aumGrowthPeriod === '6m' ? row.growth6m : row.growthYtd;
+                        const pos = g !== undefined && g >= 0;
+                        return (
+                          <tr key={row.range} className="border-t border-border">
+                            <td className="py-2">{row.range}</td>
+                            <td className="py-2 text-right">{row.value}</td>
+                            <td className="py-2 text-right text-muted-foreground">
+                              <div className="flex items-center justify-end gap-1">
+                                {row.investors}
+                                {g !== undefined && (
+                                  <span className={`text-[10px] font-medium ${pos ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                                    {pos ? '+' : ''}{g.toFixed(1)}%
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </CardContent>
