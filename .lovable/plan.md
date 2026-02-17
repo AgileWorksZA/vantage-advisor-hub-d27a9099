@@ -1,23 +1,31 @@
 
 
-## Fix Portfolio Widget Size and Rename to "Portfolio Overview"
-
-### Problem
-The Portfolio Analysis widget has a grid height of `h: 3` (360px), which is too small for its content (performance chart, fee comparison, asset allocation, and switch button). The content overflows or gets clipped. Additionally, the title needs changing from "Portfolio Analysis" to "Portfolio Overview".
+## Remove "Switch to Model Portfolio" Button, Reduce Height, and Rename "Model" to "TAMP" for US
 
 ### Changes
 
-#### 1. `src/pages/Dashboard.tsx`
-- **Line 67**: Change grid layout height from `h: 3` to `h: 6` (720px) so all content fits without overflow
-- **Line 79**: Update widget label from `'Portfolio Analysis'` to `'Portfolio Overview'`
+#### 1. `src/components/dashboard/PortfolioAnalysisWidget.tsx`
 
-#### 2. `src/components/dashboard/PortfolioAnalysisWidget.tsx`
-- **Line 84**: Change the CardTitle text from `"Portfolio Analysis"` to `"Portfolio Overview"`
+- **Remove the "Switch to Model Portfolio" button** (lines 235-241): Delete the entire `animated-border-button` div at the bottom of the widget
+- **Remove unused `BarChart3` import** from lucide-react (line 4)
+- **Accept a `region` prop** to know when US is selected
+- **Rename "Model" to "TAMP" when region is US**: Apply throughout the widget in these locations:
+  - Chart legend (line 172): "Model" becomes "TAMP"
+  - Fee comparison label (line 187): "Model" becomes "TAMP"
+  - Asset allocation legend (line 230): "Model" becomes "TAMP"
+  - Hover tooltip text (line 146): "Model:" becomes "TAMP:"
 
-### Files
+#### 2. `src/pages/Dashboard.tsx`
 
-| File | Change |
-|------|--------|
-| `src/pages/Dashboard.tsx` | Update grid height `h: 3` to `h: 6`, rename label |
-| `src/components/dashboard/PortfolioAnalysisWidget.tsx` | Rename title text |
+- **Reduce grid height** back to `h: 3` (line 67) to match other widgets
+- **Pass region prop** to `PortfolioAnalysisWidget` (line 761): `<PortfolioAnalysisWidget region={selectedRegion} />`
+
+### Technical Details
+
+The component will accept an optional `region` prop typed as `string`. A simple conditional `const modelLabel = region === 'US' ? 'TAMP' : 'Model'` will be used to swap the label everywhere "Model" appears in the widget.
+
+| File | Changes |
+|------|---------|
+| `src/components/dashboard/PortfolioAnalysisWidget.tsx` | Remove button, add region prop, conditionally rename Model to TAMP |
+| `src/pages/Dashboard.tsx` | Change `h: 6` to `h: 3`, pass `region` prop |
 
