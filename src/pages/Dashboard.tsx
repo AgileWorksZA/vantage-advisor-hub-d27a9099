@@ -417,10 +417,29 @@ const Dashboard = () => {
                   </Button>
                 </CardHeader>
                 <CardContent className="px-4 pb-4">
-                  <p className="text-xl font-semibold mb-2">{filteredRegionalData.currencySymbol} {filteredRegionalData.totalAUM}</p>
-                  <div className="h-32">
+                  {(() => {
+                    const totalGrowth = filteredRegionalData.products.reduce((acc, p) => {
+                      const g = aumGrowthPeriod === '1m' ? p.growth1m : aumGrowthPeriod === '6m' ? p.growth6m : p.growthYtd;
+                      return acc + (g ?? 0);
+                    }, 0) / filteredRegionalData.products.length;
+                    const isUp = totalGrowth >= 0;
+                    const sparkPoints = isUp ? "0,16 12,12 24,14 36,8 48,10 60,2" : "0,4 12,8 24,6 36,12 48,10 60,18";
+                    return (
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xl font-semibold">{filteredRegionalData.currencySymbol} {filteredRegionalData.totalAUM}</span>
+                        <svg width="60" height="20" className="overflow-visible flex-shrink-0">
+                          <polyline points={sparkPoints} fill="none" stroke={isUp ? "hsl(var(--chart-2))" : "hsl(var(--destructive))"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        <span className={`text-xs font-medium flex items-center gap-0.5 ${isUp ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                          {isUp ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                          {isUp ? '+' : ''}{totalGrowth.toFixed(1)}%
+                        </span>
+                      </div>
+                    );
+                  })()}
+                  <div className="h-44">
                     <EChartsWrapper
-                      height={128}
+                      height={176}
                       option={{
                         tooltip: {
                           trigger: 'item',
@@ -428,7 +447,7 @@ const Dashboard = () => {
                         },
                         series: [{
                           type: 'pie',
-                          radius: ['45%', '75%'],
+                          radius: ['50%', '80%'],
                           center: ['50%', '50%'],
                           data: filteredRegionalData.products.map(p => ({
                             name: p.name,
@@ -451,7 +470,7 @@ const Dashboard = () => {
                       }}
                     />
                   </div>
-                  <div className="flex items-center justify-center gap-1 mt-3 mb-2">
+                  <div className="flex items-center justify-center gap-1 mt-1 mb-2">
                     {(['1m', '6m', 'ytd'] as const).map(period => (
                       <button
                         key={period}
