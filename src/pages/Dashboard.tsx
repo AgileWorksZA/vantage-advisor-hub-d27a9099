@@ -402,13 +402,13 @@ const Dashboard = () => {
                     <GripVertical className="w-4 h-4 text-muted-foreground" />
                     <CardTitle className="text-sm font-medium">Top 5 Accounts</CardTitle>
                   </div>
-                  <Button variant="ghost" size="icon" className="h-6 w-6">
-                    <X className="w-4 h-4" />
-                  </Button>
-                </CardHeader>
-                <CardContent className="px-4 pb-4">
-                  {(() => {
-                    const top5 = [...filteredRegionalData.topAccounts]
+                   <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleToggleWidget('top-accounts', false)}>
+                     <X className="w-4 h-4" />
+                   </Button>
+                 </CardHeader>
+                 <CardContent className="px-4 pb-4">
+                   {(() => {
+                     const top5 = [...filteredRegionalData.topAccounts]
                       .sort((a, b) => parseFloat(b.value.replace(/[^0-9.-]/g, '')) - parseFloat(a.value.replace(/[^0-9.-]/g, '')))
                       .slice(0, 5);
                     const top5Growth = top5.reduce((acc, a) => {
@@ -582,15 +582,15 @@ const Dashboard = () => {
                     <GripVertical className="w-4 h-4 text-muted-foreground" />
                     <CardTitle className="text-sm font-medium">Birthdays</CardTitle>
                   </div>
-                  <Button variant="ghost" size="icon" className="h-6 w-6">
-                    <X className="w-4 h-4" />
-                  </Button>
-                </CardHeader>
-                <CardContent className="px-4 pb-4">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="text-muted-foreground text-xs">
-                        <th className="text-left pb-2 font-normal">Name</th>
+                   <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleToggleWidget('birthdays', false)}>
+                     <X className="w-4 h-4" />
+                   </Button>
+                 </CardHeader>
+                 <CardContent className="px-4 pb-4">
+                   <table className="w-full text-sm">
+                     <thead>
+                       <tr className="text-muted-foreground text-xs">
+                         <th className="text-left pb-2 font-normal">Name</th>
                         <th className="text-right pb-2 font-normal">Date</th>
                         <th className="text-right pb-2 font-normal">Age</th>
                       </tr>
@@ -636,7 +636,7 @@ const Dashboard = () => {
                     <GripVertical className="w-4 h-4 text-muted-foreground" />
                     <CardTitle className="text-sm font-medium">Clients by Value</CardTitle>
                   </div>
-                  <Button variant="ghost" size="icon" className="h-6 w-6">
+                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleToggleWidget('clients-value', false)}>
                     <X className="w-4 h-4" />
                   </Button>
                 </CardHeader>
@@ -714,9 +714,9 @@ const Dashboard = () => {
                         <SelectItem value="voluntary">Voluntary</SelectItem>
                       </SelectContent>
                     </Select>
-                    <Button variant="ghost" size="icon" className="h-6 w-6">
-                      <X className="w-4 h-4" />
-                    </Button>
+                     <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleToggleWidget('corporate-actions', false)}>
+                       <X className="w-4 h-4" />
+                     </Button>
                   </div>
                 </CardHeader>
                 <CardContent className="px-4 pb-4">
@@ -748,17 +748,17 @@ const Dashboard = () => {
 
             {/* Account Onboarding Progress */}
             {isWidgetVisible('onboarding-progress') && <div key="onboarding-progress">
-              <OnboardingProgressWidget selectedAdvisorNames={selectedAdvisorNames} />
+              <OnboardingProgressWidget selectedAdvisorNames={selectedAdvisorNames} onClose={() => handleToggleWidget('onboarding-progress', false)} />
             </div>}
 
             {/* Client Opportunity Status */}
             {isWidgetVisible('client-opportunity-status') && <div key="client-opportunity-status">
-              <ClientOpportunityStatusWidget />
+              <ClientOpportunityStatusWidget onClose={() => handleToggleWidget('client-opportunity-status', false)} />
             </div>}
 
             {/* Portfolio Analysis */}
             {isWidgetVisible('portfolio-analysis') && <div key="portfolio-analysis">
-              <PortfolioAnalysisWidget region={selectedRegion} selectedAdvisors={selectedAdvisors} />
+              <PortfolioAnalysisWidget region={selectedRegion} selectedAdvisors={selectedAdvisors} onClose={() => handleToggleWidget('portfolio-analysis', false)} />
             </div>}
 
           </DraggableWidgetGrid>

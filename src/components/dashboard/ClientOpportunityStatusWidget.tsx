@@ -13,7 +13,11 @@ const PRIORITY_COLUMNS: { key: Priority; label: string; dotClass: string }[] = [
   { key: "routine", label: "Routine", dotClass: "bg-emerald-500" },
 ];
 
-export function ClientOpportunityStatusWidget() {
+interface ClientOpportunityStatusWidgetProps {
+  onClose?: () => void;
+}
+
+export function ClientOpportunityStatusWidget({ onClose }: ClientOpportunityStatusWidgetProps) {
   const { filteredRegionalData } = useRegion();
   const navigate = useNavigate();
   const currencySymbol = filteredRegionalData?.currencySymbol || "R";
@@ -44,7 +48,7 @@ export function ClientOpportunityStatusWidget() {
           <GripVertical className="w-4 h-4 text-muted-foreground" />
           <CardTitle className="text-sm font-medium">Client Opportunities</CardTitle>
         </div>
-        <Button variant="ghost" size="icon" className="h-6 w-6">
+        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onClose}>
           <X className="w-4 h-4" />
         </Button>
       </CardHeader>
