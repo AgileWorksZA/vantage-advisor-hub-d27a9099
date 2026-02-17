@@ -1,63 +1,47 @@
 
 
-## Auto-Reflow Widgets to Fill Left-to-Right, Top-to-Bottom
+## Position Gear Icon Above Rightmost Widget
 
 ### Problem
-When the screen width changes (or widgets are hidden), widgets keep their saved x/y positions, leaving gaps. The current code only clamps positions but doesn't re-pack widgets into a dense left-to-right, top-to-bottom flow.
+The settings gear icon is positioned relative to the full container width (via `justify-between` or `ml-auto`), but the widget grid has a fixed `exactGridWidth` that is often narrower than the container. This means the gear doesn't align with the right edge of the rightmost widget.
 
 ### Solution
-Replace the simple `adjustedLayout` clamping logic with a full reflow algorithm that re-assigns x/y positions sequentially, packing widgets densely into rows based on the current column count.
+Pass the gear (settings dialog) into the `DraggableWidgetGrid` component as a `toolbar` prop. The grid already calculates `exactGridWidth`, so it can render the toolbar right-aligned within that exact width -- guaranteeing the gear always sits directly above the rightmost widget's X button.
 
-### Single File Change: `src/components/widgets/DraggableWidgetGrid.tsx`
+### Changes
 
-**Replace lines 89-94** (the `adjustedLayout` logic) with a reflow function:
-
-```typescript
-// Reflow: pack widgets left-to-right, top-to-bottom
-const reflowLayout = (items: WidgetLayout[], cols: number): WidgetLayout[] => {
-  // Sort by original position (top-to-bottom, left-to-right) to preserve order
-  const sorted = [...items].sort((a, b) => a.y !== b.y ? a.y - b.y : a.x - b.x);
-  
-  // Track the height filled in each column
-  const colHeights = new Array(cols).fill(0);
-  
-  return sorted.map(item => {
-    const w = Math.min(item.w, cols);
-    
-    // Find the first column position where this widget fits
-    let bestCol = 0;
-    let bestY = Infinity;
-    
-    for (let col = 0; col <= cols - w; col++) {
-      // The widget spans columns col..col+w-1
-      // It must start at the max height of those columns
-      const startY = Math.max(...colHeights.slice(col, col + w));
-      if (startY < bestY) {
-        bestY = startY;
-        bestCol = col;
-      }
-    }
-    
-    // Place widget
-    const placed = { ...item, x: bestCol, y: bestY, w };
-    
-    // Update column heights
-    for (let c = bestCol; c < bestCol + w; c++) {
-      colHeights[c] = bestY + item.h;
-    }
-    
-    return placed;
-  });
-};
-
-const adjustedLayout = reflowLayout(layout, visibleCols);
+**1. `src/components/widgets/DraggableWidgetGrid.tsx`**
+- Add an optional `toolbar?: ReactNode` prop
+- Render it above the grid, right-aligned, constrained to `exactGridWidth`
+- Structure:
+```tsx
+<div ref={containerRef} className="w-full flex justify-start">
+  <div style={{ width: exactGridWidth }}>
+    {toolbar && (
+      <div className="flex justify-end mb-2">
+        {toolbar}
+      </div>
+    )}
+    <Responsive ...>
+      {children}
+    </Responsive>
+  </div>
+</div>
 ```
 
-This algorithm:
-- Sorts widgets by their current position to maintain relative order
-- Greedily places each widget at the earliest available row, leftmost column
-- Handles widgets of different widths correctly
-- Runs on every render when `visibleCols` changes, so expanding the screen automatically pulls widgets up from lower rows
-- After drag-stop, the saved layout gets reflowed on next render, preventing gaps
+**2. `src/pages/Dashboard.tsx`**
+- Remove the `WidgetSettingsDialog` from the header row (line 308-312)
+- Pass it as `toolbar` prop to `DraggableWidgetGrid`
 
-No other files need changes.
+**3. `src/components/client-detail/ClientDashboardTab.tsx`**
+- Remove the `WidgetSettingsDialog` from the toolbar area (lines 373-379)
+- Pass it as `toolbar` prop to `DraggableWidgetGrid`
+
+### Files
+
+| File | Change |
+|------|--------|
+| `src/components/widgets/DraggableWidgetGrid.tsx` | Add `toolbar` prop, render it above grid at `exactGridWidth` |
+| `src/pages/Dashboard.tsx` | Move `WidgetSettingsDialog` into grid's `toolbar` prop |
+| `src/components/client-detail/ClientDashboardTab.tsx` | Move `WidgetSettingsDialog` into grid's `toolbar` prop |
+
