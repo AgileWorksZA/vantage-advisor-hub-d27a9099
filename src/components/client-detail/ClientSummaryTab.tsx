@@ -136,7 +136,7 @@ const ClientSummaryTab = ({ client, clientId, onShowMoreActivity, onTabChange }:
   const activeTasks = householdView ? householdData.tasks : prepData.tasks;
   const activeDocs = householdView ? householdData.documents : prepData.documents;
 
-  const gapOpportunities = useMemo(() => buildGapOpportunities(activeProducts, householdView), [activeProducts, householdView]);
+  const gapOpportunities = useMemo(() => buildGapOpportunities(activeProducts, householdView, clientId), [activeProducts, householdView, clientId]);
   const oppsCount = getOpportunitiesCount(activeOpps, activeProducts, householdView);
   const outstandingCount = activeTasks.length + activeDocs.length;
 

@@ -53,7 +53,7 @@ function getClientDotClass(client: ClientListItem): string {
     ...clientData.platformCashAccounts.map(p => ({ category: "Cash", currentValue: p.amountValue, productName: p.name } as any)),
     ...clientData.riskProducts.map(p => ({ category: "Risk/Insurance", currentValue: 0, productName: p.holdingName } as any)),
   ];
-  const gaps = buildGapOpportunities(products);
+  const gaps = buildGapOpportunities(products, false, client.id);
   const types = gaps.map(g => g.type);
   if (types.some(t => getOpportunityPriority(t) === "urgent")) return "bg-red-500";
   if (types.some(t => getOpportunityPriority(t) === "important")) return "bg-orange-500";
