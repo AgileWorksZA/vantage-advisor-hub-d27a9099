@@ -16,7 +16,7 @@ import {
   Calendar, Gift, FileCheck, TrendingUp, TrendingDown, ArrowRight,
   Users, AlertTriangle, Clock, CheckCircle2, Target, Zap,
   ArrowRightLeft, Layers, Building2, Briefcase, Landmark, Receipt, Banknote,
-  GripVertical,
+  GripVertical, X,
 } from "lucide-react";
 import {
   Table,
@@ -402,9 +402,10 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
               <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
                 <div className="flex items-center gap-2">
                   <GripVertical className="w-4 h-4 text-muted-foreground" />
-                  <CardTitle className="text-sm font-medium">Asset Allocation</CardTitle>
-                </div>
-              </CardHeader>
+                   <CardTitle className="text-sm font-medium">Asset Allocation</CardTitle>
+                 </div>
+                 <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleToggleWidget('asset-allocation', false)}><X className="w-4 h-4" /></Button>
+               </CardHeader>
               <CardContent className="pt-0">
                 <EChartsWrapper option={assetAllocationOption} height={180} />
                 <Button variant="link" className="p-0 h-auto text-xs text-primary" onClick={() => onTabChange?.("performance")}>
@@ -422,9 +423,10 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
               <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
                 <div className="flex items-center gap-2">
                   <GripVertical className="w-4 h-4 text-muted-foreground" />
-                  <CardTitle className="text-sm font-medium">Change in Valuation</CardTitle>
-                </div>
-              </CardHeader>
+                   <CardTitle className="text-sm font-medium">Change in Valuation</CardTitle>
+                 </div>
+                 <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleToggleWidget('valuation-change', false)}><X className="w-4 h-4" /></Button>
+               </CardHeader>
               <CardContent className="pt-1 space-y-2">
                 {[
                   { label: "Starting Value", value: valuationData.startingValue },
@@ -458,9 +460,10 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
               <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
                 <div className="flex items-center gap-2">
                   <GripVertical className="w-4 h-4 text-muted-foreground" />
-                  <CardTitle className="text-sm font-medium">Geographic Diversification</CardTitle>
-                </div>
-              </CardHeader>
+                   <CardTitle className="text-sm font-medium">Geographic Diversification</CardTitle>
+                 </div>
+                 <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleToggleWidget('geo-diversification', false)}><X className="w-4 h-4" /></Button>
+               </CardHeader>
               <CardContent className="pt-0">
                 <EChartsWrapper option={geoOption} height={180} />
                 <Button variant="link" className="p-0 h-auto text-xs text-primary" onClick={() => onTabChange?.("360-view")}>
@@ -479,10 +482,13 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
                 <div className="flex items-center gap-2">
                   <GripVertical className="w-4 h-4 text-muted-foreground" />
                   <Target className="h-4 w-4 text-muted-foreground" />
-                  <CardTitle className="text-sm font-medium">Top Opportunities</CardTitle>
-                </div>
-                <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-primary text-primary">{opportunities.length}</Badge>
-              </CardHeader>
+                   <CardTitle className="text-sm font-medium">Top Opportunities</CardTitle>
+                 </div>
+                 <div className="flex items-center gap-1">
+                   <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-primary text-primary">{opportunities.length}</Badge>
+                   <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleToggleWidget('top-opportunities', false)}><X className="w-4 h-4" /></Button>
+                 </div>
+               </CardHeader>
               <CardContent className="pt-0">
                 <div className="space-y-0 max-h-[220px] overflow-auto">
                   {opportunities.slice(0, 5).map(opp => {
@@ -516,9 +522,10 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
               <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
                 <div className="flex items-center gap-2">
                   <GripVertical className="w-4 h-4 text-muted-foreground" />
-                  <CardTitle className="text-sm font-medium">Opportunity Breakdown</CardTitle>
-                </div>
-              </CardHeader>
+                   <CardTitle className="text-sm font-medium">Opportunity Breakdown</CardTitle>
+                 </div>
+                 <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleToggleWidget('opp-breakdown', false)}><X className="w-4 h-4" /></Button>
+               </CardHeader>
               <CardContent className="pt-0">
                 <EChartsWrapper option={oppBreakdownOption} height={200} />
               </CardContent>
@@ -534,9 +541,10 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
                 <div className="flex items-center gap-2">
                   <GripVertical className="w-4 h-4 text-muted-foreground" />
                   <Zap className="h-4 w-4 text-muted-foreground" />
-                  <CardTitle className="text-sm font-medium">Opportunity Value Summary</CardTitle>
-                </div>
-              </CardHeader>
+                   <CardTitle className="text-sm font-medium">Opportunity Value Summary</CardTitle>
+                 </div>
+                 <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleToggleWidget('opp-value-summary', false)}><X className="w-4 h-4" /></Button>
+               </CardHeader>
               <CardContent className="pt-1 space-y-3">
                 <div className="text-center py-2">
                   <p className="text-2xl font-bold text-primary">{formatTotal(summaryMetrics.totalValue, currencySymbol)}</p>
@@ -576,9 +584,10 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
               <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
                 <div className="flex items-center gap-2">
                   <GripVertical className="w-4 h-4 text-muted-foreground" />
-                  <CardTitle className="text-sm font-medium">Action Priority</CardTitle>
-                </div>
-              </CardHeader>
+                   <CardTitle className="text-sm font-medium">Action Priority</CardTitle>
+                 </div>
+                 <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleToggleWidget('action-priority', false)}><X className="w-4 h-4" /></Button>
+               </CardHeader>
               <CardContent className="pt-0 space-y-3">
                 {([
                   { key: "urgent" as const, label: "Urgent", icon: <AlertTriangle className="h-3.5 w-3.5 text-red-500" />, items: priorityGroups.urgent, dotColor: "bg-red-500" },
@@ -620,9 +629,10 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
               <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
                 <div className="flex items-center gap-2">
                   <GripVertical className="w-4 h-4 text-muted-foreground" />
-                  <CardTitle className="text-sm font-medium">Key Dates & Milestones</CardTitle>
-                </div>
-              </CardHeader>
+                   <CardTitle className="text-sm font-medium">Key Dates & Milestones</CardTitle>
+                 </div>
+                 <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleToggleWidget('key-dates', false)}><X className="w-4 h-4" /></Button>
+               </CardHeader>
               <CardContent className="pt-0">
                 <div className="space-y-2">
                   {keyDates.map((d, i) => (
@@ -652,9 +662,10 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
               <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
                 <div className="flex items-center gap-2">
                   <GripVertical className="w-4 h-4 text-muted-foreground" />
-                  <CardTitle className="text-sm font-medium">Current Advisor & Accounts</CardTitle>
-                </div>
-              </CardHeader>
+                   <CardTitle className="text-sm font-medium">Current Advisor & Accounts</CardTitle>
+                 </div>
+                 <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleToggleWidget('advisor-accounts', false)}><X className="w-4 h-4" /></Button>
+               </CardHeader>
               <CardContent className="px-4 pb-4">
                 <Table>
                   <TableHeader>
@@ -693,9 +704,10 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
               <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
                 <div className="flex items-center gap-2">
                   <GripVertical className="w-4 h-4 text-muted-foreground" />
-                  <CardTitle className="text-sm font-medium">Outstanding Documents</CardTitle>
-                </div>
-              </CardHeader>
+                   <CardTitle className="text-sm font-medium">Outstanding Documents</CardTitle>
+                 </div>
+                 <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleToggleWidget('outstanding-docs', false)}><X className="w-4 h-4" /></Button>
+               </CardHeader>
               <CardContent className="px-4 pb-4">
                 <Table>
                   <TableHeader>

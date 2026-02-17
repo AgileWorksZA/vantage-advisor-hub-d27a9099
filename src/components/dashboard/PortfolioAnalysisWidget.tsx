@@ -9,9 +9,10 @@ const periods: Array<'6m' | '1y' | '3y' | '5y'> = ['6m', '1y', '3y', '5y'];
 interface PortfolioAnalysisWidgetProps {
   region?: string;
   selectedAdvisors?: string[];
+  onClose?: () => void;
 }
 
-export function PortfolioAnalysisWidget({ region, selectedAdvisors }: PortfolioAnalysisWidgetProps) {
+export function PortfolioAnalysisWidget({ region, selectedAdvisors, onClose }: PortfolioAnalysisWidgetProps) {
   const modelLabel = region === 'US' ? 'TAMP' : 'Model';
   const [selectedPeriod, setSelectedPeriod] = useState<'6m' | '1y' | '3y' | '5y'>('1y');
   const [hoveredPoint, setHoveredPoint] = useState<number | null>(null);
@@ -59,9 +60,9 @@ export function PortfolioAnalysisWidget({ region, selectedAdvisors }: PortfolioA
           <GripVertical className="w-4 h-4 text-muted-foreground" />
           <CardTitle className="text-sm font-medium">Portfolio Overview</CardTitle>
         </div>
-        <Button variant="ghost" size="icon" className="h-6 w-6">
-          <X className="w-4 h-4" />
-        </Button>
+          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onClose}>
+            <X className="w-4 h-4" />
+          </Button>
       </CardHeader>
       <CardContent className="px-4 pb-4">
         {/* Performance Chart */}

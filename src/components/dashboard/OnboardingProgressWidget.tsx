@@ -6,6 +6,7 @@ import { useOnboardingProgress, TimeBucket } from "@/hooks/useOnboardingProgress
 
 interface OnboardingProgressWidgetProps {
   selectedAdvisorNames: string[];
+  onClose?: () => void;
 }
 
 const TIME_BUCKET_LABELS: { key: TimeBucket; label: string }[] = [
@@ -22,7 +23,7 @@ const STATUS_COLUMNS = [
   { key: "Not Started", label: "Pending approval" },
 ];
 
-export function OnboardingProgressWidget({ selectedAdvisorNames }: OnboardingProgressWidgetProps) {
+export function OnboardingProgressWidget({ selectedAdvisorNames, onClose }: OnboardingProgressWidgetProps) {
   const navigate = useNavigate();
   const { matrix, loading } = useOnboardingProgress(selectedAdvisorNames);
 
@@ -38,7 +39,7 @@ export function OnboardingProgressWidget({ selectedAdvisorNames }: OnboardingPro
           
           <CardTitle className="text-sm font-medium">Account onboarding progress</CardTitle>
         </div>
-        <Button variant="ghost" size="icon" className="h-6 w-6">
+        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onClose}>
           <X className="w-4 h-4" />
         </Button>
       </CardHeader>
