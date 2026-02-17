@@ -33,7 +33,10 @@ import {
 } from "@/components/ui/table";
 import { MultiSelect } from "@/components/ui/multi-select";
 import { Badge } from "@/components/ui/badge";
-import { useClients } from "@/hooks/useClients";
+import { useClients, type ClientListItem } from "@/hooks/useClients";
+import { generateClient360Data } from "@/data/regional360ViewData";
+import { getOpportunityPriority } from "@/lib/opportunity-priority";
+import { buildGapOpportunities } from "@/components/client-detail/next-best-action/OpportunitiesTab";
 import { useRecentlyViewedClients } from "@/hooks/useRecentlyViewedClients";
 import AddClientDialog from "@/components/clients/AddClientDialog";
 import { AddClientChoiceDialog } from "@/components/clients/AddClientChoiceDialog";
@@ -41,6 +44,21 @@ import { FinancialPlanningWizard } from "@/components/financial-planning-workflo
 import { AppHeader } from "@/components/layout/AppHeader";
 import { useRegion } from "@/contexts/RegionContext";
 import GlobalAIChat from "@/components/ai-assistant/GlobalAIChat";
+
+function getClientDotClass(client: ClientListItem): string {
+  const clientData = generateClient360Data(client.id, client.nationality, client.countryOfIssue);
+  const products = [
+    ...clientData.onPlatformProducts.map(p => ({ category: "Investment", currentValue: p.amountValue, productName: p.product } as any)),
+    ...clientData.externalProducts.map(p => ({ category: "External Investment", currentValue: p.amountValue, productName: p.product } as any)),
+    ...clientData.platformCashAccounts.map(p => ({ category: "Cash", currentValue: p.amountValue, productName: p.name } as any)),
+    ...clientData.riskProducts.map(p => ({ category: "Risk/Insurance", currentValue: 0, productName: p.holdingName } as any)),
+  ];
+  const gaps = buildGapOpportunities(products);
+  const types = gaps.map(g => g.type);
+  if (types.some(t => getOpportunityPriority(t) === "urgent")) return "bg-red-500";
+  if (types.some(t => getOpportunityPriority(t) === "important")) return "bg-orange-500";
+  return "bg-emerald-500";
+}
 
 const profileFilterOptions = [
   { value: "Lead", label: "Lead" },
@@ -178,6 +196,7 @@ const Clients = () => {
     await supabase.auth.signOut();
     navigate("/auth");
   };
+
 
 
   // Handler for choice dialog selection
@@ -519,7 +538,12 @@ const Clients = () => {
                       className="hover:bg-muted/50 cursor-pointer"
                       onClick={() => navigate(`/clients/${client.id}`)}
                     >
-                      <TableCell className="text-sm">{client.profileState}</TableCell>
+                      <TableCell className="text-sm">
+                        <div className="flex items-center gap-1.5">
+                          <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${getClientDotClass(client)}`} />
+                          <span>{client.profileState}</span>
+                        </div>
+                      </TableCell>
                       <TableCell className="text-sm">{client.profileType}</TableCell>
                       <TableCell className="text-sm">
                         <div className="flex items-center gap-2">

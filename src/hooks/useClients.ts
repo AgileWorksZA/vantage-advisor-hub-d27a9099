@@ -78,6 +78,7 @@ export interface ClientListItem {
   language: string;
   dateCreated: string;
   countryOfIssue: string;
+  nationality: string;
   cellNumber: string;
 }
 
@@ -129,6 +130,7 @@ const transformClientToListItem = (client: Client): ClientListItem => {
     language: client.language || "",
     dateCreated: formatDate(client.created_at),
     countryOfIssue: client.country_of_issue || "",
+    nationality: client.nationality || "",
     cellNumber: client.cell_number || "",
   };
 };
