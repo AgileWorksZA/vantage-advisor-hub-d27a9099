@@ -1,53 +1,68 @@
 
 
-## Dynamic Portfolio Overview Widget Data Based on Advisor Selection
+## Wire Up X Close Buttons on All Dashboard Widgets
 
-### Overview
-Make all numbers in the Portfolio Overview widget change dynamically when advisors are selected/deselected in the advisor filter. Each advisor will have unique portfolio data, and the widget will compute blended/averaged values based on the current selection. All transitions will animate smoothly.
+### Problem
+The X buttons on adviser dashboard widgets exist but have no click handler -- clicking them does nothing. Client dashboard widgets don't have X buttons at all. Both need to hide the widget when clicked.
 
-### Data Architecture
+### Solution
 
-Create a per-advisor data map for each jurisdiction (ZA, AU, CA, GB, US) containing:
-- **Performance chart data** (all 4 periods) -- slightly varied per advisor
-- **Fee comparison** (current and model fees) -- varied per advisor
-- **Asset allocation** (equities, bonds, property, cash) -- varied per advisor
+#### 1. Adviser Dashboard -- `src/pages/Dashboard.tsx`
 
-When multiple advisors are selected, the widget will show **weighted averages** of their data. When a single advisor is selected, their exact numbers display.
+Add `onClick={() => handleToggleWidget('widget-id', false)}` to each inline widget's X button:
+- `provider-view` (line 338)
+- `top-accounts` (line 405)
+- `aum-product` (line 482)
+- `birthdays` (line 585)
+- `clients-value` (line 639)
+- `corporate-actions` (line 717)
 
-### Changes
+#### 2. Standalone Adviser Widgets -- add `onClose` prop
 
-#### 1. `src/components/dashboard/PortfolioAnalysisWidget.tsx`
+These three widgets render their own Card with X button, so they need a callback prop:
 
-- **Accept `selectedAdvisors` prop** alongside the existing `region` prop
-- **Replace static data constants** with a new function `getPortfolioData(region, selectedAdvisors)` that:
-  - Looks up each selected advisor's data from a region-keyed map
-  - Computes averaged performance lines, fees, and allocations
-- **Add CSS transitions** on the SVG paths and bar widths using `transition: all 0.5s ease` so numbers and chart lines animate when data changes
-- **Use `useMemo`** to recompute derived data when `selectedAdvisors` or `region` changes
-- Add a `key` based on advisor selection to trigger smooth re-renders
+- **`OnboardingProgressWidget`**: Add `onClose?: () => void` prop, wire X button's onClick
+- **`ClientOpportunityStatusWidget`**: Add `onClose?: () => void` prop, wire X button's onClick
+- **`PortfolioAnalysisWidget`**: Add `onClose?: () => void` prop, wire X button's onClick
 
-#### 2. `src/pages/Dashboard.tsx`
+Then in `Dashboard.tsx`, pass `onClose={() => handleToggleWidget('widget-id', false)}` to each.
 
-- **Pass `selectedAdvisors`** to the `PortfolioAnalysisWidget`:
-  ```tsx
-  <PortfolioAnalysisWidget region={selectedRegion} selectedAdvisors={selectedAdvisors} />
-  ```
+#### 3. Client Dashboard -- `src/components/client-detail/ClientDashboardTab.tsx`
 
-### Data Generation Strategy
+Add an X close button to every widget's CardHeader (10 widgets total):
+- `asset-allocation`, `valuation-change`, `geo-diversification`
+- `top-opportunities`, `opp-breakdown`, `opp-value-summary`
+- `action-priority`, `key-dates`, `advisor-accounts`, `outstanding-docs`
 
-A seeded pseudo-random approach will create plausible per-advisor data for all 5 jurisdictions. Each jurisdiction has its own set of advisors (from `regionalData`), so the data map uses `region + advisorInitials` as the key. Base values will be offset by small random deltas per advisor to create variety while keeping numbers realistic (e.g., fees between 0.9% and 2.1%, equities between 35%-60%).
+Each X button calls `handleToggleWidget('widget-id', false)` which already exists in this component.
 
-### Animation Approach
+Import `X` from lucide-react in ClientDashboardTab.
 
-- SVG path `d` attributes will animate via CSS `transition` on the path elements
-- Fee bar widths will use inline `transition: width 0.5s ease`
-- Allocation bar widths similarly transition
-- Text numbers will use a lightweight animated counter (increment/decrement over ~400ms) for fee percentages and allocation percentages
+### Pattern
 
-### Technical Details
+Every widget header will follow this consistent pattern:
+```
+<CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
+  <div className="flex items-center gap-2">
+    <GripVertical ... />
+    <CardTitle ...>Title</CardTitle>
+  </div>
+  <Button variant="ghost" size="icon" className="h-6 w-6"
+    onClick={() => handleToggleWidget('widget-id', false)}>
+    <X className="w-4 h-4" />
+  </Button>
+</CardHeader>
+```
+
+Users can re-show hidden widgets via the existing Settings gear toggle.
+
+### Files
 
 | File | Change |
 |------|--------|
-| `src/components/dashboard/PortfolioAnalysisWidget.tsx` | Add advisor-aware data generation, accept `selectedAdvisors` prop, animate transitions |
-| `src/pages/Dashboard.tsx` | Pass `selectedAdvisors` to widget |
+| `src/pages/Dashboard.tsx` | Add onClick to 6 inline X buttons; pass onClose to 3 standalone widgets |
+| `src/components/dashboard/OnboardingProgressWidget.tsx` | Add onClose prop, wire X button |
+| `src/components/dashboard/ClientOpportunityStatusWidget.tsx` | Add onClose prop, wire X button |
+| `src/components/dashboard/PortfolioAnalysisWidget.tsx` | Add onClose prop, wire X button |
+| `src/components/client-detail/ClientDashboardTab.tsx` | Import X, add X close button to all 10 widgets |
 
