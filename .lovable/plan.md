@@ -1,52 +1,60 @@
 
 
-## Add Dynamic Status Dot to Client List Table
+## Realistic Client Status Mix and Dashboard Opportunity Widget
 
-Add a colored status indicator dot to the left of the "Profile State" text in each row of the clients table, using the same urgency logic already used in the client detail ribbon.
+### Part 1: Create Varied Client Product Profiles
 
-### What It Does
+**File: `src/data/regional360ViewData.ts`**
 
-Each client row in the table will show a small colored dot before "Active" (or whatever their profile state is):
-- **Red dot**: Client has urgent opportunities (Tax Loss, Cross-sell gaps)
-- **Orange dot**: Client has important opportunities (Platform, Idle Cash, New Business gaps)
-- **Green dot**: No urgent or important items
+The current data generation gives every client high investment values (50k-1.5M per product), 2-4 external providers, and always a cash account. This means nearly every client triggers Tax Loss (urgent), Platform (important), and Idle Cash (important) gaps, making them all red.
 
-### Changes
+Modify `generateClient360Data` to introduce a "profile tier" based on the seeded random, creating three distinct client archetypes:
 
-**File: `src/pages/Clients.tsx`**
+| Tier | Proportion | On-Platform | External | Cash | Result |
+|------|-----------|-------------|----------|------|--------|
+| Full Portfolio | ~35% | 2-3 products, 200k-1.5M each | 2-4 providers | Yes | RED (Tax Loss + Platform) |
+| Moderate | ~35% | 1-2 products, 30k-150k each | 1-2 providers | Yes | ORANGE (Idle Cash, maybe Platform) |
+| Simple | ~30% | 1 product, 20k-80k | 0-1 external | No cash account | GREEN (routine gaps only) |
 
-1. Import `generateClient360Data` from `regional360ViewData`
-2. Import `getOpportunityPriority` from `opportunity-priority`
-3. Import `buildGapOpportunities` from `OpportunitiesTab`
-4. Create a helper function `getClientStatusDotColor(clientId, nationality, countryOfIssue)` that:
-   - Calls `generateClient360Data` to get the client's product data
-   - Builds the product list and runs `buildGapOpportunities`
-   - Returns "red", "orange", or "green" based on highest urgency (same logic as `ClientDetail.tsx` lines 100-115)
-5. In the table body, update the Profile State cell (line 522) from:
-   ```
-   <TableCell>{client.profileState}</TableCell>
-   ```
-   to:
-   ```
-   <TableCell>
-     <div className="flex items-center gap-1.5">
-       <div className="w-2.5 h-2.5 rounded-full {color class}" />
-       <span>{client.profileState}</span>
-     </div>
-   </TableCell>
-   ```
+Changes to the generation logic:
+- After creating the seeded random, draw a `tierRoll` value
+- If tierRoll < 0.35: "full" tier (current behavior, high amounts)
+- If tierRoll < 0.70: "moderate" tier (lower amounts 30k-150k, only 1-2 external products)
+- Else: "simple" tier (very low amounts 20k-80k, 0-1 external, skip cash account)
 
-Since the `useClients` hook already returns client data but not nationality/countryOfIssue, the helper will need to use the client ID with a default jurisdiction. To get full data, we will also need to fetch the raw client record's nationality and country_of_issue fields.
+This produces a realistic mix across all jurisdictions since the tier is derived from the client UUID seed.
 
-**File: `src/hooks/useClients.ts`**
+### Part 2: Dashboard Widget - Client Opportunity Status
 
-Add `nationality` and `countryOfIssue` fields to the `ClientListItem` interface and populate them in `transformClientToListItem` so the Clients page has the data needed for the status dot computation.
+**New file: `src/components/dashboard/ClientOpportunityStatusWidget.tsx`**
 
-### Technical Details
+Create a widget component that:
+1. Uses `useClients` to fetch all clients for the current user
+2. For each client, runs `generateClient360Data` and `buildGapOpportunities` (same logic as the Clients page)
+3. Computes each client's urgency category and sums opportunity values per category
+4. Displays three rows with colored dots, counts, and total opportunity value:
+
+```
+  Urgent     [red dot]     8 clients    $245,000
+  Important  [orange dot]  12 clients   $180,000
+  Routine    [green dot]   10 clients   -
+```
+
+The widget follows the same card pattern as other dashboard widgets (GripVertical handle, X close button, table layout).
+
+**File: `src/pages/Dashboard.tsx`**
+
+- Add the new widget to `defaultDashboardLayout` and `DASHBOARD_WIDGETS`
+- Register it with id `'client-opportunity-status'` and label `'Client Opportunity Status'`
+- Render the widget inside the `DraggableWidgetGrid`
+
+### Files Changed
 
 | File | Action |
 |------|--------|
-| `src/hooks/useClients.ts` | Edit - add `nationality` and `countryOfIssue` to `ClientListItem` |
-| `src/pages/Clients.tsx` | Edit - add status dot to Profile State column using urgency logic |
+| `src/data/regional360ViewData.ts` | Edit - add profile tier logic for varied amounts/providers/cash |
+| `src/components/dashboard/ClientOpportunityStatusWidget.tsx` | New - dashboard widget showing client counts by urgency |
+| `src/pages/Dashboard.tsx` | Edit - register and render new widget |
 
-No database or backend changes. Uses existing demo data and shared priority utilities.
+No database or backend changes. All logic is client-side using existing demo data and shared priority utilities.
+
