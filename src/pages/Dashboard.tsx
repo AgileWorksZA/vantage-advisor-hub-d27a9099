@@ -348,14 +348,14 @@ const Dashboard = () => {
                     const isUp = providerGrowth >= 0;
                     const sparkPts = isUp ? "0,16 12,12 24,14 36,8 48,10 60,2" : "0,4 12,8 24,6 36,12 48,10 60,18";
                     return (
-                      <div className="flex items-center gap-2 mb-2">
+                      <div className="flex items-center gap-1 mb-2">
                         <span className="text-sm font-semibold">{filteredRegionalData.currencySymbol} {filteredRegionalData.totalAUM}</span>
                         <svg width="60" height="20" className="overflow-visible flex-shrink-0">
                           <polyline points={sparkPts} fill="none" stroke={isUp ? "hsl(var(--chart-2))" : "hsl(var(--destructive))"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                         <span className={`text-xs font-medium flex items-center gap-0.5 ${isUp ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
                           {isUp ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                          {isUp ? '+' : ''}{providerGrowth.toFixed(1)}%
+                          {isUp ? '+' : ''}{Math.round(providerGrowth)}%
                         </span>
                       </div>
                     );
@@ -381,7 +381,7 @@ const Dashboard = () => {
                                 {provider.value}
                                 {g !== undefined && (
                                   <span className={`text-[10px] font-medium ${pos ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
-                                    {pos ? '+' : ''}{g.toFixed(1)}%
+                                    {pos ? '+' : ''}{Math.round(g)}%
                                   </span>
                                 )}
                               </div>
@@ -419,14 +419,14 @@ const Dashboard = () => {
                     const sparkPts = isUp ? "0,16 12,12 24,14 36,8 48,10 60,2" : "0,4 12,8 24,6 36,12 48,10 60,18";
                     return (
                       <>
-                        <div className="flex items-center gap-2 mb-2">
+                        <div className="flex items-center gap-1 mb-2">
                           <span className="text-sm font-semibold">Top 5</span>
                           <svg width="60" height="20" className="overflow-visible flex-shrink-0">
                             <polyline points={sparkPts} fill="none" stroke={isUp ? "hsl(var(--chart-2))" : "hsl(var(--destructive))"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                           </svg>
                           <span className={`text-xs font-medium flex items-center gap-0.5 ${isUp ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
                             {isUp ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                            {isUp ? '+' : ''}{top5Growth.toFixed(1)}%
+                            {isUp ? '+' : ''}{Math.round(top5Growth)}%
                           </span>
                         </div>
                         <table className="w-full text-sm">
@@ -454,7 +454,7 @@ const Dashboard = () => {
                                       {account.value}
                                       {g !== undefined && (
                                         <span className={`text-[10px] font-medium ${pos ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
-                                          {pos ? '+' : ''}{g.toFixed(1)}%
+                                          {pos ? '+' : ''}{Math.round(g)}%
                                         </span>
                                       )}
                                     </div>
@@ -492,14 +492,14 @@ const Dashboard = () => {
                     const isUp = totalGrowth >= 0;
                     const sparkPoints = isUp ? "0,16 12,12 24,14 36,8 48,10 60,2" : "0,4 12,8 24,6 36,12 48,10 60,18";
                     return (
-                      <div className="flex items-center gap-2 mb-1">
+                      <div className="flex items-center gap-1 mb-1">
                         <span className="text-xl font-semibold">{filteredRegionalData.currencySymbol} {filteredRegionalData.totalAUM}</span>
                         <svg width="60" height="20" className="overflow-visible flex-shrink-0">
                           <polyline points={sparkPoints} fill="none" stroke={isUp ? "hsl(var(--chart-2))" : "hsl(var(--destructive))"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                         <span className={`text-xs font-medium flex items-center gap-0.5 ${isUp ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
                           {isUp ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                          {isUp ? '+' : ''}{totalGrowth.toFixed(1)}%
+                          {isUp ? '+' : ''}{Math.round(totalGrowth)}%
                         </span>
                       </div>
                     );
@@ -563,7 +563,7 @@ const Dashboard = () => {
                           {growth !== undefined && (
                             <span className={`flex items-center gap-0.5 text-[10px] font-medium ${isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
                               {isPositive ? <TrendingUp className="w-2.5 h-2.5" /> : <TrendingDown className="w-2.5 h-2.5" />}
-                              {isPositive ? '+' : ''}{growth.toFixed(1)}%
+                              {isPositive ? '+' : ''}{Math.round(growth)}%
                             </span>
                           )}
                         </div>
@@ -649,14 +649,14 @@ const Dashboard = () => {
                     const isUp = cbvGrowth >= 0;
                     const sparkPts = isUp ? "0,16 12,12 24,14 36,8 48,10 60,2" : "0,4 12,8 24,6 36,12 48,10 60,18";
                     return (
-                      <div className="flex items-center gap-2 mb-2">
+                      <div className="flex items-center gap-1 mb-2">
                         <span className="text-sm font-semibold">{filteredRegionalData.currencySymbol} {filteredRegionalData.totalAUM}</span>
                         <svg width="60" height="20" className="overflow-visible flex-shrink-0">
                           <polyline points={sparkPts} fill="none" stroke={isUp ? "hsl(var(--chart-2))" : "hsl(var(--destructive))"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                         <span className={`text-xs font-medium flex items-center gap-0.5 ${isUp ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
                           {isUp ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                          {isUp ? '+' : ''}{cbvGrowth.toFixed(1)}%
+                          {isUp ? '+' : ''}{Math.round(cbvGrowth)}%
                         </span>
                       </div>
                     );
@@ -682,7 +682,7 @@ const Dashboard = () => {
                                 {row.investors}
                                 {g !== undefined && (
                                   <span className={`text-[10px] font-medium ${pos ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
-                                    {pos ? '+' : ''}{g.toFixed(1)}%
+                                    {pos ? '+' : ''}{Math.round(g)}%
                                   </span>
                                 )}
                               </div>
