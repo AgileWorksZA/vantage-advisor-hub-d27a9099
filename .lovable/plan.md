@@ -1,45 +1,47 @@
 
 
-## Fix Widget Layout Swap on Both Dashboards
+## Fix Adviser Dashboard Layout Swap
 
-### Problem
-The current skeleton approach puts loading placeholders **inside** each widget's CardContent, but the `DraggableWidgetGrid` still renders with the default layout first, then jumps to the saved layout once it loads from the database. This causes the visible "swapping around" effect even though skeletons are showing.
+### Root Cause
+
+The `useWidgetLayout` hook sets `loading: false` immediately when `userId` is `undefined`. On the adviser dashboard, `user` starts as `null` (auth hasn't resolved yet), so the hook finishes "loading" instantly with the default layout. Once auth resolves and `userId` becomes available, the hook re-fetches the saved layout, causing the visible swap.
+
+The client dashboard doesn't have this problem because the user is already authenticated by the time that component mounts.
 
 ### Solution
-Instead of rendering the real `DraggableWidgetGrid` while the layout is loading, render a **static CSS grid of skeleton cards** that matches the visual shape of the dashboard. Once the layout finishes loading, swap in the real draggable grid with the correct saved positions and full widget content. This eliminates the layout jump entirely.
 
-### Changes
+Two changes to eliminate the race:
 
-**1. `src/pages/Dashboard.tsx` -- Replace grid with skeleton placeholder during load**
+**1. `src/hooks/useWidgetLayout.ts` -- Keep loading=true when userId is undefined**
 
-- When `layoutLoading` is true, render a static grid of skeleton cards (3 columns, matching the typical dashboard appearance) instead of the `DraggableWidgetGrid`
-- Remove the per-widget `layoutLoading` skeleton checks inside CardContent (no longer needed)
-- When `layoutLoading` is false, render the `DraggableWidgetGrid` as normal with full widget content
+Change the `!userId` branch to keep `loading` as `true` instead of setting it to `false`. This way, the hook signals "still loading" until it actually has a userId to query with, preventing premature rendering.
 
-**2. `src/components/client-detail/ClientDashboardTab.tsx` -- Same pattern**
-
-- When `layoutLoading` is true, render static skeleton cards in a CSS grid
-- Remove per-widget skeleton checks inside CardContent
-- When `layoutLoading` is false, render the real `DraggableWidgetGrid`
-
-### Visual Result
-
-While loading:
-```text
-+--skeleton--+  +--skeleton--+  +--skeleton--+
-|             |  |             |  |             |
-+-------------+  +-------------+  +-------------+
-+--skeleton--+  +--skeleton--+  +--skeleton--+
-|             |  |             |  |             |
-+-------------+  +-------------+  +-------------+
+```
+if (!userId) {
+  // Don't set loading to false -- we're still waiting for auth
+  return;
+}
 ```
 
-After load: real widgets appear in their saved positions with no jump.
+**2. `src/pages/Dashboard.tsx` -- Gate on auth loading too**
+
+Add the auth `loading` state to the skeleton condition so the skeleton grid shows while either auth or layout is loading:
+
+```
+{(loading || layoutLoading) ? (
+  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    ...skeleton cards...
+  </div>
+) : (
+  <DraggableWidgetGrid ...>
+```
+
+This ensures the skeleton grid is displayed until both the user session AND the saved layout are fully resolved.
 
 ### Files
 
 | File | Change |
 |------|--------|
-| `src/pages/Dashboard.tsx` | Wrap `DraggableWidgetGrid` in `!layoutLoading` check; add static skeleton grid for loading state |
-| `src/components/client-detail/ClientDashboardTab.tsx` | Same pattern as above |
+| `src/hooks/useWidgetLayout.ts` | Remove `setLoading(false)` when `userId` is undefined |
+| `src/pages/Dashboard.tsx` | Change condition to `loading \|\| layoutLoading` |
 
