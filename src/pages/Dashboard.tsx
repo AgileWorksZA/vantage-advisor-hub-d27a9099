@@ -307,6 +307,20 @@ const Dashboard = () => {
             />
           </div>
           
+          {layoutLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Card key={i}>
+                  <CardHeader className="py-3 px-4">
+                    <Skeleton className="h-4 w-1/2" />
+                  </CardHeader>
+                  <CardContent className="px-4 pb-4">
+                    <Skeleton className="w-full h-[200px]" />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
           <DraggableWidgetGrid layout={visibleLayout} onLayoutChange={onLayoutChange}>
             {/* Provider View */}
             {isWidgetVisible('provider-view') && <div key="provider-view">
@@ -321,7 +335,6 @@ const Dashboard = () => {
                   </Button>
                 </CardHeader>
                 <CardContent className="px-4 pb-4">
-                  {layoutLoading ? <Skeleton className="w-full h-full min-h-[200px]" /> : (
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="text-muted-foreground text-xs">
@@ -338,7 +351,6 @@ const Dashboard = () => {
                         </tr>)}
                     </tbody>
                   </table>
-                  )}
                 </CardContent>
               </Card>
             </div>}
@@ -355,7 +367,6 @@ const Dashboard = () => {
                   </Button>
                 </CardHeader>
                 <CardContent className="px-4 pb-4">
-                  {layoutLoading ? <Skeleton className="w-full h-full min-h-[200px]" /> : (
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="text-muted-foreground text-xs">
@@ -384,7 +395,6 @@ const Dashboard = () => {
                         ))}
                     </tbody>
                   </table>
-                  )}
                 </CardContent>
               </Card>
             </div>}
@@ -402,7 +412,6 @@ const Dashboard = () => {
                   </Button>
                 </CardHeader>
                 <CardContent className="px-4 pb-4">
-                  {layoutLoading ? <Skeleton className="w-full h-full min-h-[200px]" /> : (<>
                   <p className="text-xl font-semibold mb-2">{filteredRegionalData.currencySymbol} {filteredRegionalData.totalAUM}</p>
                   <div className="h-32">
                     <EChartsWrapper
@@ -445,7 +454,6 @@ const Dashboard = () => {
                         <span className="text-muted-foreground">{item.name}</span>
                       </div>)}
                   </div>
-                  </>)}
                 </CardContent>
               </Card>
             </div>}
@@ -463,7 +471,6 @@ const Dashboard = () => {
                   </Button>
                 </CardHeader>
                 <CardContent className="px-4 pb-4">
-                  {layoutLoading ? <Skeleton className="w-full h-full min-h-[200px]" /> : (<>
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="text-muted-foreground text-xs">
@@ -501,7 +508,6 @@ const Dashboard = () => {
                       Show more ({filteredRegionalData.birthdays.length - 7} more)
                     </button>
                   )}
-                  </>)}
                 </CardContent>
               </Card>
             </div>}
@@ -519,7 +525,6 @@ const Dashboard = () => {
                   </Button>
                 </CardHeader>
                 <CardContent className="px-4 pb-4">
-                  {layoutLoading ? <Skeleton className="w-full h-full min-h-[200px]" /> : (
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="text-muted-foreground text-xs">
@@ -536,7 +541,6 @@ const Dashboard = () => {
                         </tr>)}
                     </tbody>
                   </table>
-                  )}
                 </CardContent>
               </Card>
             </div>}
@@ -565,7 +569,6 @@ const Dashboard = () => {
                   </div>
                 </CardHeader>
                 <CardContent className="px-4 pb-4">
-                  {layoutLoading ? <Skeleton className="w-full h-full min-h-[200px]" /> : (
                   <table className="w-full text-xs">
                     <thead>
                       <tr className="text-muted-foreground text-xs">
@@ -588,7 +591,6 @@ const Dashboard = () => {
                         ))}
                     </tbody>
                   </table>
-                  )}
                 </CardContent>
               </Card>
             </div>}
@@ -599,6 +601,7 @@ const Dashboard = () => {
             </div>}
 
           </DraggableWidgetGrid>
+          )}
         </main>
       </div>
       <GlobalAIChat currentPage="dashboard" />

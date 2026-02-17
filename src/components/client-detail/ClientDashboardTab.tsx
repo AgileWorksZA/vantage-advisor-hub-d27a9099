@@ -380,6 +380,20 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
       </div>
 
       {/* Draggable Widget Grid */}
+      {layoutLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Card key={i}>
+              <CardHeader className="py-3 px-4">
+                <Skeleton className="h-4 w-1/2" />
+              </CardHeader>
+              <CardContent className="px-4 pb-4">
+                <Skeleton className="w-full h-[200px]" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
       <DraggableWidgetGrid layout={visibleLayout} onLayoutChange={onLayoutChange}>
         {/* Asset Allocation */}
         {isWidgetVisible('asset-allocation') && (
@@ -392,12 +406,10 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
                 </div>
               </CardHeader>
               <CardContent className="pt-0">
-                {layoutLoading ? <Skeleton className="w-full h-full min-h-[200px]" /> : (<>
                 <EChartsWrapper option={assetAllocationOption} height={180} />
                 <Button variant="link" className="p-0 h-auto text-xs text-primary" onClick={() => onTabChange?.("performance")}>
                   View analysis <ArrowRight className="h-3 w-3 ml-1" />
                 </Button>
-                </>)}
               </CardContent>
             </Card>
           </div>
@@ -414,7 +426,6 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
                 </div>
               </CardHeader>
               <CardContent className="pt-1 space-y-2">
-                {layoutLoading ? <Skeleton className="w-full h-full min-h-[200px]" /> : (<>
                 {[
                   { label: "Starting Value", value: valuationData.startingValue },
                   { label: "Deposits / Withdrawals", value: valuationData.depositsWithdrawals, highlight: true },
@@ -435,7 +446,6 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
                 <Button variant="link" className="p-0 h-auto text-xs text-primary" onClick={() => onTabChange?.("performance")}>
                   View performance <ArrowRight className="h-3 w-3 ml-1" />
                 </Button>
-                </>)}
               </CardContent>
             </Card>
           </div>
@@ -452,12 +462,10 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
                 </div>
               </CardHeader>
               <CardContent className="pt-0">
-                {layoutLoading ? <Skeleton className="w-full h-full min-h-[200px]" /> : (<>
                 <EChartsWrapper option={geoOption} height={180} />
                 <Button variant="link" className="p-0 h-auto text-xs text-primary" onClick={() => onTabChange?.("360-view")}>
                   View diversification <ArrowRight className="h-3 w-3 ml-1" />
                 </Button>
-                </>)}
               </CardContent>
             </Card>
           </div>
@@ -476,7 +484,6 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
                 <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-primary text-primary">{opportunities.length}</Badge>
               </CardHeader>
               <CardContent className="pt-0">
-                {layoutLoading ? <Skeleton className="w-full h-full min-h-[200px]" /> : (
                 <div className="space-y-0 max-h-[220px] overflow-auto">
                   {opportunities.slice(0, 5).map(opp => {
                     const cfg = getConfig(opp.type);
@@ -497,7 +504,6 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
                     );
                   })}
                 </div>
-                )}
               </CardContent>
             </Card>
           </div>
@@ -514,9 +520,7 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
                 </div>
               </CardHeader>
               <CardContent className="pt-0">
-                {layoutLoading ? <Skeleton className="w-full h-full min-h-[200px]" /> : (
                 <EChartsWrapper option={oppBreakdownOption} height={200} />
-                )}
               </CardContent>
             </Card>
           </div>
@@ -534,7 +538,6 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
                 </div>
               </CardHeader>
               <CardContent className="pt-1 space-y-3">
-                {layoutLoading ? <Skeleton className="w-full h-full min-h-[200px]" /> : (<>
                 <div className="text-center py-2">
                   <p className="text-2xl font-bold text-primary">{formatTotal(summaryMetrics.totalValue, currencySymbol)}</p>
                   <p className="text-xs text-muted-foreground">Total Pipeline Value</p>
@@ -561,7 +564,6 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
                     </div>
                   ))}
                 </div>
-                </>)}
               </CardContent>
             </Card>
           </div>
@@ -578,7 +580,6 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
                 </div>
               </CardHeader>
               <CardContent className="pt-0 space-y-3">
-                {layoutLoading ? <Skeleton className="w-full h-full min-h-[200px]" /> : (<>
                 {([
                   { key: "urgent" as const, label: "Urgent", icon: <AlertTriangle className="h-3.5 w-3.5 text-red-500" />, items: priorityGroups.urgent, dotColor: "bg-red-500" },
                   { key: "important" as const, label: "Important", icon: <Clock className="h-3.5 w-3.5 text-amber-500" />, items: priorityGroups.important, dotColor: "bg-amber-500" },
@@ -607,7 +608,6 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
                     )}
                   </div>
                 ))}
-                </>)}
               </CardContent>
             </Card>
           </div>
@@ -624,7 +624,6 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
                 </div>
               </CardHeader>
               <CardContent className="pt-0">
-                {layoutLoading ? <Skeleton className="w-full h-full min-h-[200px]" /> : (
                 <div className="space-y-2">
                   {keyDates.map((d, i) => (
                     <div key={i} className="flex items-center gap-2 py-1.5 border-b border-border/50 last:border-0">
@@ -642,7 +641,6 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
                     </div>
                   )}
                 </div>
-                )}
               </CardContent>
             </Card>
           </div>
@@ -658,7 +656,6 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
                 </div>
               </CardHeader>
               <CardContent className="px-4 pb-4">
-                {layoutLoading ? <Skeleton className="w-full h-full min-h-[200px]" /> : (
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -684,7 +681,6 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
                     ))}
                   </TableBody>
                 </Table>
-                )}
               </CardContent>
             </Card>
           </div>
@@ -701,7 +697,6 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
                 </div>
               </CardHeader>
               <CardContent className="px-4 pb-4">
-                {layoutLoading ? <Skeleton className="w-full h-full min-h-[200px]" /> : (
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -718,12 +713,12 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
                     ))}
                   </TableBody>
                 </Table>
-                )}
               </CardContent>
             </Card>
           </div>
         )}
       </DraggableWidgetGrid>
+      )}
 
       <AddFamilyMemberDialog
         open={addMemberOpen}
