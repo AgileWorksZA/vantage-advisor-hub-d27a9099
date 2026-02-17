@@ -372,7 +372,7 @@ const Client360ViewTab = () => {
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <CardTitle className="text-base font-medium">Will</CardTitle>
-            <Button variant="link" className="text-[hsl(180,70%,45%)] p-0 h-auto font-normal" onClick={() => setShowWillForm(true)}>+ Will</Button>
+            <Button variant="link" className="text-[hsl(180,70%,45%)] p-0 h-auto font-normal" onClick={() => { setShowWillForm(true); window.scrollTo(0, 0); }}>+ Will</Button>
           </div>
         </CardHeader>
         <CardContent className="p-0">
@@ -422,7 +422,7 @@ const Client360ViewTab = () => {
           <div className="flex items-center justify-between">
             <CardTitle className="text-base font-medium">Short Term</CardTitle>
             <div className="flex items-center gap-2">
-              <Button variant="link" className="text-[hsl(180,70%,45%)] p-0 h-auto font-normal" onClick={() => setShowShortTermForm(true)}>+ Short Term</Button>
+              <Button variant="link" className="text-[hsl(180,70%,45%)] p-0 h-auto font-normal" onClick={() => { setShowShortTermForm(true); window.scrollTo(0, 0); }}>+ Short Term</Button>
               <span className="text-muted-foreground">|</span>
               <Button variant="link" className="text-[hsl(180,70%,45%)] p-0 h-auto font-normal">View Inactive</Button>
             </div>
@@ -472,7 +472,7 @@ const Client360ViewTab = () => {
           <div className="flex items-center justify-between">
             <CardTitle className="text-base font-medium">Risk Products</CardTitle>
             <div className="flex items-center gap-2">
-              <Button variant="link" className="text-[hsl(180,70%,45%)] p-0 h-auto font-normal" onClick={() => setShowRiskProductForm(true)}>+ Risk Products</Button>
+              <Button variant="link" className="text-[hsl(180,70%,45%)] p-0 h-auto font-normal" onClick={() => { setShowRiskProductForm(true); window.scrollTo(0, 0); }}>+ Risk Products</Button>
               {jurisdiction === "ZA" && (
                 <>
                   <span className="text-muted-foreground">|</span>
@@ -531,7 +531,7 @@ const Client360ViewTab = () => {
           <div className="flex items-center justify-between">
             <CardTitle className="text-base font-medium">Medical Aid</CardTitle>
             <div className="flex items-center gap-2">
-              <Button variant="link" className="text-[hsl(180,70%,45%)] p-0 h-auto font-normal" onClick={() => setShowMedicalAidForm(true)}>+ Medical Aid</Button>
+              <Button variant="link" className="text-[hsl(180,70%,45%)] p-0 h-auto font-normal" onClick={() => { setShowMedicalAidForm(true); window.scrollTo(0, 0); }}>+ Medical Aid</Button>
               {jurisdiction === "ZA" && (
                 <>
                   <span className="text-muted-foreground">|</span>
