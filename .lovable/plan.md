@@ -1,85 +1,52 @@
 
 
-## Add Urgency Categorization to Opportunities Tab and Dynamic Status Dot
+## Add Dynamic Status Dot to Client List Table
 
-### Overview
-Apply the same Urgent / Important / Routine segmentation (used in the Action Priority dashboard widget) to each of the three sub-tabs under "Opportunities": Opportunities, Outstanding, and Recent Activity. Additionally, make the client avatar status dot in the ribbon dynamically reflect the highest urgency level.
+Add a colored status indicator dot to the left of the "Profile State" text in each row of the clients table, using the same urgency logic already used in the client detail ribbon.
 
-### Part 1: Extract Priority Assignment Logic
+### What It Does
 
-**New file: `src/lib/opportunity-priority.ts`**
+Each client row in the table will show a small colored dot before "Active" (or whatever their profile state is):
+- **Red dot**: Client has urgent opportunities (Tax Loss, Cross-sell gaps)
+- **Orange dot**: Client has important opportunities (Platform, Idle Cash, New Business gaps)
+- **Green dot**: No urgent or important items
 
-Create a shared utility that assigns a priority ("urgent" | "important" | "routine") to each opportunity/gap and outstanding item. This reuses the same rules already in `ClientDashboardTab`:
+### Changes
 
-- **Opportunities**: Tax Loss and Cross-sell = urgent; Platform, Idle Cash, New Business = important; Upsell, Migration, Bank Scrape = routine
-- **Outstanding tasks**: High priority or overdue = urgent; Medium priority = important; Low priority or no priority = routine
-- **Outstanding documents**: Expired = urgent; Expiring soon = important; other = routine
-- **Recent Activity**: all items default to routine (informational)
+**File: `src/pages/Clients.tsx`**
 
-Also export a helper `getHighestUrgency(opportunities, outstandingTasks, outstandingDocs)` that returns `"urgent" | "important" | "routine" | "green"` for the status dot color.
+1. Import `generateClient360Data` from `regional360ViewData`
+2. Import `getOpportunityPriority` from `opportunity-priority`
+3. Import `buildGapOpportunities` from `OpportunitiesTab`
+4. Create a helper function `getClientStatusDotColor(clientId, nationality, countryOfIssue)` that:
+   - Calls `generateClient360Data` to get the client's product data
+   - Builds the product list and runs `buildGapOpportunities`
+   - Returns "red", "orange", or "green" based on highest urgency (same logic as `ClientDetail.tsx` lines 100-115)
+5. In the table body, update the Profile State cell (line 522) from:
+   ```
+   <TableCell>{client.profileState}</TableCell>
+   ```
+   to:
+   ```
+   <TableCell>
+     <div className="flex items-center gap-1.5">
+       <div className="w-2.5 h-2.5 rounded-full {color class}" />
+       <span>{client.profileState}</span>
+     </div>
+   </TableCell>
+   ```
 
-### Part 2: Update OpportunitiesTab
+Since the `useClients` hook already returns client data but not nationality/countryOfIssue, the helper will need to use the client ID with a default jurisdiction. To get full data, we will also need to fetch the raw client record's nationality and country_of_issue fields.
 
-**File: `src/components/client-detail/next-best-action/OpportunitiesTab.tsx`**
+**File: `src/hooks/useClients.ts`**
 
-- Import the priority utility
-- Group opportunities and gaps into three segments: Urgent, Important, Routine
-- Render each segment with the same visual treatment as the Action Priority widget:
-  - Section header with colored icon (red triangle for Urgent, amber clock for Important, green check for Routine) + count badge
-  - Items listed under each section with colored dot prefix
-- Preserve existing badges (Growth, Cross-sell, etc.) and currency values within each item
+Add `nationality` and `countryOfIssue` fields to the `ClientListItem` interface and populate them in `transformClientToListItem` so the Clients page has the data needed for the status dot computation.
 
-### Part 3: Update OutstandingTab
-
-**File: `src/components/client-detail/next-best-action/OutstandingTab.tsx`**
-
-- Import the priority utility
-- Group tasks and documents into Urgent / Important / Routine segments
-- Same section header pattern with icons and count badges
-- Tasks: overdue or High priority = Urgent, Medium = Important, Low = Routine
-- Documents: Expired = Urgent, Expiring = Important
-
-### Part 4: Update RecentActivityTab
-
-**File: `src/components/client-detail/next-best-action/RecentActivityTab.tsx`**
-
-- All recent activity items are informational, so group them all under "Routine"
-- Add the green Routine section header for consistency
-
-### Part 5: Dynamic Status Dot on Client Ribbon
-
-**File: `src/components/client-detail/ClientRibbon.tsx`**
-
-- Add a new optional prop: `statusDotColor?: "red" | "orange" | "green"`
-- Replace the hardcoded `bg-emerald-500` dot with a dynamic class:
-  - `"red"` = `bg-red-500`
-  - `"orange"` = `bg-orange-500`  
-  - `"green"` (default) = `bg-emerald-500`
-
-**File: `src/pages/ClientDetail.tsx`**
-
-- Compute the highest urgency level using the same product/opportunity data already available in `ClientSummaryTab`
-- Generate the 360 view products + gap opportunities at the `ClientDetail` level (or pass computed status up)
-- Pass the resulting `statusDotColor` to `ClientRibbon`
-
-To keep this clean, the simplest approach: replicate the lightweight gap-detection logic in `ClientDetail` using `generateClient360Data` and the priority utility, then pass the color down.
-
-### Part 6: Update ClientDashboardTab
-
-**File: `src/components/client-detail/ClientDashboardTab.tsx`**
-
-- Refactor the inline priority assignment to use the shared `opportunity-priority.ts` utility (removing duplication)
-
-### Files Changed
+### Technical Details
 
 | File | Action |
 |------|--------|
-| `src/lib/opportunity-priority.ts` | **New** - shared priority assignment utility |
-| `src/components/client-detail/next-best-action/OpportunitiesTab.tsx` | **Edit** - group items by urgency with section headers |
-| `src/components/client-detail/next-best-action/OutstandingTab.tsx` | **Edit** - group items by urgency with section headers |
-| `src/components/client-detail/next-best-action/RecentActivityTab.tsx` | **Edit** - add routine section header |
-| `src/components/client-detail/ClientRibbon.tsx` | **Edit** - dynamic status dot color prop |
-| `src/pages/ClientDetail.tsx` | **Edit** - compute urgency, pass to ribbon |
-| `src/components/client-detail/ClientDashboardTab.tsx` | **Edit** - use shared utility |
+| `src/hooks/useClients.ts` | Edit - add `nationality` and `countryOfIssue` to `ClientListItem` |
+| `src/pages/Clients.tsx` | Edit - add status dot to Profile State column using urgency logic |
 
-No database or backend changes required. All logic is client-side using existing demo data.
+No database or backend changes. Uses existing demo data and shared priority utilities.
