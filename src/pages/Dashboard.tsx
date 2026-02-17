@@ -64,7 +64,7 @@ const defaultDashboardLayout: WidgetLayout[] = [
   { i: 'corporate-actions', x: 6, y: 3, w: 3, h: 3 },
   { i: 'onboarding-progress', x: 0, y: 6, w: 3, h: 3 },
   { i: 'client-opportunity-status', x: 3, y: 6, w: 3, h: 3 },
-  { i: 'portfolio-analysis', x: 6, y: 6, w: 3, h: 6 },
+  { i: 'portfolio-analysis', x: 6, y: 6, w: 3, h: 3 },
 ];
 
 const DASHBOARD_WIDGETS: WidgetConfig[] = [
@@ -758,7 +758,7 @@ const Dashboard = () => {
 
             {/* Portfolio Analysis */}
             {isWidgetVisible('portfolio-analysis') && <div key="portfolio-analysis">
-              <PortfolioAnalysisWidget />
+              <PortfolioAnalysisWidget region={selectedRegion} />
             </div>}
 
           </DraggableWidgetGrid>

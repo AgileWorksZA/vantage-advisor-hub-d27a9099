@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { GripVertical, X, BarChart3 } from "lucide-react";
+import { GripVertical, X } from "lucide-react";
 
 const feeComparison = { current: 1.85, model: 1.25 };
 
@@ -41,7 +41,12 @@ const performanceChartData: Record<string, { labels: string[]; current: number[]
 
 const periods: Array<'6m' | '1y' | '3y' | '5y'> = ['6m', '1y', '3y', '5y'];
 
-export function PortfolioAnalysisWidget() {
+interface PortfolioAnalysisWidgetProps {
+  region?: string;
+}
+
+export function PortfolioAnalysisWidget({ region }: PortfolioAnalysisWidgetProps) {
+  const modelLabel = region === 'US' ? 'TAMP' : 'Model';
   const [selectedPeriod, setSelectedPeriod] = useState<'6m' | '1y' | '3y' | '5y'>('1y');
   const [hoveredPoint, setHoveredPoint] = useState<number | null>(null);
 
@@ -143,7 +148,7 @@ export function PortfolioAnalysisWidget() {
                       Current: {chartData.current[i].toFixed(1)}
                     </text>
                     <text x={point.x} y={point.y - 22} textAnchor="middle" className="fill-[hsl(var(--brand-blue))] text-[9px] font-medium">
-                      Model: {chartData.model[i].toFixed(1)}
+                      {modelLabel}: {chartData.model[i].toFixed(1)}
                     </text>
                     <text x={point.x} y={point.y - 10} textAnchor="middle" className="fill-[hsl(142,76%,36%)] text-[9px] font-medium">
                       Bench: {chartData.benchmark[i].toFixed(1)}
@@ -169,7 +174,7 @@ export function PortfolioAnalysisWidget() {
             </div>
             <div className="flex items-center gap-1">
               <div className="w-3 h-0.5 bg-[hsl(var(--brand-blue))]" />
-              <span className="text-[8px] text-muted-foreground">Model</span>
+              <span className="text-[8px] text-muted-foreground">{modelLabel}</span>
             </div>
             <div className="flex items-center gap-1">
               <div className="w-3 h-0.5 border-t border-dashed border-[hsl(142,76%,36%)]" />
@@ -184,7 +189,7 @@ export function PortfolioAnalysisWidget() {
           <div className="space-y-1">
             {[
               { label: "Current", value: feeComparison.current, color: "hsl(var(--brand-orange))" },
-              { label: "Model", value: feeComparison.model, color: "hsl(var(--brand-blue))" },
+              { label: modelLabel, value: feeComparison.model, color: "hsl(var(--brand-blue))" },
             ].map((item) => (
               <div key={item.label} className="flex items-center gap-2">
                 <span className="text-[9px] text-muted-foreground w-12">{item.label}</span>
@@ -227,17 +232,9 @@ export function PortfolioAnalysisWidget() {
             </div>
             <div className="flex items-center gap-1">
               <div className="w-2 h-2 rounded-sm bg-[hsl(var(--brand-blue))]" />
-              <span className="text-[8px] text-muted-foreground">Model</span>
+              <span className="text-[8px] text-muted-foreground">{modelLabel}</span>
             </div>
           </div>
-        </div>
-
-        {/* Switch Button */}
-        <div className="animated-border-button mt-3 animate">
-          <button className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg border border-dashed border-border/50 text-muted-foreground hover:text-foreground hover:border-[hsl(var(--brand-blue))]/50 hover:bg-muted/30 transition-all duration-200 group bg-card">
-            <BarChart3 className="w-4 h-4 group-hover:text-[hsl(var(--brand-blue))] transition-colors" />
-            <span className="text-xs">Switch to Model Portfolio</span>
-          </button>
         </div>
       </CardContent>
     </Card>
