@@ -1,25 +1,25 @@
 
-## Add AI Badge to Meetings Tab
 
-A one-line addition to show the same gradient "AI" badge next to the Meetings tab label, matching the existing one on Opportunities.
+## Add AI Badge to Communication Tab
+
+Add the same gradient AI badge to the Communication tab, matching Opportunities and Meetings.
 
 ### Change
 
-**File: `src/pages/ClientDetail.tsx` (line ~280)**
+**File: `src/pages/ClientDetail.tsx`**
 
-After the existing AI badge for `summary`, add a matching condition for `meetings`:
+Update the condition on the AI badge span (around line 278) from:
 
 ```
-{tab.value === "summary" && (
-  <span className="...">AI</span>
-)}
-{tab.value === "meetings" && (
-  <span className="...">AI</span>
-)}
+(tab.value === "summary" || tab.value === "meetings")
 ```
 
-This uses the exact same gradient badge styling (`bg-gradient-to-r from-violet-500 to-cyan-500 text-white rounded-full`).
+to:
+
+```
+(tab.value === "summary" || tab.value === "meetings" || tab.value === "communication")
+```
 
 ### Scope
-- 1 file changed, ~3 lines added
-- No other files affected
+- 1 file, 1 line changed
+
