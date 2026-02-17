@@ -1,63 +1,69 @@
-import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { GripVertical, X } from "lucide-react";
-import { useClients, type ClientListItem } from "@/hooks/useClients";
-import { generateClient360Data } from "@/data/regional360ViewData";
-import { getOpportunityPriority } from "@/lib/opportunity-priority";
-import { buildGapOpportunities } from "@/components/client-detail/next-best-action/OpportunitiesTab";
+import { Badge } from "@/components/ui/badge";
+import { GripVertical, X, AlertTriangle, Clock, CheckCircle2, ChevronRight } from "lucide-react";
+import { useClientOpportunityCategories, type ClientCategoryItem } from "@/hooks/useClientOpportunityCategories";
 import { useRegion } from "@/contexts/RegionContext";
+import { useNavigate } from "react-router-dom";
+import type { Priority } from "@/lib/opportunity-priority";
 
-interface CategoryData {
-  label: string;
-  dotClass: string;
-  count: number;
-  totalValue: number;
-}
-
-function getClientCategory(client: ClientListItem) {
-  const clientData = generateClient360Data(client.id, client.nationality, client.countryOfIssue);
-  const products = [
-    ...clientData.onPlatformProducts.map(p => ({ category: "Investment", currentValue: p.amountValue, productName: p.product } as any)),
-    ...clientData.externalProducts.map(p => ({ category: "External Investment", currentValue: p.amountValue, productName: p.product } as any)),
-    ...clientData.platformCashAccounts.map(p => ({ category: "Cash", currentValue: p.amountValue, productName: p.name } as any)),
-    ...clientData.riskProducts.map(p => ({ category: "Risk/Insurance", currentValue: 0, productName: p.holdingName } as any)),
-  ];
-  const gaps = buildGapOpportunities(products);
-  const totalOppValue = gaps.reduce((sum, g) => sum + (g.opportunitySize || 0), 0);
-  const types = gaps.map(g => g.type);
-
-  if (types.some(t => getOpportunityPriority(t) === "urgent")) return { status: "urgent" as const, value: totalOppValue };
-  if (types.some(t => getOpportunityPriority(t) === "important")) return { status: "important" as const, value: totalOppValue };
-  return { status: "routine" as const, value: totalOppValue };
-}
+const priorityConfig: Record<Priority, { label: string; icon: React.ReactNode; dotClass: string }> = {
+  urgent: { label: "Urgent", icon: <AlertTriangle className="h-3.5 w-3.5 text-red-500" />, dotClass: "bg-red-500" },
+  important: { label: "Important", icon: <Clock className="h-3.5 w-3.5 text-amber-500" />, dotClass: "bg-amber-500" },
+  routine: { label: "Routine", icon: <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />, dotClass: "bg-emerald-500" },
+};
 
 export function ClientOpportunityStatusWidget() {
-  const { clients } = useClients();
+  const { categories } = useClientOpportunityCategories();
   const { filteredRegionalData } = useRegion();
-
-  const categories = useMemo<CategoryData[]>(() => {
-    const counts = { urgent: 0, important: 0, routine: 0 };
-    const values = { urgent: 0, important: 0, routine: 0 };
-
-    (clients || []).forEach(client => {
-      const { status, value } = getClientCategory(client);
-      counts[status]++;
-      values[status] += value;
-    });
-
-    return [
-      { label: "Urgent", dotClass: "bg-red-500", count: counts.urgent, totalValue: values.urgent },
-      { label: "Important", dotClass: "bg-orange-500", count: counts.important, totalValue: values.important },
-      { label: "Routine", dotClass: "bg-emerald-500", count: counts.routine, totalValue: values.routine },
-    ];
-  }, [clients]);
-
+  const navigate = useNavigate();
   const currencySymbol = filteredRegionalData?.currencySymbol || "R";
 
   const formatValue = (value: number) => {
     if (value === 0) return "—";
     return `${currencySymbol} ${Math.round(value).toLocaleString()}`;
+  };
+
+  const renderSection = (priority: Priority, items: ClientCategoryItem[]) => {
+    const config = priorityConfig[priority];
+    const totalValue = items.reduce((sum, i) => sum + i.totalValue, 0);
+    const displayItems = items.slice(0, 3);
+
+    return (
+      <div key={priority} className="mb-1">
+        <button
+          onClick={() => navigate(`/opportunities/${priority}`)}
+          className="w-full flex items-center gap-1.5 py-1.5 px-1 rounded hover:bg-muted/50 transition-colors cursor-pointer group"
+        >
+          {config.icon}
+          <span className="text-xs font-semibold flex-1 text-left">{config.label}</span>
+          <span className="text-xs text-muted-foreground mr-1">{formatValue(totalValue)}</span>
+          <Badge variant="outline" className="text-[10px] px-1 py-0">{items.length}</Badge>
+          <ChevronRight className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+        </button>
+        <div className="ml-5 space-y-0.5">
+          {displayItems.map(item => (
+            <div
+              key={item.clientId}
+              className="flex items-center gap-2 py-0.5 px-1 rounded hover:bg-muted/30 cursor-pointer text-xs"
+              onClick={() => navigate(`/clients/${item.clientId}`)}
+            >
+              <div className={`w-1.5 h-1.5 rounded-full ${config.dotClass}`} />
+              <span className="truncate flex-1 text-muted-foreground">{item.clientName}</span>
+              <span className="text-muted-foreground whitespace-nowrap">{formatValue(item.totalValue)}</span>
+            </div>
+          ))}
+          {items.length > 3 && (
+            <button
+              onClick={(e) => { e.stopPropagation(); navigate(`/opportunities/${priority}`); }}
+              className="text-[10px] text-primary hover:underline ml-3"
+            >
+              +{items.length - 3} more
+            </button>
+          )}
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -71,30 +77,10 @@ export function ClientOpportunityStatusWidget() {
           <X className="w-4 h-4" />
         </Button>
       </CardHeader>
-      <CardContent className="px-4 pb-4">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-muted-foreground text-xs">
-              <th className="text-left pb-2 font-normal">Status</th>
-              <th className="text-right pb-2 font-normal">Clients</th>
-              <th className="text-right pb-2 font-normal">Opportunity</th>
-            </tr>
-          </thead>
-          <tbody>
-            {categories.map(cat => (
-              <tr key={cat.label} className="border-t border-border">
-                <td className="py-2">
-                  <div className="flex items-center gap-2">
-                    <div className={`w-2.5 h-2.5 rounded-full ${cat.dotClass}`} />
-                    <span>{cat.label}</span>
-                  </div>
-                </td>
-                <td className="py-2 text-right text-muted-foreground">{cat.count}</td>
-                <td className="py-2 text-right">{formatValue(cat.totalValue)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <CardContent className="px-4 pb-4 space-y-0.5">
+        {renderSection("urgent", categories.urgent)}
+        {renderSection("important", categories.important)}
+        {renderSection("routine", categories.routine)}
       </CardContent>
     </Card>
   );
