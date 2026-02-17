@@ -276,7 +276,7 @@ const ClientDetail = () => {
                 >
                   {tab.label}
                   {tab.value === "summary" && (
-                    <span className="inline-flex items-center px-1.5 py-0 text-[10px] font-bold bg-gradient-to-r from-violet-500 to-cyan-500 text-white rounded-full ml-1.5">AI</span>
+                    <span className="inline-flex items-center px-2 py-0.5 text-xs font-bold bg-gradient-to-r from-violet-500 to-cyan-500 text-white rounded-full ml-1.5">AI</span>
                   )}
                 </TabsTrigger>
               ))}
