@@ -1,39 +1,54 @@
 
 
-## Align Client Opportunities Segments with "Clients by Value" Widget
+## Make 30% of Clients Show as Green (Routine) Status
 
 ### Problem
-The "Client Opportunities" widget uses 3 hardcoded segments (0-1M, 1M-5M, >5M) that don't match the "Clients by Value" widget which has 5 region-specific segments (e.g. R0-R100k, R100k-R1M, R1M-R3M, R3M-R10M, >R10M for South Africa).
+Currently, all clients generate urgent and/or important opportunity gaps based on their product mix, so very few (if any) clients appear as green/routine status in the Client Opportunities widget and the Clients list.
 
 ### Solution
-Update the Client Opportunities widget and its hook to use the same segments from the regional data (`filteredRegionalData.clientsByValue`), dynamically matching the current jurisdiction's ranges.
+Add a deterministic "green client" check using the existing `seededRandom` pattern. For ~30% of clients (based on a hash of their client ID), filter out all urgent and important opportunity types from `buildGapOpportunities`, leaving only routine gaps (Upsell, Migration, Bank Scrape). This ensures these clients consistently appear as green across the entire application.
+
+### How It Works
+- A new exported utility function `isGreenClient(clientId: string): boolean` will use the same seeded random approach (hash of clientId) to deterministically return `true` for ~30% of client IDs
+- This function will be called inside `buildGapOpportunitiesForProducts` (or at the call sites) to filter out urgent/important gap types
+- Because the check is deterministic and based on client ID, the same clients will always be green regardless of where the check runs
 
 ### Changes
 
+**File: `src/components/client-detail/next-best-action/OpportunitiesTab.tsx`**
+
+- Add and export `isGreenClient(clientId: string): boolean` utility using a simple hash (same pattern as `seededRandom` in regional360ViewData)
+- Returns `true` when hash-derived value < 0.3 (30% of clients)
+- Modify `buildGapOpportunitiesForProducts` to accept an optional `clientId` parameter
+- When `clientId` is provided and `isGreenClient(clientId)` is true, filter the generated gaps to only include routine types (Upsell, Migration, Bank Scrape)
+- Update `buildGapOpportunities` signature to pass `clientId` through
+
 **File: `src/hooks/useClientOpportunityCategories.ts`**
 
-- Replace the 3 hardcoded segments with dynamic segments derived from the regional `clientsByValue` data
-- Accept segment boundaries as a parameter (extracted from the region's `clientsByValue` ranges)
-- Parse the range strings to extract numeric boundaries (e.g. "R0 - R100 000" becomes 0-100000)
-- Assign each client to the correct segment based on their portfolio value
-- Update the matrix return shape to use the dynamic segment labels as keys
+- Pass `client.id` to `buildGapOpportunities` in `categorizeClient`
 
-**File: `src/components/dashboard/ClientOpportunityStatusWidget.tsx`**
+**File: `src/pages/Clients.tsx`**
 
-- Read `filteredRegionalData.clientsByValue` to get the current region's segment definitions
-- Pass segment boundaries to the hook or compute the matrix using the regional segments
-- Update the table rows to iterate over the region's segment ranges instead of the hardcoded 3 rows
-- Each row label matches exactly what appears in the "Clients by Value" widget (e.g. "R0 - R100 000", "R100 001 - R1M", etc.)
+- Pass `client.id` to `buildGapOpportunities` in `getClientDotClass`
 
-### Technical Details
+**File: `src/pages/ClientDetail.tsx`**
 
-The segment matching will work by:
-1. Parsing each `clientsByValue` range string to extract lower and upper numeric bounds
-2. For each client, computing their total portfolio value from `generateClient360Data`
-3. Placing each client into the segment whose bounds contain their portfolio value
-4. Building the matrix with segment range labels as row keys
+- Pass `clientId` to `buildGapOpportunities` in the status dot color computation
+
+**File: `src/components/client-detail/ClientSummaryTab.tsx`**
+
+- Pass `clientId` to `buildGapOpportunities` call
+
+### Result
+- ~30% of clients across all jurisdictions will show only routine (green) opportunities
+- The selection is consistent and deterministic per client ID
+- All views (dashboard widget, clients list, client detail) will reflect the same green status
 
 | File | Action |
 |------|--------|
-| `src/hooks/useClientOpportunityCategories.ts` | Edit - use dynamic region-based segments |
-| `src/components/dashboard/ClientOpportunityStatusWidget.tsx` | Edit - read regional segments, update table rows |
+| `src/components/client-detail/next-best-action/OpportunitiesTab.tsx` | Edit - add `isGreenClient`, update gap builder to filter |
+| `src/hooks/useClientOpportunityCategories.ts` | Edit - pass clientId to buildGapOpportunities |
+| `src/pages/Clients.tsx` | Edit - pass clientId to buildGapOpportunities |
+| `src/pages/ClientDetail.tsx` | Edit - pass clientId to buildGapOpportunities |
+| `src/components/client-detail/ClientSummaryTab.tsx` | Edit - pass clientId to buildGapOpportunities |
+
