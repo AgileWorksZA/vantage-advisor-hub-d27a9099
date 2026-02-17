@@ -22,6 +22,9 @@ import { generateClient360Data, formatTotal, mapNationalityToJurisdiction } from
 import QuoteWizardView from "./QuoteWizardDialog";
 import NewBusinessWizardDialog from "./NewBusinessWizardDialog";
 import AddMedicalAidForm from "./AddMedicalAidForm";
+import AddRiskProductForm from "./AddRiskProductForm";
+import AddShortTermForm from "./AddShortTermForm";
+import AddWillForm from "./AddWillForm";
 
 const Client360ViewTab = () => {
   const { clientId } = useParams<{ clientId: string }>();
@@ -31,6 +34,9 @@ const Client360ViewTab = () => {
   const [showQuoteWizard, setShowQuoteWizard] = useState(false);
   const [showNewBusinessWizard, setShowNewBusinessWizard] = useState(false);
   const [showMedicalAidForm, setShowMedicalAidForm] = useState(false);
+  const [showRiskProductForm, setShowRiskProductForm] = useState(false);
+  const [showShortTermForm, setShowShortTermForm] = useState(false);
+  const [showWillForm, setShowWillForm] = useState(false);
 
   const jurisdiction = mapNationalityToJurisdiction(client?.nationality || null, client?.country_of_issue || null);
   
@@ -84,6 +90,33 @@ const Client360ViewTab = () => {
       <AddMedicalAidForm
         onClose={() => setShowMedicalAidForm(false)}
         onSave={() => setShowMedicalAidForm(false)}
+      />
+    );
+  }
+
+  if (showRiskProductForm) {
+    return (
+      <AddRiskProductForm
+        onClose={() => setShowRiskProductForm(false)}
+        onSave={() => setShowRiskProductForm(false)}
+      />
+    );
+  }
+
+  if (showShortTermForm) {
+    return (
+      <AddShortTermForm
+        onClose={() => setShowShortTermForm(false)}
+        onSave={() => setShowShortTermForm(false)}
+      />
+    );
+  }
+
+  if (showWillForm) {
+    return (
+      <AddWillForm
+        onClose={() => setShowWillForm(false)}
+        onSave={() => setShowWillForm(false)}
       />
     );
   }
@@ -339,7 +372,7 @@ const Client360ViewTab = () => {
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <CardTitle className="text-base font-medium">Will</CardTitle>
-            <Button variant="link" className="text-[hsl(180,70%,45%)] p-0 h-auto font-normal">+ Will</Button>
+            <Button variant="link" className="text-[hsl(180,70%,45%)] p-0 h-auto font-normal" onClick={() => setShowWillForm(true)}>+ Will</Button>
           </div>
         </CardHeader>
         <CardContent className="p-0">
@@ -389,7 +422,7 @@ const Client360ViewTab = () => {
           <div className="flex items-center justify-between">
             <CardTitle className="text-base font-medium">Short Term</CardTitle>
             <div className="flex items-center gap-2">
-              <Button variant="link" className="text-[hsl(180,70%,45%)] p-0 h-auto font-normal">+ Short Term</Button>
+              <Button variant="link" className="text-[hsl(180,70%,45%)] p-0 h-auto font-normal" onClick={() => setShowShortTermForm(true)}>+ Short Term</Button>
               <span className="text-muted-foreground">|</span>
               <Button variant="link" className="text-[hsl(180,70%,45%)] p-0 h-auto font-normal">View Inactive</Button>
             </div>
@@ -439,7 +472,7 @@ const Client360ViewTab = () => {
           <div className="flex items-center justify-between">
             <CardTitle className="text-base font-medium">Risk Products</CardTitle>
             <div className="flex items-center gap-2">
-              <Button variant="link" className="text-[hsl(180,70%,45%)] p-0 h-auto font-normal">+ Risk Products</Button>
+              <Button variant="link" className="text-[hsl(180,70%,45%)] p-0 h-auto font-normal" onClick={() => setShowRiskProductForm(true)}>+ Risk Products</Button>
               {jurisdiction === "ZA" && (
                 <>
                   <span className="text-muted-foreground">|</span>
