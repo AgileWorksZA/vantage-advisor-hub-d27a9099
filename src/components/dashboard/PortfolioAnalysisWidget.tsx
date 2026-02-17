@@ -81,7 +81,7 @@ export function PortfolioAnalysisWidget() {
       <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
         <div className="flex items-center gap-2">
           <GripVertical className="w-4 h-4 text-muted-foreground" />
-          <CardTitle className="text-sm font-medium">Portfolio Analysis</CardTitle>
+          <CardTitle className="text-sm font-medium">Portfolio Overview</CardTitle>
         </div>
         <Button variant="ghost" size="icon" className="h-6 w-6">
           <X className="w-4 h-4" />
