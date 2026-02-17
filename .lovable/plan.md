@@ -1,54 +1,41 @@
 
 
-## Make 30% of Clients Show as Green (Routine) Status
+## Add Animated Gradient Border "View All Opportunities" Button
 
-### Problem
-Currently, all clients generate urgent and/or important opportunity gaps based on their product mix, so very few (if any) clients appear as green/routine status in the Client Opportunities widget and the Clients list.
+### Overview
+Add a button at the bottom of the Client Opportunities widget with text "View All Opportunities" and a continuously animated gradient border that creates a moving color effect around the button edges, matching the style shown in the reference image.
 
-### Solution
-Add a deterministic "green client" check using the existing `seededRandom` pattern. For ~30% of clients (based on a hash of their client ID), filter out all urgent and important opportunity types from `buildGapOpportunities`, leaving only routine gaps (Upsell, Migration, Bank Scrape). This ensures these clients consistently appear as green across the entire application.
-
-### How It Works
-- A new exported utility function `isGreenClient(clientId: string): boolean` will use the same seeded random approach (hash of clientId) to deterministically return `true` for ~30% of client IDs
-- This function will be called inside `buildGapOpportunitiesForProducts` (or at the call sites) to filter out urgent/important gap types
-- Because the check is deterministic and based on client ID, the same clients will always be green regardless of where the check runs
+### Animation Approach
+Use a CSS `@keyframes` animation that rotates a `conic-gradient` background on a pseudo-element wrapper. The button will have:
+- A rounded pill shape
+- A thin animated gradient border (violet to cyan to teal, rotating)
+- White/card background interior
+- Teal-colored text with a trend icon
 
 ### Changes
 
-**File: `src/components/client-detail/next-best-action/OpportunitiesTab.tsx`**
+**File: `src/components/dashboard/ClientOpportunityStatusWidget.tsx`**
 
-- Add and export `isGreenClient(clientId: string): boolean` utility using a simple hash (same pattern as `seededRandom` in regional360ViewData)
-- Returns `true` when hash-derived value < 0.3 (30% of clients)
-- Modify `buildGapOpportunitiesForProducts` to accept an optional `clientId` parameter
-- When `clientId` is provided and `isGreenClient(clientId)` is true, filter the generated gaps to only include routine types (Upsell, Migration, Bank Scrape)
-- Update `buildGapOpportunities` signature to pass `clientId` through
+- Add a "View All Opportunities" button after the table, inside `CardContent`
+- The button navigates to `/ai-assistant` (the opportunities/AI page)
+- Use a wrapper div with `overflow: hidden`, `border-radius`, and an animated `conic-gradient` background to create the rotating border effect
+- Inner content has the card background color, creating the illusion of an animated border
+- Add the `TrendingUp` icon from lucide-react before the text
 
-**File: `src/hooks/useClientOpportunityCategories.ts`**
+**File: `src/index.css`**
 
-- Pass `client.id` to `buildGapOpportunities` in `categorizeClient`
+- Add a `@keyframes spin-gradient` animation that rotates 360 degrees
+- Add a `.animated-gradient-border` utility class with the conic-gradient background and rotation animation
 
-**File: `src/pages/Clients.tsx`**
+### Technical Details
 
-- Pass `client.id` to `buildGapOpportunities` in `getClientDotClass`
-
-**File: `src/pages/ClientDetail.tsx`**
-
-- Pass `clientId` to `buildGapOpportunities` in the status dot color computation
-
-**File: `src/components/client-detail/ClientSummaryTab.tsx`**
-
-- Pass `clientId` to `buildGapOpportunities` call
-
-### Result
-- ~30% of clients across all jurisdictions will show only routine (green) opportunities
-- The selection is consistent and deterministic per client ID
-- All views (dashboard widget, clients list, client detail) will reflect the same green status
+The animated border effect works by:
+1. Outer wrapper has `padding: 1.5px`, `border-radius`, and an animated `conic-gradient` background
+2. The conic-gradient uses violet, cyan, and teal colors rotating via CSS animation
+3. Inner element has the same border-radius with card background, creating the thin animated border illusion
+4. Animation duration ~3s, infinite loop, linear timing
 
 | File | Action |
 |------|--------|
-| `src/components/client-detail/next-best-action/OpportunitiesTab.tsx` | Edit - add `isGreenClient`, update gap builder to filter |
-| `src/hooks/useClientOpportunityCategories.ts` | Edit - pass clientId to buildGapOpportunities |
-| `src/pages/Clients.tsx` | Edit - pass clientId to buildGapOpportunities |
-| `src/pages/ClientDetail.tsx` | Edit - pass clientId to buildGapOpportunities |
-| `src/components/client-detail/ClientSummaryTab.tsx` | Edit - pass clientId to buildGapOpportunities |
-
+| `src/index.css` | Edit - add spinning gradient keyframes and utility class |
+| `src/components/dashboard/ClientOpportunityStatusWidget.tsx` | Edit - add animated border button at bottom |
