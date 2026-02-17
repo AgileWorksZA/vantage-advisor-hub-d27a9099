@@ -242,29 +242,73 @@ const aggregateRows = (rows: AnalyticsRow[]): Omit<AnalyticsRow, "label" | "filt
   return t;
 };
 
-const exportToCsv = (rows: AnalyticsRow[], viewLabel: string) => {
-  const headers = [
-    viewLabel, "Due Items", "Overdue", "Due Today", "Due Tomorrow",
-    "Due This Week", "Due Next Week", "Completed in Period",
-    "Completed Prior Period", "Utilisation %", "SLA Adherence %",
-  ];
-  const csvRows = [
-    headers.join(","),
-    ...rows.map((r) =>
-      [
-        `"${r.label}"`, r.dueItems, r.overdue, r.dueToday, r.dueTomorrow,
-        r.dueThisWeek, r.dueNextWeek, r.completedInPeriod,
-        r.completedPriorPeriod, r.utilisationPct ?? "-", r.slaPct ?? "-",
-      ].join(",")
-    ),
-  ];
-  const blob = new Blob([csvRows.join("\n")], { type: "text/csv" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `task-analytics-${viewLabel.toLowerCase().replace(/\s/g, "-")}-${format(new Date(), "yyyy-MM-dd")}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
+const exportToExcel = (
+  rows: AnalyticsRow[],
+  viewLabel: string,
+  groupedByAdviser: Record<string, AnalyticsRow[]> | null,
+  adviserGroups: Record<string, { adviserName: string }>,
+  totals: ReturnType<typeof aggregateRows>
+) => {
+  import("xlsx").then((XLSX) => {
+    const headers = [
+      viewLabel, "Due Items", "Overdue", "Due Today", "Due Tomorrow",
+      "Due This Week", "Due Next Week", "Completed in Period",
+      "Completed Prior Period", "Utilisation %", "SLA Adherence %",
+    ];
+
+    const dataRows: (string | number)[][] = [];
+
+    if (groupedByAdviser) {
+      // By User view: adviser group headers with indented members
+      Object.entries(groupedByAdviser).forEach(([initials, members]) => {
+        const group = adviserGroups[initials];
+        const groupTotals = aggregateRows(members);
+        dataRows.push([
+          group?.adviserName || initials,
+          groupTotals.dueItems, groupTotals.overdue, groupTotals.dueToday,
+          groupTotals.dueTomorrow, groupTotals.dueThisWeek, groupTotals.dueNextWeek,
+          groupTotals.completedInPeriod, groupTotals.completedPriorPeriod,
+          groupTotals.utilisationPct ?? "", groupTotals.slaPct ?? "",
+        ]);
+        members.forEach((r) => {
+          dataRows.push([
+            `  ${r.label}`, r.dueItems, r.overdue, r.dueToday, r.dueTomorrow,
+            r.dueThisWeek, r.dueNextWeek, r.completedInPeriod, r.completedPriorPeriod,
+            r.utilisationPct ?? "", r.slaPct ?? "",
+          ]);
+        });
+      });
+    } else {
+      rows.forEach((r) => {
+        dataRows.push([
+          r.label, r.dueItems, r.overdue, r.dueToday, r.dueTomorrow,
+          r.dueThisWeek, r.dueNextWeek, r.completedInPeriod, r.completedPriorPeriod,
+          r.utilisationPct ?? "", r.slaPct ?? "",
+        ]);
+      });
+    }
+
+    // Totals row
+    dataRows.push([
+      "Total", totals.dueItems, totals.overdue, totals.dueToday,
+      totals.dueTomorrow, totals.dueThisWeek, totals.dueNextWeek,
+      totals.completedInPeriod, totals.completedPriorPeriod,
+      totals.utilisationPct ?? "", totals.slaPct ?? "",
+    ]);
+
+    const wsData = [headers, ...dataRows];
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+    // Auto-width columns
+    ws["!cols"] = headers.map((h, i) => ({
+      wch: Math.max(h.length, ...dataRows.map((r) => String(r[i]).length)) + 2,
+    }));
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Workflow Analytics");
+    const viewSlug = viewLabel.toLowerCase().replace(/\s+/g, "-");
+    XLSX.writeFile(wb, `workflow-analytics-${viewSlug}-${format(new Date(), "yyyy-MM-dd")}.xlsx`);
+  });
 };
 
 function AnalyticsDataRow({ row, index, onCellClick, indented }: { row: AnalyticsRow; index: number; onCellClick: (column: string) => void; indented?: boolean }) {
@@ -659,7 +703,7 @@ export function TaskAnalyticsTab({ tasks, onDrillDown }: TaskAnalyticsTabProps) 
           )}
         </div>
 
-        <Button variant="outline" size="sm" className="gap-2" onClick={() => exportToCsv(rows, groupLabel)}>
+        <Button variant="outline" size="sm" className="gap-2" onClick={() => exportToExcel(rows, groupLabel, groupedByAdviser, adviserGroups, totals)}>
           <Download className="h-4 w-4" />Export Report
         </Button>
       </div>
