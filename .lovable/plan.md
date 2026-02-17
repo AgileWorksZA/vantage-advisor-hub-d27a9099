@@ -1,13 +1,16 @@
 
-## Match "AI" Badge on Opportunities Tab to Optimize Button
 
-### What Changes
-Update the AI badge next to the "Opportunities" tab label to use the same size and padding as the AI badge on the "Optimize" button, so they look identical.
+## Remove Tasks Tab from Client Detail
 
-### File
+A straightforward removal of the "Tasks" tab from the client detail view. Three changes in one file:
 
-| File | Change |
-|------|--------|
-| `src/pages/ClientDetail.tsx` (line 279) | Change badge classes from `px-1.5 py-0 text-[10px]` to `px-2 py-0.5 text-xs` to match the Optimize button's AI badge |
+### File: `src/pages/ClientDetail.tsx`
 
-The gradient, color, and shape (`bg-gradient-to-r from-violet-500 to-cyan-500 text-white rounded-full`) stay the same -- only the sizing is adjusted to match.
+| Change | Detail |
+|--------|--------|
+| Remove tab trigger | Delete the `{ value: "tasks", label: "Tasks" }` entry from the tabs array (~line 264) |
+| Remove TabsContent | Delete the `<TabsContent value="tasks">` block (~line 299) |
+| Remove import | Delete the `import ClientTasksTab` line (~line 42) |
+
+No other files reference or depend on this tab being present in the client detail view.
+
