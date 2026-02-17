@@ -1,61 +1,27 @@
 
 
-## Add Portfolio Analysis Widget to Advisor Dashboard & Remove Action Button Screen
+## Improve AUM by Product Widget
 
-### Overview
-Add a new "Portfolio Analysis" dashboard widget that mirrors the home screen's Portfolio Analysis card (performance chart, fee comparison, asset allocation) adapted for the dashboard widget grid. Also remove the OpportunityAction page and its route.
+### Changes to `src/pages/Dashboard.tsx`
 
-### 1. Remove OpportunityAction Page
+**1. Enlarge the pie chart**
+- Increase the chart container from `h-32` (128px) to `h-44` (176px) and update the EChartsWrapper height to 176
+- Increase the pie radius from `['45%', '75%']` to `['50%', '80%']` to fill the larger space
+- Reduce margins between sections (e.g., `mb-2` to `mb-1` on total AUM, `mt-3` to `mt-1` on period toggle)
 
-**File: `src/App.tsx`**
-- Remove the import of `OpportunityAction`
-- Remove the route `<Route path="/opportunities/:category" ...>`
+**2. Add sparkline and growth % next to Total AUM**
+- Replace the plain total AUM line with a row layout: `[Total AUM value] [sparkline SVG] [growth badge]`
+- The sparkline will be a tiny inline SVG polyline (~60px wide, 20px tall) showing a 6-point trend (static demo data representing monthly AUM progression)
+- The growth badge shows the overall portfolio growth for the selected period (sum/average of product growths), colored green/red with an arrow icon
+- The sparkline line color matches the growth direction (emerald for positive, red for negative)
 
-**File: `src/pages/OpportunityAction.tsx`**
-- Delete this file
+### Technical Details
 
-### 2. Create Portfolio Analysis Dashboard Widget
-
-**File: `src/components/dashboard/PortfolioAnalysisWidget.tsx`** (new)
-
-A self-contained widget component adapted from `HeroPortfolioCard.tsx`'s `PortfolioAnalysisCard`, but simplified for the dashboard context:
-
-- **Performance Comparison Chart**: SVG line chart with 3 lines (Current, Model, Benchmark) and period toggles (6M, 1Y, 3Y, 5Y). Uses static demo data matching the home screen card.
-- **Annual Fee Comparison**: Horizontal bar comparison showing Current (1.85%) vs Model (1.25%) with the "Potential fee saving" callout.
-- **Asset Allocation**: Side-by-side bars for Equities, Bonds, Property, Cash showing Current vs Model percentages.
-- **"Switch to Model Portfolio" button**: At the bottom with the `animated-border-button` styling (matching home screen).
-- Standard widget card wrapper with `GripVertical` drag handle and close button, matching all other dashboard widgets.
-- No entry animation (unlike the home screen card which animates on carousel focus) -- content renders immediately.
-
-### 3. Register Widget in Dashboard
-
-**File: `src/pages/Dashboard.tsx`**
-
-- Import `PortfolioAnalysisWidget`
-- Add to `defaultDashboardLayout`: `{ i: 'portfolio-analysis', x: 9, y: 6, w: 3, h: 3 }`
-- Add to `DASHBOARD_WIDGETS`: `{ id: 'portfolio-analysis', label: 'Portfolio Analysis' }`
-- Add widget render block inside `DraggableWidgetGrid`:
-  ```
-  {isWidgetVisible('portfolio-analysis') && (
-    <div key="portfolio-analysis">
-      <PortfolioAnalysisWidget />
-    </div>
-  )}
-  ```
-
-### Visual Design
-- Chart uses brand colors: orange for Current, blue for Model, green dashed for Benchmark
-- Fee bars use the same orange/blue color scheme
-- Asset allocation dots use blue, orange, green, purple
-- Compact text sizes (text-xs, text-[10px]) to fit within the widget grid cell
-- Same card styling as other widgets (Card, CardHeader, CardContent)
-
-### Files Summary
-
-| File | Action |
-|------|--------|
-| `src/pages/OpportunityAction.tsx` | Delete |
-| `src/App.tsx` | Edit - remove OpportunityAction import and route |
-| `src/components/dashboard/PortfolioAnalysisWidget.tsx` | Create - new widget component |
-| `src/pages/Dashboard.tsx` | Edit - register and render new widget |
+| Aspect | Detail |
+|--------|--------|
+| File | `src/pages/Dashboard.tsx` (lines 408-489) |
+| Chart height | 128px to 176px |
+| Pie radius | `['45%','75%']` to `['50%','80%']` |
+| Sparkline | Inline SVG polyline, 6 static data points, ~60x20px |
+| Growth calc | Weighted average of product growth values for selected period |
 
