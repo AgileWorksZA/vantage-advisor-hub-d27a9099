@@ -18,7 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useClientDetail } from "@/hooks/useClientDetail";
-import { generateClient360Data, formatTotal, mapNationalityToJurisdiction, type MedicalAid } from "@/data/regional360ViewData";
+import { generateClient360Data, formatTotal, mapNationalityToJurisdiction, type MedicalAid, type RiskProduct } from "@/data/regional360ViewData";
 import QuoteWizardView from "./QuoteWizardDialog";
 import NewBusinessWizardDialog from "./NewBusinessWizardDialog";
 import AddMedicalAidForm from "./AddMedicalAidForm";
@@ -47,6 +47,7 @@ const Client360ViewTab = () => {
   const [showWillForm, setShowWillForm] = useState(false);
   const [showAstuteRequest, setShowAstuteRequest] = useState(false);
   const [selectedMedicalAid, setSelectedMedicalAid] = useState<MedicalAid | null>(null);
+  const [selectedRiskProduct, setSelectedRiskProduct] = useState<RiskProduct | null>(null);
 
   const jurisdiction = mapNationalityToJurisdiction(client?.nationality || null, client?.country_of_issue || null);
   
@@ -94,6 +95,16 @@ const Client360ViewTab = () => {
       return next;
     });
   };
+
+  if (selectedRiskProduct) {
+    return (
+      <AddRiskProductForm
+        onClose={() => setSelectedRiskProduct(null)}
+        onSave={() => setSelectedRiskProduct(null)}
+        initialData={selectedRiskProduct}
+      />
+    );
+  }
 
   if (selectedMedicalAid) {
     return (
@@ -524,7 +535,7 @@ const Client360ViewTab = () => {
             <TableBody>
               {riskProducts.map((product, index) => (
                 <TableRow key={index} className="border-b border-border/50">
-                  <TableCell className="text-sm text-[hsl(180,70%,45%)]">{product.holdingName}</TableCell>
+                  <TableCell className="text-sm text-[hsl(180,70%,45%)] cursor-pointer hover:underline" onClick={() => { setSelectedRiskProduct(product); scrollToTop(); }}>{product.holdingName}</TableCell>
                   <TableCell className="text-sm">{product.policyNumber}</TableCell>
                   <TableCell className="text-sm">{product.effectiveDate}</TableCell>
                   <TableCell className="text-sm">{product.terminationDate}</TableCell>
