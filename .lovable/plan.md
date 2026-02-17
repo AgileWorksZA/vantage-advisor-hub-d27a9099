@@ -1,24 +1,63 @@
 
 
-## Auto-Position Widgets Left-to-Right, Top-to-Bottom
+## Auto-Reflow Widgets to Fill Left-to-Right, Top-to-Bottom
 
 ### Problem
-Widgets currently use horizontal compaction, which can leave gaps in rows and allows widgets to form isolated rows/columns when dragged. The desired behavior is: widgets should always fill from left to right, starting at the top row, packing as tightly as possible without changing widget sizes or showing partial widgets.
+When the screen width changes (or widgets are hidden), widgets keep their saved x/y positions, leaving gaps. The current code only clamps positions but doesn't re-pack widgets into a dense left-to-right, top-to-bottom flow.
 
 ### Solution
-A single change in the shared `DraggableWidgetGrid` component: switch `compactType` from `"horizontal"` to `"vertical"`.
+Replace the simple `adjustedLayout` clamping logic with a full reflow algorithm that re-assigns x/y positions sequentially, packing widgets densely into rows based on the current column count.
 
-In react-grid-layout, `compactType="vertical"` means:
-- Widgets are compacted **upward** to fill vertical gaps
-- Within each row, items flow **left to right**
-- After a drag, all widgets re-compact so no empty rows or floating positions remain
+### Single File Change: `src/components/widgets/DraggableWidgetGrid.tsx`
 
-This applies to both the Adviser Dashboard, Client Dashboard, and Insights page since they all share the same grid component.
+**Replace lines 89-94** (the `adjustedLayout` logic) with a reflow function:
 
-### File Change
+```typescript
+// Reflow: pack widgets left-to-right, top-to-bottom
+const reflowLayout = (items: WidgetLayout[], cols: number): WidgetLayout[] => {
+  // Sort by original position (top-to-bottom, left-to-right) to preserve order
+  const sorted = [...items].sort((a, b) => a.y !== b.y ? a.y - b.y : a.x - b.x);
+  
+  // Track the height filled in each column
+  const colHeights = new Array(cols).fill(0);
+  
+  return sorted.map(item => {
+    const w = Math.min(item.w, cols);
+    
+    // Find the first column position where this widget fits
+    let bestCol = 0;
+    let bestY = Infinity;
+    
+    for (let col = 0; col <= cols - w; col++) {
+      // The widget spans columns col..col+w-1
+      // It must start at the max height of those columns
+      const startY = Math.max(...colHeights.slice(col, col + w));
+      if (startY < bestY) {
+        bestY = startY;
+        bestCol = col;
+      }
+    }
+    
+    // Place widget
+    const placed = { ...item, x: bestCol, y: bestY, w };
+    
+    // Update column heights
+    for (let c = bestCol; c < bestCol + w; c++) {
+      colHeights[c] = bestY + item.h;
+    }
+    
+    return placed;
+  });
+};
 
-| File | Change |
-|------|--------|
-| `src/components/widgets/DraggableWidgetGrid.tsx` | Line 115: Change `compactType="horizontal"` to `compactType="vertical"` |
+const adjustedLayout = reflowLayout(layout, visibleCols);
+```
 
-No other files need to change -- the grid component is shared by all dashboards.
+This algorithm:
+- Sorts widgets by their current position to maintain relative order
+- Greedily places each widget at the earliest available row, leftmost column
+- Handles widgets of different widths correctly
+- Runs on every render when `visibleCols` changes, so expanding the screen automatically pulls widgets up from lower rows
+- After drag-stop, the saved layout gets reflowed on next render, preventing gaps
+
+No other files need changes.
