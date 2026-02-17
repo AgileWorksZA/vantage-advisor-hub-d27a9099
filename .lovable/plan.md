@@ -1,27 +1,77 @@
 
 
-## Improve AUM by Product Widget
+## Add Sparkline + Growth % to Three Dashboard Widgets
 
-### Changes to `src/pages/Dashboard.tsx`
+### Overview
+Add a sparkline chart and growth percentage badge to the header area of the **Top 5 Accounts**, **Clients by Value**, and **Provider View** widgets, matching the pattern already implemented in the AUM by Product widget.
 
-**1. Enlarge the pie chart**
-- Increase the chart container from `h-32` (128px) to `h-44` (176px) and update the EChartsWrapper height to 176
-- Increase the pie radius from `['45%', '75%']` to `['50%', '80%']` to fill the larger space
-- Reduce margins between sections (e.g., `mb-2` to `mb-1` on total AUM, `mt-3` to `mt-1` on period toggle)
+### 1. Extend Data Interfaces (`src/data/regionalData.ts`)
 
-**2. Add sparkline and growth % next to Total AUM**
-- Replace the plain total AUM line with a row layout: `[Total AUM value] [sparkline SVG] [growth badge]`
-- The sparkline will be a tiny inline SVG polyline (~60px wide, 20px tall) showing a 6-point trend (static demo data representing monthly AUM progression)
-- The growth badge shows the overall portfolio growth for the selected period (sum/average of product growths), colored green/red with an arrow icon
-- The sparkline line color matches the growth direction (emerald for positive, red for negative)
+Add growth fields to three interfaces:
 
-### Technical Details
+```typescript
+export interface ProviderData {
+  name: string;
+  bookPercent: string;
+  value: string;
+  growth1m?: number;
+  growth6m?: number;
+  growthYtd?: number;
+}
 
-| Aspect | Detail |
-|--------|--------|
-| File | `src/pages/Dashboard.tsx` (lines 408-489) |
-| Chart height | 128px to 176px |
-| Pie radius | `['45%','75%']` to `['50%','80%']` |
-| Sparkline | Inline SVG polyline, 6 static data points, ~60x20px |
-| Growth calc | Weighted average of product growth values for selected period |
+export interface TopAccountData {
+  investor: string;
+  bookPercent: string;
+  value: string;
+  advisorInitials: string;
+  growth1m?: number;
+  growth6m?: number;
+  growthYtd?: number;
+}
+
+export interface ClientsByValueData {
+  range: string;
+  value: string;
+  investors: number;
+  growth1m?: number;
+  growth6m?: number;
+  growthYtd?: number;
+}
+```
+
+Add deterministic growth values to all entries across all 5 regions (ZA, AU, CA, UK, US). Values will be realistic and vary -- some positive, some negative.
+
+### 2. Update Dashboard Widgets (`src/pages/Dashboard.tsx`)
+
+For each of the three widgets, add a sparkline + growth badge row between the header and the table, following the same pattern as the AUM widget:
+
+- Add a shared `aumGrowthPeriod` state (already exists) and reuse it across all three widgets for consistency
+- Each widget gets a row showing: `[Total/Summary value] [SVG sparkline] [growth % badge]`
+- Below each table, add the same period toggle pills (1M | 6M | YTD) already used in AUM widget
+- Each table row also gets a small inline growth % next to the value column
+
+**Provider View widget:**
+- Summary line: total provider AUM with sparkline and average growth
+- Each provider row gets a growth badge in the value column
+
+**Top 5 Accounts widget:**
+- Summary line: total top-5 value with sparkline and average growth
+- Each account row gets a growth badge in the value column
+
+**Clients by Value widget:**
+- Summary line: total client value with sparkline and average growth
+- Each value-range row gets a growth badge next to the investors count
+
+### Visual Design
+- Sparkline: 60x20px inline SVG polyline (6 points), green stroke for positive, red for negative
+- Growth badge: text-xs, emerald-600/red-600, with TrendingUp/TrendingDown icon
+- Period toggle: same pill buttons as AUM widget, sharing the same state variable
+- Row-level badges: text-[10px], compact, next to existing values
+
+### Files
+
+| File | Action |
+|------|--------|
+| `src/data/regionalData.ts` | Edit -- add growth fields to 3 interfaces and all region data |
+| `src/pages/Dashboard.tsx` | Edit -- add sparkline rows and row-level growth badges to 3 widgets |
 
