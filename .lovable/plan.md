@@ -1,62 +1,49 @@
 
 
-## Restyle Client Opportunity Status Widget and Add Clickable Navigation
+## Redesign "Client Opportunities" Widget with Segment Table
 
 ### Overview
-Restyle the dashboard's "Client Opportunity Status" widget to match the "Action Priority" widget pattern (section headers with icons, bullet items with descriptions and values). Make each category clickable to navigate to a new page listing all clients in that category with their opportunities for actioning.
+Rename the widget to "Client Opportunities" and replace the per-client listing with a matrix table (like the Account Onboarding Progress widget). Rows are AUM segments, columns are priority statuses (Urgent, Important, Routine). Each cell shows client count and total opportunity value.
 
-### Part 1: Restyle the Widget
+### Table Layout
+
+```text
+Segment        | Urgent       | Important    | Routine
+---------------|--------------|--------------|-------------
+0 - 1M         | 3 / R 45k    | 5 / R 20k   | 2 / -
+1M - 5M        | 2 / R 320k   | 4 / R 180k  | 1 / R 10k
+> 5M           | 1 / R 1.2M   | 2 / R 500k  | 3 / R 80k
+```
+
+Each cell displays a clickable count and value. Clicking navigates to `/opportunities/:priority` (existing page).
+
+### Changes
+
+**File: `src/hooks/useClientOpportunityCategories.ts`**
+
+1. Add a `segment` field to `ClientCategoryItem` based on total portfolio value (sum of all product values from `generateClient360Data`):
+   - `"0-1m"` if portfolio < 1,000,000
+   - `"1m-5m"` if portfolio >= 1M and < 5M
+   - `"gt5m"` if portfolio >= 5M
+2. Export a new type `Segment = "0-1m" | "1m-5m" | "gt5m"`
+3. Add a new return shape: `matrix` - a nested object `Record<Segment, Record<Priority, { count: number; value: number }>>` computed alongside the existing categories
+4. Keep existing `categories` return for backward compatibility (used by OpportunityAction page)
 
 **File: `src/components/dashboard/ClientOpportunityStatusWidget.tsx`**
 
-Replace the current table layout with the Action Priority visual pattern:
-- Three collapsible sections: Urgent (red triangle icon), Important (amber clock icon), Routine (green check icon)
-- Each section header shows the count badge on the right
-- Under each section, list individual clients with a colored dot, truncated client name, and their total opportunity value
-- Limit display to top 3-5 clients per section to fit widget height
-- Make the entire section header row clickable (cursor-pointer, hover effect)
+1. Rename title from "Client Opportunity Status" to "Client Opportunities"
+2. Replace the current section-based layout with a table matching the onboarding widget pattern:
+   - Row headers: "0 - 1M", "1M - 5M", "> 5M"
+   - Column headers: "Urgent" (with red dot), "Important" (with amber dot), "Routine" (with green dot)
+   - Each cell shows count (clickable, navigates to `/opportunities/:priority`) and formatted value below it
+   - Zero counts show "0" in muted text, non-zero counts are clickable primary-colored text
+3. Use the same `<table>` HTML structure as `OnboardingProgressWidget` for visual consistency
 
-The data computation stays the same but is enriched to track per-client details (name + value) within each category.
-
-### Part 2: Create Opportunity Action Page
-
-**New file: `src/pages/OpportunityAction.tsx`**
-
-A new page at `/opportunities/:category` (where category is "urgent", "important", or "routine") that:
-- Shows a header with the category name and colored icon
-- Lists all clients in that category in a table with columns: Client Name, Status Dot, Opportunities (comma-separated types), Total Opportunity Value
-- Each client row is clickable, navigating to `/clients/:clientId?tab=opportunities`
-- Includes a "Back to Dashboard" button
-- Uses the same `getClientCategory` logic from the widget (extracted to a shared utility)
-
-### Part 3: Extract Shared Logic
-
-**New file: `src/hooks/useClientOpportunityCategories.ts`**
-
-Extract the client categorization logic currently in `ClientOpportunityStatusWidget` into a reusable hook:
-- Returns `{ urgent: ClientCategoryItem[], important: ClientCategoryItem[], routine: ClientCategoryItem[] }`
-- Each item includes: `clientId`, `clientName`, `opportunities` (gap list), `totalValue`
-- Used by both the dashboard widget and the new action page
-
-### Part 4: Add Route
-
-**File: `src/App.tsx`**
-
-- Add route: `/opportunities/:category` pointing to `OpportunityAction` page
-
-### Part 5: Widget Click Behavior
-
-When clicking on a category header in the widget:
-- Navigate to `/opportunities/urgent`, `/opportunities/important`, or `/opportunities/routine`
-- The action page loads all clients for that category with full opportunity details
-
-### Files Changed
+### Technical Details
 
 | File | Action |
 |------|--------|
-| `src/hooks/useClientOpportunityCategories.ts` | New - shared hook for client categorization |
-| `src/components/dashboard/ClientOpportunityStatusWidget.tsx` | Edit - restyle to match Action Priority pattern, add click navigation |
-| `src/pages/OpportunityAction.tsx` | New - opportunity action page per category |
-| `src/App.tsx` | Edit - add route for opportunity action page |
+| `src/hooks/useClientOpportunityCategories.ts` | Edit - add segment computation and matrix return |
+| `src/components/dashboard/ClientOpportunityStatusWidget.tsx` | Edit - rename, replace layout with segment table |
 
-No database or backend changes required.
+No new files, routes, or database changes needed. The existing `/opportunities/:priority` route handles navigation.
