@@ -277,14 +277,23 @@ export function generateClient360Data(clientId: string, nationality: string | nu
   const config = jurisdictionConfigs[jurisdiction];
   const random = seededRandom(clientId);
   
-  // Generate on-platform products (1-3 products)
-  const numOnPlatform = Math.floor(random() * 3) + 1;
+  // Determine client profile tier for realistic status mix
+  const tierRoll = random();
+  const tier: "full" | "moderate" | "simple" = tierRoll < 0.35 ? "full" : tierRoll < 0.70 ? "moderate" : "simple";
+  
+  // Tier-based parameters
+  const numOnPlatform = tier === "full" ? Math.floor(random() * 2) + 2 : tier === "moderate" ? Math.floor(random() * 2) + 1 : 1;
+  const amountMin = tier === "full" ? 200000 : tier === "moderate" ? 30000 : 20000;
+  const amountMax = tier === "full" ? 1500000 : tier === "moderate" ? 150000 : 80000;
+  const numExternal = tier === "full" ? Math.floor(random() * 3) + 2 : tier === "moderate" ? Math.floor(random() * 2) + 1 : Math.floor(random() * 2); // 0-1 for simple
+  const includeCash = tier !== "simple";
+
   const onPlatformProducts: OnPlatformProduct[] = [];
   
   for (let i = 0; i < numOnPlatform; i++) {
     const productType = config.onPlatformProducts[Math.floor(random() * config.onPlatformProducts.length)];
-    const baseAmount = (random() * 1500000) + 50000;
-    const hasDetails = random() > 0.5 && i === 0; // First product may have expandable details
+    const baseAmount = (random() * (amountMax - amountMin)) + amountMin;
+    const hasDetails = random() > 0.5 && i === 0;
     
     const product: OnPlatformProduct = {
       investmentHouse: "Vantage",
@@ -317,21 +326,19 @@ export function generateClient360Data(clientId: string, nationality: string | nu
     onPlatformProducts.push(product);
   }
   
-  // Generate external products (2-4 products)
-  const numExternal = Math.floor(random() * 3) + 2;
+  // Generate external products
   const externalProducts: ExternalProduct[] = [];
   const usedProviders = new Set<string>();
   
   for (let i = 0; i < numExternal; i++) {
     let provider = config.externalProviders[Math.floor(random() * config.externalProviders.length)];
-    // Avoid duplicate providers
     while (usedProviders.has(provider) && usedProviders.size < config.externalProviders.length) {
       provider = config.externalProviders[Math.floor(random() * config.externalProviders.length)];
     }
     usedProviders.add(provider);
     
     const productType = config.externalProductTypes[Math.floor(random() * config.externalProductTypes.length)];
-    const amount = (random() * 450000) + 50000;
+    const amount = (random() * (amountMax * 0.3)) + (amountMin * 0.5);
     
     externalProducts.push({
       provider,
@@ -346,10 +353,11 @@ export function generateClient360Data(clientId: string, nationality: string | nu
     });
   }
   
-  // Generate platform cash account
-  const cashAmount = (random() * 90000) + 10000;
-  const platformCashAccounts: PlatformCashAccount[] = [
-    {
+  // Generate platform cash account (skip for simple tier)
+  const platformCashAccounts: PlatformCashAccount[] = [];
+  if (includeCash) {
+    const cashAmount = (random() * 90000) + 10000;
+    platformCashAccounts.push({
       name: `${config.platformCashBank} Account`,
       dateOpened: generateRandomDate(random, 2),
       beneficiary: "",
@@ -358,8 +366,8 @@ export function generateClient360Data(clientId: string, nationality: string | nu
       amountValue: cashAmount,
       source: "",
       dateClosed: "",
-    },
-  ];
+    });
+  }
   
   // Generate will data (70% have wills)
   const hasWill = random() > 0.3;

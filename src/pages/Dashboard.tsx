@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import GlobalAIChat from "@/components/ai-assistant/GlobalAIChat";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { OnboardingProgressWidget } from "@/components/dashboard/OnboardingProgressWidget";
+import { ClientOpportunityStatusWidget } from "@/components/dashboard/ClientOpportunityStatusWidget";
 
 const sidebarItems = [{
   icon: LayoutDashboard,
@@ -61,7 +62,7 @@ const defaultDashboardLayout: WidgetLayout[] = [
   { i: 'clients-value', x: 3, y: 3, w: 3, h: 3 },
   { i: 'corporate-actions', x: 6, y: 3, w: 3, h: 3 },
   { i: 'onboarding-progress', x: 0, y: 6, w: 3, h: 3 },
-  
+  { i: 'client-opportunity-status', x: 3, y: 6, w: 3, h: 3 },
 ];
 
 const DASHBOARD_WIDGETS: WidgetConfig[] = [
@@ -72,7 +73,7 @@ const DASHBOARD_WIDGETS: WidgetConfig[] = [
   { id: 'clients-value', label: 'Clients by Value' },
   { id: 'corporate-actions', label: 'Upcoming Corporate Actions' },
   { id: 'onboarding-progress', label: 'Account Onboarding Progress' },
-  
+  { id: 'client-opportunity-status', label: 'Client Opportunity Status' },
 ];
 
 const Dashboard = () => {
@@ -598,6 +599,11 @@ const Dashboard = () => {
             {/* Account Onboarding Progress */}
             {isWidgetVisible('onboarding-progress') && <div key="onboarding-progress">
               <OnboardingProgressWidget selectedAdvisorNames={selectedAdvisorNames} />
+            </div>}
+
+            {/* Client Opportunity Status */}
+            {isWidgetVisible('client-opportunity-status') && <div key="client-opportunity-status">
+              <ClientOpportunityStatusWidget />
             </div>}
 
           </DraggableWidgetGrid>
