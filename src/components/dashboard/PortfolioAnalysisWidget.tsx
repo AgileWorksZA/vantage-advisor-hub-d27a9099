@@ -225,16 +225,6 @@ export function PortfolioAnalysisWidget({ region }: PortfolioAnalysisWidgetProps
               </div>
             ))}
           </div>
-          <div className="flex justify-center gap-3 mt-1">
-            <div className="flex items-center gap-1">
-              <div className="w-2 h-2 rounded-sm bg-[hsl(var(--brand-orange))]" />
-              <span className="text-[8px] text-muted-foreground">Current</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-2 h-2 rounded-sm bg-[hsl(var(--brand-blue))]" />
-              <span className="text-[8px] text-muted-foreground">{modelLabel}</span>
-            </div>
-          </div>
         </div>
       </CardContent>
     </Card>
