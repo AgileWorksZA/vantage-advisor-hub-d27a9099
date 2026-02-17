@@ -64,7 +64,7 @@ const defaultDashboardLayout: WidgetLayout[] = [
   { i: 'corporate-actions', x: 6, y: 3, w: 3, h: 3 },
   { i: 'onboarding-progress', x: 0, y: 6, w: 3, h: 3 },
   { i: 'client-opportunity-status', x: 3, y: 6, w: 3, h: 3 },
-  { i: 'portfolio-analysis', x: 6, y: 6, w: 3, h: 3 },
+  { i: 'portfolio-analysis', x: 6, y: 6, w: 3, h: 6 },
 ];
 
 const DASHBOARD_WIDGETS: WidgetConfig[] = [
@@ -76,7 +76,7 @@ const DASHBOARD_WIDGETS: WidgetConfig[] = [
   { id: 'corporate-actions', label: 'Upcoming Corporate Actions' },
   { id: 'onboarding-progress', label: 'Account Onboarding Progress' },
   { id: 'client-opportunity-status', label: 'Client Opportunity Status' },
-  { id: 'portfolio-analysis', label: 'Portfolio Analysis' },
+  { id: 'portfolio-analysis', label: 'Portfolio Overview' },
 ];
 
 const Dashboard = () => {
