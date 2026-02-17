@@ -1,37 +1,42 @@
 
 
-## Remove Decimals & Move Sparklines Next to Last Digit
+## Remove Decimals from Widget Headings & Close Sparkline Gap
 
 ### Overview
 Two changes across all dashboard widgets:
-1. Remove decimal places from all growth percentages (e.g., `+3.2%` becomes `+3%`)
-2. Move sparkline SVGs to appear immediately after the value text (next to the last digit), removing the gap
+1. Remove decimal places from the large AUM/value numbers in widget headings (e.g., `$ 5,572,649,990.00` becomes `$ 5,572,649,990`)
+2. Remove remaining whitespace between the heading number and the sparkline SVG
 
-### Changes in `src/pages/Dashboard.tsx`
+### Changes
 
-**1. Remove decimals** - Change all `.toFixed(1)` to `.toFixed(0)` or `Math.round()`:
+#### 1. `src/data/regionalData.ts`
 
-| Widget | Lines (approx) | Current | New |
-|--------|----------------|---------|-----|
-| Provider View - header | ~358 | `providerGrowth.toFixed(1)` | `Math.round(providerGrowth)` |
-| Provider View - rows | ~384 | `g.toFixed(1)` | `Math.round(g)` |
-| Top 5 Accounts - header | ~429 | `top5Growth.toFixed(1)` | `Math.round(top5Growth)` |
-| Top 5 Accounts - rows | ~457 | `g.toFixed(1)` | `Math.round(g)` |
-| AUM by Product - header | ~502 | `totalGrowth.toFixed(1)` | `Math.round(totalGrowth)` |
-| AUM by Product - legend | ~566 | `growth.toFixed(1)` | `Math.round(growth)` |
-| Clients by Value - header | ~659 | `cbvGrowth.toFixed(1)` | `Math.round(cbvGrowth)` |
-| Clients by Value - rows | ~685 | `g.toFixed(1)` | `Math.round(g)` |
+**Update `formatAUM` helper** (line ~99-101): Change from 2 decimal places to 0:
+```typescript
+function formatAUM(value: number): string {
+  return value.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}
+```
 
-**2. Move sparklines next to the last digit** - In each widget header, change the layout so the sparkline appears directly after the value with minimal gap (`gap-1` instead of `gap-2`), removing separation between value and sparkline:
+**Update static `totalAUM` strings** for all 5 regions to remove decimals:
+- South Africa: `"3,667,726,572.38"` to `"3,667,726,572"`
+- Australia: `"4,389,625,872.00"` to `"4,389,625,872"`
+- Canada: `"5,572,649,990.00"` to `"5,572,649,990"`
+- United Kingdom: `"2,847,392,156.00"` to `"2,847,392,156"`
+- United States: `"5,572,649,990.00"` to `"5,572,649,990"`
 
-- Provider View header (line ~351): `gap-2` to `gap-1`
-- Top 5 Accounts header (line ~422): `gap-2` to `gap-1`
-- AUM by Product header (line ~495): `gap-2` to `gap-1`
-- Clients by Value header (line ~652): `gap-2` to `gap-1`
+#### 2. `src/pages/Dashboard.tsx`
+
+**Close sparkline gap** in all 4 widget headers -- change `gap-1` to `gap-0.5` to bring sparklines right next to the last digit:
+
+- Provider View header (line ~351)
+- Top 5 Accounts header (line ~422)
+- AUM by Product header (line ~495)
+- Clients by Value header (line ~652)
 
 ### Files
 
 | File | Action |
 |------|--------|
-| `src/pages/Dashboard.tsx` | Edit - update ~12 growth formatting calls and 4 sparkline gap values |
-
+| `src/data/regionalData.ts` | Edit `formatAUM` function and 5 static `totalAUM` strings |
+| `src/pages/Dashboard.tsx` | Edit 4 header flex containers from `gap-1` to `gap-0.5` |
