@@ -1,18 +1,30 @@
 
-## Scroll to Top When Opening Product Forms
 
-When any of the "+" product buttons are clicked, the page stays at its current scroll position, which can leave the user looking at the bottom of the form. The fix is to add `window.scrollTo(0, 0)` when each form state is set to `true`.
+## Fix: Scroll to Top When Opening Product Forms
 
-### Change
+### Problem
+The `window.scrollTo(0, 0)` calls added previously have no effect because the page layout uses `overflow-hidden` on the root container and `overflow-auto` on the `<main>` element. The browser window itself never scrolls -- only the `<main>` element does.
 
-**File: `src/components/client-detail/Client360ViewTab.tsx`**
+### Solution
+Instead of `window.scrollTo(0, 0)`, target the actual scrollable `<main>` element. The simplest approach: give the scrollable `<main>` in `ClientDetail.tsx` a ref, but since the form components are rendered *instead of* the normal tab content (conditional rendering in `Client360ViewTab`), we can scroll the nearest scrollable parent from within `Client360ViewTab` itself.
 
-Update the four button `onClick` handlers to also scroll to the top:
+**File: `src/components/client-detail/Client360ViewTab.tsx`** (1 file, ~4 lines changed)
 
-- `+ Medical Aid` button (~line 534): `onClick={() => { setShowMedicalAidForm(true); window.scrollTo(0, 0); }}`
-- `+ Risk Products` button (~line 475): `onClick={() => { setShowRiskProductForm(true); window.scrollTo(0, 0); }}`
-- `+ Short Term` button (~line 425): `onClick={() => { setShowShortTermForm(true); window.scrollTo(0, 0); }}`
-- `+ Will` button (~line 375): `onClick={() => { setShowWillForm(true); window.scrollTo(0, 0); }}`
+Replace all four `window.scrollTo(0, 0)` calls with a helper that finds and scrolls the closest scrollable ancestor:
 
-### Scope
-- 1 file, 4 lines changed
+```typescript
+// Before each form show:
+const scrollToTop = () => {
+  const scrollContainer = document.querySelector('main.overflow-auto') 
+    || document.querySelector('[class*="overflow-auto"]');
+  if (scrollContainer) scrollContainer.scrollTop = 0;
+  window.scrollTo(0, 0); // fallback
+};
+```
+
+Then in each button handler:
+```typescript
+onClick={() => { setShowMedicalAidForm(true); scrollToTop(); }}
+```
+
+This targets the actual scrolling container (`<main className="... overflow-auto">`) and resets its scroll position to the top.
