@@ -1,68 +1,24 @@
 
 
-## Wire Up X Close Buttons on All Dashboard Widgets
+## Auto-Position Widgets Left-to-Right, Top-to-Bottom
 
 ### Problem
-The X buttons on adviser dashboard widgets exist but have no click handler -- clicking them does nothing. Client dashboard widgets don't have X buttons at all. Both need to hide the widget when clicked.
+Widgets currently use horizontal compaction, which can leave gaps in rows and allows widgets to form isolated rows/columns when dragged. The desired behavior is: widgets should always fill from left to right, starting at the top row, packing as tightly as possible without changing widget sizes or showing partial widgets.
 
 ### Solution
+A single change in the shared `DraggableWidgetGrid` component: switch `compactType` from `"horizontal"` to `"vertical"`.
 
-#### 1. Adviser Dashboard -- `src/pages/Dashboard.tsx`
+In react-grid-layout, `compactType="vertical"` means:
+- Widgets are compacted **upward** to fill vertical gaps
+- Within each row, items flow **left to right**
+- After a drag, all widgets re-compact so no empty rows or floating positions remain
 
-Add `onClick={() => handleToggleWidget('widget-id', false)}` to each inline widget's X button:
-- `provider-view` (line 338)
-- `top-accounts` (line 405)
-- `aum-product` (line 482)
-- `birthdays` (line 585)
-- `clients-value` (line 639)
-- `corporate-actions` (line 717)
+This applies to both the Adviser Dashboard, Client Dashboard, and Insights page since they all share the same grid component.
 
-#### 2. Standalone Adviser Widgets -- add `onClose` prop
-
-These three widgets render their own Card with X button, so they need a callback prop:
-
-- **`OnboardingProgressWidget`**: Add `onClose?: () => void` prop, wire X button's onClick
-- **`ClientOpportunityStatusWidget`**: Add `onClose?: () => void` prop, wire X button's onClick
-- **`PortfolioAnalysisWidget`**: Add `onClose?: () => void` prop, wire X button's onClick
-
-Then in `Dashboard.tsx`, pass `onClose={() => handleToggleWidget('widget-id', false)}` to each.
-
-#### 3. Client Dashboard -- `src/components/client-detail/ClientDashboardTab.tsx`
-
-Add an X close button to every widget's CardHeader (10 widgets total):
-- `asset-allocation`, `valuation-change`, `geo-diversification`
-- `top-opportunities`, `opp-breakdown`, `opp-value-summary`
-- `action-priority`, `key-dates`, `advisor-accounts`, `outstanding-docs`
-
-Each X button calls `handleToggleWidget('widget-id', false)` which already exists in this component.
-
-Import `X` from lucide-react in ClientDashboardTab.
-
-### Pattern
-
-Every widget header will follow this consistent pattern:
-```
-<CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
-  <div className="flex items-center gap-2">
-    <GripVertical ... />
-    <CardTitle ...>Title</CardTitle>
-  </div>
-  <Button variant="ghost" size="icon" className="h-6 w-6"
-    onClick={() => handleToggleWidget('widget-id', false)}>
-    <X className="w-4 h-4" />
-  </Button>
-</CardHeader>
-```
-
-Users can re-show hidden widgets via the existing Settings gear toggle.
-
-### Files
+### File Change
 
 | File | Change |
 |------|--------|
-| `src/pages/Dashboard.tsx` | Add onClick to 6 inline X buttons; pass onClose to 3 standalone widgets |
-| `src/components/dashboard/OnboardingProgressWidget.tsx` | Add onClose prop, wire X button |
-| `src/components/dashboard/ClientOpportunityStatusWidget.tsx` | Add onClose prop, wire X button |
-| `src/components/dashboard/PortfolioAnalysisWidget.tsx` | Add onClose prop, wire X button |
-| `src/components/client-detail/ClientDashboardTab.tsx` | Import X, add X close button to all 10 widgets |
+| `src/components/widgets/DraggableWidgetGrid.tsx` | Line 115: Change `compactType="horizontal"` to `compactType="vertical"` |
 
+No other files need to change -- the grid component is shared by all dashboards.
