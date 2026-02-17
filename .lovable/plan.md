@@ -1,29 +1,25 @@
 
+## Add AI Badge to Meetings Tab
 
-## Rename "Tasks" to "Workflows" in Sidebar Navigation Across All Pages
+A one-line addition to show the same gradient "AI" badge next to the Meetings tab label, matching the existing one on Opportunities.
 
-The sidebar navigation label is duplicated in 13 files. Each one still says "Tasks" instead of "Workflows". This is a simple find-and-replace of the label string in each file's sidebar items array.
+### Change
 
-### Files to Update
+**File: `src/pages/ClientDetail.tsx` (line ~280)**
 
-| File | Line | Change |
-|------|------|--------|
-| `src/pages/Practice.tsx` | 44 | `"Tasks"` -> `"Workflows"` |
-| `src/pages/Insights.tsx` | 142 | `"Tasks"` -> `"Workflows"` |
-| `src/pages/AccountSettings.tsx` | 55 | `"Tasks"` -> `"Workflows"` |
-| `src/pages/EmailView.tsx` | 53 | `"Tasks"` -> `"Workflows"` |
-| `src/pages/Clients.tsx` | 67 | `"Tasks"` -> `"Workflows"` |
-| `src/pages/Email.tsx` | 69 | `"Tasks"` -> `"Workflows"` |
-| `src/pages/Calendar.tsx` | 102 | `"Tasks"` -> `"Workflows"` |
-| `src/pages/Dashboard.tsx` | 44 | `"Tasks"` -> `"Workflows"` |
-| `src/pages/Administration.tsx` | 33 | `"Tasks"` -> `"Workflows"` |
-| `src/pages/ComposeEmail.tsx` | 59 | `"Tasks"` -> `"Workflows"` |
-| `src/pages/Portfolio.tsx` | 32 | `"Tasks"` -> `"Workflows"` |
-| `src/pages/ClientDetail.tsx` | 51 | `"Tasks"` -> `"Workflows"` |
-| `src/components/mobile/MobileApp.tsx` | 23 | `"Tasks"` -> `"Workflows"` |
+After the existing AI badge for `summary`, add a matching condition for `meetings`:
 
-`src/pages/Tasks.tsx` and `src/components/layout/AppLayout.tsx` were already updated in the previous change and are not included.
+```
+{tab.value === "summary" && (
+  <span className="...">AI</span>
+)}
+{tab.value === "meetings" && (
+  <span className="...">AI</span>
+)}
+```
+
+This uses the exact same gradient badge styling (`bg-gradient-to-r from-violet-500 to-cyan-500 text-white rounded-full`).
 
 ### Scope
-- Only the sidebar `label` string changes -- no route, icon, or internal logic changes.
-- 13 files, one line each.
+- 1 file changed, ~3 lines added
+- No other files affected
