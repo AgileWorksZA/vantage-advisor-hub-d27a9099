@@ -237,8 +237,8 @@ export function TaskDashboard({ tasks, onViewDetail }: TaskDashboardProps) {
       {/* Header with date selector */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Tasks Dashboard</h1>
-          <p className="text-muted-foreground">Overview of your task performance</p>
+          <h1 className="text-2xl font-bold">Workflows Dashboard</h1>
+          <p className="text-muted-foreground">Overview of your workflow performance</p>
         </div>
         <div className="flex items-center gap-2">
           <Select value={datePreset} onValueChange={(v) => setDatePreset(v as DatePreset)}>
@@ -346,7 +346,7 @@ export function TaskDashboard({ tasks, onViewDetail }: TaskDashboardProps) {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="cursor-pointer">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Tasks by Status</CardTitle>
+            <CardTitle className="text-sm font-medium">Workflows by Status</CardTitle>
           </CardHeader>
           <CardContent>
             <EChartsWrapper option={statusChartOption} height={220} onEvents={{ click: handleStatusChartClick }} />
@@ -355,7 +355,7 @@ export function TaskDashboard({ tasks, onViewDetail }: TaskDashboardProps) {
 
         <Card className="cursor-pointer">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Tasks by Type</CardTitle>
+            <CardTitle className="text-sm font-medium">Workflows by Type</CardTitle>
           </CardHeader>
           <CardContent>
             <EChartsWrapper option={typeChartOption} height={220} onEvents={{ click: handleTypeChartClick }} />
@@ -364,7 +364,7 @@ export function TaskDashboard({ tasks, onViewDetail }: TaskDashboardProps) {
 
         <Card className="cursor-pointer">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Tasks by Priority</CardTitle>
+            <CardTitle className="text-sm font-medium">Workflows by Priority</CardTitle>
           </CardHeader>
           <CardContent>
             <EChartsWrapper option={priorityChartOption} height={220} onEvents={{ click: handlePriorityChartClick }} />

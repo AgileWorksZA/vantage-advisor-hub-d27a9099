@@ -135,7 +135,7 @@ const TaskKanbanBoard = ({ tasks, onTaskClick, onUpdateTask, groupBy }: TaskKanb
                       <div className="flex flex-col gap-2 p-2">
                         {columnTasks.length === 0 && (
                           <div className="flex items-center justify-center h-20 text-xs text-muted-foreground">
-                            No tasks
+                            No workflows
                           </div>
                         )}
                         {columnTasks.map((task) => (

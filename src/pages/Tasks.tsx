@@ -38,7 +38,7 @@ const sidebarItems = [
   { icon: LineChart, label: "Portfolio", path: "/portfolio" },
   { icon: Mail, label: "Message", path: "/email" },
   { icon: CalendarIcon, label: "Calendar", path: "/calendar" },
-  { icon: ListTodo, label: "Tasks", path: "/tasks" },
+  { icon: ListTodo, label: "Workflows", path: "/tasks" },
   { icon: Briefcase, label: "Insights", path: "/insights" },
   { icon: Building2, label: "Practice", path: "/practice" },
 ];
@@ -243,7 +243,7 @@ const Tasks = () => {
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <AppHeader searchPlaceholder="Search tasks..." userName={userName} userEmail={userEmail} onSignOut={handleSignOut} onAccountSettings={() => navigate("/account-settings")} />
+        <AppHeader searchPlaceholder="Search workflows..." userName={userName} userEmail={userEmail} onSignOut={handleSignOut} onAccountSettings={() => navigate("/account-settings")} />
 
         <div className="flex items-center justify-between px-6 py-3 border-b bg-background">
           <div className="flex items-center gap-2">
@@ -261,7 +261,7 @@ const Tasks = () => {
             </Button>
           </div>
           <Button onClick={() => setCreateDialogOpen(true)} className="gap-2">
-            <Plus className="h-4 w-4" />New Task
+            <Plus className="h-4 w-4" />New Workflow
           </Button>
         </div>
 
@@ -296,7 +296,7 @@ const Tasks = () => {
               <TaskTable tasks={paginatedTasks} loading={loading} onTaskClick={handleTaskClick} onTogglePin={(id, isPinned) => togglePin(id, isPinned)} onDeleteTask={deleteTask} selectedTasks={selectedTaskIds} onSelectionChange={setSelectedTaskIds} />
               {totalPages > 1 && (
                 <div className="flex items-center justify-between py-4">
-                  <p className="text-sm text-muted-foreground">Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredTasks.length)} of {filteredTasks.length} tasks</p>
+                  <p className="text-sm text-muted-foreground">Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredTasks.length)} of {filteredTasks.length} workflows</p>
                   <div className="flex items-center gap-2">
                     <Button variant="outline" size="sm" disabled={currentPage === 1} onClick={() => setCurrentPage((p) => p - 1)}>Previous</Button>
                     <span className="text-sm">Page {currentPage} of {totalPages}</span>
