@@ -54,60 +54,60 @@ export function ClientOpportunityStatusWidget() {
             <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary" />
           </div>
         ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-muted-foreground text-xs">
-                <th className="text-left pb-2 font-normal">Segment</th>
-                {PRIORITY_COLUMNS.map((col) => (
-                  <th key={col.key} className="text-center pb-2 font-normal">
-                    <div className="flex items-center justify-center gap-1">
-                      <div className={`w-2 h-2 rounded-full ${col.dotClass}`} />
-                      {col.label}
-                    </div>
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {segmentLabels.map((label) => (
-                <tr key={label} className="border-t border-border">
-                  <td className="py-1.5 text-muted-foreground text-xs">{label}</td>
-                  {PRIORITY_COLUMNS.map((col) => {
-                    const cell = matrix[label]?.[col.key] || { count: 0, value: 0 };
-                    return (
-                      <td key={col.key} className="py-1.5 text-center">
-                        {cell.count > 0 ? (
-                          <div>
-                            <button
-                              onClick={() => navigate(`/opportunities/${col.key}`)}
-                              className="text-primary hover:text-primary/80 font-medium cursor-pointer"
-                            >
-                              {cell.count}
-                            </button>
-                            <div className="text-[10px] text-muted-foreground">{formatValue(cell.value)}</div>
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground">0</span>
-                        )}
-                      </td>
-                    );
-                  })}
+          <>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-muted-foreground text-xs">
+                  <th className="text-left pb-2 font-normal">Segment</th>
+                  {PRIORITY_COLUMNS.map((col) => (
+                    <th key={col.key} className="text-center pb-2 font-normal">
+                      <div className="flex items-center justify-center gap-1">
+                        <div className={`w-2 h-2 rounded-full ${col.dotClass}`} />
+                        {col.label}
+                      </div>
+                    </th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {segmentLabels.map((label) => (
+                  <tr key={label} className="border-t border-border">
+                    <td className="py-1.5 text-muted-foreground text-xs">{label}</td>
+                    {PRIORITY_COLUMNS.map((col) => {
+                      const cell = matrix[label]?.[col.key] || { count: 0, value: 0 };
+                      return (
+                        <td key={col.key} className="py-1.5 text-center">
+                          {cell.count > 0 ? (
+                            <div>
+                              <button
+                                onClick={() => navigate(`/opportunities/${col.key}`)}
+                                className="text-primary hover:text-primary/80 font-medium cursor-pointer"
+                              >
+                                {cell.count}
+                              </button>
+                              <div className="text-[10px] text-muted-foreground">{formatValue(cell.value)}</div>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">0</span>
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div className="mt-4 flex justify-center">
+              <button
+                onClick={() => navigate("/ai-assistant")}
+                className="animated-border-button animate rounded-full flex items-center gap-2 px-5 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <TrendingUp className="w-4 h-4" />
+                View All Opportunities
+              </button>
+            </div>
+          </>
         )}
-        <div className="mt-4 flex justify-center">
-          <div className="animated-gradient-border">
-            <button
-              onClick={() => navigate("/ai-assistant")}
-              className="flex items-center gap-2 rounded-full bg-card px-5 py-2 text-sm font-medium text-teal-600 dark:text-teal-400 hover:opacity-90 transition-opacity"
-            >
-              <TrendingUp className="w-4 h-4" />
-              View All Opportunities
-            </button>
-          </div>
-        </div>
       </CardContent>
     </Card>
   );
