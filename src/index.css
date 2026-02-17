@@ -194,6 +194,27 @@ All colors MUST be HSL.
     border-color: rgba(255, 255, 255, 0.06);
   }
 
+  /* Animated gradient border wrapper */
+  .animated-gradient-border {
+    position: relative;
+    border-radius: 9999px;
+    padding: 1.5px;
+    overflow: hidden;
+  }
+
+  .animated-gradient-border::before {
+    content: '';
+    position: absolute;
+    inset: -50%;
+    background: conic-gradient(from 0deg, #8B5CF6, #06B6D4, #14B8A6, #8B5CF6);
+    animation: spin-gradient 3s linear infinite;
+  }
+
+  @keyframes spin-gradient {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
   /* ECharts Sparkline Container - minimal glass effect */
   .echarts-sparkline {
     background: transparent;

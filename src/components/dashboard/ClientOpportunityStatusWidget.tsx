@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { GripVertical, X } from "lucide-react";
+import { GripVertical, X, TrendingUp } from "lucide-react";
 import { useClientOpportunityCategories, parseSegmentBoundaries } from "@/hooks/useClientOpportunityCategories";
 import { useRegion } from "@/contexts/RegionContext";
 import { useNavigate } from "react-router-dom";
@@ -97,6 +97,17 @@ export function ClientOpportunityStatusWidget() {
             </tbody>
           </table>
         )}
+        <div className="mt-4 flex justify-center">
+          <div className="animated-gradient-border">
+            <button
+              onClick={() => navigate("/ai-assistant")}
+              className="flex items-center gap-2 rounded-full bg-card px-5 py-2 text-sm font-medium text-teal-600 dark:text-teal-400 hover:opacity-90 transition-opacity"
+            >
+              <TrendingUp className="w-4 h-4" />
+              View All Opportunities
+            </button>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );
