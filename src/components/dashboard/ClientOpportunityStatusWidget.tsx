@@ -1,16 +1,11 @@
+import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { GripVertical, X } from "lucide-react";
-import { useClientOpportunityCategories, type Segment } from "@/hooks/useClientOpportunityCategories";
+import { useClientOpportunityCategories, parseSegmentBoundaries } from "@/hooks/useClientOpportunityCategories";
 import { useRegion } from "@/contexts/RegionContext";
 import { useNavigate } from "react-router-dom";
 import type { Priority } from "@/lib/opportunity-priority";
-
-const SEGMENT_LABELS: { key: Segment; label: string }[] = [
-  { key: "0-1m", label: "0 - 1M" },
-  { key: "1m-5m", label: "1M - 5M" },
-  { key: "gt5m", label: "> 5M" },
-];
 
 const PRIORITY_COLUMNS: { key: Priority; label: string; dotClass: string }[] = [
   { key: "urgent", label: "Urgent", dotClass: "bg-red-500" },
@@ -19,10 +14,21 @@ const PRIORITY_COLUMNS: { key: Priority; label: string; dotClass: string }[] = [
 ];
 
 export function ClientOpportunityStatusWidget() {
-  const { matrix, loading } = useClientOpportunityCategories();
   const { filteredRegionalData } = useRegion();
   const navigate = useNavigate();
   const currencySymbol = filteredRegionalData?.currencySymbol || "R";
+
+  const segmentBoundaries = useMemo(
+    () => parseSegmentBoundaries(filteredRegionalData?.clientsByValue || []),
+    [filteredRegionalData?.clientsByValue]
+  );
+
+  const { matrix, loading } = useClientOpportunityCategories(segmentBoundaries);
+
+  const segmentLabels = useMemo(
+    () => segmentBoundaries.map(s => s.label),
+    [segmentBoundaries]
+  );
 
   const formatValue = (value: number) => {
     if (value === 0) return "—";
@@ -63,11 +69,11 @@ export function ClientOpportunityStatusWidget() {
               </tr>
             </thead>
             <tbody>
-              {SEGMENT_LABELS.map((seg) => (
-                <tr key={seg.key} className="border-t border-border">
-                  <td className="py-1.5 text-muted-foreground">{seg.label}</td>
+              {segmentLabels.map((label) => (
+                <tr key={label} className="border-t border-border">
+                  <td className="py-1.5 text-muted-foreground text-xs">{label}</td>
                   {PRIORITY_COLUMNS.map((col) => {
-                    const cell = matrix[seg.key]?.[col.key] || { count: 0, value: 0 };
+                    const cell = matrix[label]?.[col.key] || { count: 0, value: 0 };
                     return (
                       <td key={col.key} className="py-1.5 text-center">
                         {cell.count > 0 ? (
