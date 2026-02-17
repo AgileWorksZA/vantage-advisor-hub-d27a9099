@@ -6,6 +6,17 @@ import type { PrepOpportunity, PrepProduct } from "@/hooks/useClientMeetingPrep"
 import { getOpportunityPriority, type Priority } from "@/lib/opportunity-priority";
 import PrioritySectionHeader from "./PrioritySectionHeader";
 
+/** Deterministic check: ~30% of clients are "green" (routine-only) */
+export function isGreenClient(clientId: string): boolean {
+  let hash = 0;
+  for (let i = 0; i < clientId.length; i++) {
+    hash = (hash * 31 + clientId.charCodeAt(i)) | 0;
+  }
+  return (Math.abs(hash) % 100) < 30;
+}
+
+const ROUTINE_TYPES = ["upsell", "migration", "bank scrape"];
+
 interface OpportunitiesTabProps {
   opportunities: PrepOpportunity[];
   products: PrepProduct[];
@@ -63,7 +74,7 @@ const formatDate = (dateStr?: string) => {
   return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 };
 
-function buildGapOpportunitiesForProducts(products: PrepProduct[], clientName?: string): GapOpportunity[] {
+function buildGapOpportunitiesForProducts(products: PrepProduct[], clientName?: string, clientId?: string): GapOpportunity[] {
   const gaps: GapOpportunity[] = [];
   const suffix = clientName ? `-${clientName.replace(/\s/g, "")}` : "";
   const categories = products.map(p => p.category?.toLowerCase() || "");
@@ -105,10 +116,14 @@ function buildGapOpportunitiesForProducts(products: PrepProduct[], clientName?: 
   if (hasMoneyMarketOrCash) {
     gaps.push({ id: `gap-idlecash${suffix}`, type: "Idle Cash", description: "Idle cash in money market or call accounts", suggestedAction: "Deploy idle cash into growth assets", clientName, opportunitySize: Math.round(cashValue * 0.8), dateIdentified: today });
   }
+  // Filter to routine-only for green clients
+  if (clientId && isGreenClient(clientId)) {
+    return gaps.filter(g => ROUTINE_TYPES.includes(g.type.toLowerCase()));
+  }
   return gaps;
 }
 
-export function buildGapOpportunities(products: PrepProduct[], householdView?: boolean): GapOpportunity[] {
+export function buildGapOpportunities(products: PrepProduct[], householdView?: boolean, clientId?: string): GapOpportunity[] {
   if (householdView) {
     const memberMap = new Map<string, PrepProduct[]>();
     products.forEach(p => {
@@ -118,15 +133,15 @@ export function buildGapOpportunities(products: PrepProduct[], householdView?: b
     });
     const allGaps: GapOpportunity[] = [];
     memberMap.forEach((memberProducts, memberName) => {
-      allGaps.push(...buildGapOpportunitiesForProducts(memberProducts, memberName));
+      allGaps.push(...buildGapOpportunitiesForProducts(memberProducts, memberName, clientId));
     });
     return allGaps;
   }
-  return buildGapOpportunitiesForProducts(products);
+  return buildGapOpportunitiesForProducts(products, undefined, clientId);
 }
 
-export function getOpportunitiesCount(opportunities: PrepOpportunity[], products: PrepProduct[], householdView?: boolean): number {
-  return opportunities.length + buildGapOpportunities(products, householdView).length;
+export function getOpportunitiesCount(opportunities: PrepOpportunity[], products: PrepProduct[], householdView?: boolean, clientId?: string): number {
+  return opportunities.length + buildGapOpportunities(products, householdView, clientId).length;
 }
 
 const ClientNameTag = ({ name }: { name: string }) => (
