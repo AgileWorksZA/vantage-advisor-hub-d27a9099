@@ -19,6 +19,7 @@ import GlobalAIChat from "@/components/ai-assistant/GlobalAIChat";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { OnboardingProgressWidget } from "@/components/dashboard/OnboardingProgressWidget";
 import { ClientOpportunityStatusWidget } from "@/components/dashboard/ClientOpportunityStatusWidget";
+import { PortfolioAnalysisWidget } from "@/components/dashboard/PortfolioAnalysisWidget";
 
 const sidebarItems = [{
   icon: LayoutDashboard,
@@ -63,6 +64,7 @@ const defaultDashboardLayout: WidgetLayout[] = [
   { i: 'corporate-actions', x: 6, y: 3, w: 3, h: 3 },
   { i: 'onboarding-progress', x: 0, y: 6, w: 3, h: 3 },
   { i: 'client-opportunity-status', x: 3, y: 6, w: 3, h: 3 },
+  { i: 'portfolio-analysis', x: 6, y: 6, w: 3, h: 3 },
 ];
 
 const DASHBOARD_WIDGETS: WidgetConfig[] = [
@@ -74,6 +76,7 @@ const DASHBOARD_WIDGETS: WidgetConfig[] = [
   { id: 'corporate-actions', label: 'Upcoming Corporate Actions' },
   { id: 'onboarding-progress', label: 'Account Onboarding Progress' },
   { id: 'client-opportunity-status', label: 'Client Opportunity Status' },
+  { id: 'portfolio-analysis', label: 'Portfolio Analysis' },
 ];
 
 const Dashboard = () => {
@@ -630,6 +633,11 @@ const Dashboard = () => {
             {/* Client Opportunity Status */}
             {isWidgetVisible('client-opportunity-status') && <div key="client-opportunity-status">
               <ClientOpportunityStatusWidget />
+            </div>}
+
+            {/* Portfolio Analysis */}
+            {isWidgetVisible('portfolio-analysis') && <div key="portfolio-analysis">
+              <PortfolioAnalysisWidget />
             </div>}
 
           </DraggableWidgetGrid>
