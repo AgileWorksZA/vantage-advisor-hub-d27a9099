@@ -22,6 +22,9 @@ export interface ProductData {
   name: string;
   value: number;
   color: string;
+  growth1m?: number;
+  growth6m?: number;
+  growthYtd?: number;
 }
 
 export interface ClientsByValueData {
@@ -144,14 +147,14 @@ const southAfricaData: RegionalData = {
     { name: "Johanna Cornelia Jacobs", nextBirthday: "2 February", age: 38, advisorInitials: "DG" },
   ],
   products: [
-    { name: "Cash Management", value: 12.2, color: "hsl(210, 70%, 40%)" },
-    { name: "Endowment", value: 14.0, color: "hsl(142, 76%, 36%)" },
-    { name: "Investment Plan", value: 5.8, color: "hsl(45, 93%, 47%)" },
-    { name: "Living Annuity", value: 21.2, color: "hsl(280, 65%, 50%)" },
-    { name: "Other", value: 1.3, color: "hsl(0, 0%, 60%)" },
-    { name: "Pension Preservation Fund", value: 5.9, color: "hsl(210, 100%, 50%)" },
-    { name: "Preservation Fund", value: 39.1, color: "hsl(160, 60%, 45%)" },
-    { name: "Provident Preservation Fund", value: 0.5, color: "hsl(18, 86%, 56%)" },
+    { name: "Cash Management", value: 12.2, color: "hsl(210, 70%, 40%)", growth1m: 0.3, growth6m: 1.8, growthYtd: 2.1 },
+    { name: "Endowment", value: 14.0, color: "hsl(142, 76%, 36%)", growth1m: 1.2, growth6m: 4.5, growthYtd: 6.8 },
+    { name: "Investment Plan", value: 5.8, color: "hsl(45, 93%, 47%)", growth1m: -0.4, growth6m: 2.1, growthYtd: 3.2 },
+    { name: "Living Annuity", value: 21.2, color: "hsl(280, 65%, 50%)", growth1m: 0.8, growth6m: 3.6, growthYtd: 5.4 },
+    { name: "Other", value: 1.3, color: "hsl(0, 0%, 60%)", growth1m: -0.2, growth6m: -1.1, growthYtd: -0.8 },
+    { name: "Pension Preservation Fund", value: 5.9, color: "hsl(210, 100%, 50%)", growth1m: 1.5, growth6m: 5.2, growthYtd: 7.1 },
+    { name: "Preservation Fund", value: 39.1, color: "hsl(160, 60%, 45%)", growth1m: 0.6, growth6m: 3.1, growthYtd: 4.9 },
+    { name: "Provident Preservation Fund", value: 0.5, color: "hsl(18, 86%, 56%)", growth1m: -0.7, growth6m: 1.4, growthYtd: 2.3 },
   ],
   clientsByValue: [
     { range: "R0 – R100 000", value: "R 15,579,983", investors: 468 },
@@ -279,13 +282,13 @@ const australiaData: RegionalData = {
     { name: "Catherine Mary Walsh", nextBirthday: "17 February", age: 59, advisorInitials: "TM" },
   ],
   products: [
-    { name: "Superannuation", value: 35.2, color: "hsl(210, 70%, 40%)" },
-    { name: "SMSF", value: 22.8, color: "hsl(142, 76%, 36%)" },
-    { name: "Pension Phase", value: 18.4, color: "hsl(45, 93%, 47%)" },
-    { name: "Investment Bond", value: 12.1, color: "hsl(280, 65%, 50%)" },
-    { name: "Managed Fund", value: 6.8, color: "hsl(0, 0%, 60%)" },
-    { name: "Direct Shares", value: 3.2, color: "hsl(210, 100%, 50%)" },
-    { name: "Term Deposit", value: 1.5, color: "hsl(160, 60%, 45%)" },
+    { name: "Superannuation", value: 35.2, color: "hsl(210, 70%, 40%)", growth1m: 1.1, growth6m: 4.8, growthYtd: 7.2 },
+    { name: "SMSF", value: 22.8, color: "hsl(142, 76%, 36%)", growth1m: 0.9, growth6m: 3.4, growthYtd: 5.1 },
+    { name: "Pension Phase", value: 18.4, color: "hsl(45, 93%, 47%)", growth1m: 0.5, growth6m: 2.7, growthYtd: 4.3 },
+    { name: "Investment Bond", value: 12.1, color: "hsl(280, 65%, 50%)", growth1m: -0.3, growth6m: 1.9, growthYtd: 3.6 },
+    { name: "Managed Fund", value: 6.8, color: "hsl(0, 0%, 60%)", growth1m: 1.4, growth6m: 5.1, growthYtd: 8.2 },
+    { name: "Direct Shares", value: 3.2, color: "hsl(210, 100%, 50%)", growth1m: -1.2, growth6m: -0.5, growthYtd: 2.8 },
+    { name: "Term Deposit", value: 1.5, color: "hsl(160, 60%, 45%)", growth1m: 0.4, growth6m: 2.3, growthYtd: 4.6 },
   ],
   clientsByValue: [
     { range: "A$0 – A$100,000", value: "A$ 18,947,231", investors: 512 },
@@ -412,13 +415,13 @@ const canadaData: RegionalData = {
     { name: "Jacques Henri Dumont", nextBirthday: "18 February", age: 66, advisorInitials: "RS" },
   ],
   products: [
-    { name: "RRSP", value: 28.4, color: "hsl(210, 70%, 40%)" },
-    { name: "TFSA", value: 19.2, color: "hsl(142, 76%, 36%)" },
-    { name: "RRIF", value: 16.8, color: "hsl(45, 93%, 47%)" },
-    { name: "Non-Registered", value: 14.5, color: "hsl(280, 65%, 50%)" },
-    { name: "RESP", value: 8.3, color: "hsl(0, 0%, 60%)" },
-    { name: "LIRA", value: 7.2, color: "hsl(210, 100%, 50%)" },
-    { name: "Corporate Account", value: 5.6, color: "hsl(160, 60%, 45%)" },
+    { name: "RRSP", value: 28.4, color: "hsl(210, 70%, 40%)", growth1m: 0.7, growth6m: 3.9, growthYtd: 5.8 },
+    { name: "TFSA", value: 19.2, color: "hsl(142, 76%, 36%)", growth1m: 1.3, growth6m: 5.6, growthYtd: 8.4 },
+    { name: "RRIF", value: 16.8, color: "hsl(45, 93%, 47%)", growth1m: 0.4, growth6m: 2.2, growthYtd: 3.5 },
+    { name: "Non-Registered", value: 14.5, color: "hsl(280, 65%, 50%)", growth1m: -0.6, growth6m: 1.8, growthYtd: 4.1 },
+    { name: "RESP", value: 8.3, color: "hsl(0, 0%, 60%)", growth1m: 0.9, growth6m: 4.2, growthYtd: 6.7 },
+    { name: "LIRA", value: 7.2, color: "hsl(210, 100%, 50%)", growth1m: -0.1, growth6m: 2.5, growthYtd: 3.9 },
+    { name: "Corporate Account", value: 5.6, color: "hsl(160, 60%, 45%)", growth1m: 1.6, growth6m: 6.1, growthYtd: 9.3 },
   ],
   clientsByValue: [
     { range: "C$0 – C$100,000", value: "C$ 22,290,600", investors: 534 },
@@ -544,13 +547,13 @@ const unitedKingdomData: RegionalData = {
     { name: "Fatima Zahra Ahmed", nextBirthday: "19 February", age: 37, advisorInitials: "JT" },
   ],
   products: [
-    { name: "Stocks & Shares ISA", value: 31.5, color: "hsl(210, 70%, 40%)" },
-    { name: "SIPP", value: 24.8, color: "hsl(142, 76%, 36%)" },
-    { name: "General Investment Account", value: 18.2, color: "hsl(45, 93%, 47%)" },
-    { name: "Junior ISA", value: 8.7, color: "hsl(280, 65%, 50%)" },
-    { name: "Cash ISA", value: 7.4, color: "hsl(0, 0%, 60%)" },
-    { name: "Lifetime ISA", value: 5.2, color: "hsl(210, 100%, 50%)" },
-    { name: "Offshore Bond", value: 4.2, color: "hsl(160, 60%, 45%)" },
+    { name: "Stocks & Shares ISA", value: 31.5, color: "hsl(210, 70%, 40%)", growth1m: 0.8, growth6m: 3.2, growthYtd: 4.7 },
+    { name: "SIPP", value: 24.8, color: "hsl(142, 76%, 36%)", growth1m: 1.0, growth6m: 4.4, growthYtd: 6.5 },
+    { name: "General Investment Account", value: 18.2, color: "hsl(45, 93%, 47%)", growth1m: -0.5, growth6m: 1.6, growthYtd: 3.1 },
+    { name: "Junior ISA", value: 8.7, color: "hsl(280, 65%, 50%)", growth1m: 1.7, growth6m: 6.3, growthYtd: 9.8 },
+    { name: "Cash ISA", value: 7.4, color: "hsl(0, 0%, 60%)", growth1m: 0.3, growth6m: 1.9, growthYtd: 3.8 },
+    { name: "Lifetime ISA", value: 5.2, color: "hsl(210, 100%, 50%)", growth1m: 1.2, growth6m: 5.0, growthYtd: 7.6 },
+    { name: "Offshore Bond", value: 4.2, color: "hsl(160, 60%, 45%)", growth1m: -0.8, growth6m: 0.7, growthYtd: 1.9 },
   ],
   clientsByValue: [
     { range: "£0 – £50,000", value: "£ 14,236,961", investors: 423 },
@@ -677,13 +680,13 @@ const unitedStatesData: RegionalData = {
     { name: "Jamal DeShawn Thompson", nextBirthday: "19 February", age: 46, advisorInitials: "WD" },
   ],
   products: [
-    { name: "401(k)", value: 32.1, color: "hsl(210, 70%, 40%)" },
-    { name: "Traditional IRA", value: 24.3, color: "hsl(142, 76%, 36%)" },
-    { name: "Roth IRA", value: 18.9, color: "hsl(45, 93%, 47%)" },
-    { name: "Brokerage Account", value: 12.4, color: "hsl(280, 65%, 50%)" },
-    { name: "529 Plan", value: 6.8, color: "hsl(0, 0%, 60%)" },
-    { name: "SEP IRA", value: 3.2, color: "hsl(210, 100%, 50%)" },
-    { name: "HSA", value: 2.3, color: "hsl(160, 60%, 45%)" },
+    { name: "401(k)", value: 32.1, color: "hsl(210, 70%, 40%)", growth1m: 0.9, growth6m: 4.1, growthYtd: 6.3 },
+    { name: "Traditional IRA", value: 24.3, color: "hsl(142, 76%, 36%)", growth1m: 0.6, growth6m: 3.5, growthYtd: 5.2 },
+    { name: "Roth IRA", value: 18.9, color: "hsl(45, 93%, 47%)", growth1m: 1.4, growth6m: 5.8, growthYtd: 8.9 },
+    { name: "Brokerage Account", value: 12.4, color: "hsl(280, 65%, 50%)", growth1m: -0.3, growth6m: 2.0, growthYtd: 3.4 },
+    { name: "529 Plan", value: 6.8, color: "hsl(0, 0%, 60%)", growth1m: 0.7, growth6m: 3.8, growthYtd: 5.9 },
+    { name: "SEP IRA", value: 3.2, color: "hsl(210, 100%, 50%)", growth1m: -0.9, growth6m: 0.4, growthYtd: 1.7 },
+    { name: "HSA", value: 2.3, color: "hsl(160, 60%, 45%)", growth1m: 0.2, growth6m: 1.5, growthYtd: 2.8 },
   ],
   clientsByValue: [
     { range: "$0 – $100,000", value: "$ 22,290,600", investors: 498 },

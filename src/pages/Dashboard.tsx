@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LayoutDashboard, Users, Briefcase, Mail, CalendarIcon, ListTodo, LineChart, Building2, X, GripVertical, MoreVertical, Settings } from "lucide-react";
+import { LayoutDashboard, Users, Briefcase, Mail, CalendarIcon, ListTodo, LineChart, Building2, X, GripVertical, MoreVertical, Settings, TrendingUp, TrendingDown } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { WidgetSettingsDialog, WidgetConfig } from "@/components/widgets/WidgetSettingsDialog";
 import commandCenterIcon from "@/assets/command-center-icon.png";
@@ -82,6 +82,7 @@ const Dashboard = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [caFilter, setCaFilter] = useState<'mandatory' | 'voluntary'>('mandatory');
+  const [aumGrowthPeriod, setAumGrowthPeriod] = useState<'1m' | '6m' | 'ytd'>('1m');
   
   
   // Use global region context with filtered data
@@ -447,13 +448,38 @@ const Dashboard = () => {
                       }}
                     />
                   </div>
-                  <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs mt-2">
-                    {filteredRegionalData.products.map(item => <div key={item.name} className="flex items-center gap-1">
-                        <span className="w-2 h-2 rounded-full" style={{
-                      backgroundColor: item.color
-                    }}></span>
-                        <span className="text-muted-foreground">{item.name}</span>
-                      </div>)}
+                  <div className="flex items-center justify-center gap-1 mt-3 mb-2">
+                    {(['1m', '6m', 'ytd'] as const).map(period => (
+                      <button
+                        key={period}
+                        onClick={() => setAumGrowthPeriod(period)}
+                        className={`px-2.5 py-0.5 text-[10px] font-medium rounded-full transition-colors ${
+                          aumGrowthPeriod === period
+                            ? 'bg-primary text-primary-foreground'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                        }`}
+                      >
+                        {period === '1m' ? '1M' : period === '6m' ? '6M' : 'YTD'}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs">
+                    {filteredRegionalData.products.map(item => {
+                      const growth = aumGrowthPeriod === '1m' ? item.growth1m : aumGrowthPeriod === '6m' ? item.growth6m : item.growthYtd;
+                      const isPositive = growth !== undefined && growth >= 0;
+                      return (
+                        <div key={item.name} className="flex items-center gap-1">
+                          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }}></span>
+                          <span className="text-muted-foreground">{item.name}</span>
+                          {growth !== undefined && (
+                            <span className={`flex items-center gap-0.5 text-[10px] font-medium ${isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                              {isPositive ? <TrendingUp className="w-2.5 h-2.5" /> : <TrendingDown className="w-2.5 h-2.5" />}
+                              {isPositive ? '+' : ''}{growth.toFixed(1)}%
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </CardContent>
               </Card>
