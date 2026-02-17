@@ -30,7 +30,7 @@ export const useWidgetLayout = ({ pageId, defaultLayout, userId }: UseWidgetLayo
   // Load layout + hidden_widgets from database on mount
   useEffect(() => {
     if (!userId) {
-      setLoading(false);
+      // Don't set loading to false -- we're still waiting for auth
       return;
     }
     
