@@ -5,6 +5,7 @@ import { User, Session } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LayoutDashboard, Users, Briefcase, Mail, CalendarIcon, ListTodo, LineChart, Building2, X, GripVertical, MoreVertical, Settings } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { WidgetSettingsDialog, WidgetConfig } from "@/components/widgets/WidgetSettingsDialog";
 import commandCenterIcon from "@/assets/command-center-icon.png";
 import vantageLogo from "@/assets/vantage-logo.png";
@@ -320,6 +321,7 @@ const Dashboard = () => {
                   </Button>
                 </CardHeader>
                 <CardContent className="px-4 pb-4">
+                  {layoutLoading ? <Skeleton className="w-full h-full min-h-[200px]" /> : (
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="text-muted-foreground text-xs">
@@ -336,6 +338,7 @@ const Dashboard = () => {
                         </tr>)}
                     </tbody>
                   </table>
+                  )}
                 </CardContent>
               </Card>
             </div>}
@@ -352,6 +355,7 @@ const Dashboard = () => {
                   </Button>
                 </CardHeader>
                 <CardContent className="px-4 pb-4">
+                  {layoutLoading ? <Skeleton className="w-full h-full min-h-[200px]" /> : (
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="text-muted-foreground text-xs">
@@ -380,6 +384,7 @@ const Dashboard = () => {
                         ))}
                     </tbody>
                   </table>
+                  )}
                 </CardContent>
               </Card>
             </div>}
@@ -397,6 +402,7 @@ const Dashboard = () => {
                   </Button>
                 </CardHeader>
                 <CardContent className="px-4 pb-4">
+                  {layoutLoading ? <Skeleton className="w-full h-full min-h-[200px]" /> : (<>
                   <p className="text-xl font-semibold mb-2">{filteredRegionalData.currencySymbol} {filteredRegionalData.totalAUM}</p>
                   <div className="h-32">
                     <EChartsWrapper
@@ -439,6 +445,7 @@ const Dashboard = () => {
                         <span className="text-muted-foreground">{item.name}</span>
                       </div>)}
                   </div>
+                  </>)}
                 </CardContent>
               </Card>
             </div>}
@@ -456,6 +463,7 @@ const Dashboard = () => {
                   </Button>
                 </CardHeader>
                 <CardContent className="px-4 pb-4">
+                  {layoutLoading ? <Skeleton className="w-full h-full min-h-[200px]" /> : (<>
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="text-muted-foreground text-xs">
@@ -493,6 +501,7 @@ const Dashboard = () => {
                       Show more ({filteredRegionalData.birthdays.length - 7} more)
                     </button>
                   )}
+                  </>)}
                 </CardContent>
               </Card>
             </div>}
@@ -510,6 +519,7 @@ const Dashboard = () => {
                   </Button>
                 </CardHeader>
                 <CardContent className="px-4 pb-4">
+                  {layoutLoading ? <Skeleton className="w-full h-full min-h-[200px]" /> : (
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="text-muted-foreground text-xs">
@@ -526,6 +536,7 @@ const Dashboard = () => {
                         </tr>)}
                     </tbody>
                   </table>
+                  )}
                 </CardContent>
               </Card>
             </div>}
@@ -554,6 +565,7 @@ const Dashboard = () => {
                   </div>
                 </CardHeader>
                 <CardContent className="px-4 pb-4">
+                  {layoutLoading ? <Skeleton className="w-full h-full min-h-[200px]" /> : (
                   <table className="w-full text-xs">
                     <thead>
                       <tr className="text-muted-foreground text-xs">
@@ -576,6 +588,7 @@ const Dashboard = () => {
                         ))}
                     </tbody>
                   </table>
+                  )}
                 </CardContent>
               </Card>
             </div>}
