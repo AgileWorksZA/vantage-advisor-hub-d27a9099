@@ -86,12 +86,33 @@ export const DraggableWidgetGrid = ({
   const colWidth = targetWidgetWidth / baseWidgetUnits;
   const exactGridWidth = (colWidth * visibleCols) + (GRID_MARGIN * (visibleCols - 1));
 
-  // Adjust layout for current column count
-  const adjustedLayout = layout.map(item => ({
-    ...item,
-    w: Math.min(item.w, visibleCols),
-    x: item.x >= visibleCols ? 0 : Math.min(item.x, visibleCols - Math.min(item.w, visibleCols)),
-  }));
+  // Reflow: pack widgets left-to-right, top-to-bottom
+  const reflowLayout = (items: WidgetLayout[], cols: number): WidgetLayout[] => {
+    const sorted = [...items].sort((a, b) => a.y !== b.y ? a.y - b.y : a.x - b.x);
+    const colHeights = new Array(cols).fill(0);
+    
+    return sorted.map(item => {
+      const w = Math.min(item.w, cols);
+      let bestCol = 0;
+      let bestY = Infinity;
+      
+      for (let col = 0; col <= cols - w; col++) {
+        const startY = Math.max(...colHeights.slice(col, col + w));
+        if (startY < bestY) {
+          bestY = startY;
+          bestCol = col;
+        }
+      }
+      
+      const placed = { ...item, x: bestCol, y: bestY, w };
+      for (let c = bestCol; c < bestCol + w; c++) {
+        colHeights[c] = bestY + item.h;
+      }
+      return placed;
+    });
+  };
+
+  const adjustedLayout = reflowLayout(layout, visibleCols);
 
   const layouts = { lg: adjustedLayout };
 
