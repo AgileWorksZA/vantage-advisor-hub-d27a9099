@@ -2,8 +2,8 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { format } from "date-fns";
-import { CalendarIcon, ChevronDown, ChevronUp, Search, Upload, Printer, Download } from "lucide-react";
+import { format, parse } from "date-fns";
+import { CalendarIcon, ChevronDown, ChevronUp, Search, Upload, Printer, Download, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/form";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
+import type { MedicalAid } from "@/data/regional360ViewData";
 
 const medicalAidSchema = z.object({
   schemeName: z.string().min(1, "Medical scheme name is required"),
@@ -38,24 +39,52 @@ type MedicalAidFormValues = z.infer<typeof medicalAidSchema>;
 interface AddMedicalAidFormProps {
   onClose: () => void;
   onSave: (data: MedicalAidFormValues) => void;
+  initialData?: MedicalAid;
 }
 
-const AddMedicalAidForm = ({ onClose, onSave }: AddMedicalAidFormProps) => {
-  const [membersOpen, setMembersOpen] = useState(false);
+const demoMember = {
+  memberType: "Principal Member",
+  idNumber: "8501015800087",
+  initials: "J",
+  fullName: "John",
+  surname: "Smith",
+  dob: "01/01/1985",
+  effectiveFrom: "01/03/2020",
+  indicativeMemberCovered: "Yes",
+  contribution: "R 4,250.00",
+};
+
+const AddMedicalAidForm = ({ onClose, onSave, initialData }: AddMedicalAidFormProps) => {
+  const [membersOpen, setMembersOpen] = useState(!!initialData);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [historyFilter, setHistoryFilter] = useState("");
+
+  const parseDateReceived = (dateStr?: string): Date | undefined => {
+    if (!dateStr) return undefined;
+    try {
+      return parse(dateStr, "dd/MM/yyyy", new Date());
+    } catch {
+      return undefined;
+    }
+  };
+
+  const stripCurrency = (val?: string): string => {
+    if (!val) return "0.00";
+    return val.replace(/[^0-9.]/g, "") || "0.00";
+  };
 
   const form = useForm<MedicalAidFormValues>({
     resolver: zodResolver(medicalAidSchema),
     defaultValues: {
-      schemeName: "",
-      planName: "",
-      membershipNumber: "",
-      totalContribution: "0.00",
-      policyActive: "Yes",
+      schemeName: initialData?.schemeName || "",
+      planName: initialData?.planName || "",
+      membershipNumber: initialData?.membershipNumber || "",
+      totalContribution: initialData ? stripCurrency(initialData.premium) : "0.00",
+      policyActive: (initialData?.policyActive as "Yes" | "No") || "Yes",
       hospitalPlan: "No",
       hospitalPlanDayToDay: "No",
-      notes: "",
+      dateDataReceived: parseDateReceived(initialData?.dateReceived),
+      notes: initialData?.notes || "",
     },
   });
 
@@ -80,10 +109,15 @@ const AddMedicalAidForm = ({ onClose, onSave }: AddMedicalAidFormProps) => {
   return (
     <div className="space-y-6">
       {/* Medical Aid Details Header */}
-      <div>
+      <div className="flex items-center justify-between">
         <span className="inline-block px-3 py-1 text-sm font-medium text-white bg-[hsl(180,70%,45%)] rounded">
           Medical Aid Details
         </span>
+        {initialData && (
+          <span className="inline-block px-3 py-1 text-xs font-semibold text-white bg-purple-600 rounded">
+            Astute
+          </span>
+        )}
       </div>
 
       <Form {...form}>
@@ -193,8 +227,44 @@ const AddMedicalAidForm = ({ onClose, onSave }: AddMedicalAidFormProps) => {
               <span className="text-sm font-medium">Medical Members</span>
               {membersOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
             </CollapsibleTrigger>
-            <CollapsibleContent className="py-4">
-              <p className="text-sm text-muted-foreground text-center py-4">No medical members added</p>
+            <CollapsibleContent className="py-4 space-y-3">
+              <div className="flex justify-end">
+                <Button type="button" variant="link" className="text-[hsl(180,70%,45%)] p-0 h-auto font-normal text-sm">
+                  <Plus className="h-3.5 w-3.5 mr-1" /> New Medical members
+                </Button>
+              </div>
+              {initialData ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/30">
+                      <TableHead className="text-xs font-medium text-muted-foreground">Member Type</TableHead>
+                      <TableHead className="text-xs font-medium text-muted-foreground">ID Number</TableHead>
+                      <TableHead className="text-xs font-medium text-muted-foreground">Initials</TableHead>
+                      <TableHead className="text-xs font-medium text-muted-foreground">Full Name</TableHead>
+                      <TableHead className="text-xs font-medium text-muted-foreground">Surname</TableHead>
+                      <TableHead className="text-xs font-medium text-muted-foreground">DOB</TableHead>
+                      <TableHead className="text-xs font-medium text-muted-foreground">Effective From</TableHead>
+                      <TableHead className="text-xs font-medium text-muted-foreground">Covered</TableHead>
+                      <TableHead className="text-xs font-medium text-muted-foreground">Contribution</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    <TableRow className="border-b border-border/50">
+                      <TableCell className="text-sm">{demoMember.memberType}</TableCell>
+                      <TableCell className="text-sm">{demoMember.idNumber}</TableCell>
+                      <TableCell className="text-sm">{demoMember.initials}</TableCell>
+                      <TableCell className="text-sm">{demoMember.fullName}</TableCell>
+                      <TableCell className="text-sm">{demoMember.surname}</TableCell>
+                      <TableCell className="text-sm">{demoMember.dob}</TableCell>
+                      <TableCell className="text-sm">{demoMember.effectiveFrom}</TableCell>
+                      <TableCell className="text-sm">{demoMember.indicativeMemberCovered}</TableCell>
+                      <TableCell className="text-sm">{demoMember.contribution}</TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-4">No medical members added</p>
+              )}
             </CollapsibleContent>
           </Collapsible>
 
@@ -257,7 +327,26 @@ const AddMedicalAidForm = ({ onClose, onSave }: AddMedicalAidFormProps) => {
                 <Button variant="ghost" size="icon" className="h-9 w-9"><Printer className="h-4 w-4" /></Button>
                 <Button variant="ghost" size="icon" className="h-9 w-9"><Download className="h-4 w-4" /></Button>
               </div>
-              <p className="text-sm text-muted-foreground text-center py-4">No items found</p>
+              {initialData ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/30">
+                      <TableHead className="text-xs font-medium text-muted-foreground">Date</TableHead>
+                      <TableHead className="text-xs font-medium text-muted-foreground">Action</TableHead>
+                      <TableHead className="text-xs font-medium text-muted-foreground">Source</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    <TableRow className="border-b border-border/50">
+                      <TableCell className="text-sm">{initialData.dateReceived || "01/01/2024"}</TableCell>
+                      <TableCell className="text-sm">Data retrieved from Astute</TableCell>
+                      <TableCell className="text-sm">Astute</TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-4">No items found</p>
+              )}
             </CollapsibleContent>
           </Collapsible>
         </form>

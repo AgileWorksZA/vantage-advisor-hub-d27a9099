@@ -18,7 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useClientDetail } from "@/hooks/useClientDetail";
-import { generateClient360Data, formatTotal, mapNationalityToJurisdiction } from "@/data/regional360ViewData";
+import { generateClient360Data, formatTotal, mapNationalityToJurisdiction, type MedicalAid } from "@/data/regional360ViewData";
 import QuoteWizardView from "./QuoteWizardDialog";
 import NewBusinessWizardDialog from "./NewBusinessWizardDialog";
 import AddMedicalAidForm from "./AddMedicalAidForm";
@@ -46,6 +46,7 @@ const Client360ViewTab = () => {
   const [showShortTermForm, setShowShortTermForm] = useState(false);
   const [showWillForm, setShowWillForm] = useState(false);
   const [showAstuteRequest, setShowAstuteRequest] = useState(false);
+  const [selectedMedicalAid, setSelectedMedicalAid] = useState<MedicalAid | null>(null);
 
   const jurisdiction = mapNationalityToJurisdiction(client?.nationality || null, client?.country_of_issue || null);
   
@@ -93,6 +94,16 @@ const Client360ViewTab = () => {
       return next;
     });
   };
+
+  if (selectedMedicalAid) {
+    return (
+      <AddMedicalAidForm
+        onClose={() => setSelectedMedicalAid(null)}
+        onSave={() => setSelectedMedicalAid(null)}
+        initialData={selectedMedicalAid}
+      />
+    );
+  }
 
   if (showMedicalAidForm) {
     return (
@@ -572,7 +583,7 @@ const Client360ViewTab = () => {
               {medicalAid.length > 0 ? (
                 medicalAid.map((item, index) => (
                   <TableRow key={index} className="border-b border-border/50">
-                    <TableCell className="text-sm text-[hsl(180,70%,45%)]">{item.schemeName}</TableCell>
+                    <TableCell className="text-sm text-[hsl(180,70%,45%)] cursor-pointer hover:underline" onClick={() => { setSelectedMedicalAid(item); scrollToTop(); }}>{item.schemeName}</TableCell>
                     <TableCell className="text-sm">{item.planName}</TableCell>
                     <TableCell className="text-sm">{item.membershipNumber}</TableCell>
                     <TableCell className="text-sm">{item.policyActive}</TableCell>
