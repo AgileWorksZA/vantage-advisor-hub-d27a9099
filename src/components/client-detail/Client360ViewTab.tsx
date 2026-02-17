@@ -21,6 +21,7 @@ import { useClientDetail } from "@/hooks/useClientDetail";
 import { generateClient360Data, formatTotal, mapNationalityToJurisdiction } from "@/data/regional360ViewData";
 import QuoteWizardView from "./QuoteWizardDialog";
 import NewBusinessWizardDialog from "./NewBusinessWizardDialog";
+import AddMedicalAidForm from "./AddMedicalAidForm";
 
 const Client360ViewTab = () => {
   const { clientId } = useParams<{ clientId: string }>();
@@ -29,6 +30,7 @@ const Client360ViewTab = () => {
   const [showAllOnPlatform, setShowAllOnPlatform] = useState(false);
   const [showQuoteWizard, setShowQuoteWizard] = useState(false);
   const [showNewBusinessWizard, setShowNewBusinessWizard] = useState(false);
+  const [showMedicalAidForm, setShowMedicalAidForm] = useState(false);
 
   const jurisdiction = mapNationalityToJurisdiction(client?.nationality || null, client?.country_of_issue || null);
   
@@ -76,6 +78,15 @@ const Client360ViewTab = () => {
       return next;
     });
   };
+
+  if (showMedicalAidForm) {
+    return (
+      <AddMedicalAidForm
+        onClose={() => setShowMedicalAidForm(false)}
+        onSave={() => setShowMedicalAidForm(false)}
+      />
+    );
+  }
 
   if (showQuoteWizard) {
     return (
@@ -487,7 +498,7 @@ const Client360ViewTab = () => {
           <div className="flex items-center justify-between">
             <CardTitle className="text-base font-medium">Medical Aid</CardTitle>
             <div className="flex items-center gap-2">
-              <Button variant="link" className="text-[hsl(180,70%,45%)] p-0 h-auto font-normal">+ Medical Aid</Button>
+              <Button variant="link" className="text-[hsl(180,70%,45%)] p-0 h-auto font-normal" onClick={() => setShowMedicalAidForm(true)}>+ Medical Aid</Button>
               {jurisdiction === "ZA" && (
                 <>
                   <span className="text-muted-foreground">|</span>
