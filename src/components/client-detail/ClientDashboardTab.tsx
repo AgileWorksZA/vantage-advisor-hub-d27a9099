@@ -370,13 +370,6 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
         <Button variant="outline" size="sm" className="h-10 text-xs gap-1" onClick={() => setAddMemberOpen(true)}>
           <Users className="h-3.5 w-3.5" /> Add Member
         </Button>
-        <div className="ml-auto">
-          <WidgetSettingsDialog
-            widgets={CLIENT_DASHBOARD_WIDGETS}
-            hiddenWidgets={hiddenWidgets}
-            onToggleWidget={handleToggleWidget}
-          />
-        </div>
       </div>
 
       {/* Draggable Widget Grid */}
@@ -394,7 +387,7 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
           ))}
         </div>
       ) : (
-      <DraggableWidgetGrid layout={visibleLayout} onLayoutChange={onLayoutChange}>
+      <DraggableWidgetGrid layout={visibleLayout} onLayoutChange={onLayoutChange} toolbar={<WidgetSettingsDialog widgets={CLIENT_DASHBOARD_WIDGETS} hiddenWidgets={hiddenWidgets} onToggleWidget={handleToggleWidget} />}>
         {/* Asset Allocation */}
         {isWidgetVisible('asset-allocation') && (
           <div key="asset-allocation">
