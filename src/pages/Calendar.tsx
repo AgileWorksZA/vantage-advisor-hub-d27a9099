@@ -99,7 +99,7 @@ const sidebarItems = [
   { icon: LineChart, label: "Portfolio", path: "/portfolio" },
   { icon: Mail, label: "Message", path: "/email" },
   { icon: CalendarIcon, label: "Calendar", path: "/calendar" },
-  { icon: ListTodo, label: "Tasks", path: "/tasks" },
+  { icon: ListTodo, label: "Workflows", path: "/tasks" },
   { icon: Briefcase, label: "Insights", path: "/insights" },
   { icon: Building2, label: "Practice", path: "/practice" },
 ];
