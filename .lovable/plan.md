@@ -1,77 +1,37 @@
 
 
-## Add Sparkline + Growth % to Three Dashboard Widgets
+## Remove Decimals & Move Sparklines Next to Last Digit
 
 ### Overview
-Add a sparkline chart and growth percentage badge to the header area of the **Top 5 Accounts**, **Clients by Value**, and **Provider View** widgets, matching the pattern already implemented in the AUM by Product widget.
+Two changes across all dashboard widgets:
+1. Remove decimal places from all growth percentages (e.g., `+3.2%` becomes `+3%`)
+2. Move sparkline SVGs to appear immediately after the value text (next to the last digit), removing the gap
 
-### 1. Extend Data Interfaces (`src/data/regionalData.ts`)
+### Changes in `src/pages/Dashboard.tsx`
 
-Add growth fields to three interfaces:
+**1. Remove decimals** - Change all `.toFixed(1)` to `.toFixed(0)` or `Math.round()`:
 
-```typescript
-export interface ProviderData {
-  name: string;
-  bookPercent: string;
-  value: string;
-  growth1m?: number;
-  growth6m?: number;
-  growthYtd?: number;
-}
+| Widget | Lines (approx) | Current | New |
+|--------|----------------|---------|-----|
+| Provider View - header | ~358 | `providerGrowth.toFixed(1)` | `Math.round(providerGrowth)` |
+| Provider View - rows | ~384 | `g.toFixed(1)` | `Math.round(g)` |
+| Top 5 Accounts - header | ~429 | `top5Growth.toFixed(1)` | `Math.round(top5Growth)` |
+| Top 5 Accounts - rows | ~457 | `g.toFixed(1)` | `Math.round(g)` |
+| AUM by Product - header | ~502 | `totalGrowth.toFixed(1)` | `Math.round(totalGrowth)` |
+| AUM by Product - legend | ~566 | `growth.toFixed(1)` | `Math.round(growth)` |
+| Clients by Value - header | ~659 | `cbvGrowth.toFixed(1)` | `Math.round(cbvGrowth)` |
+| Clients by Value - rows | ~685 | `g.toFixed(1)` | `Math.round(g)` |
 
-export interface TopAccountData {
-  investor: string;
-  bookPercent: string;
-  value: string;
-  advisorInitials: string;
-  growth1m?: number;
-  growth6m?: number;
-  growthYtd?: number;
-}
+**2. Move sparklines next to the last digit** - In each widget header, change the layout so the sparkline appears directly after the value with minimal gap (`gap-1` instead of `gap-2`), removing separation between value and sparkline:
 
-export interface ClientsByValueData {
-  range: string;
-  value: string;
-  investors: number;
-  growth1m?: number;
-  growth6m?: number;
-  growthYtd?: number;
-}
-```
-
-Add deterministic growth values to all entries across all 5 regions (ZA, AU, CA, UK, US). Values will be realistic and vary -- some positive, some negative.
-
-### 2. Update Dashboard Widgets (`src/pages/Dashboard.tsx`)
-
-For each of the three widgets, add a sparkline + growth badge row between the header and the table, following the same pattern as the AUM widget:
-
-- Add a shared `aumGrowthPeriod` state (already exists) and reuse it across all three widgets for consistency
-- Each widget gets a row showing: `[Total/Summary value] [SVG sparkline] [growth % badge]`
-- Below each table, add the same period toggle pills (1M | 6M | YTD) already used in AUM widget
-- Each table row also gets a small inline growth % next to the value column
-
-**Provider View widget:**
-- Summary line: total provider AUM with sparkline and average growth
-- Each provider row gets a growth badge in the value column
-
-**Top 5 Accounts widget:**
-- Summary line: total top-5 value with sparkline and average growth
-- Each account row gets a growth badge in the value column
-
-**Clients by Value widget:**
-- Summary line: total client value with sparkline and average growth
-- Each value-range row gets a growth badge next to the investors count
-
-### Visual Design
-- Sparkline: 60x20px inline SVG polyline (6 points), green stroke for positive, red for negative
-- Growth badge: text-xs, emerald-600/red-600, with TrendingUp/TrendingDown icon
-- Period toggle: same pill buttons as AUM widget, sharing the same state variable
-- Row-level badges: text-[10px], compact, next to existing values
+- Provider View header (line ~351): `gap-2` to `gap-1`
+- Top 5 Accounts header (line ~422): `gap-2` to `gap-1`
+- AUM by Product header (line ~495): `gap-2` to `gap-1`
+- Clients by Value header (line ~652): `gap-2` to `gap-1`
 
 ### Files
 
 | File | Action |
 |------|--------|
-| `src/data/regionalData.ts` | Edit -- add growth fields to 3 interfaces and all region data |
-| `src/pages/Dashboard.tsx` | Edit -- add sparkline rows and row-level growth badges to 3 widgets |
+| `src/pages/Dashboard.tsx` | Edit - update ~12 growth formatting calls and 4 sparkline gap values |
 
