@@ -1,21 +1,21 @@
 
+## Two Changes
 
-## Remove Spacing Between Numbers/Headings and Sparklines
+### 1. Remove "View All Opportunities" button from Client Opportunities widget
 
-### Problem
-The sparkline SVGs have visible spacing separating them from the number or heading they refer to. The user wants the sparkline to sit flush against its associated text (e.g. `$ 4,650,000,000{sparkline}` with no gap).
+**File:** `src/components/dashboard/ClientOpportunityStatusWidget.tsx`
 
-### Solution
-Change `gap-0.5` to `gap-0` on all four sparkline heading rows in `src/pages/Dashboard.tsx`. This removes the flex gap so the sparkline SVG sits immediately next to the number/heading text.
+Remove lines 104-112 (the `div` containing the animated border button with the TrendingUp icon and "View All Opportunities" text). Also remove the now-unused `TrendingUp` import.
 
-### Changes in `src/pages/Dashboard.tsx`
+### 2. Remove blank space between "Advisor Dashboard" heading and first row of widgets
 
-| Location | Line | Widget |
-|----------|------|--------|
-| Line 346 | `gap-0.5` to `gap-0` | Provider View (AUM heading) |
-| Line 417 | `gap-0.5` to `gap-0` | Top 5 Accounts heading |
-| Line 490 | `gap-0.5` to `gap-0` | AUM by Product heading |
-| Line 647 | `gap-0.5` to `gap-0` | Clients by Value heading |
+**File:** `src/pages/Dashboard.tsx`
 
-Single file, four one-word changes.
+Change the heading wrapper `div` from `className="mb-6"` (line 295) to `className="mb-2"` to reduce the gap between the heading and the widget grid.
 
+### Technical Summary
+
+| File | Change |
+|------|--------|
+| `ClientOpportunityStatusWidget.tsx` | Delete lines 104-112 (button block), remove `TrendingUp` from imports |
+| `Dashboard.tsx` | Line 295: `mb-6` to `mb-2` |
