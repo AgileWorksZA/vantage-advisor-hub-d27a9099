@@ -190,9 +190,9 @@ const Client360ViewTab = () => {
                 <TableHead className="text-xs font-medium text-muted-foreground">Investment house</TableHead>
                 <TableHead className="text-xs font-medium text-muted-foreground">Investment product</TableHead>
                 <TableHead className="text-xs font-medium text-muted-foreground">Investment number</TableHead>
-                <TableHead className="text-xs font-medium text-muted-foreground">Investment amount</TableHead>
-                <TableHead className="text-xs font-medium text-muted-foreground">Income</TableHead>
-                <TableHead className="text-xs font-medium text-muted-foreground">Recurring contribution</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground text-right">Investment amount</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground text-right">Income</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground text-right">Recurring contribution</TableHead>
                 <TableHead className="text-xs font-medium text-muted-foreground">Date applicable</TableHead>
                 <TableHead className="text-xs font-medium text-muted-foreground">Advisor name</TableHead>
                 <TableHead className="w-[100px]"></TableHead>
@@ -207,12 +207,12 @@ const Client360ViewTab = () => {
                       <TableCell className="text-sm text-[hsl(180,70%,45%)]">{product.investmentHouse}</TableCell>
                       <TableCell className="text-sm">{product.product}</TableCell>
                       <TableCell className="text-sm">{product.number}</TableCell>
-                      <TableCell className="text-sm">{product.amount}</TableCell>
-                      <TableCell className="text-sm">
-                        <span className="inline-flex items-center gap-1">{product.income} <FrequencyTag frequency={product.incomeFrequency} value={product.income} /></span>
+                      <TableCell className="text-sm text-right">{product.amount}</TableCell>
+                      <TableCell className="text-sm text-right">
+                        <span className="inline-flex items-center justify-end gap-1">{product.income} <FrequencyTag frequency={product.incomeFrequency} value={product.income} /></span>
                       </TableCell>
-                      <TableCell className="text-sm">
-                        <span className="inline-flex items-center gap-1">{product.contribution} <FrequencyTag frequency={product.contributionFrequency} value={product.contribution} /></span>
+                      <TableCell className="text-sm text-right">
+                        <span className="inline-flex items-center justify-end gap-1">{product.contribution} <FrequencyTag frequency={product.contributionFrequency} value={product.contribution} /></span>
                       </TableCell>
                       <TableCell className="text-sm">{product.date}</TableCell>
                       <TableCell className="text-sm">{product.advisor}</TableCell>
@@ -313,9 +313,9 @@ const Client360ViewTab = () => {
                 <TableHead className="text-xs font-medium text-muted-foreground">Provider</TableHead>
                 <TableHead className="text-xs font-medium text-muted-foreground">Product</TableHead>
                 <TableHead className="text-xs font-medium text-muted-foreground">Contract</TableHead>
-                <TableHead className="text-xs font-medium text-muted-foreground">Amount</TableHead>
-                <TableHead className="text-xs font-medium text-muted-foreground">Income</TableHead>
-                <TableHead className="text-xs font-medium text-muted-foreground">Contribution</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground text-right">Amount</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground text-right">Income</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground text-right">Contribution</TableHead>
                 <TableHead className="text-xs font-medium text-muted-foreground">Updated</TableHead>
                 <TableHead className="text-xs font-medium text-muted-foreground">Source</TableHead>
                 <TableHead className="w-[80px]"></TableHead>
@@ -327,12 +327,12 @@ const Client360ViewTab = () => {
                   <TableCell className="text-sm text-[hsl(180,70%,45%)]">{product.provider}</TableCell>
                   <TableCell className="text-sm">{product.product}</TableCell>
                   <TableCell className="text-sm">{product.contract}</TableCell>
-                  <TableCell className="text-sm">{product.amount}</TableCell>
-                  <TableCell className="text-sm">
-                    <span className="inline-flex items-center gap-1">{product.income} <FrequencyTag frequency={product.incomeFrequency} value={product.income} /></span>
+                  <TableCell className="text-sm text-right">{product.amount}</TableCell>
+                  <TableCell className="text-sm text-right">
+                    <span className="inline-flex items-center justify-end gap-1">{product.income} <FrequencyTag frequency={product.incomeFrequency} value={product.income} /></span>
                   </TableCell>
-                  <TableCell className="text-sm">
-                    <span className="inline-flex items-center gap-1">{product.contribution} <FrequencyTag frequency={product.contributionFrequency} value={product.contribution} /></span>
+                  <TableCell className="text-sm text-right">
+                    <span className="inline-flex items-center justify-end gap-1">{product.contribution} <FrequencyTag frequency={product.contributionFrequency} value={product.contribution} /></span>
                   </TableCell>
                   <TableCell className="text-sm">{product.updated}</TableCell>
                   <TableCell className="text-sm">{product.source}</TableCell>
@@ -378,7 +378,7 @@ const Client360ViewTab = () => {
                 <TableHead className="text-xs font-medium text-muted-foreground">Date Opened</TableHead>
                 <TableHead className="text-xs font-medium text-muted-foreground">Nominated Beneficiary</TableHead>
                 <TableHead className="text-xs font-medium text-muted-foreground">Account Number</TableHead>
-                <TableHead className="text-xs font-medium text-muted-foreground">Investment Amount</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground text-right">Investment Amount</TableHead>
                 <TableHead className="text-xs font-medium text-muted-foreground">Source</TableHead>
                 <TableHead className="text-xs font-medium text-muted-foreground">Date Closed</TableHead>
                 <TableHead className="w-[60px]"></TableHead>
@@ -391,7 +391,7 @@ const Client360ViewTab = () => {
                   <TableCell className="text-sm">{account.dateOpened}</TableCell>
                   <TableCell className="text-sm">{account.beneficiary}</TableCell>
                   <TableCell className="text-sm">{account.accountNumber}</TableCell>
-                  <TableCell className="text-sm">{account.amount}</TableCell>
+                  <TableCell className="text-sm text-right">{account.amount}</TableCell>
                   <TableCell className="text-sm">{account.source}</TableCell>
                   <TableCell className="text-sm">{account.dateClosed}</TableCell>
                   <TableCell>
@@ -478,7 +478,7 @@ const Client360ViewTab = () => {
               <TableRow className="bg-muted/30">
                 <TableHead className="text-xs font-medium text-muted-foreground">Insurer</TableHead>
                 <TableHead className="text-xs font-medium text-muted-foreground">Policy Type</TableHead>
-                <TableHead className="text-xs font-medium text-muted-foreground">Total Premium</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground text-right">Total Premium</TableHead>
                 <TableHead className="text-xs font-medium text-muted-foreground">Review Date</TableHead>
                 <TableHead className="text-xs font-medium text-muted-foreground">Broker</TableHead>
                 <TableHead className="text-xs font-medium text-muted-foreground">Data Date</TableHead>
@@ -491,8 +491,8 @@ const Client360ViewTab = () => {
                   <TableRow key={index} className="border-b border-border/50">
                     <TableCell className="text-sm text-[hsl(180,70%,45%)]">{product.insurer}</TableCell>
                     <TableCell className="text-sm">{product.policyType}</TableCell>
-                    <TableCell className="text-sm">
-                      <span className="inline-flex items-center gap-1">{product.totalPremium} <FrequencyTag frequency={product.premiumFrequency} value={product.totalPremium} /></span>
+                    <TableCell className="text-sm text-right">
+                      <span className="inline-flex items-center justify-end gap-1">{product.totalPremium} <FrequencyTag frequency={product.premiumFrequency} value={product.totalPremium} /></span>
                     </TableCell>
                     <TableCell className="text-sm">{product.reviewDate}</TableCell>
                     <TableCell className="text-sm">{product.broker}</TableCell>
