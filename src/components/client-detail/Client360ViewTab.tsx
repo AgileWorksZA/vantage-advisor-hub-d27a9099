@@ -28,6 +28,13 @@ import AddWillForm from "./AddWillForm";
 import AstuteRequestView from "./AstuteRequestView";
 import FrequencyTag from "./FrequencyTag";
 
+const isZeroValue = (value?: string): boolean => {
+  if (!value) return true;
+  const numeric = value.replace(/[^0-9.]/g, "");
+  if (!numeric) return true;
+  return parseFloat(numeric) === 0;
+};
+
 const Client360ViewTab = () => {
   const { clientId } = useParams<{ clientId: string }>();
 
@@ -207,12 +214,12 @@ const Client360ViewTab = () => {
                       <TableCell className="text-sm text-[hsl(180,70%,45%)]">{product.investmentHouse}</TableCell>
                       <TableCell className="text-sm">{product.product}</TableCell>
                       <TableCell className="text-sm">{product.number}</TableCell>
-                      <TableCell className="text-sm text-right">{product.amount}</TableCell>
+                      <TableCell className="text-sm text-right">{isZeroValue(product.amount) ? "" : product.amount}</TableCell>
                       <TableCell className="text-sm text-right">
-                        <span className="inline-flex items-center justify-end gap-1">{product.income} <FrequencyTag frequency={product.incomeFrequency} value={product.income} /></span>
+                        {isZeroValue(product.income) ? null : <span className="inline-flex items-center justify-end gap-1">{product.income} <FrequencyTag frequency={product.incomeFrequency} value={product.income} /></span>}
                       </TableCell>
                       <TableCell className="text-sm text-right">
-                        <span className="inline-flex items-center justify-end gap-1">{product.contribution} <FrequencyTag frequency={product.contributionFrequency} value={product.contribution} /></span>
+                        {isZeroValue(product.contribution) ? null : <span className="inline-flex items-center justify-end gap-1">{product.contribution} <FrequencyTag frequency={product.contributionFrequency} value={product.contribution} /></span>}
                       </TableCell>
                       <TableCell className="text-sm">{product.date}</TableCell>
                       <TableCell className="text-sm">{product.advisor}</TableCell>
@@ -268,7 +275,7 @@ const Client360ViewTab = () => {
                         <TableCell className="text-sm py-1 text-right">
                           <div className="space-y-0.5">
                             {product.details.map((detail, i) => (
-                              <div key={i}>{detail.amount}</div>
+                              <div key={i}>{isZeroValue(detail.amount) ? "" : detail.amount}</div>
                             ))}
                           </div>
                         </TableCell>
@@ -329,12 +336,12 @@ const Client360ViewTab = () => {
                   <TableCell className="text-sm text-[hsl(180,70%,45%)]">{product.provider}</TableCell>
                   <TableCell className="text-sm">{product.product}</TableCell>
                   <TableCell className="text-sm">{product.contract}</TableCell>
-                  <TableCell className="text-sm text-right">{product.amount}</TableCell>
+                  <TableCell className="text-sm text-right">{isZeroValue(product.amount) ? "" : product.amount}</TableCell>
                   <TableCell className="text-sm text-right">
-                    <span className="inline-flex items-center justify-end gap-1">{product.income} <FrequencyTag frequency={product.incomeFrequency} value={product.income} /></span>
+                    {isZeroValue(product.income) ? null : <span className="inline-flex items-center justify-end gap-1">{product.income} <FrequencyTag frequency={product.incomeFrequency} value={product.income} /></span>}
                   </TableCell>
                   <TableCell className="text-sm text-right">
-                    <span className="inline-flex items-center justify-end gap-1">{product.contribution} <FrequencyTag frequency={product.contributionFrequency} value={product.contribution} /></span>
+                    {isZeroValue(product.contribution) ? null : <span className="inline-flex items-center justify-end gap-1">{product.contribution} <FrequencyTag frequency={product.contributionFrequency} value={product.contribution} /></span>}
                   </TableCell>
                   <TableCell className="text-sm">{product.updated}</TableCell>
                   <TableCell className="text-sm">{product.source}</TableCell>
@@ -390,7 +397,7 @@ const Client360ViewTab = () => {
                   <TableCell className="text-sm">{account.dateOpened}</TableCell>
                   <TableCell className="text-sm">{account.beneficiary}</TableCell>
                   <TableCell className="text-sm">{account.accountNumber}</TableCell>
-                  <TableCell className="text-sm text-right">{account.amount}</TableCell>
+                  <TableCell className="text-sm text-right">{isZeroValue(account.amount) ? "" : account.amount}</TableCell>
                   <TableCell className="text-sm">{account.source}</TableCell>
                   <TableCell className="text-sm">{account.dateClosed}</TableCell>
                   <TableCell>
@@ -485,7 +492,7 @@ const Client360ViewTab = () => {
                     <TableCell className="text-sm text-[hsl(180,70%,45%)]">{product.insurer}</TableCell>
                     <TableCell className="text-sm">{product.policyType}</TableCell>
                     <TableCell className="text-sm text-right">
-                      <span className="inline-flex items-center justify-end gap-1">{product.totalPremium} <FrequencyTag frequency={product.premiumFrequency} value={product.totalPremium} /></span>
+                      {isZeroValue(product.totalPremium) ? null : <span className="inline-flex items-center justify-end gap-1">{product.totalPremium} <FrequencyTag frequency={product.premiumFrequency} value={product.totalPremium} /></span>}
                     </TableCell>
                     <TableCell className="text-sm">{product.reviewDate}</TableCell>
                     <TableCell className="text-sm">{product.broker}</TableCell>
@@ -544,7 +551,7 @@ const Client360ViewTab = () => {
                   <TableCell className="text-sm">{product.effectiveDate}</TableCell>
                   <TableCell className="text-sm">{product.terminationDate}</TableCell>
                   <TableCell className="text-sm text-right">
-                    <span className="inline-flex items-center justify-end gap-1">{product.paymentAmount} <FrequencyTag frequency={product.paymentFrequency} value={product.paymentAmount} /></span>
+                    {isZeroValue(product.paymentAmount) ? null : <span className="inline-flex items-center justify-end gap-1">{product.paymentAmount} <FrequencyTag frequency={product.paymentFrequency} value={product.paymentAmount} /></span>}
                   </TableCell>
                   <TableCell className="text-sm">{product.paidToDate}</TableCell>
                   <TableCell className="text-sm">{product.paymentDueDate}</TableCell>
@@ -601,7 +608,7 @@ const Client360ViewTab = () => {
                     <TableCell className="text-sm">{item.planName}</TableCell>
                     <TableCell className="text-sm">{item.membershipNumber}</TableCell>
                     <TableCell className="text-sm">{item.policyActive}</TableCell>
-                    <TableCell className="text-sm">{item.premium}</TableCell>
+                    <TableCell className="text-sm">{isZeroValue(item.premium) ? "" : item.premium}</TableCell>
                     <TableCell className="text-sm">{item.dateReceived}</TableCell>
                     <TableCell className="text-sm">{item.notes}</TableCell>
                     <TableCell>
