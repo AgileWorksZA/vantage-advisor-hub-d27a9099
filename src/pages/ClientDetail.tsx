@@ -35,7 +35,7 @@ import ClientDocumentsTab from "@/components/client-detail/ClientDocumentsTab";
 import ClientMeetingsTab from "@/components/client-detail/ClientMeetingsTab";
 
 import ClientRecentActivityTab from "@/components/client-detail/ClientRecentActivityTab";
-import ClientPerformanceTab from "@/components/client-detail/ClientPerformanceTab";
+import ClientPortfolioTab from "@/components/client-detail/ClientPortfolioTab";
 import { useClientDetail } from "@/hooks/useClientDetail";
 import { useClientRelationships } from "@/hooks/useClientRelationships";
 import { getDisplayName } from "@/types/client";
@@ -280,7 +280,7 @@ const ClientDetail = () => {
                 { value: "dashboard", label: "Dashboard" },
                 { value: "summary", label: "Opportunities" },
                 { value: "360-view", label: "Products" },
-                { value: "performance", label: "Performance" },
+                { value: "portfolio", label: "Portfolio" },
                 
                 { value: "meetings", label: "Meetings" },
                 
@@ -321,8 +321,8 @@ const ClientDetail = () => {
             <TabsContent value="360-view" className="mt-0">
               <Client360ViewTab />
             </TabsContent>
-            <TabsContent value="performance" className="mt-0">
-              <ClientPerformanceTab clientId={clientId!} nationality={client.nationality} countryOfIssue={client.country_of_issue} />
+            <TabsContent value="portfolio" className="mt-0">
+              <ClientPortfolioTab clientId={clientId!} nationality={client.nationality} countryOfIssue={client.country_of_issue} />
             </TabsContent>
             <TabsContent value="details" className="mt-0">
               <ClientDetailsTab client={client} onUpdate={updateClient} />
