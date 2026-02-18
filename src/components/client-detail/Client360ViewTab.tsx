@@ -525,7 +525,7 @@ const Client360ViewTab = () => {
                 <TableHead className="text-xs font-medium text-muted-foreground">Policy Number</TableHead>
                 <TableHead className="text-xs font-medium text-muted-foreground">Effective Date</TableHead>
                 <TableHead className="text-xs font-medium text-muted-foreground">Termination Date</TableHead>
-                <TableHead className="text-xs font-medium text-muted-foreground">Payment Amount</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground text-right">Payment Amount</TableHead>
                 <TableHead className="text-xs font-medium text-muted-foreground">Paid To Date</TableHead>
                 <TableHead className="text-xs font-medium text-muted-foreground">Payment Due Date</TableHead>
                 <TableHead className="text-xs font-medium text-muted-foreground">Notes</TableHead>
@@ -539,7 +539,7 @@ const Client360ViewTab = () => {
                   <TableCell className="text-sm">{product.policyNumber}</TableCell>
                   <TableCell className="text-sm">{product.effectiveDate}</TableCell>
                   <TableCell className="text-sm">{product.terminationDate}</TableCell>
-                  <TableCell className="text-sm">{product.paymentAmount}</TableCell>
+                  <TableCell className="text-sm text-right">{product.paymentAmount}</TableCell>
                   <TableCell className="text-sm">{product.paidToDate}</TableCell>
                   <TableCell className="text-sm">{product.paymentDueDate}</TableCell>
                   <TableCell className="text-sm">{product.notes}</TableCell>
