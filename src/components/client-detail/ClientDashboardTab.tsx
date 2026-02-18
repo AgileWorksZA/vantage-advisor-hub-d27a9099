@@ -28,6 +28,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import WorldMapSVG from "@/components/client-detail/WorldMapSVG";
 import AddFamilyMemberDialog from "./AddFamilyMemberDialog";
 import React from "react";
 
@@ -191,11 +192,11 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
     const domPct = Math.round(domestic * 100);
     // Distribute international across regions proportionally
     return [
-      { name: "South Africa", value: domPct, x: 55, y: 78, color: "hsl(180, 70%, 45%)" },
-      { name: "North America", value: Math.round(intPct * 0.35), x: 22, y: 35, color: "hsl(180, 50%, 55%)" },
-      { name: "Europe", value: Math.round(intPct * 0.30), x: 50, y: 30, color: "hsl(180, 60%, 50%)" },
-      { name: "Asia Pacific", value: Math.round(intPct * 0.20), x: 78, y: 42, color: "hsl(180, 40%, 55%)" },
-      { name: "UK", value: Math.round(intPct * 0.15), x: 47, y: 25, color: "hsl(180, 55%, 52%)" },
+      { name: "South Africa", value: domPct, x: 53, y: 73, color: "hsl(180, 70%, 45%)" },
+      { name: "North America", value: Math.round(intPct * 0.35), x: 20, y: 32, color: "hsl(180, 50%, 55%)" },
+      { name: "Europe", value: Math.round(intPct * 0.30), x: 49, y: 22, color: "hsl(180, 60%, 50%)" },
+      { name: "Asia Pacific", value: Math.round(intPct * 0.20), x: 78, y: 30, color: "hsl(180, 40%, 55%)" },
+      { name: "UK", value: Math.round(intPct * 0.15), x: 43, y: 13, color: "hsl(180, 55%, 52%)" },
     ];
   }, [assetAllocation]);
 
@@ -446,43 +447,8 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
                </CardHeader>
               <CardContent className="pt-0">
                 <div className="relative h-[180px] w-full overflow-hidden rounded-md">
-                  {/* Inline SVG world map with solid continent fills */}
-                  <svg viewBox="0 0 1000 500" className="absolute inset-0 w-full h-full" preserveAspectRatio="xMidYMid meet">
-                    {/* North America */}
-                    <path d="M45,55 L55,52 L62,48 L75,50 L85,45 L100,42 L115,38 L130,35 L148,33 L165,30 L178,28 L190,30 L200,28 L215,30 L228,35 L238,40 L245,48 L255,55 L262,62 L268,70 L272,80 L275,90 L278,100 L278,108 L275,115 L270,122 L265,128 L258,135 L252,142 L248,150 L242,158 L235,165 L228,172 L222,178 L218,185 L215,192 L210,198 L205,205 L198,212 L192,218 L188,225 L182,232 L178,238 L172,242 L168,238 L162,232 L155,228 L148,225 L142,220 L138,215 L132,210 L125,205 L118,200 L112,195 L105,190 L98,185 L92,178 L85,172 L78,165 L72,158 L65,150 L60,142 L55,135 L50,125 L48,115 L45,105 L42,95 L40,85 L42,72 L45,62 Z" className="fill-[hsl(180,30%,85%)] dark:fill-[hsl(180,20%,25%)]" />
-                    {/* Greenland */}
-                    <path d="M295,18 L310,15 L325,18 L335,25 L340,35 L338,48 L332,58 L322,62 L312,60 L302,55 L295,48 L290,38 L290,28 Z" className="fill-[hsl(180,30%,85%)] dark:fill-[hsl(180,20%,25%)]" />
-                    {/* Central America & Mexico */}
-                    <path d="M168,238 L172,242 L178,248 L182,255 L188,262 L192,268 L195,275 L198,282 L200,288 L198,295 L192,298 L185,295 L178,290 L172,285 L168,278 L165,270 L162,262 L160,255 L162,248 L165,242 Z" className="fill-[hsl(180,30%,85%)] dark:fill-[hsl(180,20%,25%)]" />
-                    {/* South America */}
-                    <path d="M198,295 L205,292 L215,288 L228,285 L240,288 L252,292 L262,298 L270,305 L278,315 L285,325 L290,338 L295,350 L298,362 L298,375 L296,388 L292,398 L288,408 L282,418 L275,425 L268,432 L262,438 L255,445 L248,450 L242,455 L235,458 L228,455 L222,448 L218,440 L215,430 L212,418 L210,408 L208,395 L205,382 L202,368 L200,355 L198,342 L196,328 L195,315 L196,305 Z" className="fill-[hsl(180,30%,85%)] dark:fill-[hsl(180,20%,25%)]" />
-                    {/* Europe */}
-                    <path d="M445,52 L455,48 L468,45 L478,42 L488,45 L498,42 L508,45 L518,48 L525,52 L530,58 L535,65 L538,72 L540,80 L542,88 L542,95 L540,102 L538,108 L535,115 L530,120 L525,125 L520,128 L515,132 L508,135 L502,132 L495,128 L488,125 L482,122 L478,118 L472,115 L468,118 L462,122 L458,125 L452,128 L448,125 L445,120 L442,112 L440,105 L438,98 L438,90 L440,82 L442,72 L445,62 Z" className="fill-[hsl(180,30%,85%)] dark:fill-[hsl(180,20%,25%)]" />
-                    {/* Scandinavia */}
-                    <path d="M478,22 L485,18 L492,20 L498,25 L502,32 L505,40 L502,48 L498,42 L492,38 L488,42 L485,38 L482,32 L478,28 Z" className="fill-[hsl(180,30%,85%)] dark:fill-[hsl(180,20%,25%)]" />
-                    {/* UK & Ireland */}
-                    <path d="M425,58 L430,52 L435,55 L438,62 L436,68 L432,72 L428,68 L425,62 Z M418,60 L422,56 L424,62 L422,66 L418,64 Z" className="fill-[hsl(180,30%,85%)] dark:fill-[hsl(180,20%,25%)]" />
-                    {/* Africa */}
-                    <path d="M458,175 L465,170 L475,168 L488,165 L498,168 L508,170 L518,172 L528,175 L538,180 L548,185 L555,192 L560,200 L568,210 L575,222 L580,235 L585,248 L588,262 L590,275 L590,288 L588,302 L585,315 L580,328 L575,338 L568,348 L560,358 L552,368 L545,375 L538,382 L530,388 L522,392 L515,395 L508,398 L500,395 L492,392 L485,388 L478,382 L472,375 L465,365 L460,355 L455,342 L452,328 L450,315 L448,300 L446,285 L445,270 L445,255 L448,240 L450,225 L452,212 L455,198 L458,185 Z" className="fill-[hsl(180,30%,85%)] dark:fill-[hsl(180,20%,25%)]" />
-                    {/* Madagascar */}
-                    <path d="M598,345 L602,338 L605,348 L605,360 L602,368 L598,362 L596,355 Z" className="fill-[hsl(180,30%,85%)] dark:fill-[hsl(180,20%,25%)]" />
-                    {/* Asia (mainland) */}
-                    <path d="M548,40 L565,35 L582,32 L600,30 L618,28 L638,28 L658,30 L678,32 L698,35 L718,38 L738,42 L755,48 L768,55 L780,62 L790,70 L798,80 L805,90 L810,100 L815,112 L818,125 L820,138 L818,150 L815,162 L810,172 L802,180 L792,185 L782,188 L772,190 L762,192 L752,195 L742,198 L732,200 L722,202 L712,205 L702,208 L692,205 L682,200 L672,195 L662,190 L652,185 L642,180 L632,175 L622,170 L612,165 L602,158 L592,150 L582,142 L575,132 L568,122 L562,112 L558,100 L555,88 L552,75 L548,62 L545,52 Z" className="fill-[hsl(180,30%,85%)] dark:fill-[hsl(180,20%,25%)]" />
-                    {/* Middle East */}
-                    <path d="M575,132 L582,142 L592,150 L598,155 L602,158 L608,162 L612,165 L608,168 L602,172 L595,175 L588,172 L582,168 L578,162 L572,155 L568,148 L565,140 L568,135 Z" className="fill-[hsl(180,30%,85%)] dark:fill-[hsl(180,20%,25%)]" />
-                    {/* Indian subcontinent */}
-                    <path d="M660,190 L672,195 L682,200 L692,205 L698,212 L702,222 L705,235 L705,248 L702,260 L698,272 L692,282 L685,290 L678,295 L670,292 L662,285 L656,275 L652,262 L648,250 L645,238 L645,225 L648,215 L652,205 L656,198 Z" className="fill-[hsl(180,30%,85%)] dark:fill-[hsl(180,20%,25%)]" />
-                    {/* Southeast Asia peninsula */}
-                    <path d="M732,200 L742,198 L748,205 L752,215 L755,225 L758,238 L755,248 L750,255 L745,260 L738,258 L732,252 L728,242 L725,232 L725,220 L728,210 Z" className="fill-[hsl(180,30%,85%)] dark:fill-[hsl(180,20%,25%)]" />
-                    {/* Indonesia archipelago */}
-                    <path d="M748,268 L758,265 L770,262 L782,265 L792,268 L802,272 L812,275 L822,278 L832,282 L838,288 L832,292 L822,290 L812,288 L802,285 L792,282 L782,278 L770,275 L758,272 Z" className="fill-[hsl(180,30%,85%)] dark:fill-[hsl(180,20%,25%)]" />
-                    {/* Japan */}
-                    <path d="M855,72 L860,65 L865,68 L868,75 L870,85 L868,95 L865,105 L862,112 L858,108 L855,100 L852,92 L852,82 Z" className="fill-[hsl(180,30%,85%)] dark:fill-[hsl(180,20%,25%)]" />
-                    {/* Australia */}
-                    <path d="M792,330 L808,322 L825,318 L842,315 L858,318 L872,322 L885,328 L895,338 L902,348 L908,360 L912,372 L912,385 L908,395 L902,405 L895,412 L885,418 L872,422 L858,425 L842,422 L828,418 L815,412 L805,405 L798,395 L792,385 L788,372 L785,358 L788,345 Z" className="fill-[hsl(180,30%,85%)] dark:fill-[hsl(180,20%,25%)]" />
-                    {/* New Zealand */}
-                    <path d="M935,395 L938,388 L942,392 L945,400 L942,410 L938,415 L935,408 Z M940,415 L942,412 L945,418 L942,425 L940,420 Z" className="fill-[hsl(180,30%,85%)] dark:fill-[hsl(180,20%,25%)]" />
-                  </svg>
+                  {/* High-fidelity world map */}
+                  <WorldMapSVG className="absolute inset-0 w-full h-full" />
                   {/* Region markers */}
                   {geoDiversification.map((region) => {
                     const isLargest = region.value === Math.max(...geoDiversification.map(r => r.value));
