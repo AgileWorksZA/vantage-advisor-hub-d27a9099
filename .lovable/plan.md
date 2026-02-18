@@ -1,31 +1,38 @@
 
 
-## Redesign Dot Map to Match Reference Layout
+## Precision Dot Map Overhaul to Match Reference Images
+
+### Problem
+The current dot map has ~1,200 dots at 8px spacing with radius 1.6. The reference images show a much denser, more precise layout with:
+- Tighter spacing (~6px between dots)
+- Smaller dot radius (~1.2)
+- Roughly 2,500-3,000 dots total
+- Much more detailed coastlines and continent shapes
 
 ### What changes
-The current dot map has ~400 dots at ~14px spacing with radius 2.2, which looks sparse and blocky. The reference image shows a much denser, tighter grid creating highly detailed, immediately recognizable continent shapes. The map needs to be completely rewritten with:
 
-- **Smaller dots**: Reduce radius from 2.2 to ~1.6
-- **Tighter grid**: Reduce spacing from ~14px to ~8px between dots
-- **Many more dots**: Increase from ~400 to ~1200-1500 dots total
-- **Better continent shapes**: Follow the reference image's layout more closely -- dense fill with clean edges that trace real coastlines
+**File: `src/data/worldMapDots.ts`** -- Complete rewrite of all coordinate arrays
 
-### File changed
+The dot grid will be rewritten on a 6px spacing (coordinates at multiples of 6) to match the reference density. Key improvements per region:
 
-**`src/components/client-detail/WorldMapSVG.tsx`** -- Full rewrite of all coordinate arrays
+- **North America**: More detailed Great Lakes indent, proper Hudson Bay gap, narrower Florida peninsula, detailed Pacific Northwest coast, Alaska as clear peninsula, detailed Mexico with Baja California as separate strip, thin Central America isthmus
+- **South America**: Proper northeast bulge (Natal), concave western coast (Peru/Chile), wide Amazon basin, narrow Patagonia tail, clear gap at Drake Passage
+- **Europe**: Detailed Scandinavian peninsula (Norway/Sweden/Finland), separate British Isles with Ireland, Iberian peninsula with proper shape, Italian boot, Greek peninsula, detailed Baltic coastline
+- **Africa**: Proper West African bulge (Guinea), Horn of Africa protruding east, concave Gulf of Guinea coast, tapering Southern Africa, separate Madagascar island
+- **Asia**: Dense Russia spanning full width, Arabian Peninsula as distinct block, Indian subcontinent triangle tapering to point, detailed Southeast Asian peninsula, Indonesian archipelago as dot chains, Japan as curved archipelago, Korean peninsula, Philippines as vertical chain, Sri Lanka dot
+- **Oceania**: Australia with proper Gulf of Carpentaria indent on north coast, Tasmania separate, New Zealand as two-island cluster
+- **Greenland**: Dense elongated oval
 
-Key adjustments per continent to match the reference:
-- **North America**: Dense fill covering Alaska, Canada (wide east-west), USA with Great Lakes indent, Florida peninsula, Mexico tapering down, Central America narrow strip
-- **South America**: Wide Brazil bulge at top, tapering to narrow Patagonia at bottom
-- **Europe**: Small but detailed -- UK/Ireland separate, Scandinavia finger, Iberian/Italian/Greek peninsulas, filled Central Europe
-- **Africa**: Large dense block, widest at equator, Horn of Africa bump on east, Madagascar island
-- **Asia**: Massive -- wide Russia across top, Middle East, Indian subcontinent triangle, dense China/SE Asia, Japan archipelago as separate dots
-- **Australia**: Compact filled shape, New Zealand as small separate cluster
-- **Greenland**: Dense oval shape
+**File: `src/components/client-detail/WorldMapSVG.tsx`** -- Update radius
 
-Technical details:
-- Reduce `R` from 2.2 to 1.6
-- Grid spacing ~8px (coordinates at multiples of 8)
-- All dots use same theme-aware fill class
-- No changes to `ClientDashboardTab.tsx` -- component interface stays identical
+- Reduce `R` from 1.6 to 1.2 for tighter, more refined appearance matching the reference
+- No other changes needed -- component structure stays identical
+
+### Technical details
+- Grid spacing: 6px (all coordinates multiples of 6)
+- Dot radius: 1.2
+- Total dots: ~2,500-3,000
+- ViewBox remains 0 0 1000 500
+- Same theme-aware fill classes
+- No changes to ClientDashboardTab.tsx -- markers and legend untouched
 
