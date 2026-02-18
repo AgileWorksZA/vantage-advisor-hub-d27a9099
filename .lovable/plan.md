@@ -1,18 +1,14 @@
 
+## Right-Align Numbers on Products Tab
 
-## Move Direction Filter Inline with Refresh Button
+Align numeric columns (Premium, Value) to the right and keep text/date columns (Product, Adviser, Role, Frequency, Value updated, Inactive, Linked) left-aligned.
 
-Move the All/Received/Sent toggle group from its own row into the same row as the Refresh button and search bar.
+### Changes in `src/components/client-detail/ClientProductsTab.tsx`
 
-### Change
+**Table Headers (lines 113, 115):**
+- Add `text-right` to "Premium" and "Value" `TableHead` elements
 
-In `src/components/client-detail/ClientCommunicationTab.tsx`, move the `ToggleGroup` (lines 129-133) into the `flex items-center gap-2` div (line 117) that contains the Refresh button and search input. Delete the standalone `ToggleGroup` block.
+**Table Cells (lines 127, 129):**
+- Add `text-right` to the "Premium" and "Value" `TableCell` elements
 
-The resulting toolbar will read: `[All | Received | Sent]  [Refresh]  [Search...]` all on one line.
-
-### File
-
-| File | Action |
-|------|--------|
-| `src/components/client-detail/ClientCommunicationTab.tsx` | Move ToggleGroup into the header row, remove standalone block |
-
+All other columns (Product, Adviser, Role, Frequency, Value updated, Inactive, Linked) remain left-aligned as they contain text strings or dates.
