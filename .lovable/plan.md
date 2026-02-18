@@ -1,43 +1,50 @@
 
 
-## Add Period Selector and Sparklines to Change in Valuation Widget
+## Rename Performance to Portfolio with New Landing Page
+
+### Overview
+Rename the "Performance" tab to "Portfolio" and create a new Portfolio landing page matching the reference image. The current Performance comparison screen moves into a "Performance" sub-tab within the new Portfolio view.
 
 ### What changes
 
-The Change in Valuation widget currently shows static values (Starting Value, Deposits/Withdrawals, Investment Returns, Ending Value). Two enhancements will be made:
+**1. New component: `src/components/client-detail/ClientPortfolioTab.tsx`**
 
-1. **Period selector buttons (6M, 1Y, 3Y, 5Y)** in the widget header -- same style as the Portfolio Overview widget's period buttons
-2. **Mini sparkline with percentage change** next to each row value -- a tiny inline line chart showing the trend, plus a green/red percentage badge
+A new wrapper component that serves as the Portfolio landing page with sub-tabs matching the reference image:
+- **Sub-tab bar**: Holdings | Companies | **Performance** | Asset class | ESG impact | Sectors | Geography
+- **Account dropdown**: "All accounts" with total value, populated from the client's on-platform products
+- **Period selector**: "Since opening", date range display, and an Analysis/Summary toggle
+- The **Performance sub-tab** (default active) renders the reference-image layout:
+  - Left panel: "Return in this period" showing IRR percentage and Benchmark comparison (e.g., Domestic Fixed Income), plus "By period" horizontal bar chart (date ranges with positive/negative bars and percentages)
+  - Right panel: "Changes affecting value" waterfall bar chart with categories: Opening net value, Capital movement, Gains/losses, Income, Expenses, Closing net value
+- Other sub-tabs (Holdings, Companies, Asset class, ESG impact, Sectors, Geography) show placeholder content initially
+- A dedicated sub-tab renders the existing `ClientPerformanceTab` (the fund comparison tool) -- accessible but not the landing view
 
-### How it will look
+**2. Edit: `src/pages/ClientDetail.tsx`**
 
-- Header row: "Change in Valuation" title on left, `6M 1Y 3Y 5Y` pill buttons on right (matching Portfolio Overview style)
-- Each row (Starting Value, Deposits/Withdrawals, Investment Returns) gets a small sparkline (approx 48px wide, 16px tall) and a percentage change badge (e.g., "+3.2%") next to the value
-- The Ending Value row gets a sparkline and percentage too
-- Selecting a different period recalculates all values and sparkline data
+- Rename tab from `{ value: "performance", label: "Performance" }` to `{ value: "portfolio", label: "Portfolio" }`
+- Update the TabsContent to render `ClientPortfolioTab` instead of `ClientPerformanceTab`
+- Pass through `clientId`, `nationality`, and `countryOfIssue` props
+
+### Reference image layout
+
+The Performance sub-tab within Portfolio will have:
+- A row of filter controls at top (account selector, period selector, Analysis/Summary toggle, Benchmark dropdown)
+- Two-column layout below:
+  - Left (~35%): Return summary card with IRR value, benchmark value, and "By period" horizontal bars showing returns for different time ranges
+  - Right (~65%): "Changes affecting value" waterfall chart using ECharts with labeled bars for each category and value annotations
 
 ### Technical details
 
-**File: `src/components/client-detail/ClientDashboardTab.tsx`**
+- Data generation uses the existing seeded random approach from `performanceComparisonData.ts` and `regional360ViewData.ts` for deterministic values based on clientId
+- Waterfall chart built with ECharts (already installed) using a stacked bar technique (invisible base + visible segment)
+- "By period" bars use a simple horizontal bar chart with positive (teal) and negative (pink/red) coloring
+- The existing `ClientPerformanceTab` component is imported and rendered inside one of the sub-tabs, keeping all current functionality intact
+- No database changes needed -- all data is derived from existing client/product data
 
-1. Add a `useState` for `valuationPeriod` (`'6m' | '1y' | '3y' | '5y'`, default `'1y'`)
+### Files
 
-2. Expand the `valuationData` useMemo to generate period-specific data:
-   - For each period, generate different multipliers using the seeded random function
-   - Shorter periods = smaller changes, longer periods = larger changes
-   - Each line item gets a `sparkData: number[]` array (6 points) and a `changePct: number`
-
-3. Add period selector buttons to the CardHeader (right side, before the X button), styled identically to the Portfolio Overview widget's buttons:
-   ```
-   px-2 py-0.5 rounded text-[9px] transition-all duration-200
-   ```
-
-4. For each row, render an inline SVG sparkline (48x16px) using a simple polyline, plus a percentage badge:
-   - Green sparkline + green % for positive values
-   - Red sparkline + red % for negative values
-   - Sparkline uses 6 data points with smooth rendering
-
-5. Layout adjustment: each row becomes a flex container with label on left, then sparkline + percentage + value on right
-
-No new files needed. No new dependencies. Uses the same seeded random approach already in the component for deterministic data.
+| File | Action |
+|------|--------|
+| `src/components/client-detail/ClientPortfolioTab.tsx` | Create -- new Portfolio landing page with sub-tabs and reference-image charts |
+| `src/pages/ClientDetail.tsx` | Edit -- rename tab label and swap component |
 
