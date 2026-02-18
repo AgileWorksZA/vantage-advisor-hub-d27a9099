@@ -376,7 +376,7 @@ const AstuteRequestView = ({ onClose }: AstuteRequestViewProps) => {
                                       <TableRow className="bg-muted/30">
                                         <TableHead className="text-xs">Plan name</TableHead>
                                         <TableHead className="text-xs">Policy number</TableHead>
-                                        <TableHead className="text-xs">Payment amount</TableHead>
+                                        <TableHead className="text-xs text-right">Payment amount</TableHead>
                                         <TableHead className="text-xs">Payment due date</TableHead>
                                         <TableHead className="text-xs">Paid to date</TableHead>
                                         <TableHead className="text-xs">Termination date</TableHead>
@@ -388,7 +388,7 @@ const AstuteRequestView = ({ onClose }: AstuteRequestViewProps) => {
                                         <TableRow key={i} className="border-b border-border/50">
                                           <TableCell className="text-sm">{plan.planName}</TableCell>
                                           <TableCell className="text-sm">{plan.policyNumber}</TableCell>
-                                          <TableCell className="text-sm">{plan.paymentAmount}</TableCell>
+                                          <TableCell className="text-sm text-right">{plan.paymentAmount}</TableCell>
                                           <TableCell className="text-sm">{plan.paymentDueDate}</TableCell>
                                           <TableCell className="text-sm">{plan.paidToDate}</TableCell>
                                           <TableCell className="text-sm">{plan.terminationDate}</TableCell>

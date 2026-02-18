@@ -163,7 +163,12 @@ const AddRiskProductForm = ({ onClose, onSave, initialData }: AddRiskProductForm
             <FormField control={form.control} name="totalPremium" render={({ field }) => (
               <FormItem>
                 <FormLabel>Total Premium</FormLabel>
-                <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
+                <FormControl>
+                  <div className="flex items-center">
+                    <span className="inline-flex items-center px-3 h-10 rounded-l-md border border-r-0 border-input bg-muted text-sm text-muted-foreground">R</span>
+                    <Input type="number" step="0.01" {...field} className="rounded-l-none" />
+                  </div>
+                </FormControl>
               </FormItem>
             )} />
 
@@ -253,11 +258,11 @@ const AddRiskProductForm = ({ onClose, onSave, initialData }: AddRiskProductForm
                   </div>
                   <div>
                     <Label className="text-xs text-muted-foreground">Cover Amount</Label>
-                    <p className="text-sm font-medium mt-0.5">{initialData.paymentAmount}</p>
+                    <p className="text-sm font-medium mt-0.5 text-right">{initialData.paymentAmount}</p>
                   </div>
                   <div>
                     <Label className="text-xs text-muted-foreground">Premium Amount</Label>
-                    <p className="text-sm font-medium mt-0.5">{initialData.paymentAmount}</p>
+                    <p className="text-sm font-medium mt-0.5 text-right">{initialData.paymentAmount}</p>
                   </div>
                   <div>
                     <Label className="text-xs text-muted-foreground">Effective Date</Label>
