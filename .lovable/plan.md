@@ -1,30 +1,31 @@
 
 
-## Change World Map to Dot-Based Style
+## Redesign Dot Map to Match Reference Layout
 
 ### What changes
-Replace the solid-filled SVG continent paths in `WorldMapSVG.tsx` with a dot-matrix representation -- a grid of small circles where dots only appear within continent boundaries. This creates a modern, stylized dotted map look.
+The current dot map has ~400 dots at ~14px spacing with radius 2.2, which looks sparse and blocky. The reference image shows a much denser, tighter grid creating highly detailed, immediately recognizable continent shapes. The map needs to be completely rewritten with:
 
-### Technical approach
+- **Smaller dots**: Reduce radius from 2.2 to ~1.6
+- **Tighter grid**: Reduce spacing from ~14px to ~8px between dots
+- **Many more dots**: Increase from ~400 to ~1200-1500 dots total
+- **Better continent shapes**: Follow the reference image's layout more closely -- dense fill with clean edges that trace real coastlines
 
-**File: `src/components/client-detail/WorldMapSVG.tsx`**
+### File changed
 
-Replace all the `<path>` elements with a programmatic dot grid approach:
+**`src/components/client-detail/WorldMapSVG.tsx`** -- Full rewrite of all coordinate arrays
 
-1. Define a set of dot coordinates (x, y) that approximate each continent's shape on the 1000x500 viewBox grid
-2. Render each position as a small `<circle>` element (radius ~2.5px) with spacing of ~12-15px between dots
-3. Use the same color classes for theming: `fill-[hsl(180,30%,85%)]` / `dark:fill-[hsl(180,20%,25%)]`
+Key adjustments per continent to match the reference:
+- **North America**: Dense fill covering Alaska, Canada (wide east-west), USA with Great Lakes indent, Florida peninsula, Mexico tapering down, Central America narrow strip
+- **South America**: Wide Brazil bulge at top, tapering to narrow Patagonia at bottom
+- **Europe**: Small but detailed -- UK/Ireland separate, Scandinavia finger, Iberian/Italian/Greek peninsulas, filled Central Europe
+- **Africa**: Large dense block, widest at equator, Horn of Africa bump on east, Madagascar island
+- **Asia**: Massive -- wide Russia across top, Middle East, Indian subcontinent triangle, dense China/SE Asia, Japan archipelago as separate dots
+- **Australia**: Compact filled shape, New Zealand as small separate cluster
+- **Greenland**: Dense oval shape
 
-The dot coordinates will be pre-computed arrays covering:
-- North America (Canada, USA, Mexico, Central America)
-- South America
-- Europe (including UK, Scandinavia, Iberian peninsula)
-- Africa (including Madagascar)
-- Asia (Russia, Middle East, India, China, Southeast Asia, Japan)
-- Australia and New Zealand
-- Greenland
-
-Each continent will be represented by roughly 30-80 dots depending on size, totaling around 300-400 dots for the full map. The dots will be spaced on a regular grid but only placed where land exists, creating a recognizable dotted silhouette of each continent.
-
-**No changes needed to `ClientDashboardTab.tsx`** -- the component interface stays the same (just `className` prop), so the markers, legend, and all other functionality remain untouched.
+Technical details:
+- Reduce `R` from 2.2 to 1.6
+- Grid spacing ~8px (coordinates at multiples of 8)
+- All dots use same theme-aware fill class
+- No changes to `ClientDashboardTab.tsx` -- component interface stays identical
 
