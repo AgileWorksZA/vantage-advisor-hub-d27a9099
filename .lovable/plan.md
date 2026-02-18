@@ -1,27 +1,43 @@
 
 
-## Replace Dot-Matrix Map with Image
+## Add Period Selector and Sparklines to Change in Valuation Widget
 
 ### What changes
-Replace the programmatic SVG dot-matrix world map with the uploaded dot-map image. This will use the actual image file instead of rendering thousands of SVG circles, giving pixel-perfect accuracy to the reference and better performance.
 
-### Steps
+The Change in Valuation widget currently shows static values (Starting Value, Deposits/Withdrawals, Investment Returns, Ending Value). Two enhancements will be made:
 
-1. **Copy the uploaded image** to `src/assets/world-dots-map.png`
+1. **Period selector buttons (6M, 1Y, 3Y, 5Y)** in the widget header -- same style as the Portfolio Overview widget's period buttons
+2. **Mini sparkline with percentage change** next to each row value -- a tiny inline line chart showing the trend, plus a green/red percentage badge
 
-2. **Rewrite `src/components/client-detail/WorldMapSVG.tsx`**
-   - Replace the SVG circle rendering with a simple `<img>` tag
-   - Import the image from `@/assets/world-dots-map.png`
-   - Apply CSS opacity/filter for the light teal tint matching the current theme styling
-   - Keep the same `className` prop interface so nothing breaks in the parent component
-   - Use CSS `filter` or `opacity` to achieve the subtle, muted look (light mode: low opacity teal tint; dark mode: inverted/adjusted)
+### How it will look
 
-3. **No changes to `ClientDashboardTab.tsx`** -- the component interface stays identical, so markers, legend, and layout remain untouched
-
-4. **`src/data/worldMapDots.ts` can be deleted** since it will no longer be needed (the dot coordinates are replaced by the image)
+- Header row: "Change in Valuation" title on left, `6M 1Y 3Y 5Y` pill buttons on right (matching Portfolio Overview style)
+- Each row (Starting Value, Deposits/Withdrawals, Investment Returns) gets a small sparkline (approx 48px wide, 16px tall) and a percentage change badge (e.g., "+3.2%") next to the value
+- The Ending Value row gets a sparkline and percentage too
+- Selecting a different period recalculates all values and sparkline data
 
 ### Technical details
-- The image is black dots on white/transparent background, so in light mode we apply low opacity (~0.15-0.2) to get the subtle teal-gray look; in dark mode we use CSS `invert` + low opacity
-- Component keeps `preserveAspectRatio` behavior via `object-fit: contain` on the img
-- Performance improvement: rendering 1 image vs ~2,500 SVG circle elements
+
+**File: `src/components/client-detail/ClientDashboardTab.tsx`**
+
+1. Add a `useState` for `valuationPeriod` (`'6m' | '1y' | '3y' | '5y'`, default `'1y'`)
+
+2. Expand the `valuationData` useMemo to generate period-specific data:
+   - For each period, generate different multipliers using the seeded random function
+   - Shorter periods = smaller changes, longer periods = larger changes
+   - Each line item gets a `sparkData: number[]` array (6 points) and a `changePct: number`
+
+3. Add period selector buttons to the CardHeader (right side, before the X button), styled identically to the Portfolio Overview widget's buttons:
+   ```
+   px-2 py-0.5 rounded text-[9px] transition-all duration-200
+   ```
+
+4. For each row, render an inline SVG sparkline (48x16px) using a simple polyline, plus a percentage badge:
+   - Green sparkline + green % for positive values
+   - Red sparkline + red % for negative values
+   - Sparkline uses 6 data points with smooth rendering
+
+5. Layout adjustment: each row becomes a flex container with label on left, then sparkline + percentage + value on right
+
+No new files needed. No new dependencies. Uses the same seeded random approach already in the component for deterministic data.
 
