@@ -346,9 +346,6 @@ const Dashboard = () => {
                     return (
                       <div className="flex items-center gap-0 mb-2">
                         <span className="text-sm font-semibold">{filteredRegionalData.currencySymbol} {filteredRegionalData.totalAUM}</span>
-                        <svg width="60" height="20" className="overflow-visible flex-shrink-0">
-                          <polyline points={sparkPts} fill="none" stroke={isUp ? "hsl(var(--chart-2))" : "hsl(var(--destructive))"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
                         <span className={`text-xs font-medium flex items-center gap-0.5 ${isUp ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
                           {isUp ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
                           {isUp ? '+' : ''}{Math.round(providerGrowth)}%
@@ -417,9 +414,6 @@ const Dashboard = () => {
                       <>
                         <div className="flex items-center gap-0 mb-2">
                           <span className="text-sm font-semibold">Top 5</span>
-                          <svg width="60" height="20" className="overflow-visible flex-shrink-0">
-                            <polyline points={sparkPts} fill="none" stroke={isUp ? "hsl(var(--chart-2))" : "hsl(var(--destructive))"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
                           <span className={`text-xs font-medium flex items-center gap-0.5 ${isUp ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
                             {isUp ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
                             {isUp ? '+' : ''}{Math.round(top5Growth)}%
@@ -647,9 +641,6 @@ const Dashboard = () => {
                     return (
                       <div className="flex items-center gap-0 mb-2">
                         <span className="text-sm font-semibold">{filteredRegionalData.currencySymbol} {filteredRegionalData.totalAUM}</span>
-                        <svg width="60" height="20" className="overflow-visible flex-shrink-0">
-                          <polyline points={sparkPts} fill="none" stroke={isUp ? "hsl(var(--chart-2))" : "hsl(var(--destructive))"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
                         <span className={`text-xs font-medium flex items-center gap-0.5 ${isUp ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
                           {isUp ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
                           {isUp ? '+' : ''}{Math.round(cbvGrowth)}%
