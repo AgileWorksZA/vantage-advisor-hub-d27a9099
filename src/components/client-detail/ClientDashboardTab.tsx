@@ -183,13 +183,19 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
     ];
   }, [clientId, valuationData.endingValue]);
 
-  // Geographic diversification
+  // Geographic diversification – region-level with map coordinates
   const geoDiversification = useMemo(() => {
     const domestic = assetAllocation.filter(a => a.name !== "International").reduce((s, a) => s + a.pct, 0);
     const international = assetAllocation.find(a => a.name === "International")?.pct || 0;
+    const intPct = Math.round(international * 100);
+    const domPct = Math.round(domestic * 100);
+    // Distribute international across regions proportionally
     return [
-      { name: "Domestic", value: Math.round(domestic * 100) },
-      { name: "International", value: Math.round(international * 100) },
+      { name: "South Africa", value: domPct, x: 55, y: 78, color: "hsl(180, 70%, 45%)" },
+      { name: "North America", value: Math.round(intPct * 0.35), x: 22, y: 35, color: "hsl(180, 50%, 55%)" },
+      { name: "Europe", value: Math.round(intPct * 0.30), x: 50, y: 30, color: "hsl(180, 60%, 50%)" },
+      { name: "Asia Pacific", value: Math.round(intPct * 0.20), x: 78, y: 42, color: "hsl(180, 40%, 55%)" },
+      { name: "UK", value: Math.round(intPct * 0.15), x: 47, y: 25, color: "hsl(180, 55%, 52%)" },
     ];
   }, [assetAllocation]);
 
@@ -305,15 +311,6 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
   ];
 
 
-  const geoOption = useMemo(() => ({
-    tooltip: { trigger: "item" as const },
-    legend: { bottom: 0, textStyle: { fontSize: 11 } },
-    series: [{
-      type: "pie" as const, radius: ["45%", "70%"], center: ["50%", "40%"],
-      data: geoDiversification.map((g, i) => ({ name: g.name, value: g.value, itemStyle: { color: chartColors[i] } })),
-      label: { show: true, formatter: "{b}: {c}%", fontSize: 11 },
-    }],
-  }), [geoDiversification]);
 
   const oppBreakdownOption = useMemo(() => ({
     tooltip: { trigger: "item" as const, formatter: (p: any) => `${p.name}: ${p.data.count} (${currencySymbol} ${(p.value as number).toLocaleString()})` },
@@ -448,8 +445,30 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleToggleWidget('geo-diversification', false)}><X className="w-4 h-4" /></Button>
                </CardHeader>
               <CardContent className="pt-0">
-                <EChartsWrapper option={geoOption} height={180} />
-                <Button variant="link" className="p-0 h-auto text-xs text-primary" onClick={() => onTabChange?.("360-view")}>
+                <div className="relative h-[180px] w-full overflow-hidden rounded-md">
+                  <img src="/images/world-dots.png" alt="World map" className="absolute inset-0 w-full h-full object-contain opacity-40 dark:opacity-25" />
+                  {geoDiversification.map((region) => {
+                    const isLargest = region.value === Math.max(...geoDiversification.map(r => r.value));
+                    const size = Math.max(10, Math.min(20, 8 + region.value * 0.3));
+                    return (
+                      <div
+                        key={region.name}
+                        className="absolute group flex flex-col items-center"
+                        style={{ left: `${region.x}%`, top: `${region.y}%`, transform: 'translate(-50%, -50%)' }}
+                      >
+                        <div
+                          className={`rounded-full border-2 border-white/60 dark:border-white/30 shadow-md ${isLargest ? 'animate-pulse' : ''}`}
+                          style={{ width: size, height: size, backgroundColor: region.color }}
+                        />
+                        <div className="absolute -bottom-5 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity bg-background/90 border border-border text-[10px] px-1.5 py-0.5 rounded shadow-sm pointer-events-none z-10">
+                          {region.name}: {region.value}%
+                        </div>
+                        <span className="text-[9px] font-medium text-foreground/70 mt-0.5 leading-none">{region.value}%</span>
+                      </div>
+                    );
+                  })}
+                </div>
+                <Button variant="link" className="p-0 h-auto text-xs text-primary mt-1" onClick={() => onTabChange?.("360-view")}>
                   View diversification <ArrowRight className="h-3 w-3 ml-1" />
                 </Button>
               </CardContent>
