@@ -7,6 +7,9 @@ import { EChartsWrapper } from "@/components/ui/echarts-wrapper";
 import { generateClient360Data, mapNationalityToJurisdiction } from "@/data/regional360ViewData";
 import { useRegion } from "@/contexts/RegionContext";
 import ClientPerformanceTab from "./ClientPerformanceTab";
+import HoldingsTab from "./portfolio/HoldingsTab";
+import CompaniesTab from "./portfolio/CompaniesTab";
+import AssetClassTab from "./portfolio/AssetClassTab";
 
 interface ClientPortfolioTabProps {
   clientId: string;
@@ -33,7 +36,6 @@ const SUB_TABS = [
   { value: "holdings", label: "Holdings" },
   { value: "companies", label: "Companies" },
   { value: "asset-class", label: "Asset class" },
-  { value: "esg", label: "ESG impact" },
   { value: "sectors", label: "Sectors" },
   { value: "geography", label: "Geography" },
   { value: "comparison", label: "Comparison" },
@@ -180,6 +182,9 @@ export default function ClientPortfolioTab({ clientId, nationality, countryOfIss
               className="rounded-none border-b-2 border-transparent data-[state=active]:border-[hsl(180,70%,45%)] data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-2 text-sm"
             >
               {tab.label}
+              {tab.value === "comparison" && (
+                <span className="inline-flex items-center px-2 py-0.5 text-[10px] font-bold bg-gradient-to-r from-violet-500 to-cyan-500 text-white rounded-full ml-1.5">AI</span>
+              )}
             </TabsTrigger>
           ))}
         </TabsList>
@@ -312,8 +317,23 @@ export default function ClientPortfolioTab({ clientId, nationality, countryOfIss
           <ClientPerformanceTab clientId={clientId} nationality={nationality} countryOfIssue={countryOfIssue} />
         </TabsContent>
 
+        {/* Holdings tab */}
+        <TabsContent value="holdings" className="mt-4">
+          <HoldingsTab clientId={clientId} nationality={nationality} countryOfIssue={countryOfIssue} currencySymbol={currencySymbol} />
+        </TabsContent>
+
+        {/* Companies tab */}
+        <TabsContent value="companies" className="mt-4">
+          <CompaniesTab clientId={clientId} nationality={nationality} countryOfIssue={countryOfIssue} currencySymbol={currencySymbol} />
+        </TabsContent>
+
+        {/* Asset Class tab */}
+        <TabsContent value="asset-class" className="mt-4">
+          <AssetClassTab clientId={clientId} nationality={nationality} countryOfIssue={countryOfIssue} currencySymbol={currencySymbol} />
+        </TabsContent>
+
         {/* Placeholder sub-tabs */}
-        {["holdings", "companies", "asset-class", "esg", "sectors", "geography"].map((tab) => (
+        {["sectors", "geography"].map((tab) => (
           <TabsContent key={tab} value={tab} className="mt-4">
             <Card>
               <CardContent className="py-12 text-center text-muted-foreground">
