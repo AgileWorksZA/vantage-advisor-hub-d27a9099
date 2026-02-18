@@ -1,23 +1,30 @@
 
 
-## Move Expander Button to Left of Edit Button
+## Align Action Buttons Across All Rows
 
-Currently in the On-Platform Products table, the button order in the actions cell is: **Edit (pencil) > More (three dots) > Expand (chevron)**. The expander button needs to move to the left of the edit button.
+### Problem
+When a row in the On-Platform Products table doesn't have an expandable chevron, the edit (pencil) and dropdown (three dots) buttons shift left, misaligning with rows that do have the expander.
 
-### Change
+### Solution
 
-**File:** `src/components/client-detail/Client360ViewTab.tsx` (lines 220-251)
+**File:** `src/components/client-detail/Client360ViewTab.tsx` (line 221-234)
 
-Reorder the buttons inside the `flex` container so the expand/collapse chevron button appears first, followed by the edit (pencil) button, then the dropdown menu.
+Replace the conditional rendering of the expander button with an always-present block: render the chevron button when `product.expandable` is true, otherwise render an invisible placeholder `div` of the same size (`h-8 w-8`) to reserve the space.
 
-**Current order:**
-1. Pencil (edit)
-2. MoreVertical (dropdown)
-3. ChevronDown/Up (expand) -- conditional
+**Current:**
+```tsx
+{product.expandable && (
+  <Button ...>chevron</Button>
+)}
+```
 
-**New order:**
-1. ChevronDown/Up (expand) -- conditional
-2. Pencil (edit)
-3. MoreVertical (dropdown)
+**New:**
+```tsx
+{product.expandable ? (
+  <Button ...>chevron</Button>
+) : (
+  <div className="h-8 w-8" />
+)}
+```
 
-This is the only expander instance in the file (On-Platform Products table). No other tables have expandable rows, so this single change covers all cases.
+This single change ensures the edit and dropdown buttons stay vertically aligned across all rows.
