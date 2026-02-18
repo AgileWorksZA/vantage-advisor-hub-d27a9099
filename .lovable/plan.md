@@ -1,34 +1,26 @@
 
 
-## Replace World-Dots Map with Inline SVG World Map
+## Make World Map More Realistic
 
 ### What changes
-- Remove the `world-dots.png` background image and replace with an inline SVG rendering simplified continent shapes in a solid muted green/teal fill
-- Remove percentage labels from inside the map area
-- Add a clean region breakdown row below the map showing each region name with its percentage
-- Keep the colored dot markers on the map for each region
+Replace the current simplified/cartoonish SVG continent shapes with more accurate, detailed SVG paths that closely resemble the actual shapes of the continents. The current paths are very rough approximations -- the new paths will use proper geographic outlines.
 
 ### Technical changes in `src/components/client-detail/ClientDashboardTab.tsx`
 
-**1. Replace the map container (lines 448-470)**
+**Replace SVG continent paths (lines 450-473)**
 
-Remove the `<img>` tag and replace with an inline SVG containing simplified continent path outlines (Africa, North America, South America, Europe, Asia, Australia) filled with a muted teal color. The SVG will use a standard viewBox and well-known simplified continent paths.
+Swap the current hand-drawn polygon paths with well-known simplified-but-accurate Natural Earth-style continent outlines. The new paths will include:
 
-The colored dot markers remain overlaid on the SVG at the same coordinates, but remove the inline `%` labels from the dots (keep only the hover tooltip).
+- **North America** -- recognizable coastline including Alaska, Great Lakes region, Florida, Mexico
+- **South America** -- proper shape with Brazil bulge, Patagonia
+- **Europe** -- Iberian peninsula, Scandinavian shape, Mediterranean coast
+- **Africa** -- Horn of Africa, Madagascar, proper west coast bulge
+- **Asia** -- Accurate Siberia, Middle East, Indian subcontinent, Southeast Asian peninsula
+- **Australia** -- Proper shape with indented north coast
+- **Japan, Indonesia, UK** -- More recognizable island shapes
+- **Greenland, New Zealand** -- Added for completeness
 
-**2. Add region percentage row below the map**
+All paths keep the same fill classes (`fill-[hsl(180,30%,85%)] dark:fill-[hsl(180,20%,25%)]`) and the viewBox remains `0 0 1000 500` (equirectangular-style projection).
 
-After the map container, add a flex row showing each region as a small colored dot + name + percentage, e.g.:
-
-```
-[dot] South Africa 65%   [dot] North America 5%   [dot] Europe 4%   ...
-```
-
-This replaces the per-marker percentage labels with a cleaner legend-style layout beneath the map.
-
-**3. Styling**
-- SVG continents: `fill` with `hsl(180, 30%, 85%)` (light mode) / `hsl(180, 20%, 25%)` (dark mode), no stroke
-- Map container height stays at 180px
-- Region row: `flex flex-wrap gap-x-4 gap-y-1 mt-2 text-[10px]`
-- Each region item: small colored circle (6px) + name + value
+The region marker positions may need minor adjustments to align with the more accurate continent positions, but the overall layout, legend, and interactivity remain unchanged.
 
