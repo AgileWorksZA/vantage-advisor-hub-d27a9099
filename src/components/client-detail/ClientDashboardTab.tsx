@@ -446,27 +446,62 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
                </CardHeader>
               <CardContent className="pt-0">
                 <div className="relative h-[180px] w-full overflow-hidden rounded-md">
-                  <img src="/images/world-dots.png" alt="World map" className="absolute inset-0 w-full h-full object-contain opacity-40 dark:opacity-25" />
+                  {/* Inline SVG world map with solid continent fills */}
+                  <svg viewBox="0 0 1000 500" className="absolute inset-0 w-full h-full" preserveAspectRatio="xMidYMid meet">
+                    {/* North America */}
+                    <path d="M50,80 L120,50 L200,40 L260,60 L280,100 L270,140 L250,180 L220,200 L200,240 L180,260 L160,240 L140,200 L100,180 L80,160 L60,140 L50,120 Z" className="fill-[hsl(180,30%,85%)] dark:fill-[hsl(180,20%,25%)]" />
+                    {/* Central America */}
+                    <path d="M160,240 L180,260 L190,280 L200,300 L190,310 L170,300 L160,280 Z" className="fill-[hsl(180,30%,85%)] dark:fill-[hsl(180,20%,25%)]" />
+                    {/* South America */}
+                    <path d="M200,300 L230,290 L270,300 L290,340 L300,380 L290,420 L270,450 L250,460 L230,440 L220,400 L210,360 L200,330 Z" className="fill-[hsl(180,30%,85%)] dark:fill-[hsl(180,20%,25%)]" />
+                    {/* Europe */}
+                    <path d="M440,60 L480,50 L520,55 L540,70 L550,100 L540,130 L520,140 L500,135 L480,120 L460,130 L440,120 L430,100 L440,80 Z" className="fill-[hsl(180,30%,85%)] dark:fill-[hsl(180,20%,25%)]" />
+                    {/* UK/Ireland */}
+                    <path d="M420,70 L430,60 L435,75 L425,85 Z" className="fill-[hsl(180,30%,85%)] dark:fill-[hsl(180,20%,25%)]" />
+                    {/* Africa */}
+                    <path d="M460,180 L500,170 L540,180 L560,200 L580,240 L590,280 L580,330 L560,370 L540,400 L510,410 L480,400 L460,370 L450,330 L440,290 L440,250 L450,220 Z" className="fill-[hsl(180,30%,85%)] dark:fill-[hsl(180,20%,25%)]" />
+                    {/* Asia */}
+                    <path d="M560,60 L620,50 L700,55 L760,70 L800,90 L830,120 L840,160 L820,180 L780,190 L740,200 L700,210 L660,200 L620,180 L590,160 L570,130 L560,100 Z" className="fill-[hsl(180,30%,85%)] dark:fill-[hsl(180,20%,25%)]" />
+                    {/* India */}
+                    <path d="M660,200 L690,210 L700,250 L690,290 L670,300 L650,280 L640,250 L650,220 Z" className="fill-[hsl(180,30%,85%)] dark:fill-[hsl(180,20%,25%)]" />
+                    {/* Southeast Asia / Indonesia */}
+                    <path d="M740,220 L780,210 L820,220 L850,240 L840,260 L810,250 L780,240 L750,240 Z" className="fill-[hsl(180,30%,85%)] dark:fill-[hsl(180,20%,25%)]" />
+                    {/* Australia */}
+                    <path d="M780,340 L830,320 L880,330 L910,350 L920,380 L900,410 L860,420 L820,410 L790,390 L780,360 Z" className="fill-[hsl(180,30%,85%)] dark:fill-[hsl(180,20%,25%)]" />
+                    {/* Japan */}
+                    <path d="M850,100 L860,80 L870,90 L865,110 L855,115 Z" className="fill-[hsl(180,30%,85%)] dark:fill-[hsl(180,20%,25%)]" />
+                  </svg>
+                  {/* Region markers */}
                   {geoDiversification.map((region) => {
                     const isLargest = region.value === Math.max(...geoDiversification.map(r => r.value));
-                    const size = Math.max(10, Math.min(20, 8 + region.value * 0.3));
+                    const size = Math.max(8, Math.min(16, 6 + region.value * 0.25));
                     return (
                       <div
                         key={region.name}
-                        className="absolute group flex flex-col items-center"
+                        className="absolute group"
                         style={{ left: `${region.x}%`, top: `${region.y}%`, transform: 'translate(-50%, -50%)' }}
                       >
                         <div
                           className={`rounded-full border-2 border-white/60 dark:border-white/30 shadow-md ${isLargest ? 'animate-pulse' : ''}`}
                           style={{ width: size, height: size, backgroundColor: region.color }}
                         />
-                        <div className="absolute -bottom-5 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity bg-background/90 border border-border text-[10px] px-1.5 py-0.5 rounded shadow-sm pointer-events-none z-10">
+                        <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity bg-background/90 border border-border text-[10px] px-1.5 py-0.5 rounded shadow-sm pointer-events-none z-10">
                           {region.name}: {region.value}%
                         </div>
-                        <span className="text-[9px] font-medium text-foreground/70 mt-0.5 leading-none">{region.value}%</span>
                       </div>
                     );
                   })}
+                </div>
+                {/* Region legend */}
+                <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 px-1">
+                  {geoDiversification.map((region) => (
+                    <div key={region.name} className="flex items-center gap-1.5">
+                      <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: region.color }} />
+                      <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                        {region.name} <span className="font-medium text-foreground">{region.value}%</span>
+                      </span>
+                    </div>
+                  ))}
                 </div>
                 <Button variant="link" className="p-0 h-auto text-xs text-primary mt-1" onClick={() => onTabChange?.("360-view")}>
                   View diversification <ArrowRight className="h-3 w-3 ml-1" />
