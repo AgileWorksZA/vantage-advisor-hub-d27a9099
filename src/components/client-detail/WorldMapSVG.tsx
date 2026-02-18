@@ -14,7 +14,7 @@ interface WorldMapSVGProps {
 }
 
 const dotClass = "fill-[hsl(180,30%,85%)] dark:fill-[hsl(180,20%,25%)]";
-const R = 1.6;
+const R = 1.2;
 
 const allDots = [
   { dots: northAmerica, key: "na" },
