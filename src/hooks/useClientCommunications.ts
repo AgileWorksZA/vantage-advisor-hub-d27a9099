@@ -6,7 +6,7 @@ export interface Communication {
   id: string;
   user_id: string;
   client_id: string;
-  channel: "Email" | "SMS" | "Phone" | "WhatsApp" | "Push" | "Webinar" | "Office Event";
+  channel: "Email" | "SMS" | "Phone" | "WhatsApp" | "Push";
   direction: string;
   from_identifier: string | null;
   to_identifier: string | null;
@@ -24,6 +24,8 @@ export interface CommunicationListItem {
   from: string;
   subject: string;
   channel: Communication["channel"];
+  direction: string;
+  content: string | null;
 }
 
 export interface ChannelCount {
@@ -49,6 +51,8 @@ const transformCommunicationToListItem = (comm: Communication): CommunicationLis
   from: comm.from_identifier || "System",
   subject: comm.subject || "(No Subject)",
   channel: comm.channel,
+  direction: comm.direction,
+  content: comm.content,
 });
 
 export const useClientCommunications = (clientId: string) => {
@@ -78,7 +82,9 @@ export const useClientCommunications = (clientId: string) => {
 
       if (fetchError) throw fetchError;
 
-      const transformedComms = (data || []).map(transformCommunicationToListItem);
+      const transformedComms = (data || [])
+        .filter((c: any) => !["Webinar", "Office Event"].includes(c.channel))
+        .map((c: any) => transformCommunicationToListItem(c as Communication));
       setCommunications(transformedComms);
 
       // Get channel counts
@@ -100,8 +106,6 @@ export const useClientCommunications = (clientId: string) => {
           { channel: "Phone", count: counts["Phone"] || 0 },
           { channel: "WhatsApp", count: counts["WhatsApp"] || 0 },
           { channel: "Push", count: counts["Push"] || 0 },
-          { channel: "Webinar", count: counts["Webinar"] || 0 },
-          { channel: "Office Event", count: counts["Office Event"] || 0 },
         ];
         setChannelCounts(channelList);
       }
