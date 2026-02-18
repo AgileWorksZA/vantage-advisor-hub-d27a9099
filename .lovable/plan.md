@@ -1,50 +1,64 @@
 
 
-## Rename Performance to Portfolio with New Landing Page
+## Portfolio Sub-tabs: Remove ESG, Add AI Badge, Build Holdings/Companies/Asset Class Tables
 
-### Overview
-Rename the "Performance" tab to "Portfolio" and create a new Portfolio landing page matching the reference image. The current Performance comparison screen moves into a "Performance" sub-tab within the new Portfolio view.
+### 1. Remove "ESG Impact" sub-tab
 
-### What changes
+Remove the ESG entry from the `SUB_TABS` array in `ClientPortfolioTab.tsx` and remove it from the placeholder rendering list.
 
-**1. New component: `src/components/client-detail/ClientPortfolioTab.tsx`**
+### 2. Add AI gradient badge to "Comparison" tab
 
-A new wrapper component that serves as the Portfolio landing page with sub-tabs matching the reference image:
-- **Sub-tab bar**: Holdings | Companies | **Performance** | Asset class | ESG impact | Sectors | Geography
-- **Account dropdown**: "All accounts" with total value, populated from the client's on-platform products
-- **Period selector**: "Since opening", date range display, and an Analysis/Summary toggle
-- The **Performance sub-tab** (default active) renders the reference-image layout:
-  - Left panel: "Return in this period" showing IRR percentage and Benchmark comparison (e.g., Domestic Fixed Income), plus "By period" horizontal bar chart (date ranges with positive/negative bars and percentages)
-  - Right panel: "Changes affecting value" waterfall bar chart with categories: Opening net value, Capital movement, Gains/losses, Income, Expenses, Closing net value
-- Other sub-tabs (Holdings, Companies, Asset class, ESG impact, Sectors, Geography) show placeholder content initially
-- A dedicated sub-tab renders the existing `ClientPerformanceTab` (the fund comparison tool) -- accessible but not the landing view
+Add the same AI gradient badge used on the main client tabs (Opportunities, Meetings, Communication) to the "Comparison" sub-tab trigger. This uses the existing pattern:
+```
+<span className="inline-flex items-center px-2 py-0.5 text-xs font-bold bg-gradient-to-r from-violet-500 to-cyan-500 text-white rounded-full ml-1.5">AI</span>
+```
 
-**2. Edit: `src/pages/ClientDetail.tsx`**
+### 3. Add Household/Contracts filter bar to Holdings, Companies, and Asset Class tabs
 
-- Rename tab from `{ value: "performance", label: "Performance" }` to `{ value: "portfolio", label: "Portfolio" }`
-- Update the TabsContent to render `ClientPortfolioTab` instead of `ClientPerformanceTab`
-- Pass through `clientId`, `nationality`, and `countryOfIssue` props
+Above each table, render a filter bar matching the reference image with:
+- **Contracts** multi-select (using the existing `MultiSelect` component) -- populated from client's on-platform, external, cash, and risk products
+- **Household Members** multi-select -- populated from family members and businesses via `useClientRelationships`
+- **Add Member** button that opens the existing `AddFamilyMemberDialog`
 
-### Reference image layout
+The component will need to accept `clientId` to fetch relationships, and the contract/member data will be derived from `clientData` and relationships (same pattern as `ClientDashboardTab`).
 
-The Performance sub-tab within Portfolio will have:
-- A row of filter controls at top (account selector, period selector, Analysis/Summary toggle, Benchmark dropdown)
-- Two-column layout below:
-  - Left (~35%): Return summary card with IRR value, benchmark value, and "By period" horizontal bars showing returns for different time ranges
-  - Right (~65%): "Changes affecting value" waterfall chart using ECharts with labeled bars for each category and value annotations
+### 4. Build data tables for Holdings, Companies, and Asset Class
+
+Each tab gets a styled table similar to the Change in Valuation widget (rows with sparklines and percentage badges):
+
+**Holdings tab** -- Individual fund/instrument rows:
+| Holding Name | ISIN/Code | Units | Price | Value | Sparkline | Change % |
+
+**Companies tab** -- Grouped by investment house/provider:
+| Company | Products | AUM | Weight % | Sparkline | Change % |
+
+**Asset Class tab** -- Grouped by asset category:
+| Asset Class | Value | Weight % | Sparkline | Change % |
+
+All tables use:
+- The same sparkline SVG pattern (48x16px polyline) from the Change in Valuation widget
+- Color-coded percentage badges (emerald for positive, red for negative)
+- Deterministic data generated via the existing `seededRandom` function
+- Period selector (6M, 1Y, 3Y, 5Y) consistent with the valuation widget
+- Responsive layout with horizontal scroll on smaller screens
 
 ### Technical details
 
-- Data generation uses the existing seeded random approach from `performanceComparisonData.ts` and `regional360ViewData.ts` for deterministic values based on clientId
-- Waterfall chart built with ECharts (already installed) using a stacked bar technique (invisible base + visible segment)
-- "By period" bars use a simple horizontal bar chart with positive (teal) and negative (pink/red) coloring
-- The existing `ClientPerformanceTab` component is imported and rendered inside one of the sub-tabs, keeping all current functionality intact
-- No database changes needed -- all data is derived from existing client/product data
+**File: `src/components/client-detail/ClientPortfolioTab.tsx`**
 
-### Files
+1. Import `MultiSelect` from `@/components/ui/multi-select`, `useClientRelationships` hook, and `AddFamilyMemberDialog`
+2. Remove `{ value: "esg", label: "ESG impact" }` from `SUB_TABS`
+3. Remove `"esg"` from the placeholder sub-tabs array
+4. Add conditional AI badge rendering in the TabsTrigger for the "comparison" tab
+5. Add state for `selectedContracts`, `selectedMembers`, `holdingsPeriod`, and `addMemberOpen`
+6. Generate deterministic holdings, companies, and asset class data via `useMemo` + `seededRandom`
+7. Build three new `TabsContent` sections replacing the placeholders for "holdings", "companies", and "asset-class"
+8. Each section includes:
+   - Filter bar with Contracts multi-select, Household Members multi-select, and Add Member button
+   - Data table with sparklines and percentage badges
+   - Period selector buttons in the card header
 
 | File | Action |
 |------|--------|
-| `src/components/client-detail/ClientPortfolioTab.tsx` | Create -- new Portfolio landing page with sub-tabs and reference-image charts |
-| `src/pages/ClientDetail.tsx` | Edit -- rename tab label and swap component |
+| `src/components/client-detail/ClientPortfolioTab.tsx` | Edit -- remove ESG, add AI badge, build 3 table tabs with filters |
 
