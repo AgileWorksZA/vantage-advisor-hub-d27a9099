@@ -1,32 +1,40 @@
 
 
-## Add Currency and Right-Align Numbers in Risk Product Tables
+## Add Frequency Tags to Amount Fields
 
-### 1. Add currency prefix to Total Premium input field (AddRiskProductForm)
+Add small frequency indicator badges (1M, 3M, 6M, 1Y) next to the Income, Recurring Contribution, Total Premium, and Payment Amount values in the 360 view tables.
 
-In `src/components/client-detail/AddRiskProductForm.tsx`, wrap the Total Premium input (line 166) with a currency prefix indicator (e.g., "R" shown as a left addon or prefix text inside the input group).
+### Approach
 
-### 2. Right-align Payment Amount columns across all tables
+Create a reusable `FrequencyTag` component that renders a small styled badge, then add frequency data to the data interfaces and demo data, and display the tags inline with the relevant amount values.
 
-Apply `text-right` to both the `TableHead` and `TableCell` for payment/currency columns in these files:
+### Changes
 
-| File | Column | Lines (approx) |
-|------|--------|-----------------|
-| `src/components/client-detail/Client360ViewTab.tsx` | "Payment Amount" header + cell | 528, 542 |
-| `src/components/client-detail/AstuteRequestView.tsx` | "Payment amount" header + cell | 379, 391 |
-| `src/components/client-detail/AddRiskProductForm.tsx` | "Cover Amount" and "Premium Amount" display values (in the detail view section) | 256, 260 |
+#### 1. New Component: `src/components/client-detail/FrequencyTag.tsx`
+- A small inline badge component that accepts a frequency string (e.g., "1M", "3M", "6M", "1Y")
+- Styled as a muted, compact tag beside the amount value
 
-### Technical details
+#### 2. Data Model Updates: `src/data/regional360ViewData.ts`
+Add optional frequency fields to these interfaces:
+- `OnPlatformProduct`: add `incomeFrequency?` and `contributionFrequency?`
+- `ExternalProduct`: add `incomeFrequency?` and `contributionFrequency?`
+- `ShortTermProduct`: add `premiumFrequency?`
+- `RiskProduct`: add `paymentFrequency?`
 
-**Client360ViewTab.tsx:**
-- Line 528: Add `text-right` to `Payment Amount` TableHead
-- Line 542: Add `text-right` to the paymentAmount TableCell
+Update the demo data generator to populate these fields with random frequency values ("1M", "3M", "6M", "1Y").
 
-**AstuteRequestView.tsx:**
-- Line 379: Add `text-right` to `Payment amount` TableHead
-- Line 391: Add `text-right` to the paymentAmount TableCell
+#### 3. Display Updates: `src/components/client-detail/Client360ViewTab.tsx`
+Render `FrequencyTag` inline next to the relevant table cell values:
+- On-Platform table: Income and Recurring Contribution cells
+- External Products table: Income and Contribution cells
+- Short Term table: Total Premium cell
+- Risk Products table: Payment Amount cell
 
-**AddRiskProductForm.tsx:**
-- Line 163-168: Add a "R" currency prefix to the Total Premium input field using an input group pattern (a `span` with "R" before the input inside a flex container)
-- Lines 256, 260: Right-align the Cover Amount and Premium Amount display values in the detail view
+### Files
+
+| File | Action |
+|------|--------|
+| `src/components/client-detail/FrequencyTag.tsx` | Create -- small badge component |
+| `src/data/regional360ViewData.ts` | Edit -- add frequency fields to interfaces and demo data |
+| `src/components/client-detail/Client360ViewTab.tsx` | Edit -- render FrequencyTag in table cells |
 
