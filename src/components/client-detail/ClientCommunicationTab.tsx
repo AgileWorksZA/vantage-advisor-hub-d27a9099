@@ -114,7 +114,12 @@ const ClientCommunicationTab = () => {
         <div className="flex-1 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-medium">{activeChannel || "All"}</h2>
-            <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
+              <ToggleGroup type="single" value={directionFilter} onValueChange={(v) => v && setDirectionFilter(v)} variant="outline" size="sm">
+                <ToggleGroupItem value="all">All</ToggleGroupItem>
+                <ToggleGroupItem value="received">Received</ToggleGroupItem>
+                <ToggleGroupItem value="sent">Sent</ToggleGroupItem>
+              </ToggleGroup>
               <Button variant="outline" size="sm" className="gap-2" onClick={() => { setActiveChannel(null); refetch(); }}>
                 <RotateCcw className="w-4 h-4" />
                 Refresh
@@ -125,12 +130,6 @@ const ClientCommunicationTab = () => {
               </div>
             </div>
           </div>
-
-          <ToggleGroup type="single" value={directionFilter} onValueChange={(v) => v && setDirectionFilter(v)} variant="outline" size="sm">
-            <ToggleGroupItem value="all">All</ToggleGroupItem>
-            <ToggleGroupItem value="received">Received</ToggleGroupItem>
-            <ToggleGroupItem value="sent">Sent</ToggleGroupItem>
-          </ToggleGroup>
 
           <div className="bg-background rounded-lg border border-border">
             <Table>
