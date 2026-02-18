@@ -344,7 +344,7 @@ const Dashboard = () => {
                     const isUp = providerGrowth >= 0;
                     const sparkPts = isUp ? "0,16 12,12 24,14 36,8 48,10 60,2" : "0,4 12,8 24,6 36,12 48,10 60,18";
                     return (
-                      <div className="flex items-center gap-0 mb-2">
+                      <div className="flex items-center gap-1.5 mb-2">
                         <span className="text-sm font-semibold">{filteredRegionalData.currencySymbol} {filteredRegionalData.totalAUM}</span>
                         <span className={`text-xs font-medium flex items-center gap-0.5 ${isUp ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
                           {isUp ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
@@ -412,7 +412,7 @@ const Dashboard = () => {
                     const sparkPts = isUp ? "0,16 12,12 24,14 36,8 48,10 60,2" : "0,4 12,8 24,6 36,12 48,10 60,18";
                     return (
                       <>
-                        <div className="flex items-center gap-0 mb-2">
+                        <div className="flex items-center gap-1.5 mb-2">
                           <span className="text-sm font-semibold">Top 5</span>
                           <span className={`text-xs font-medium flex items-center gap-0.5 ${isUp ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
                             {isUp ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
@@ -482,7 +482,7 @@ const Dashboard = () => {
                     const isUp = totalGrowth >= 0;
                     const sparkPoints = isUp ? "0,16 12,12 24,14 36,8 48,10 60,2" : "0,4 12,8 24,6 36,12 48,10 60,18";
                     return (
-                      <div className="flex items-center gap-0 mb-1">
+                      <div className="flex items-center gap-1.5 mb-1">
                         <span className="text-xl font-semibold">{filteredRegionalData.currencySymbol} {filteredRegionalData.totalAUM}</span>
                         <span className={`text-xs font-medium flex items-center gap-0.5 ${isUp ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
                           {isUp ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
@@ -636,7 +636,7 @@ const Dashboard = () => {
                     const isUp = cbvGrowth >= 0;
                     const sparkPts = isUp ? "0,16 12,12 24,14 36,8 48,10 60,2" : "0,4 12,8 24,6 36,12 48,10 60,18";
                     return (
-                      <div className="flex items-center gap-0 mb-2">
+                      <div className="flex items-center gap-1.5 mb-2">
                         <span className="text-sm font-semibold">{filteredRegionalData.currencySymbol} {filteredRegionalData.totalAUM}</span>
                         <span className={`text-xs font-medium flex items-center gap-0.5 ${isUp ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
                           {isUp ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
