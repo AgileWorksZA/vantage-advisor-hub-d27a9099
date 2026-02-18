@@ -341,7 +341,7 @@ const Client360ViewTab = () => {
                   <TableCell>
                     <div className="flex items-center gap-1">
                       <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <Pencil className="h-4 w-4 text-muted-foreground" />
+<Pencil className="h-4 w-4 text-[hsl(180,70%,45%)]" />
                       </Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8">
                         <MoreVertical className="h-4 w-4 text-muted-foreground" />
@@ -396,7 +396,7 @@ const Client360ViewTab = () => {
                   <TableCell>
                     <div className="flex items-center gap-1">
                       <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <Pencil className="h-4 w-4 text-muted-foreground" />
+<Pencil className="h-4 w-4 text-[hsl(180,70%,45%)]" />
                       </Button>
                     </div>
                   </TableCell>
@@ -442,7 +442,7 @@ const Client360ViewTab = () => {
                   <TableCell>
                     <div className="flex items-center gap-1">
                       <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <Pencil className="h-4 w-4 text-muted-foreground" />
+<Pencil className="h-4 w-4 text-[hsl(180,70%,45%)]" />
                       </Button>
                     </div>
                   </TableCell>
@@ -552,7 +552,7 @@ const Client360ViewTab = () => {
                   <TableCell>
                     <div className="flex items-center gap-1">
                       <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <Pencil className="h-4 w-4 text-muted-foreground" />
+<Pencil className="h-4 w-4 text-[hsl(180,70%,45%)]" />
                       </Button>
                     </div>
                   </TableCell>
@@ -607,7 +607,7 @@ const Client360ViewTab = () => {
                     <TableCell>
                       <div className="flex items-center gap-1">
                         <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <Pencil className="h-4 w-4 text-muted-foreground" />
+                          <Pencil className="h-4 w-4 text-[hsl(180,70%,45%)]" />
                         </Button>
                       </div>
                     </TableCell>
