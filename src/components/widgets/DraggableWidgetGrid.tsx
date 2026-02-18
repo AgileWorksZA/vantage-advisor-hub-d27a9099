@@ -27,7 +27,6 @@ interface DraggableWidgetGridProps {
   rowHeight?: number;
   targetWidgetWidth?: number;
   baseWidgetUnits?: number;
-  toolbar?: ReactNode;
 }
 
 export const DraggableWidgetGrid = ({
@@ -37,7 +36,6 @@ export const DraggableWidgetGrid = ({
   rowHeight = 120,
   targetWidgetWidth = DEFAULT_TARGET_WIDGET_WIDTH,
   baseWidgetUnits = 3,
-  toolbar,
 }: DraggableWidgetGridProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState<number | null>(null);
@@ -121,11 +119,6 @@ export const DraggableWidgetGrid = ({
   return (
     <div ref={containerRef} className="w-full flex justify-start">
       <div style={{ width: exactGridWidth }}>
-        {toolbar && (
-          <div className="flex justify-end mb-2">
-            {toolbar}
-          </div>
-        )}
         <Responsive
         key={visibleCols}
         className="layout"

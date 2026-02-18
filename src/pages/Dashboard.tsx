@@ -292,7 +292,7 @@ const Dashboard = () => {
 
         {/* Dashboard Content - Scrollable */}
         <main className="flex-1 p-6 overflow-auto">
-          <div className="mb-2">
+          <div className="flex items-center justify-between mb-2">
             <h1 className="text-2xl font-semibold">
               Advisor Dashboard
               <button 
@@ -305,6 +305,7 @@ const Dashboard = () => {
                 AI
               </button>
             </h1>
+            <WidgetSettingsDialog widgets={DASHBOARD_WIDGETS} hiddenWidgets={hiddenWidgets} onToggleWidget={handleToggleWidget} />
           </div>
           
           {(loading || layoutLoading) ? (
@@ -321,7 +322,7 @@ const Dashboard = () => {
               ))}
             </div>
           ) : (
-          <DraggableWidgetGrid layout={visibleLayout} onLayoutChange={onLayoutChange} toolbar={<WidgetSettingsDialog widgets={DASHBOARD_WIDGETS} hiddenWidgets={hiddenWidgets} onToggleWidget={handleToggleWidget} />}>
+          <DraggableWidgetGrid layout={visibleLayout} onLayoutChange={onLayoutChange}>
             {/* Provider View */}
             {isWidgetVisible('provider-view') && <div key="provider-view">
               <Card className="h-full">
