@@ -218,7 +218,7 @@ const Client360ViewTab = () => {
                       <TableCell className="text-sm">{product.advisor}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
-                          {product.expandable && (
+                          {product.expandable ? (
                             <Button 
                               variant="ghost" 
                               size="icon" 
@@ -231,6 +231,8 @@ const Client360ViewTab = () => {
                                 <ChevronDown className="h-4 w-4 text-muted-foreground" />
                               )}
                             </Button>
+                          ) : (
+                            <div className="h-8 w-8" />
                           )}
                           <Button variant="ghost" size="icon" className="h-8 w-8">
                             <Pencil className="h-4 w-4 text-[hsl(180,70%,45%)]" />
