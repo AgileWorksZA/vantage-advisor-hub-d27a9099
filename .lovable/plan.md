@@ -1,26 +1,42 @@
 
 
-## Make World Map More Realistic
+## Make World Map Super Realistic
 
 ### What changes
-Replace the current simplified/cartoonish SVG continent shapes with more accurate, detailed SVG paths that closely resemble the actual shapes of the continents. The current paths are very rough approximations -- the new paths will use proper geographic outlines.
+The current hand-drawn SVG continent paths (lines 450-485) are rough approximations that don't look like real continents. They will be replaced with high-fidelity SVG paths derived from actual Natural Earth geographic data, projected into the existing `0 0 1000 500` viewBox using an equirectangular projection.
 
 ### Technical changes in `src/components/client-detail/ClientDashboardTab.tsx`
 
-**Replace SVG continent paths (lines 450-473)**
+**1. Extract the world map SVG into a separate component file**
 
-Swap the current hand-drawn polygon paths with well-known simplified-but-accurate Natural Earth-style continent outlines. The new paths will include:
+Create `src/components/client-detail/WorldMapSVG.tsx` containing a dedicated component with highly detailed continent paths. This keeps the dashboard file clean and makes the map reusable. The paths will be sourced from simplified Natural Earth 110m data converted to SVG coordinates, covering:
 
-- **North America** -- recognizable coastline including Alaska, Great Lakes region, Florida, Mexico
-- **South America** -- proper shape with Brazil bulge, Patagonia
-- **Europe** -- Iberian peninsula, Scandinavian shape, Mediterranean coast
-- **Africa** -- Horn of Africa, Madagascar, proper west coast bulge
-- **Asia** -- Accurate Siberia, Middle East, Indian subcontinent, Southeast Asian peninsula
-- **Australia** -- Proper shape with indented north coast
-- **Japan, Indonesia, UK** -- More recognizable island shapes
-- **Greenland, New Zealand** -- Added for completeness
+- All major continents with accurate coastlines (Great Lakes, Florida, Baja California, Scandinavian fjords, Horn of Africa, Indian subcontinent, etc.)
+- Major islands: UK, Ireland, Iceland, Japan, Philippines, Indonesia, Sri Lanka, Madagascar, New Zealand, Taiwan, Cuba, etc.
+- Greenland with realistic shape
+- Proper Mediterranean coastline detail
 
-All paths keep the same fill classes (`fill-[hsl(180,30%,85%)] dark:fill-[hsl(180,20%,25%)]`) and the viewBox remains `0 0 1000 500` (equirectangular-style projection).
+The component will accept the same fill classes and render a pure SVG.
 
-The region marker positions may need minor adjustments to align with the more accurate continent positions, but the overall layout, legend, and interactivity remain unchanged.
+**2. Update the map container (lines 448-506)**
+
+- Import and use the new `WorldMapSVG` component in place of the inline SVG block
+- Adjust region marker coordinates if needed to align with the accurate continent positions
+- All existing marker logic, hover tooltips, pulse animation, and legend remain unchanged
+
+**3. Marker coordinate adjustments (lines 193-198)**
+
+Fine-tune the x/y percentages for each region marker to land precisely on the correct geographic location on the new accurate map:
+- South Africa: centered on Johannesburg area
+- North America: centered on central US
+- Europe: centered on Western Europe
+- Asia Pacific: centered on East/Southeast Asia
+- UK: centered on Britain
+
+### What stays the same
+- The legend below the map
+- The "View diversification" link
+- Marker sizes, colors, hover tooltips, and pulse animation
+- The widget card structure and drag handle
+- All data calculations
 
