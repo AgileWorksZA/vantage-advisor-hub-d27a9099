@@ -154,17 +154,42 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
 
   const { currencySymbol } = clientData;
 
-  // Deterministic valuation data
+  const [valuationPeriod, setValuationPeriod] = useState<'6m' | '1y' | '3y' | '5y'>('1y');
+
+  // Deterministic valuation data with period-specific sparklines
   const valuationData = useMemo(() => {
-    const rand = seededRandom(clientId + "-valuation");
+    const periodMultipliers: Record<string, number> = { '6m': 0.5, '1y': 1, '3y': 2.2, '5y': 3.5 };
+    const mult = periodMultipliers[valuationPeriod];
+    const rand = seededRandom(clientId + "-valuation-" + valuationPeriod);
     const totalInvestments = clientData.onPlatformProducts.reduce((s, p) => s + p.amountValue, 0) +
       clientData.externalProducts.reduce((s, p) => s + p.amountValue, 0) +
       clientData.platformCashAccounts.reduce((s, p) => s + p.amountValue, 0);
-    const depositsWithdrawals = (rand() - 0.3) * totalInvestments * 0.1;
-    const investmentReturns = totalInvestments * (0.04 + rand() * 0.08);
+    const depositsWithdrawals = (rand() - 0.3) * totalInvestments * 0.1 * mult;
+    const investmentReturns = totalInvestments * (0.04 + rand() * 0.08) * mult;
     const startingValue = totalInvestments - depositsWithdrawals - investmentReturns;
-    return { startingValue, depositsWithdrawals, investmentReturns, endingValue: totalInvestments };
-  }, [clientId, clientData]);
+
+    const genSpark = (base: number, pct: number) => {
+      const pts: number[] = [];
+      for (let i = 0; i < 6; i++) pts.push(base * (1 + (pct / 100) * (i / 5) + (rand() - 0.5) * Math.abs(pct / 100) * 0.3));
+      return pts;
+    };
+
+    const startPct = -((totalInvestments - startingValue) / startingValue) * 100 * (mult > 1 ? 0.5 : 1);
+    const depPct = depositsWithdrawals >= 0 ? 2 + rand() * 5 * mult : -(2 + rand() * 5 * mult);
+    const retPct = 4 + rand() * 8 * mult;
+    const endPct = ((totalInvestments - startingValue) / startingValue) * 100;
+
+    return {
+      items: [
+        { label: "Starting Value", value: startingValue, sparkData: genSpark(startingValue, startPct), changePct: +startPct.toFixed(1) },
+        { label: "Deposits / Withdrawals", value: depositsWithdrawals, sparkData: genSpark(Math.abs(depositsWithdrawals) || 1, depPct), changePct: +depPct.toFixed(1), highlight: true },
+        { label: "Investment Returns", value: investmentReturns, sparkData: genSpark(investmentReturns, retPct), changePct: +retPct.toFixed(1), highlight: true },
+      ],
+      endingValue: totalInvestments,
+      endSparkData: genSpark(totalInvestments, endPct),
+      endChangePct: +endPct.toFixed(1),
+    };
+  }, [clientId, clientData, valuationPeriod]);
 
   // Asset allocation data
   const assetAllocation = useMemo(() => {
@@ -406,26 +431,72 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
                   <GripVertical className="w-4 h-4 text-muted-foreground" />
                    <CardTitle className="text-sm font-medium">Change in Valuation</CardTitle>
                  </div>
-                 <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleToggleWidget('valuation-change', false)}><X className="w-4 h-4" /></Button>
+                 <div className="flex items-center gap-1">
+                   {(['6m', '1y', '3y', '5y'] as const).map(p => (
+                     <button
+                       key={p}
+                       onClick={() => setValuationPeriod(p)}
+                       className={`px-2 py-0.5 rounded text-[9px] transition-all duration-200 ${
+                         valuationPeriod === p
+                           ? 'bg-primary text-primary-foreground font-semibold'
+                           : 'text-muted-foreground hover:bg-muted'
+                       }`}
+                     >{p.toUpperCase()}</button>
+                   ))}
+                   <Button variant="ghost" size="icon" className="h-6 w-6 ml-1" onClick={() => handleToggleWidget('valuation-change', false)}><X className="w-4 h-4" /></Button>
+                 </div>
                </CardHeader>
               <CardContent className="pt-1 space-y-2">
-                {[
-                  { label: "Starting Value", value: valuationData.startingValue },
-                  { label: "Deposits / Withdrawals", value: valuationData.depositsWithdrawals, highlight: true },
-                  { label: "Investment Returns", value: valuationData.investmentReturns, highlight: true },
-                ].map(item => (
-                  <div key={item.label} className="flex justify-between items-center py-1 border-b border-border/50">
-                    <span className="text-xs text-muted-foreground">{item.label}</span>
-                    <span className={`text-sm font-medium flex items-center gap-1 ${item.highlight ? (item.value >= 0 ? "text-emerald-600" : "text-red-500") : ""}`}>
-                      {item.highlight && (item.value >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />)}
-                      {formatTotal(item.value, currencySymbol)}
-                    </span>
-                  </div>
-                ))}
-                <div className="flex justify-between items-center pt-1">
-                  <span className="text-xs font-semibold">Ending Value</span>
-                  <span className="text-sm font-bold">{formatTotal(valuationData.endingValue, currencySymbol)}</span>
-                </div>
+                {valuationData.items.map(item => {
+                  const isPositive = item.highlight ? item.value >= 0 : item.changePct >= 0;
+                  const sparkColor = isPositive ? 'hsl(152, 60%, 45%)' : 'hsl(0, 70%, 55%)';
+                  const sparkPoints = item.sparkData;
+                  const minV = Math.min(...sparkPoints);
+                  const maxV = Math.max(...sparkPoints);
+                  const range = maxV - minV || 1;
+                  const polyPoints = sparkPoints.map((v, i) => `${i * 9.6},${14 - ((v - minV) / range) * 12}`).join(' ');
+                  return (
+                    <div key={item.label} className="flex justify-between items-center py-1 border-b border-border/50">
+                      <span className="text-xs text-muted-foreground">{item.label}</span>
+                      <div className="flex items-center gap-2">
+                        <svg width="48" height="16" className="shrink-0">
+                          <polyline points={polyPoints} fill="none" stroke={sparkColor} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        <span className={`text-[10px] font-semibold tabular-nums ${isPositive ? 'text-emerald-600' : 'text-red-500'}`}>
+                          {isPositive ? '+' : ''}{item.changePct}%
+                        </span>
+                        <span className={`text-sm font-medium flex items-center gap-1 ${item.highlight ? (item.value >= 0 ? "text-emerald-600" : "text-red-500") : ""}`}>
+                          {item.highlight && (item.value >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />)}
+                          {formatTotal(item.value, currencySymbol)}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+                {/* Ending Value */}
+                {(() => {
+                  const isPositive = valuationData.endChangePct >= 0;
+                  const sparkColor = isPositive ? 'hsl(152, 60%, 45%)' : 'hsl(0, 70%, 55%)';
+                  const sparkPoints = valuationData.endSparkData;
+                  const minV = Math.min(...sparkPoints);
+                  const maxV = Math.max(...sparkPoints);
+                  const range = maxV - minV || 1;
+                  const polyPoints = sparkPoints.map((v, i) => `${i * 9.6},${14 - ((v - minV) / range) * 12}`).join(' ');
+                  return (
+                    <div className="flex justify-between items-center pt-1">
+                      <span className="text-xs font-semibold">Ending Value</span>
+                      <div className="flex items-center gap-2">
+                        <svg width="48" height="16" className="shrink-0">
+                          <polyline points={polyPoints} fill="none" stroke={sparkColor} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        <span className={`text-[10px] font-semibold tabular-nums ${isPositive ? 'text-emerald-600' : 'text-red-500'}`}>
+                          {isPositive ? '+' : ''}{valuationData.endChangePct}%
+                        </span>
+                        <span className="text-sm font-bold">{formatTotal(valuationData.endingValue, currencySymbol)}</span>
+                      </div>
+                    </div>
+                  );
+                })()}
                 <Button variant="link" className="p-0 h-auto text-xs text-primary" onClick={() => onTabChange?.("performance")}>
                   View performance <ArrowRight className="h-3 w-3 ml-1" />
                 </Button>
