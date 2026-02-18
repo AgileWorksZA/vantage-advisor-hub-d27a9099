@@ -1,34 +1,23 @@
 
 
-## Right-Align Currency Columns in Product Tables
+## Move Expander Button to Left of Edit Button
 
-Add `text-right` alignment to all currency value columns across the five product tables in the Products tab, ensuring consistent number formatting.
+Currently in the On-Platform Products table, the button order in the actions cell is: **Edit (pencil) > More (three dots) > Expand (chevron)**. The expander button needs to move to the left of the edit button.
 
-### Changes
+### Change
 
-**File:** `src/components/client-detail/Client360ViewTab.tsx`
+**File:** `src/components/client-detail/Client360ViewTab.tsx` (lines 220-251)
 
-Apply `text-right` to both `TableHead` and `TableCell` for every currency column:
+Reorder the buttons inside the `flex` container so the expand/collapse chevron button appears first, followed by the edit (pencil) button, then the dropdown menu.
 
-| Table | Columns to right-align |
-|-------|----------------------|
-| On-Platform Products | Investment amount, Income, Recurring contribution |
-| External Products | Amount, Income, Contribution |
-| Platform Cash | Investment Amount |
-| Short Term | Total Premium |
-| Risk Products | Payment Amount (already done) |
+**Current order:**
+1. Pencil (edit)
+2. MoreVertical (dropdown)
+3. ChevronDown/Up (expand) -- conditional
 
-For cells containing a FrequencyTag, update the `inline-flex` span to use `justify-end` (already done for Risk Products, needs adding to the other tables).
+**New order:**
+1. ChevronDown/Up (expand) -- conditional
+2. Pencil (edit)
+3. MoreVertical (dropdown)
 
-### Specific edits
-
-1. **On-Platform Products table (headers ~lines 193-195):** Add `text-right` to Investment amount, Income, Recurring contribution headers
-2. **On-Platform Products table (cells ~lines 210-216):** Add `text-right` to those cells; add `justify-end` to the FrequencyTag spans
-3. **External Products table (headers ~lines 316-318):** Add `text-right` to Amount, Income, Contribution headers
-4. **External Products table (cells ~lines 330-335):** Same pattern
-5. **Platform Cash table (header ~line 381):** Add `text-right` to Investment Amount header
-6. **Platform Cash table (cell ~line 394):** Add `text-right` to Investment Amount cell
-7. **Short Term table (header ~line 481):** Add `text-right` to Total Premium header
-8. **Short Term table (cell ~lines 494-495):** Add `text-right` and `justify-end` to the FrequencyTag span
-
-No new files or dependencies needed -- purely CSS class additions to existing elements.
+This is the only expander instance in the file (On-Platform Products table). No other tables have expandable rows, so this single change covers all cases.
