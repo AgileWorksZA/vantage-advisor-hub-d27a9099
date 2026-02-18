@@ -265,7 +265,7 @@ const Client360ViewTab = () => {
                           </div>
                         </TableCell>
                         <TableCell></TableCell>
-                        <TableCell className="text-sm py-1">
+                        <TableCell className="text-sm py-1 text-right">
                           <div className="space-y-0.5">
                             {product.details.map((detail, i) => (
                               <div key={i}>{detail.amount}</div>
