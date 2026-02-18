@@ -194,7 +194,7 @@ const Client360ViewTab = () => {
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/30">
-                <TableHead className="text-xs font-medium text-muted-foreground">Investment house</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Provider</TableHead>
                 <TableHead className="text-xs font-medium text-muted-foreground">Investment product</TableHead>
                 <TableHead className="text-xs font-medium text-muted-foreground">Investment number</TableHead>
                 <TableHead className="text-xs font-medium text-muted-foreground text-right">Investment amount</TableHead>
