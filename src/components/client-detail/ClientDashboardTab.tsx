@@ -12,6 +12,8 @@ import { Client, calculateAge, formatBirthday } from "@/types/client";
 import { DraggableWidgetGrid } from "@/components/widgets/DraggableWidgetGrid";
 import { useWidgetLayout, WidgetLayout } from "@/hooks/useWidgetLayout";
 import { WidgetSettingsDialog, WidgetConfig } from "@/components/widgets/WidgetSettingsDialog";
+import { PortfolioAnalysisWidget } from "@/components/dashboard/PortfolioAnalysisWidget";
+import { useRegion } from "@/contexts/RegionContext";
 import {
   Calendar, Gift, FileCheck, TrendingUp, TrendingDown, ArrowRight,
   Users, AlertTriangle, Clock, CheckCircle2, Target, Zap,
@@ -38,7 +40,7 @@ interface ClientDashboardTabProps {
 
 // --- Widget layout config ---
 const defaultClientDashboardLayout: WidgetLayout[] = [
-  { i: 'asset-allocation', x: 0, y: 0, w: 3, h: 3 },
+  { i: 'portfolio-overview', x: 0, y: 0, w: 3, h: 3 },
   { i: 'valuation-change', x: 3, y: 0, w: 3, h: 3 },
   { i: 'geo-diversification', x: 6, y: 0, w: 3, h: 3 },
   { i: 'top-opportunities', x: 0, y: 3, w: 3, h: 3 },
@@ -51,7 +53,7 @@ const defaultClientDashboardLayout: WidgetLayout[] = [
 ];
 
 const CLIENT_DASHBOARD_WIDGETS: WidgetConfig[] = [
-  { id: 'asset-allocation', label: 'Asset Allocation' },
+  { id: 'portfolio-overview', label: 'Portfolio Overview' },
   { id: 'valuation-change', label: 'Change in Valuation' },
   { id: 'geo-diversification', label: 'Geographic Diversification' },
   { id: 'top-opportunities', label: 'Top Opportunities' },
@@ -117,6 +119,7 @@ const getConfig = (type: string) => {
 
 const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDashboardTabProps) => {
   const navigate = useNavigate();
+  const { selectedRegion } = useRegion();
   const { familyMembers, businesses, refetch } = useClientRelationships(clientId);
   const [addMemberOpen, setAddMemberOpen] = useState(false);
   const [selectedContracts, setSelectedContracts] = useState<string[]>([]);
@@ -301,13 +304,6 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
     "hsl(45, 70%, 50%)", "hsl(330, 50%, 55%)",
   ];
 
-  const assetAllocationOption = useMemo(() => ({
-    tooltip: { trigger: "axis" as const, formatter: (params: any) => { const p = params[0]; return `${p.name}: ${(p.value as number).toFixed(1)}%`; } },
-    grid: { left: 90, right: 30, top: 8, bottom: 8 },
-    xAxis: { type: "value" as const, max: 100, show: false },
-    yAxis: { type: "category" as const, data: assetAllocation.map(a => a.name), axisLine: { show: false }, axisTick: { show: false } },
-    series: [{ type: "bar" as const, data: assetAllocation.map((a, i) => ({ value: Math.round(a.pct * 100), itemStyle: { color: chartColors[i] } })), barWidth: 16, borderRadius: 0 }],
-  }), [assetAllocation]);
 
   const geoOption = useMemo(() => ({
     tooltip: { trigger: "item" as const },
@@ -393,24 +389,13 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
         </div>
       ) : (
       <DraggableWidgetGrid layout={visibleLayout} onLayoutChange={onLayoutChange}>
-        {/* Asset Allocation */}
-        {isWidgetVisible('asset-allocation') && (
-          <div key="asset-allocation">
-            <Card className="h-full">
-              <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
-                <div className="flex items-center gap-2">
-                  <GripVertical className="w-4 h-4 text-muted-foreground" />
-                   <CardTitle className="text-sm font-medium">Asset Allocation</CardTitle>
-                 </div>
-                 <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleToggleWidget('asset-allocation', false)}><X className="w-4 h-4" /></Button>
-               </CardHeader>
-              <CardContent className="pt-0">
-                <EChartsWrapper option={assetAllocationOption} height={180} />
-                <Button variant="link" className="p-0 h-auto text-xs text-primary" onClick={() => onTabChange?.("performance")}>
-                  View analysis <ArrowRight className="h-3 w-3 ml-1" />
-                </Button>
-              </CardContent>
-            </Card>
+        {/* Portfolio Overview */}
+        {isWidgetVisible('portfolio-overview') && (
+          <div key="portfolio-overview">
+            <PortfolioAnalysisWidget
+              region={selectedRegion}
+              onClose={() => handleToggleWidget('portfolio-overview', false)}
+            />
           </div>
         )}
 
