@@ -1,23 +1,52 @@
 
 
-## Align Edit Button Colors to Page Theme
+## Show Nothing When Amounts Are Zero
 
-### Problem
-The edit (pencil) button in the On-Platform Products table uses the teal brand color (`text-[hsl(180,70%,45%)]`), but the edit buttons in the other 5 product tables use `text-muted-foreground` (grey), creating visual inconsistency.
+### Overview
+When amount fields (Amount, Income, Contribution, Premium, Payment Amount, etc.) display a zero value like "R 0.00" or "$0.00", show an empty cell instead.
 
 ### Solution
 
 **File:** `src/components/client-detail/Client360ViewTab.tsx`
 
-Update the Pencil icon color from `text-muted-foreground` to `text-[hsl(180,70%,45%)]` in 5 locations:
+Add a helper function (reusing the same zero-check logic from `FrequencyTag.tsx`) near the top of the component:
 
-| Table | Line |
-|-------|------|
-| External Products | 344 |
-| Platform Cash | 399 |
-| Short Term | 445 |
-| Risk Products | 555 |
-| Medical Aid | 610 |
+```tsx
+const isZeroValue = (value?: string): boolean => {
+  if (!value) return true;
+  const numeric = value.replace(/[^0-9.]/g, "");
+  if (!numeric) return true;
+  return parseFloat(numeric) === 0;
+};
+```
 
-Each change is identical -- replacing `text-muted-foreground` with `text-[hsl(180,70%,45%)]` on the Pencil icon className.
+Then wrap each amount display so it renders nothing when zero. Apply to these cells across all tables:
 
+| Table | Fields |
+|-------|--------|
+| On-Platform Products | amount, income, contribution (main rows + expanded details) |
+| External Products | amount, income, contribution |
+| Platform Cash | amount |
+| Short Term | totalPremium |
+| Risk Products | paymentAmount |
+| Medical Aid | premium |
+
+For simple amount cells, change from:
+```tsx
+<TableCell className="text-sm text-right">{product.amount}</TableCell>
+```
+to:
+```tsx
+<TableCell className="text-sm text-right">{isZeroValue(product.amount) ? "" : product.amount}</TableCell>
+```
+
+For cells with FrequencyTag, change from:
+```tsx
+<span className="inline-flex items-center justify-end gap-1">{product.income} <FrequencyTag ... /></span>
+```
+to:
+```tsx
+{isZeroValue(product.income) ? null : <span className="inline-flex items-center justify-end gap-1">{product.income} <FrequencyTag ... /></span>}
+```
+
+This keeps the column and alignment intact but shows a clean empty cell when the value is zero.
