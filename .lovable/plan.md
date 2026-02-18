@@ -1,32 +1,23 @@
 
 
-## Update Companies Tab to Show Underlying Shares
+## Remove AI Badges from Client Profile
 
-### What changes
+Remove the violet-to-cyan gradient "AI" badges from all client profile tabs: the main tab bar (summary, meetings, communication) and the Portfolio sub-tab (comparison).
 
-The Companies tab currently lists investment houses (Allan Gray, Investec, etc.). It needs to instead show the **underlying equities/shares** held across the client's portfolio -- stocks like Amazon, Apple, Microsoft, etc.
+### Changes
 
-### Updates to `src/components/client-detail/portfolio/CompaniesTab.tsx`
+**1. `src/pages/ClientDetail.tsx` (line ~300-302)**
+- Remove the conditional rendering of the AI badge span for "summary", "meetings", and "communication" tabs
 
-1. **Replace the `COMPANIES` array** with a list of global equities:
-   - Amazon, Apple, Microsoft, Alphabet, NVIDIA, Meta, Tesla, TSMC, Samsung, Nestle, ASML, Novo Nordisk, Johnson & Johnson, JPMorgan Chase, Visa, Mastercard, Broadcom, Berkshire Hathaway, UnitedHealth, Procter & Gamble
+**2. `src/components/client-detail/ClientPortfolioTab.tsx` (line ~185-187)**
+- Remove the AI badge span from the "comparison" sub-tab trigger
 
-2. **Add ticker symbols and sectors** to each company for richer data:
-   - e.g. `{ name: "Amazon", ticker: "AMZN", sector: "Technology" }`
+Both edits simply delete the `<span>` elements containing the gradient badge. No other logic or styling is affected.
 
-3. **Update the table columns** to reflect share-level data:
-   | Company | Ticker | Sector | Value | Weight | Trend | Change |
-   - Remove "Products" column (not relevant for shares)
-   - Add "Ticker" column (mono font, muted text)
-   - Add "Sector" column (small badge style)
-   - Keep Value, Weight, Sparkline, and Change columns as-is
-
-4. **Update the card title** from "Companies" to "Underlying Companies"
-
-5. **Data generation** stays the same (seeded random for deterministic values) -- just mapped to share names instead of investment houses
-
-### File
+### Files
 
 | File | Action |
 |------|--------|
-| `src/components/client-detail/portfolio/CompaniesTab.tsx` | Edit -- replace investment houses with underlying equities, update columns |
+| `src/pages/ClientDetail.tsx` | Edit -- remove AI badge from main tab triggers |
+| `src/components/client-detail/ClientPortfolioTab.tsx` | Edit -- remove AI badge from comparison sub-tab |
+
