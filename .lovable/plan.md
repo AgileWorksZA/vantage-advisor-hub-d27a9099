@@ -1,32 +1,34 @@
 
 
-## Replace Geographic Diversification Chart with World Map Widget
+## Replace World-Dots Map with Inline SVG World Map
 
 ### What changes
-The current pie chart (Domestic vs International) in the Geographic Diversification widget will be replaced with a visual world map using the existing `public/images/world-dots.png` as a background, with colored circular markers on key regions showing allocation percentages -- similar to the reference image provided.
+- Remove the `world-dots.png` background image and replace with an inline SVG rendering simplified continent shapes in a solid muted green/teal fill
+- Remove percentage labels from inside the map area
+- Add a clean region breakdown row below the map showing each region name with its percentage
+- Keep the colored dot markers on the map for each region
 
-### Technical changes
+### Technical changes in `src/components/client-detail/ClientDashboardTab.tsx`
 
-**1. Expand the `geoDiversification` data (lines 187-194)**
+**1. Replace the map container (lines 448-470)**
 
-Instead of just "Domestic" and "International", generate region-level data with approximate map coordinates (as percentages of the image). For example:
-- South Africa, North America, Europe, Asia Pacific, etc.
-- Each with a percentage value and x/y position on the map image
+Remove the `<img>` tag and replace with an inline SVG containing simplified continent path outlines (Africa, North America, South America, Europe, Asia, Australia) filled with a muted teal color. The SVG will use a standard viewBox and well-known simplified continent paths.
 
-**2. Replace ECharts pie chart with a map visual (lines 439-458)**
+The colored dot markers remain overlaid on the SVG at the same coordinates, but remove the inline `%` labels from the dots (keep only the hover tooltip).
 
-Remove the `EChartsWrapper` usage and the `geoOption` memo. Replace with:
-- A container with `relative` positioning and the `world-dots.png` as a background image (using `object-fit: contain`)
-- Colored circular markers (`absolute` positioned) at each region's coordinates
-- Tooltips or small labels showing region name and percentage on hover
-- The largest allocation gets a pulsing/highlighted marker effect
-- Muted green color scheme matching the reference image
+**2. Add region percentage row below the map**
 
-**3. Remove unused code**
-- Remove the `geoOption` useMemo block (lines 308-316)
+After the map container, add a flex row showing each region as a small colored dot + name + percentage, e.g.:
 
-**4. Styling**
-- Map container: `relative`, fixed height (~180px), `overflow-hidden`
-- Markers: small colored circles (8-16px based on allocation weight), `absolute` positioned
-- Light mode: green-tinted regions; Dark mode: adjusted opacity
-- "View diversification" link remains at the bottom
+```
+[dot] South Africa 65%   [dot] North America 5%   [dot] Europe 4%   ...
+```
+
+This replaces the per-marker percentage labels with a cleaner legend-style layout beneath the map.
+
+**3. Styling**
+- SVG continents: `fill` with `hsl(180, 30%, 85%)` (light mode) / `hsl(180, 20%, 25%)` (dark mode), no stroke
+- Map container height stays at 180px
+- Region row: `flex flex-wrap gap-x-4 gap-y-1 mt-2 text-[10px]`
+- Each region item: small colored circle (6px) + name + value
+
