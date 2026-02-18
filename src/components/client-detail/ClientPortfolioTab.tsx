@@ -182,9 +182,6 @@ export default function ClientPortfolioTab({ clientId, nationality, countryOfIss
               className="rounded-none border-b-2 border-transparent data-[state=active]:border-[hsl(180,70%,45%)] data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-2 text-sm"
             >
               {tab.label}
-              {tab.value === "comparison" && (
-                <span className="inline-flex items-center px-2 py-0.5 text-[10px] font-bold bg-gradient-to-r from-violet-500 to-cyan-500 text-white rounded-full ml-1.5">AI</span>
-              )}
             </TabsTrigger>
           ))}
         </TabsList>
