@@ -372,6 +372,11 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
         </Button>
       </div>
 
+      {/* Widget Settings */}
+      <div className="flex justify-end mb-2">
+        <WidgetSettingsDialog widgets={CLIENT_DASHBOARD_WIDGETS} hiddenWidgets={hiddenWidgets} onToggleWidget={handleToggleWidget} />
+      </div>
+
       {/* Draggable Widget Grid */}
       {layoutLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -387,7 +392,7 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
           ))}
         </div>
       ) : (
-      <DraggableWidgetGrid layout={visibleLayout} onLayoutChange={onLayoutChange} toolbar={<WidgetSettingsDialog widgets={CLIENT_DASHBOARD_WIDGETS} hiddenWidgets={hiddenWidgets} onToggleWidget={handleToggleWidget} />}>
+      <DraggableWidgetGrid layout={visibleLayout} onLayoutChange={onLayoutChange}>
         {/* Asset Allocation */}
         {isWidgetVisible('asset-allocation') && (
           <div key="asset-allocation">
