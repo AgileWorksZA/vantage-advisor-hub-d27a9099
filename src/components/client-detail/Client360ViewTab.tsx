@@ -26,6 +26,7 @@ import AddRiskProductForm from "./AddRiskProductForm";
 import AddShortTermForm from "./AddShortTermForm";
 import AddWillForm from "./AddWillForm";
 import AstuteRequestView from "./AstuteRequestView";
+import FrequencyTag from "./FrequencyTag";
 
 const Client360ViewTab = () => {
   const { clientId } = useParams<{ clientId: string }>();
@@ -207,8 +208,12 @@ const Client360ViewTab = () => {
                       <TableCell className="text-sm">{product.product}</TableCell>
                       <TableCell className="text-sm">{product.number}</TableCell>
                       <TableCell className="text-sm">{product.amount}</TableCell>
-                      <TableCell className="text-sm">{product.income}</TableCell>
-                      <TableCell className="text-sm">{product.contribution}</TableCell>
+                      <TableCell className="text-sm">
+                        <span className="inline-flex items-center gap-1">{product.income} <FrequencyTag frequency={product.incomeFrequency} /></span>
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        <span className="inline-flex items-center gap-1">{product.contribution} <FrequencyTag frequency={product.contributionFrequency} /></span>
+                      </TableCell>
                       <TableCell className="text-sm">{product.date}</TableCell>
                       <TableCell className="text-sm">{product.advisor}</TableCell>
                       <TableCell>
@@ -323,8 +328,12 @@ const Client360ViewTab = () => {
                   <TableCell className="text-sm">{product.product}</TableCell>
                   <TableCell className="text-sm">{product.contract}</TableCell>
                   <TableCell className="text-sm">{product.amount}</TableCell>
-                  <TableCell className="text-sm">{product.income}</TableCell>
-                  <TableCell className="text-sm">{product.contribution}</TableCell>
+                  <TableCell className="text-sm">
+                    <span className="inline-flex items-center gap-1">{product.income} <FrequencyTag frequency={product.incomeFrequency} /></span>
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    <span className="inline-flex items-center gap-1">{product.contribution} <FrequencyTag frequency={product.contributionFrequency} /></span>
+                  </TableCell>
                   <TableCell className="text-sm">{product.updated}</TableCell>
                   <TableCell className="text-sm">{product.source}</TableCell>
                   <TableCell>
@@ -482,7 +491,9 @@ const Client360ViewTab = () => {
                   <TableRow key={index} className="border-b border-border/50">
                     <TableCell className="text-sm text-[hsl(180,70%,45%)]">{product.insurer}</TableCell>
                     <TableCell className="text-sm">{product.policyType}</TableCell>
-                    <TableCell className="text-sm">{product.totalPremium}</TableCell>
+                    <TableCell className="text-sm">
+                      <span className="inline-flex items-center gap-1">{product.totalPremium} <FrequencyTag frequency={product.premiumFrequency} /></span>
+                    </TableCell>
                     <TableCell className="text-sm">{product.reviewDate}</TableCell>
                     <TableCell className="text-sm">{product.broker}</TableCell>
                     <TableCell className="text-sm">{product.dataDate}</TableCell>
@@ -539,7 +550,9 @@ const Client360ViewTab = () => {
                   <TableCell className="text-sm">{product.policyNumber}</TableCell>
                   <TableCell className="text-sm">{product.effectiveDate}</TableCell>
                   <TableCell className="text-sm">{product.terminationDate}</TableCell>
-                  <TableCell className="text-sm text-right">{product.paymentAmount}</TableCell>
+                  <TableCell className="text-sm text-right">
+                    <span className="inline-flex items-center justify-end gap-1">{product.paymentAmount} <FrequencyTag frequency={product.paymentFrequency} /></span>
+                  </TableCell>
                   <TableCell className="text-sm">{product.paidToDate}</TableCell>
                   <TableCell className="text-sm">{product.paymentDueDate}</TableCell>
                   <TableCell className="text-sm">{product.notes}</TableCell>

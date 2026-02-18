@@ -8,7 +8,9 @@ export interface OnPlatformProduct {
   amount: string;
   amountValue: number;
   income: string;
+  incomeFrequency?: string;
   contribution: string;
+  contributionFrequency?: string;
   date: string;
   advisor: string;
   expandable: boolean;
@@ -22,7 +24,9 @@ export interface ExternalProduct {
   amount: string;
   amountValue: number;
   income: string;
+  incomeFrequency?: string;
   contribution: string;
+  contributionFrequency?: string;
   updated: string;
   source: string;
 }
@@ -52,6 +56,7 @@ export interface ShortTermProduct {
   insurer: string;
   policyType: string;
   totalPremium: string;
+  premiumFrequency?: string;
   reviewDate: string;
   broker: string;
   dataDate: string;
@@ -64,6 +69,7 @@ export interface RiskProduct {
   effectiveDate: string;
   terminationDate: string;
   paymentAmount: string;
+  paymentFrequency?: string;
   paidToDate: string;
   paymentDueDate: string;
   notes: string;
@@ -288,6 +294,9 @@ export function generateClient360Data(clientId: string, nationality: string | nu
   const numExternal = tier === "full" ? Math.floor(random() * 3) + 2 : tier === "moderate" ? Math.floor(random() * 2) + 1 : Math.floor(random() * 2); // 0-1 for simple
   const includeCash = tier !== "simple";
 
+  const frequencies = ["1M", "3M", "6M", "1Y"];
+  const pickFreq = () => frequencies[Math.floor(random() * frequencies.length)];
+
   const onPlatformProducts: OnPlatformProduct[] = [];
   
   for (let i = 0; i < numOnPlatform; i++) {
@@ -302,7 +311,9 @@ export function generateClient360Data(clientId: string, nationality: string | nu
       amount: formatCurrency(baseAmount, config),
       amountValue: baseAmount,
       income: formatCurrency(0, config),
+      incomeFrequency: random() > 0.3 ? pickFreq() : undefined,
       contribution: formatCurrency(random() > 0.7 ? random() * 5000 : 0, config),
+      contributionFrequency: random() > 0.4 ? pickFreq() : undefined,
       date: generateRandomDate(random, 1),
       advisor: "Primary Advisor",
       expandable: hasDetails,
@@ -347,7 +358,9 @@ export function generateClient360Data(clientId: string, nationality: string | nu
       amount: formatCurrency(amount, config),
       amountValue: amount,
       income: formatCurrency(0, config),
+      incomeFrequency: random() > 0.3 ? pickFreq() : undefined,
       contribution: formatCurrency(random() > 0.8 ? random() * 2000 : 0, config),
+      contributionFrequency: random() > 0.4 ? pickFreq() : undefined,
       updated: generateRandomDate(random, 1),
       source: "Manual",
     });
@@ -396,6 +409,7 @@ export function generateClient360Data(clientId: string, nationality: string | nu
         insurer: provider,
         policyType,
         totalPremium: formatCurrency(premium, config),
+        premiumFrequency: pickFreq(),
         reviewDate: generateFutureDate(random, 12),
         broker: "Vantage",
         dataDate: generateRandomDate(random, 0.5),
@@ -419,6 +433,7 @@ export function generateClient360Data(clientId: string, nationality: string | nu
       effectiveDate: generateRandomDate(random, 2),
       terminationDate: "",
       paymentAmount: formatCurrency(premium, config).replace(config.currencySymbol + " ", ""),
+      paymentFrequency: pickFreq(),
       paidToDate: "",
       paymentDueDate: "",
       notes: "",
