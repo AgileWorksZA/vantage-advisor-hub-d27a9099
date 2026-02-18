@@ -1,30 +1,31 @@
 
 
-## Align Action Buttons Across All Rows
+## Remove Delete Buttons from Product Tables and Embed Delete in Edit Screens
 
-### Problem
-When a row in the On-Platform Products table doesn't have an expandable chevron, the edit (pencil) and dropdown (three dots) buttons shift left, misaligning with rows that do have the expander.
+### Overview
+Remove all standalone Trash (delete) buttons from the product table rows across the Products tab. Delete functionality will instead be accessed from within each product's edit screen.
 
-### Solution
+### Changes
 
-**File:** `src/components/client-detail/Client360ViewTab.tsx` (line 221-234)
+**File:** `src/components/client-detail/Client360ViewTab.tsx`
 
-Replace the conditional rendering of the expander button with an always-present block: render the chevron button when `product.expandable` is true, otherwise render an invisible placeholder `div` of the same size (`h-8 w-8`) to reserve the space.
+**1. Remove Trash2 buttons from 5 tables:**
 
-**Current:**
-```tsx
-{product.expandable && (
-  <Button ...>chevron</Button>
-)}
-```
+| Table | Line | Action |
+|-------|------|--------|
+| External Products | 346-348 | Remove Trash2 button |
+| Platform Cash | 404-406 | Remove Trash2 button |
+| Short Term | 453-455 | Remove Trash2 button |
+| Risk Products | 566-568 | Remove Trash2 button |
+| Medical Aid | 624-626 | Remove Trash2 button |
 
-**New:**
-```tsx
-{product.expandable ? (
-  <Button ...>chevron</Button>
-) : (
-  <div className="h-8 w-8" />
-)}
-```
+**2. Clean up unused import:**
+- Remove `Trash2` from the lucide-react import (line 13) since it will no longer be used anywhere in the file.
 
-This single change ensures the edit and dropdown buttons stay vertically aligned across all rows.
+Note: The On-Platform Products table does not have a Trash2 button (it uses a dropdown menu for actions), so no change is needed there.
+
+### Technical details
+- Each deletion is simply removing the 3-line `<Button>` block containing the `<Trash2>` icon
+- The surrounding `flex` container and remaining buttons (Pencil, MoreVertical where present) stay unchanged
+- The `Trash2` import is removed from line 13 since no other usage remains
+
