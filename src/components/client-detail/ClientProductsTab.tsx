@@ -110,9 +110,9 @@ const ClientProductsTab = () => {
                           <TableHead className="text-xs">Product</TableHead>
                           <TableHead className="text-xs">Adviser</TableHead>
                           <TableHead className="text-xs">Role</TableHead>
-                          <TableHead className="text-xs">Premium</TableHead>
+                          <TableHead className="text-xs text-right">Premium</TableHead>
                           <TableHead className="text-xs">Frequency</TableHead>
-                          <TableHead className="text-xs">Value</TableHead>
+                          <TableHead className="text-xs text-right">Value</TableHead>
                           <TableHead className="text-xs">Value updated</TableHead>
                           <TableHead className="text-xs">Inactive</TableHead>
                           <TableHead className="text-xs">Linked</TableHead>
@@ -124,9 +124,9 @@ const ClientProductsTab = () => {
                             <TableCell className="text-sm">{product.product}</TableCell>
                             <TableCell className="text-sm">{product.adviser}</TableCell>
                             <TableCell className="text-sm">{product.role}</TableCell>
-                            <TableCell className="text-sm">{product.premium}</TableCell>
+                            <TableCell className="text-sm text-right">{product.premium}</TableCell>
                             <TableCell className="text-sm">{product.frequency}</TableCell>
-                            <TableCell className="text-sm">{product.value}</TableCell>
+                            <TableCell className="text-sm text-right">{product.value}</TableCell>
                             <TableCell className="text-sm">{product.valueUpdated}</TableCell>
                             <TableCell className="text-sm">{product.inactive ? "Yes" : "No"}</TableCell>
                             <TableCell className="text-sm">{product.linked ? "Yes" : "No"}</TableCell>
