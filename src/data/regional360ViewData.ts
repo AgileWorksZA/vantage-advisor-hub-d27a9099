@@ -432,7 +432,7 @@ export function generateClient360Data(clientId: string, nationality: string | nu
       policyNumber: generatePolicyNumber(random, prefix),
       effectiveDate: generateRandomDate(random, 2),
       terminationDate: "",
-      paymentAmount: formatCurrency(premium, config).replace(config.currencySymbol + " ", ""),
+      paymentAmount: formatCurrency(premium, config),
       paymentFrequency: pickFreq(),
       paidToDate: "",
       paymentDueDate: "",
