@@ -10,7 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Pencil, Trash2, MoreVertical, ChevronDown, ChevronUp } from "lucide-react";
+import { Pencil, MoreVertical, ChevronDown, ChevronUp } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -344,9 +344,6 @@ const Client360ViewTab = () => {
                         <Pencil className="h-4 w-4 text-muted-foreground" />
                       </Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <Trash2 className="h-4 w-4 text-muted-foreground" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
                         <MoreVertical className="h-4 w-4 text-muted-foreground" />
                       </Button>
                     </div>
@@ -401,9 +398,6 @@ const Client360ViewTab = () => {
                       <Button variant="ghost" size="icon" className="h-8 w-8">
                         <Pencil className="h-4 w-4 text-muted-foreground" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <Trash2 className="h-4 w-4 text-muted-foreground" />
-                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -449,9 +443,6 @@ const Client360ViewTab = () => {
                     <div className="flex items-center gap-1">
                       <Button variant="ghost" size="icon" className="h-8 w-8">
                         <Pencil className="h-4 w-4 text-muted-foreground" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <Trash2 className="h-4 w-4 text-muted-foreground" />
                       </Button>
                     </div>
                   </TableCell>
@@ -563,9 +554,6 @@ const Client360ViewTab = () => {
                       <Button variant="ghost" size="icon" className="h-8 w-8">
                         <Pencil className="h-4 w-4 text-muted-foreground" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <Trash2 className="h-4 w-4 text-muted-foreground" />
-                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -620,9 +608,6 @@ const Client360ViewTab = () => {
                       <div className="flex items-center gap-1">
                         <Button variant="ghost" size="icon" className="h-8 w-8">
                           <Pencil className="h-4 w-4 text-muted-foreground" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <Trash2 className="h-4 w-4 text-muted-foreground" />
                         </Button>
                       </div>
                     </TableCell>
