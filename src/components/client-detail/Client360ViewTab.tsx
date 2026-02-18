@@ -218,6 +218,20 @@ const Client360ViewTab = () => {
                       <TableCell className="text-sm">{product.advisor}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
+                          {product.expandable && (
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8"
+                              onClick={() => toggleRowExpand(product.number)}
+                            >
+                              {isExpanded ? (
+                                <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                              ) : (
+                                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                              )}
+                            </Button>
+                          )}
                           <Button variant="ghost" size="icon" className="h-8 w-8">
                             <Pencil className="h-4 w-4 text-[hsl(180,70%,45%)]" />
                           </Button>
@@ -235,20 +249,6 @@ const Client360ViewTab = () => {
                               <DropdownMenuItem>Withdraw</DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
-                          {product.expandable && (
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-8 w-8"
-                              onClick={() => toggleRowExpand(product.number)}
-                            >
-                              {isExpanded ? (
-                                <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                              ) : (
-                                <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                              )}
-                            </Button>
-                          )}
                         </div>
                       </TableCell>
                     </TableRow>
