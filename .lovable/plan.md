@@ -1,38 +1,27 @@
 
 
-## Precision Dot Map Overhaul to Match Reference Images
-
-### Problem
-The current dot map has ~1,200 dots at 8px spacing with radius 1.6. The reference images show a much denser, more precise layout with:
-- Tighter spacing (~6px between dots)
-- Smaller dot radius (~1.2)
-- Roughly 2,500-3,000 dots total
-- Much more detailed coastlines and continent shapes
+## Replace Dot-Matrix Map with Image
 
 ### What changes
+Replace the programmatic SVG dot-matrix world map with the uploaded dot-map image. This will use the actual image file instead of rendering thousands of SVG circles, giving pixel-perfect accuracy to the reference and better performance.
 
-**File: `src/data/worldMapDots.ts`** -- Complete rewrite of all coordinate arrays
+### Steps
 
-The dot grid will be rewritten on a 6px spacing (coordinates at multiples of 6) to match the reference density. Key improvements per region:
+1. **Copy the uploaded image** to `src/assets/world-dots-map.png`
 
-- **North America**: More detailed Great Lakes indent, proper Hudson Bay gap, narrower Florida peninsula, detailed Pacific Northwest coast, Alaska as clear peninsula, detailed Mexico with Baja California as separate strip, thin Central America isthmus
-- **South America**: Proper northeast bulge (Natal), concave western coast (Peru/Chile), wide Amazon basin, narrow Patagonia tail, clear gap at Drake Passage
-- **Europe**: Detailed Scandinavian peninsula (Norway/Sweden/Finland), separate British Isles with Ireland, Iberian peninsula with proper shape, Italian boot, Greek peninsula, detailed Baltic coastline
-- **Africa**: Proper West African bulge (Guinea), Horn of Africa protruding east, concave Gulf of Guinea coast, tapering Southern Africa, separate Madagascar island
-- **Asia**: Dense Russia spanning full width, Arabian Peninsula as distinct block, Indian subcontinent triangle tapering to point, detailed Southeast Asian peninsula, Indonesian archipelago as dot chains, Japan as curved archipelago, Korean peninsula, Philippines as vertical chain, Sri Lanka dot
-- **Oceania**: Australia with proper Gulf of Carpentaria indent on north coast, Tasmania separate, New Zealand as two-island cluster
-- **Greenland**: Dense elongated oval
+2. **Rewrite `src/components/client-detail/WorldMapSVG.tsx`**
+   - Replace the SVG circle rendering with a simple `<img>` tag
+   - Import the image from `@/assets/world-dots-map.png`
+   - Apply CSS opacity/filter for the light teal tint matching the current theme styling
+   - Keep the same `className` prop interface so nothing breaks in the parent component
+   - Use CSS `filter` or `opacity` to achieve the subtle, muted look (light mode: low opacity teal tint; dark mode: inverted/adjusted)
 
-**File: `src/components/client-detail/WorldMapSVG.tsx`** -- Update radius
+3. **No changes to `ClientDashboardTab.tsx`** -- the component interface stays identical, so markers, legend, and layout remain untouched
 
-- Reduce `R` from 1.6 to 1.2 for tighter, more refined appearance matching the reference
-- No other changes needed -- component structure stays identical
+4. **`src/data/worldMapDots.ts` can be deleted** since it will no longer be needed (the dot coordinates are replaced by the image)
 
 ### Technical details
-- Grid spacing: 6px (all coordinates multiples of 6)
-- Dot radius: 1.2
-- Total dots: ~2,500-3,000
-- ViewBox remains 0 0 1000 500
-- Same theme-aware fill classes
-- No changes to ClientDashboardTab.tsx -- markers and legend untouched
+- The image is black dots on white/transparent background, so in light mode we apply low opacity (~0.15-0.2) to get the subtle teal-gray look; in dark mode we use CSS `invert` + low opacity
+- Component keeps `preserveAspectRatio` behavior via `object-fit: contain` on the img
+- Performance improvement: rendering 1 image vs ~2,500 SVG circle elements
 
