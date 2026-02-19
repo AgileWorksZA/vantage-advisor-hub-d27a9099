@@ -1,8 +1,7 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -12,13 +11,12 @@ import {
 } from "@/components/ui/select";
 import {
   ChevronLeft, ChevronRight, ChevronFirst, ChevronLast,
-  Loader2, Plus, Search, LayoutDashboard, Kanban, List,
+  Loader2, Plus, Search, ListTodo, Clock, AlertTriangle, CheckCircle2,
 } from "lucide-react";
 import { useClientWorkflows } from "@/hooks/useClientWorkflows";
-import { ClientWorkflowDashboard } from "./workflows/ClientWorkflowDashboard";
-import { ClientWorkflowKanban } from "./workflows/ClientWorkflowKanban";
 import { CreateClientWorkflowDialog } from "./workflows/CreateClientWorkflowDialog";
 import { CreateAdviceWorkflowDialog } from "./workflows/CreateAdviceWorkflowDialog";
+import { isBefore, startOfDay, format } from "date-fns";
 
 const statusBadgeColors: Record<string, string> = {
   Active: "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300",
@@ -30,7 +28,6 @@ const statusBadgeColors: Record<string, string> = {
 
 const ClientWorkflowsTab = () => {
   const { clientId } = useParams<{ clientId: string }>();
-  const [activeView, setActiveView] = useState("dashboard");
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [workflowPage, setWorkflowPage] = useState(1);
@@ -42,6 +39,20 @@ const ClientWorkflowsTab = () => {
     workflows, adviceWorkflows, workflowCount, adviceCount,
     loading, createWorkflow, updateWorkflowStatus, createAdviceWorkflow,
   } = useClientWorkflows(clientId || "");
+
+  // Stats computation
+  const stats = useMemo(() => {
+    const today = startOfDay(new Date());
+    const todayStr = format(today, "dd MMM yyyy");
+    const open = workflows.filter(w => !["Complete", "Cancelled"].includes(w.status));
+    const overdue = open.filter(w => {
+      if (!w.endDate || w.endDate === "-") return false;
+      try { return isBefore(new Date(w.endDate), today); } catch { return false; }
+    });
+    const dueToday = open.filter(w => w.endDate === todayStr);
+    const completed = workflows.filter(w => w.status === "Complete");
+    return { totalOpen: open.length, dueToday: dueToday.length, overdue: overdue.length, completed: completed.length };
+  }, [workflows]);
 
   if (loading) {
     return (
@@ -65,114 +76,147 @@ const ClientWorkflowsTab = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <Tabs value={activeView} onValueChange={setActiveView}>
-          <TabsList>
-            <TabsTrigger value="dashboard" className="gap-1.5">
-              <LayoutDashboard className="h-3.5 w-3.5" /> Dashboard
-            </TabsTrigger>
-            <TabsTrigger value="kanban" className="gap-1.5">
-              <Kanban className="h-3.5 w-3.5" /> Kanban
-            </TabsTrigger>
-            <TabsTrigger value="overview" className="gap-1.5">
-              <List className="h-3.5 w-3.5" /> Overview
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
+      <div className="flex items-center justify-end">
         <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
           <Plus className="h-3.5 w-3.5" /> New Workflow
         </Button>
       </div>
 
-      {/* Views */}
-      {activeView === "dashboard" && (
-        <ClientWorkflowDashboard workflows={workflows} />
-      )}
-
-      {activeView === "kanban" && (
-        <ClientWorkflowKanban workflows={workflows} onUpdateStatus={updateWorkflowStatus} />
-      )}
-
-      {activeView === "overview" && (
+      {/* Stat Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
-          <CardHeader className="pb-4">
-            <div className="flex items-center gap-3">
-              <div className="relative flex-1 max-w-sm">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search workflows..."
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  className="pl-9"
-                />
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-primary/10 rounded-full">
+                <ListTodo className="h-6 w-6 text-primary" />
               </div>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="Active">Active</SelectItem>
-                  <SelectItem value="Complete">Complete</SelectItem>
-                  <SelectItem value="Inactive">Inactive</SelectItem>
-                  <SelectItem value="Cancelled">Cancelled</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </CardHeader>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-xs">Service</TableHead>
-                  <TableHead className="text-xs">Name</TableHead>
-                  <TableHead className="text-xs">Status</TableHead>
-                  <TableHead className="text-xs">Adviser</TableHead>
-                  <TableHead className="text-xs">End Date</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginatedWorkflows.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                      No workflows found.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  paginatedWorkflows.map(w => (
-                    <TableRow key={w.id}>
-                      <TableCell className="text-sm">{w.service}</TableCell>
-                      <TableCell className="text-sm font-medium">{w.name}</TableCell>
-                      <TableCell className="text-sm">
-                        <span className={`px-2 py-1 rounded text-xs ${statusBadgeColors[w.status] || "bg-muted text-muted-foreground"}`}>
-                          {w.status}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-sm">{w.adviser}</TableCell>
-                      <TableCell className="text-sm">{w.endDate}</TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-            <div className="flex items-center justify-between px-4 py-3 border-t">
-              <span className="text-sm text-muted-foreground">{filteredWorkflows.length} items, page {workflowPage} of {workflowPages}</span>
-              <div className="flex items-center gap-1">
-                <Button variant="outline" size="icon" className="h-8 w-8" disabled={workflowPage === 1} onClick={() => setWorkflowPage(1)}>
-                  <ChevronFirst className="w-4 h-4" />
-                </Button>
-                <Button variant="outline" size="icon" className="h-8 w-8" disabled={workflowPage === 1} onClick={() => setWorkflowPage(p => p - 1)}>
-                  <ChevronLeft className="w-4 h-4" />
-                </Button>
-                <Button variant="outline" size="icon" className="h-8 w-8" disabled={workflowPage >= workflowPages} onClick={() => setWorkflowPage(p => p + 1)}>
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
-                <Button variant="outline" size="icon" className="h-8 w-8" disabled={workflowPage >= workflowPages} onClick={() => setWorkflowPage(workflowPages)}>
-                  <ChevronLast className="w-4 h-4" />
-                </Button>
+              <div>
+                <p className="text-sm text-muted-foreground">Total Open</p>
+                <p className="text-2xl font-bold">{stats.totalOpen}</p>
               </div>
             </div>
           </CardContent>
         </Card>
-      )}
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-amber-500/10 rounded-full">
+                <Clock className="h-6 w-6 text-amber-500" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Due Today</p>
+                <p className="text-2xl font-bold">{stats.dueToday}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-destructive/10 rounded-full">
+                <AlertTriangle className="h-6 w-6 text-destructive" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Overdue</p>
+                <p className="text-2xl font-bold">{stats.overdue}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-emerald-500/10 rounded-full">
+                <CheckCircle2 className="h-6 w-6 text-emerald-500" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Completed</p>
+                <p className="text-2xl font-bold">{stats.completed}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Overview Table */}
+      <Card>
+        <CardHeader className="pb-4">
+          <div className="flex items-center gap-3">
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search workflows..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="Active">Active</SelectItem>
+                <SelectItem value="Complete">Complete</SelectItem>
+                <SelectItem value="Inactive">Inactive</SelectItem>
+                <SelectItem value="Cancelled">Cancelled</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-xs">Service</TableHead>
+                <TableHead className="text-xs">Name</TableHead>
+                <TableHead className="text-xs">Status</TableHead>
+                <TableHead className="text-xs">Adviser</TableHead>
+                <TableHead className="text-xs">End Date</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paginatedWorkflows.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                    No workflows found.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                paginatedWorkflows.map(w => (
+                  <TableRow key={w.id}>
+                    <TableCell className="text-sm">{w.service}</TableCell>
+                    <TableCell className="text-sm font-medium">{w.name}</TableCell>
+                    <TableCell className="text-sm">
+                      <span className={`px-2 py-1 rounded text-xs ${statusBadgeColors[w.status] || "bg-muted text-muted-foreground"}`}>
+                        {w.status}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-sm">{w.adviser}</TableCell>
+                    <TableCell className="text-sm">{w.endDate}</TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+          <div className="flex items-center justify-between px-4 py-3 border-t">
+            <span className="text-sm text-muted-foreground">{filteredWorkflows.length} items, page {workflowPage} of {workflowPages}</span>
+            <div className="flex items-center gap-1">
+              <Button variant="outline" size="icon" className="h-8 w-8" disabled={workflowPage === 1} onClick={() => setWorkflowPage(1)}>
+                <ChevronFirst className="w-4 h-4" />
+              </Button>
+              <Button variant="outline" size="icon" className="h-8 w-8" disabled={workflowPage === 1} onClick={() => setWorkflowPage(p => p - 1)}>
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              <Button variant="outline" size="icon" className="h-8 w-8" disabled={workflowPage >= workflowPages} onClick={() => setWorkflowPage(p => p + 1)}>
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+              <Button variant="outline" size="icon" className="h-8 w-8" disabled={workflowPage >= workflowPages} onClick={() => setWorkflowPage(workflowPages)}>
+                <ChevronLast className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Advice Workflows */}
       <Card>
