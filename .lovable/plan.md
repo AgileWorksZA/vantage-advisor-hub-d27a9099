@@ -1,35 +1,70 @@
 
 
-## Simplify Client Workflows Tab
+## Auto-Select, Grouped Contracts, Status Dots, and Family Tree Widget Fix
 
-Remove the Kanban view and Dashboard/Kanban/Overview tab switcher. Combine the dashboard stat cards with the overview table into a single, unified screen.
+### 1. Auto-Select All Persons on Page Load (and Show Filter Tags)
+Currently, the `useEffect` auto-selects ALL filters (members + contracts) only when `selectedFilters` is empty. Change this to always auto-select all persons on mount, regardless of contract selection. The filter tags already render for selected members -- no change needed there.
 
-### Changes
+**File: `src/components/client-detail/ClientDashboardTab.tsx`**
+- Update the `useEffect` (line 380-385) to always set all member values on initial load, plus all contracts
 
-**File: `src/components/client-detail/ClientWorkflowsTab.tsx`**
+### 2. Group Contracts Per Household Member in Dropdown
+Instead of a flat "Contracts" group, nest contracts under each household member. The main client gets their contracts, and each family member/business gets a sub-group. Since we don't have real per-member contract mapping, assign all contracts to the main client and show "(No contracts)" for other members.
 
-1. Remove the `Tabs`/`TabsList`/`TabsTrigger` view switcher and the `activeView` state
-2. Remove the Kanban view block (`activeView === "kanban"`) and the `ClientWorkflowKanban` import
-3. Remove the full Dashboard view block (`activeView === "dashboard"`) and the `ClientWorkflowDashboard` import
-4. Remove the `Kanban` icon import from lucide
-5. Extract just the stat cards row (Total Open, Due Today, Overdue, Completed) from `ClientWorkflowDashboard` and render them inline at the top -- reusing the same stats computation logic directly in this component
-6. Below the stat cards, render the existing overview table (search, status filter, paginated table) exactly as-is
-7. Below that, keep the Advice Workflows card unchanged
-8. The "New Workflow" button stays in the header row (no longer next to tabs, just top-right)
+**File: `src/components/client-detail/ClientDashboardTab.tsx`**
+- Restructure `filterGroups` to create one group per person: "John Smith (Main)" with their contracts nested as sub-options, then "Jane Smith (Spouse)" with their contracts, etc.
+- The main client gets all current contracts as sub-items
+- Each member group header shows the person with a User icon
 
-**Result layout:**
-```
-[New Workflow button right-aligned]
-[Total Open] [Due Today] [Overdue] [Completed]   <-- stat cards
-[Search... | Status filter]                        <-- overview filters
-[Workflows table with pagination]                  <-- overview table
-[Advice Workflows card]                            <-- unchanged
-```
+### 3. Add Status Dot Next to Each Member in the Dropdown
+Add a colored status indicator (green dot for active, amber for attention) next to each household member option in the multi-select dropdown.
+
+**File: `src/components/client-detail/ClientDashboardTab.tsx`**
+- Update the member options' `icon` prop to include a status dot (a small colored circle span) alongside the User icon
+- Use the same logic as FamilyTreeWidget: every 3rd member gets "attention" status
+
+### 4. Fix Family Tree Widget Sizing
+The widget's SVG connecting lines and node layout don't scale well within the grid. Fix overflow and sizing issues.
+
+**File: `src/components/client-detail/FamilyTreeWidget.tsx`**
+- Add `overflow-hidden` to the Card
+- Constrain the SVG viewBox and make it responsive with `overflow-visible` removed
+- Reduce node spacing from `gap-4` to `gap-3` for tighter fit
+- Add `min-h-0` and `overflow-auto` to CardContent so content scrolls if it overflows the widget bounds
+- Reduce main avatar from 48px to 44px and member avatars from 40px to 36px for better fit in smaller widget cells
 
 ### Technical Details
 
-- Import `ListTodo`, `Clock`, `AlertTriangle`, `CheckCircle2` from lucide for the stat card icons
-- Copy the `stats` computation logic (useMemo) from `ClientWorkflowDashboard` into `ClientWorkflowsTab` -- counts for open, dueToday, overdue, completed using `isBefore`, `startOfDay`, `format` from date-fns
-- Render 4 stat `Card` components in a `grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4` grid matching the existing dashboard style
-- No changes needed to hooks or other files
+**Grouped filter structure (per member with their contracts):**
+```typescript
+const filterGroups = [
+  {
+    label: "John Smith (Main)",
+    options: [
+      { value: "member:main", label: "John Smith", icon: <UserWithDot status="active" /> },
+      { value: "contract:on-0", label: "Allan Gray Equity", icon: <Briefcase />, subtitle: "R 850,000" },
+      { value: "contract:ext-0", label: "External Fund", icon: <Briefcase />, subtitle: "R 200,000" },
+    ]
+  },
+  {
+    label: "Jane Smith (Spouse)",
+    options: [
+      { value: "member:abc123", label: "Jane Smith", icon: <UserWithDot status="active" /> },
+    ]
+  },
+]
+```
 
+**Status dot in dropdown icon:**
+```tsx
+icon: (
+  <span className="relative">
+    <User className="w-3.5 h-3.5 text-muted-foreground" />
+    <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 border border-background" />
+  </span>
+)
+```
+
+**Files to edit:**
+- `src/components/client-detail/ClientDashboardTab.tsx` -- restructure filterGroups, auto-select, status dots
+- `src/components/client-detail/FamilyTreeWidget.tsx` -- fix sizing/overflow
