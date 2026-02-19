@@ -1,52 +1,22 @@
 
 
-## Align Advisor Dashboard with Client Dashboard Effects
+## Revert Widget Heights on Advisor Dashboard
 
-### Goal
-Apply the same visual enhancements (taller widgets, increased row height, hover shadows) that were added to the Client Dashboard to the Advisor Dashboard for a consistent look.
+### What will change
 
-### Changes
+Restore the top-row widgets (`provider-view`, `aum-product`, `top-accounts`) back to their original height of `h: 3` (from `h: 4`), and adjust the `y` offsets for subsequent rows accordingly. Also revert `rowHeight` from `130` back to the default `120`.
 
-#### 1. Increase widget heights for chart/table widgets
-
-**File: `src/pages/Dashboard.tsx`**
-
-Update `defaultDashboardLayout` to give the top row (data-heavy widgets with charts and tables) more vertical space:
-
-```
-Row 0: provider-view (h:4), aum-product (h:4), top-accounts (h:4)
-Row 1: birthdays (h:3, y:4), clients-value (h:3, y:4), corporate-actions (h:3, y:4)
-Row 2: onboarding-progress (h:3, y:7), client-opportunity-status (h:3, y:7), portfolio-analysis (h:3, y:7)
-```
-
-The top row widgets (Provider View, AUM by Product, Top 5 Accounts) contain tables/charts that benefit from extra height. The bottom two rows (birthdays, corporate actions, onboarding, etc.) stay compact at h:3.
-
-#### 2. Increase grid row height
+### Technical details
 
 **File: `src/pages/Dashboard.tsx`**
 
-Pass `rowHeight={130}` to the `DraggableWidgetGrid` component (matching the Client Dashboard).
+1. Update `defaultDashboardLayout` (lines 58-68):
+   - Row 0: `h: 4` -> `h: 3` for all three top widgets
+   - Row 1: `y: 4` -> `y: 3` for birthdays, clients-value, corporate-actions
+   - Row 2: `y: 7` -> `y: 6` for onboarding-progress, client-opportunity-status, portfolio-analysis
 
-#### 3. Add hover interaction to all widget cards
+2. Revert `rowHeight` (line 325):
+   - Change `rowHeight={130}` back to `rowHeight={120}`
 
-**File: `src/pages/Dashboard.tsx`**
+Note: The hover effects (`transition-shadow hover:shadow-md`) and grid margin (20px) will remain as they enhance interactivity without affecting widget sizing.
 
-Update all 7 inline `Card className="h-full"` occurrences to `Card className="h-full transition-shadow hover:shadow-md"`.
-
-**Files: `src/components/dashboard/OnboardingProgressWidget.tsx`, `ClientOpportunityStatusWidget.tsx`, `PortfolioAnalysisWidget.tsx`**
-
-Update the `Card className="h-full"` in each sub-widget component to include `transition-shadow hover:shadow-md`.
-
-Note: The grid margin (`GRID_MARGIN = 20`) was already updated in the previous change to `DraggableWidgetGrid.tsx`, so no change needed there.
-
-### Summary of visual impact
-- Top-row widgets (Provider View, AUM by Product, Top Accounts) become taller and more prominent
-- Wider vertical spacing between all rows for a cleaner feel
-- Hover shadow on all widgets adds interactivity cues
-- Consistent look between Advisor and Client dashboards
-
-### Files to Edit
-- `src/pages/Dashboard.tsx` -- layout heights, rowHeight prop, hover classes on 7 inline Cards
-- `src/components/dashboard/OnboardingProgressWidget.tsx` -- hover class
-- `src/components/dashboard/ClientOpportunityStatusWidget.tsx` -- hover class
-- `src/components/dashboard/PortfolioAnalysisWidget.tsx` -- hover class
