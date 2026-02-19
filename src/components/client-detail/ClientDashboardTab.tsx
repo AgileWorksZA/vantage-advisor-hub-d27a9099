@@ -43,20 +43,20 @@ interface ClientDashboardTabProps {
 
 // --- Widget layout config ---
 const defaultClientDashboardLayout: WidgetLayout[] = [
-  { i: 'portfolio-overview', x: 0, y: 0, w: 3, h: 4 },
-  { i: 'valuation-change', x: 3, y: 0, w: 3, h: 4 },
-  { i: 'geo-diversification', x: 6, y: 0, w: 3, h: 4 },
-  { i: 'family-tree', x: 0, y: 4, w: 3, h: 4 },
-  { i: 'top-opportunities', x: 3, y: 4, w: 3, h: 4 },
-  { i: 'opp-breakdown', x: 6, y: 4, w: 3, h: 4 },
-  { i: 'opp-value-summary', x: 0, y: 8, w: 3, h: 3 },
-  { i: 'action-priority', x: 3, y: 8, w: 3, h: 3 },
-  { i: 'key-dates', x: 6, y: 8, w: 3, h: 3 },
-  { i: 'advisor-accounts', x: 0, y: 11, w: 3, h: 3 },
-  { i: 'outstanding-docs', x: 3, y: 11, w: 3, h: 3 },
-  { i: 'client-portfolio', x: 6, y: 11, w: 3, h: 3 },
-  { i: 'household-overview', x: 0, y: 14, w: 3, h: 3 },
-  { i: 'onboarding-kyc', x: 3, y: 14, w: 3, h: 3 },
+  { i: 'portfolio-overview', x: 0, y: 0, w: 3, h: 3 },
+  { i: 'valuation-change', x: 3, y: 0, w: 3, h: 3 },
+  { i: 'geo-diversification', x: 6, y: 0, w: 3, h: 3 },
+  { i: 'family-tree', x: 0, y: 3, w: 3, h: 3 },
+  { i: 'top-opportunities', x: 3, y: 3, w: 3, h: 3 },
+  { i: 'opp-breakdown', x: 6, y: 3, w: 3, h: 3 },
+  { i: 'opp-value-summary', x: 0, y: 6, w: 3, h: 3 },
+  { i: 'action-priority', x: 3, y: 6, w: 3, h: 3 },
+  { i: 'key-dates', x: 6, y: 6, w: 3, h: 3 },
+  { i: 'advisor-accounts', x: 0, y: 9, w: 3, h: 3 },
+  { i: 'outstanding-docs', x: 3, y: 9, w: 3, h: 3 },
+  { i: 'client-portfolio', x: 6, y: 9, w: 3, h: 3 },
+  { i: 'household-overview', x: 0, y: 12, w: 3, h: 3 },
+  { i: 'onboarding-kyc', x: 3, y: 12, w: 3, h: 3 },
 ];
 
 const CLIENT_DASHBOARD_WIDGETS: WidgetConfig[] = [
@@ -601,7 +601,7 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
           ))}
         </div>
       ) : (
-      <DraggableWidgetGrid layout={visibleLayout} onLayoutChange={onLayoutChange} rowHeight={130}>
+      <DraggableWidgetGrid layout={visibleLayout} onLayoutChange={onLayoutChange}>
         {/* Portfolio Overview */}
         {isWidgetVisible('portfolio-overview') && (
           <div key="portfolio-overview">
