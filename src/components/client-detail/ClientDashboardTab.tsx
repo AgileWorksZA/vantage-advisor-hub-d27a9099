@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { EChartsWrapper } from "@/components/ui/echarts-wrapper";
-import { MultiSelect } from "@/components/ui/multi-select";
+import { MultiSelect, MultiSelectGroup } from "@/components/ui/multi-select";
+import FamilyTreeWidget from "./FamilyTreeWidget";
 import { generateClient360Data, mapNationalityToJurisdiction, formatTotal } from "@/data/regional360ViewData";
 import { useClientRelationships } from "@/hooks/useClientRelationships";
 import { Client, calculateAge, formatBirthday } from "@/types/client";
@@ -44,19 +45,21 @@ const defaultClientDashboardLayout: WidgetLayout[] = [
   { i: 'portfolio-overview', x: 0, y: 0, w: 3, h: 3 },
   { i: 'valuation-change', x: 3, y: 0, w: 3, h: 3 },
   { i: 'geo-diversification', x: 6, y: 0, w: 3, h: 3 },
-  { i: 'top-opportunities', x: 0, y: 3, w: 3, h: 3 },
-  { i: 'opp-breakdown', x: 3, y: 3, w: 3, h: 3 },
-  { i: 'opp-value-summary', x: 6, y: 3, w: 3, h: 3 },
-  { i: 'action-priority', x: 0, y: 6, w: 3, h: 3 },
-  { i: 'key-dates', x: 3, y: 6, w: 3, h: 3 },
-  { i: 'advisor-accounts', x: 6, y: 6, w: 3, h: 3 },
-  { i: 'outstanding-docs', x: 0, y: 9, w: 3, h: 3 },
+  { i: 'family-tree', x: 0, y: 3, w: 3, h: 3 },
+  { i: 'top-opportunities', x: 3, y: 3, w: 3, h: 3 },
+  { i: 'opp-breakdown', x: 6, y: 3, w: 3, h: 3 },
+  { i: 'opp-value-summary', x: 0, y: 6, w: 3, h: 3 },
+  { i: 'action-priority', x: 3, y: 6, w: 3, h: 3 },
+  { i: 'key-dates', x: 6, y: 6, w: 3, h: 3 },
+  { i: 'advisor-accounts', x: 0, y: 9, w: 3, h: 3 },
+  { i: 'outstanding-docs', x: 3, y: 9, w: 3, h: 3 },
 ];
 
 const CLIENT_DASHBOARD_WIDGETS: WidgetConfig[] = [
   { id: 'portfolio-overview', label: 'Portfolio Overview' },
   { id: 'valuation-change', label: 'Change in Valuation' },
   { id: 'geo-diversification', label: 'Geographic Diversification' },
+  { id: 'family-tree', label: 'Family & Relationships' },
   { id: 'top-opportunities', label: 'Top Opportunities' },
   { id: 'opp-breakdown', label: 'Opportunity Breakdown' },
   { id: 'opp-value-summary', label: 'Opportunity Value Summary' },
@@ -123,8 +126,7 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
   const { selectedRegion } = useRegion();
   const { familyMembers, businesses, refetch } = useClientRelationships(clientId);
   const [addMemberOpen, setAddMemberOpen] = useState(false);
-  const [selectedContracts, setSelectedContracts] = useState<string[]>([]);
-  const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
+  const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
 
   // Widget layout persistence
   const { layout, onLayoutChange, hiddenWidgets, setHiddenWidgets, loading: layoutLoading } = useWidgetLayout({
@@ -348,13 +350,21 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
     }],
   }), [opportunityBreakdown, currencySymbol]);
 
-  // Contract multi-select options
-  const contractOptions = useMemo(() =>
-    allContracts.map(c => ({ value: c.id, label: `${c.name} (${c.category})` })), [allContracts]);
+  // Combined grouped options for unified multi-select
+  const filterGroups: MultiSelectGroup[] = useMemo(() => [
+    {
+      label: "Household Members",
+      options: householdMembers.map(m => ({ value: `member:${m.id}`, label: `${m.name} (${m.type})` })),
+    },
+    {
+      label: "Contracts",
+      options: allContracts.map(c => ({ value: `contract:${c.id}`, label: `${c.name} (${c.category})` })),
+    },
+  ], [householdMembers, allContracts]);
 
-  // Household multi-select options
-  const memberOptions = useMemo(() =>
-    householdMembers.map(m => ({ value: m.id, label: `${m.name} (${m.type})` })), [householdMembers]);
+  // Total asset value for family tree widget
+  const totalAssetValue = useMemo(() =>
+    allContracts.reduce((s, c) => s + c.value, 0), [allContracts]);
 
   // Priority groups
   const priorityGroups = useMemo(() => ({
@@ -373,23 +383,16 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
       {/* Toolbar with multi-select dropdowns + settings gear */}
       <div className="flex items-center gap-3 flex-wrap">
         <MultiSelect
-          options={contractOptions}
-          selected={selectedContracts}
-          onChange={setSelectedContracts}
-          placeholder="Contracts"
+          groups={filterGroups}
+          selected={selectedFilters}
+          onChange={setSelectedFilters}
+          placeholder="Filter"
           className="min-w-[220px]"
         />
-        <MultiSelect
-          options={memberOptions}
-          selected={selectedMembers}
-          onChange={setSelectedMembers}
-          placeholder="Household Members"
-          className="min-w-[220px]"
-        />
-        <Button variant="outline" size="sm" className="h-10 text-xs gap-1" onClick={() => setAddMemberOpen(true)}>
-          <Users className="h-3.5 w-3.5" /> Add Member
-        </Button>
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-2">
+          <Button variant="outline" size="sm" className="h-10 text-xs gap-1" onClick={() => setAddMemberOpen(true)}>
+            <Users className="h-3.5 w-3.5" /> Add Member
+          </Button>
           <WidgetSettingsDialog widgets={CLIENT_DASHBOARD_WIDGETS} hiddenWidgets={hiddenWidgets} onToggleWidget={handleToggleWidget} />
         </div>
       </div>
@@ -416,6 +419,20 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
             <PortfolioAnalysisWidget
               region={selectedRegion}
               onClose={() => handleToggleWidget('portfolio-overview', false)}
+            />
+          </div>
+        )}
+
+        {/* Family Tree */}
+        {isWidgetVisible('family-tree') && (
+          <div key="family-tree">
+            <FamilyTreeWidget
+              client={client}
+              familyMembers={familyMembers}
+              businesses={businesses}
+              totalAssetValue={totalAssetValue}
+              currencySymbol={currencySymbol}
+              onClose={() => handleToggleWidget('family-tree', false)}
             />
           </div>
         )}
