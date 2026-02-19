@@ -53,10 +53,10 @@ const defaultClientDashboardLayout: WidgetLayout[] = [
   { i: 'action-priority', x: 3, y: 6, w: 3, h: 3 },
   { i: 'key-dates', x: 6, y: 6, w: 3, h: 3 },
   { i: 'advisor-accounts', x: 0, y: 9, w: 3, h: 3 },
-  { i: 'outstanding-docs', x: 3, y: 9, w: 3, h: 4 },
-  { i: 'client-portfolio', x: 6, y: 9, w: 3, h: 4 },
-  { i: 'household-overview', x: 0, y: 13, w: 3, h: 4 },
-  { i: 'onboarding-kyc', x: 3, y: 13, w: 3, h: 4 },
+  { i: 'outstanding-docs', x: 3, y: 9, w: 3, h: 3 },
+  { i: 'client-portfolio', x: 6, y: 9, w: 3, h: 3 },
+  { i: 'household-overview', x: 0, y: 12, w: 3, h: 3 },
+  { i: 'onboarding-kyc', x: 3, y: 12, w: 3, h: 3 },
 ];
 
 const CLIENT_DASHBOARD_WIDGETS: WidgetConfig[] = [
@@ -129,6 +129,9 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
   const { selectedRegion } = useRegion();
   const { familyMembers, businesses, refetch } = useClientRelationships(clientId);
   const [addMemberOpen, setAddMemberOpen] = useState(false);
+  const [showAllDocs, setShowAllDocs] = useState(false);
+  const [showAllPortfolio, setShowAllPortfolio] = useState(false);
+  const [showAllHousehold, setShowAllHousehold] = useState(false);
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
 
   // Widget layout persistence
@@ -1009,8 +1012,8 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
                 </div>
               </CardHeader>
               <CardContent className="px-4 pb-4">
-                <div className="space-y-0 max-h-[260px] overflow-auto">
-                  {regionalDocs.map((doc, index) => {
+                <div className="space-y-0">
+                  {(showAllDocs ? regionalDocs : regionalDocs.slice(0, 3)).map((doc, index) => {
                     const statusDotColor = doc.status === "Overdue"
                       ? "bg-destructive"
                       : doc.status === "Due Soon"
@@ -1036,6 +1039,11 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
                     );
                   })}
                 </div>
+                {regionalDocs.length > 3 && (
+                  <Button variant="link" className="p-0 h-auto text-xs" onClick={() => setShowAllDocs(!showAllDocs)}>
+                    {showAllDocs ? "Show less" : `Show ${regionalDocs.length - 3} more`}
+                  </Button>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -1053,7 +1061,7 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
                 </div>
                 <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleToggleWidget('client-portfolio', false)}><X className="w-4 h-4" /></Button>
               </CardHeader>
-              <CardContent className="pt-0 space-y-3">
+              <CardContent className="pt-0 space-y-2">
                 <div className="flex items-start gap-3">
                   <div className="w-[80px] h-[80px] shrink-0">
                     <EChartsWrapper
@@ -1087,8 +1095,8 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
                     </span>
                   </div>
                 </div>
-                <div className="space-y-1 max-h-[140px] overflow-auto">
-                  {portfolioProducts.map((p, i) => (
+                <div className="space-y-1">
+                  {(showAllPortfolio ? portfolioProducts : portfolioProducts.slice(0, 3)).map((p, i) => (
                     <div key={i} className="flex items-center gap-2 py-1 border-b border-border/30 last:border-0">
                       <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: p.color }} />
                       <span className="text-xs flex-1 truncate">{p.name}</span>
@@ -1100,6 +1108,11 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
                     </div>
                   ))}
                 </div>
+                {portfolioProducts.length > 3 && (
+                  <Button variant="link" className="p-0 h-auto text-xs" onClick={() => setShowAllPortfolio(!showAllPortfolio)}>
+                    {showAllPortfolio ? "Show less" : `Show ${portfolioProducts.length - 3} more`}
+                  </Button>
+                )}
                 <Button variant="link" className="p-0 h-auto text-xs text-primary" onClick={() => onTabChange?.("portfolio")}>
                   View full portfolio <ArrowRight className="h-3 w-3 ml-1" />
                 </Button>
@@ -1120,7 +1133,7 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
                 </div>
                 <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleToggleWidget('household-overview', false)}><X className="w-4 h-4" /></Button>
               </CardHeader>
-              <CardContent className="pt-0 space-y-3">
+              <CardContent className="pt-0 space-y-2">
                 <div className="flex items-start gap-3">
                   <div className="w-[80px] h-[80px] shrink-0">
                     <EChartsWrapper
@@ -1145,8 +1158,8 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
                     </div>
                   </div>
                 </div>
-                <div className="space-y-1 max-h-[140px] overflow-auto">
-                  {householdValues.map((m, i) => (
+                <div className="space-y-1">
+                  {(showAllHousehold ? householdValues : householdValues.slice(0, 3)).map((m, i) => (
                     <div
                       key={i}
                       className={`flex items-center gap-2 py-1 border-b border-border/30 last:border-0 ${m.relatedClientId ? 'cursor-pointer hover:bg-muted/50 rounded' : ''}`}
@@ -1165,6 +1178,11 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
                     </div>
                   ))}
                 </div>
+                {householdValues.length > 3 && (
+                  <Button variant="link" className="p-0 h-auto text-xs" onClick={() => setShowAllHousehold(!showAllHousehold)}>
+                    {showAllHousehold ? "Show less" : `Show ${householdValues.length - 3} more`}
+                  </Button>
+                )}
                 <Button variant="outline" size="sm" className="w-full text-xs gap-1" onClick={() => setAddMemberOpen(true)}>
                   <UserPlus className="h-3.5 w-3.5" /> Add Member, Company or Trust
                 </Button>
@@ -1185,9 +1203,9 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
                 </div>
                 <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleToggleWidget('onboarding-kyc', false)}><X className="w-4 h-4" /></Button>
               </CardHeader>
-              <CardContent className="pt-0 space-y-3">
+              <CardContent className="pt-0 space-y-2">
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider">KYC/AML Verification</p>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-2 p-3 rounded-lg bg-muted/50">
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 p-2 rounded-lg bg-muted/50">
                   <div>
                     <p className="text-[10px] text-muted-foreground">Full Name</p>
                     <p className="text-xs font-medium">{onboardingStatus.fullName}</p>
@@ -1205,7 +1223,7 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
                     <p className="text-xs font-medium font-mono">{onboardingStatus.phone}</p>
                   </div>
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   {onboardingStatus.checks.map((check, i) => (
                     <div key={i} className="flex items-center gap-2">
                       <CircleCheckBig className="h-4 w-4 text-emerald-600 shrink-0" />
