@@ -56,15 +56,15 @@ const sidebarItems = [{
 }];
 
 const defaultDashboardLayout: WidgetLayout[] = [
-  { i: 'provider-view', x: 0, y: 0, w: 3, h: 4 },
-  { i: 'aum-product', x: 3, y: 0, w: 3, h: 4 },
-  { i: 'top-accounts', x: 6, y: 0, w: 3, h: 4 },
-  { i: 'birthdays', x: 0, y: 4, w: 3, h: 3 },
-  { i: 'clients-value', x: 3, y: 4, w: 3, h: 3 },
-  { i: 'corporate-actions', x: 6, y: 4, w: 3, h: 3 },
-  { i: 'onboarding-progress', x: 0, y: 7, w: 3, h: 3 },
-  { i: 'client-opportunity-status', x: 3, y: 7, w: 3, h: 3 },
-  { i: 'portfolio-analysis', x: 6, y: 7, w: 3, h: 3 },
+  { i: 'provider-view', x: 0, y: 0, w: 3, h: 3 },
+  { i: 'aum-product', x: 3, y: 0, w: 3, h: 3 },
+  { i: 'top-accounts', x: 6, y: 0, w: 3, h: 3 },
+  { i: 'birthdays', x: 0, y: 3, w: 3, h: 3 },
+  { i: 'clients-value', x: 3, y: 3, w: 3, h: 3 },
+  { i: 'corporate-actions', x: 6, y: 3, w: 3, h: 3 },
+  { i: 'onboarding-progress', x: 0, y: 6, w: 3, h: 3 },
+  { i: 'client-opportunity-status', x: 3, y: 6, w: 3, h: 3 },
+  { i: 'portfolio-analysis', x: 6, y: 6, w: 3, h: 3 },
 ];
 
 const DASHBOARD_WIDGETS: WidgetConfig[] = [
@@ -322,7 +322,7 @@ const Dashboard = () => {
               ))}
             </div>
           ) : (
-          <DraggableWidgetGrid layout={visibleLayout} onLayoutChange={onLayoutChange} rowHeight={130}>
+          <DraggableWidgetGrid layout={visibleLayout} onLayoutChange={onLayoutChange}>
             {/* Provider View */}
             {isWidgetVisible('provider-view') && <div key="provider-view">
               <Card className="h-full transition-shadow hover:shadow-md">
