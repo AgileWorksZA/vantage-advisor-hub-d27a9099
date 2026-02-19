@@ -15,8 +15,15 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-interface MultiSelectProps {
+
+export interface MultiSelectGroup {
+  label: string;
   options: { value: string; label: string }[];
+}
+
+interface MultiSelectProps {
+  options?: { value: string; label: string }[];
+  groups?: MultiSelectGroup[];
   selected: string[];
   onChange: (selected: string[]) => void;
   placeholder?: string;
@@ -25,6 +32,7 @@ interface MultiSelectProps {
 
 export function MultiSelect({
   options,
+  groups,
   selected,
   onChange,
   placeholder = "Select...",
@@ -40,6 +48,11 @@ export function MultiSelect({
     }
   };
 
+  // Total option count for "all" display
+  const allOptions = groups
+    ? groups.flatMap(g => g.options)
+    : options || [];
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -51,7 +64,7 @@ export function MultiSelect({
         >
           {selected.length === 0 ? (
             <span className="text-muted-foreground">{placeholder}</span>
-          ) : selected.length === options.length ? (
+          ) : selected.length === allOptions.length ? (
             <span>{placeholder} (all)</span>
           ) : (
             <span>{placeholder} ({selected.length})</span>
@@ -59,28 +72,50 @@ export function MultiSelect({
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[250px] p-0 bg-popover z-50" align="start">
+      <PopoverContent className="w-[280px] p-0 bg-popover z-50" align="start">
         <Command>
           <CommandInput placeholder="Search..." />
           <CommandList className="max-h-[300px]">
             <CommandEmpty>No results found.</CommandEmpty>
-            <CommandGroup>
-              {options.map((option) => (
-                <CommandItem
-                  key={option.value}
-                  value={option.value}
-                  onSelect={() => handleSelect(option.value)}
-                >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      selected.includes(option.value) ? "opacity-100" : "opacity-0"
-                    )}
-                  />
-                  {option.label}
-                </CommandItem>
-              ))}
-            </CommandGroup>
+            {groups ? (
+              groups.map((group) => (
+                <CommandGroup key={group.label} heading={group.label}>
+                  {group.options.map((option) => (
+                    <CommandItem
+                      key={option.value}
+                      value={option.value}
+                      onSelect={() => handleSelect(option.value)}
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          selected.includes(option.value) ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      {option.label}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              ))
+            ) : (
+              <CommandGroup>
+                {(options || []).map((option) => (
+                  <CommandItem
+                    key={option.value}
+                    value={option.value}
+                    onSelect={() => handleSelect(option.value)}
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        selected.includes(option.value) ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    {option.label}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
           </CommandList>
         </Command>
       </PopoverContent>
