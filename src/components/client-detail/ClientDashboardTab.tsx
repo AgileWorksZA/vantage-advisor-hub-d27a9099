@@ -19,7 +19,7 @@ import {
   Calendar, Gift, FileCheck, TrendingUp, TrendingDown, ArrowRight,
   Users, AlertTriangle, Clock, CheckCircle2, Target, Zap,
   ArrowRightLeft, Layers, Building2, Briefcase, Landmark, Receipt, Banknote,
-  GripVertical, X, User,
+  GripVertical, X, User, Shield, Phone, Mail, CircleCheckBig, UserPlus,
 } from "lucide-react";
 import {
   Table,
@@ -53,6 +53,9 @@ const defaultClientDashboardLayout: WidgetLayout[] = [
   { i: 'key-dates', x: 6, y: 6, w: 3, h: 3 },
   { i: 'advisor-accounts', x: 0, y: 9, w: 3, h: 3 },
   { i: 'outstanding-docs', x: 3, y: 9, w: 3, h: 3 },
+  { i: 'client-portfolio', x: 6, y: 9, w: 3, h: 3 },
+  { i: 'household-overview', x: 0, y: 12, w: 3, h: 3 },
+  { i: 'onboarding-kyc', x: 3, y: 12, w: 3, h: 3 },
 ];
 
 const CLIENT_DASHBOARD_WIDGETS: WidgetConfig[] = [
@@ -67,6 +70,9 @@ const CLIENT_DASHBOARD_WIDGETS: WidgetConfig[] = [
   { id: 'key-dates', label: 'Key Dates & Milestones' },
   { id: 'advisor-accounts', label: 'Current Advisor & Accounts' },
   { id: 'outstanding-docs', label: 'Outstanding Documents' },
+  { id: 'client-portfolio', label: 'Client Portfolio' },
+  { id: 'household-overview', label: 'Household' },
+  { id: 'onboarding-kyc', label: 'Onboarding' },
 ];
 
 const advisorData = [
@@ -451,6 +457,95 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
     const d = new Date(dateStr);
     return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
   };
+
+  // --- Client Portfolio widget data ---
+  const portfolioProducts = useMemo(() => {
+    const rand = seededRandom(clientId + "-portfolio-products");
+    const colors = ["hsl(180, 70%, 45%)", "hsl(210, 60%, 55%)", "hsl(30, 70%, 55%)", "hsl(150, 50%, 45%)", "hsl(260, 50%, 55%)"];
+    const products = [
+      ...clientData.onPlatformProducts.map(p => ({ name: p.product, value: p.amountValue })),
+      ...clientData.externalProducts.map(p => ({ name: p.product, value: p.amountValue })),
+    ].sort((a, b) => b.value - a.value).slice(0, 5);
+    return products.map((p, i) => ({
+      ...p,
+      color: colors[i % colors.length],
+      growth: +(2 + rand() * 12 - 3).toFixed(1),
+      sparkData: Array.from({ length: 6 }, () => p.value * (0.9 + rand() * 0.2)),
+    }));
+  }, [clientId, clientData]);
+
+  const portfolioTotal = useMemo(() => valuationData.endingValue, [valuationData]);
+  const portfolioMonthlyChange = useMemo(() => {
+    const rand = seededRandom(clientId + "-monthly");
+    return +(1.5 + rand() * 3).toFixed(1);
+  }, [clientId]);
+
+  // --- Household widget data ---
+  const householdValues = useMemo(() => {
+    const rand = seededRandom(clientId + "-household-values");
+    const clientName = `${client.first_name} ${client.surname || ""}`.trim();
+    const total = portfolioTotal;
+    const colors = ["hsl(180, 70%, 45%)", "hsl(210, 60%, 55%)", "hsl(30, 70%, 55%)", "hsl(150, 50%, 45%)", "hsl(260, 50%, 55%)"];
+    const members = [
+      { name: clientName, role: "Primary", relatedClientId: null as string | null },
+      ...householdMembers.slice(0, 4).map(m => ({ name: m.name, role: m.type === "Spouse" ? "Spouse" : m.type === "Child" ? "Child" : m.type, relatedClientId: m.relatedClientId || null })),
+    ];
+    const shares = members.map(() => rand());
+    const shareTotal = shares.reduce((s, v) => s + v, 0);
+    return members.map((m, i) => {
+      const value = Math.round((shares[i] / shareTotal) * total);
+      return {
+        ...m,
+        value,
+        color: colors[i % colors.length],
+        growth: +(2 + rand() * 10 - 2).toFixed(1),
+        sparkData: Array.from({ length: 6 }, () => value * (0.9 + rand() * 0.2)),
+      };
+    });
+  }, [clientId, client.first_name, client.surname, householdMembers, portfolioTotal]);
+
+  const householdTotal = useMemo(() => householdValues.reduce((s, m) => s + m.value, 0), [householdValues]);
+  const householdYtdGrowth = useMemo(() => {
+    const rand = seededRandom(clientId + "-hh-ytd");
+    return +(3 + rand() * 6).toFixed(1);
+  }, [clientId]);
+
+  // --- Onboarding widget data ---
+  const onboardingStatus = useMemo(() => {
+    const masked = (str: string | null | undefined, showLast = 4) => {
+      if (!str) return "••••••••";
+      return "••••" + str.slice(-showLast);
+    };
+    const truncEmail = (email: string | null | undefined) => {
+      if (!email) return "••••@••••";
+      const [local, domain] = email.split("@");
+      return (local.length > 3 ? local.slice(0, 3) + "•••" : local) + "@" + domain;
+    };
+    return {
+      fullName: `${client.first_name} ${client.surname || ""}`.trim(),
+      idNumber: masked(client.id_number),
+      email: truncEmail(client.email),
+      phone: masked(client.cell_number),
+      checks: [
+        { label: "ID Number Verification", subtitle: "FICA Compliant", passed: true },
+        { label: "Address Verification", subtitle: "Proof of Residence", passed: true },
+        { label: "Bank Account Verification", subtitle: "Account Confirmed", passed: true },
+      ],
+    };
+  }, [client]);
+
+  // Sparkline helper for new widgets
+  const renderSparkline = useCallback((data: number[], positive: boolean, width = 48, height = 16) => {
+    const max = Math.max(...data);
+    const min = Math.min(...data);
+    const range = max - min || 1;
+    const points = data.map((v, i) => `${(i * width) / (data.length - 1)},${height - ((v - min) / range) * height}`).join(" ");
+    return (
+      <svg width={width} height={height} className="shrink-0">
+        <polyline points={points} fill="none" stroke={positive ? "hsl(152, 60%, 45%)" : "hsl(0, 70%, 55%)"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  }, []);
 
   return (
     <div className="space-y-4">
@@ -919,6 +1014,190 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
                     ))}
                   </TableBody>
                 </Table>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Client Portfolio */}
+        {isWidgetVisible('client-portfolio') && (
+          <div key="client-portfolio">
+            <Card className="h-full">
+              <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
+                <div className="flex items-center gap-2">
+                  <GripVertical className="w-4 h-4 text-muted-foreground" />
+                  <CardTitle className="text-sm font-medium">Client Portfolio</CardTitle>
+                </div>
+                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleToggleWidget('client-portfolio', false)}><X className="w-4 h-4" /></Button>
+              </CardHeader>
+              <CardContent className="pt-0 space-y-3">
+                <div className="flex items-start gap-3">
+                  <div className="w-[80px] h-[80px] shrink-0">
+                    <EChartsWrapper
+                      option={{
+                        series: [{
+                          type: "pie" as const, radius: ["55%", "80%"], center: ["50%", "50%"],
+                          data: assetAllocation.map((a, i) => ({ name: a.name, value: a.value, itemStyle: { color: chartColors[i % chartColors.length] } })),
+                          label: { show: false }, silent: true,
+                        }],
+                        tooltip: { show: false },
+                      }}
+                      height={80}
+                      transparent={false}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Total Value</p>
+                    <p className="text-xl font-bold">{formatTotal(portfolioTotal, currencySymbol)}</p>
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <TrendingUp className="h-3 w-3 text-emerald-600" />
+                      <span className="text-[10px] font-semibold text-emerald-600">+{portfolioMonthlyChange}% this month</span>
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <p className="text-[10px] text-muted-foreground">Performance (12 months)</p>
+                    {renderSparkline(valuationData.endSparkData, valuationData.endChangePct >= 0, 64, 16)}
+                    <span className={`text-[10px] font-semibold ${valuationData.endChangePct >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                      {valuationData.endChangePct >= 0 ? '+' : ''}{valuationData.endChangePct}%
+                    </span>
+                  </div>
+                </div>
+                <div className="space-y-1 max-h-[140px] overflow-auto">
+                  {portfolioProducts.map((p, i) => (
+                    <div key={i} className="flex items-center gap-2 py-1 border-b border-border/30 last:border-0">
+                      <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: p.color }} />
+                      <span className="text-xs flex-1 truncate">{p.name}</span>
+                      {renderSparkline(p.sparkData, p.growth >= 0, 40, 12)}
+                      <span className="text-xs font-medium tabular-nums">{formatTotal(p.value, currencySymbol)}</span>
+                      <span className={`text-[10px] font-semibold tabular-nums ${p.growth >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                        {p.growth >= 0 ? '+' : ''}{p.growth}%
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <Button variant="link" className="p-0 h-auto text-xs text-primary" onClick={() => onTabChange?.("portfolio")}>
+                  View full portfolio <ArrowRight className="h-3 w-3 ml-1" />
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Household Overview */}
+        {isWidgetVisible('household-overview') && (
+          <div key="household-overview">
+            <Card className="h-full">
+              <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
+                <div className="flex items-center gap-2">
+                  <GripVertical className="w-4 h-4 text-muted-foreground" />
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                  <CardTitle className="text-sm font-medium">Household</CardTitle>
+                </div>
+                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleToggleWidget('household-overview', false)}><X className="w-4 h-4" /></Button>
+              </CardHeader>
+              <CardContent className="pt-0 space-y-3">
+                <div className="flex items-start gap-3">
+                  <div className="w-[80px] h-[80px] shrink-0">
+                    <EChartsWrapper
+                      option={{
+                        series: [{
+                          type: "pie" as const, radius: ["55%", "80%"], center: ["50%", "50%"],
+                          data: householdValues.map(m => ({ name: m.name, value: m.value, itemStyle: { color: m.color } })),
+                          label: { show: false }, silent: true,
+                        }],
+                        tooltip: { show: false },
+                      }}
+                      height={80}
+                      transparent={false}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Combined Value</p>
+                    <p className="text-xl font-bold">{formatTotal(householdTotal, currencySymbol)}</p>
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <TrendingUp className="h-3 w-3 text-emerald-600" />
+                      <span className="text-[10px] font-semibold text-emerald-600">+{householdYtdGrowth}% YTD</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-1 max-h-[140px] overflow-auto">
+                  {householdValues.map((m, i) => (
+                    <div
+                      key={i}
+                      className={`flex items-center gap-2 py-1 border-b border-border/30 last:border-0 ${m.relatedClientId ? 'cursor-pointer hover:bg-muted/50 rounded' : ''}`}
+                      onClick={() => m.relatedClientId && navigate(`/clients/${m.relatedClientId}`)}
+                    >
+                      <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: m.color }} />
+                      <div className="flex-1 min-w-0">
+                        <span className="text-xs font-medium truncate block">{m.name}</span>
+                        <span className="text-[10px] text-muted-foreground">{m.role}</span>
+                      </div>
+                      {renderSparkline(m.sparkData, m.growth >= 0, 40, 12)}
+                      <span className="text-xs font-medium tabular-nums">{formatTotal(m.value, currencySymbol)}</span>
+                      <span className={`text-[10px] font-semibold tabular-nums ${m.growth >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                        {m.growth >= 0 ? '+' : ''}{m.growth}%
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <Button variant="outline" size="sm" className="w-full text-xs gap-1" onClick={() => setAddMemberOpen(true)}>
+                  <UserPlus className="h-3.5 w-3.5" /> Add Member, Company or Trust
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Onboarding (KYC/AML) */}
+        {isWidgetVisible('onboarding-kyc') && (
+          <div key="onboarding-kyc">
+            <Card className="h-full">
+              <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
+                <div className="flex items-center gap-2">
+                  <GripVertical className="w-4 h-4 text-muted-foreground" />
+                  <Shield className="h-4 w-4 text-muted-foreground" />
+                  <CardTitle className="text-sm font-medium">Onboarding</CardTitle>
+                </div>
+                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleToggleWidget('onboarding-kyc', false)}><X className="w-4 h-4" /></Button>
+              </CardHeader>
+              <CardContent className="pt-0 space-y-3">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">KYC/AML Verification</p>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2 p-3 rounded-lg bg-muted/50">
+                  <div>
+                    <p className="text-[10px] text-muted-foreground">Full Name</p>
+                    <p className="text-xs font-medium">{onboardingStatus.fullName}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground">ID Number</p>
+                    <p className="text-xs font-medium font-mono">{onboardingStatus.idNumber}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground flex items-center gap-1"><Mail className="h-3 w-3" /> Email</p>
+                    <p className="text-xs font-medium">{onboardingStatus.email}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground flex items-center gap-1"><Phone className="h-3 w-3" /> Phone</p>
+                    <p className="text-xs font-medium font-mono">{onboardingStatus.phone}</p>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {onboardingStatus.checks.map((check, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <CircleCheckBig className="h-4 w-4 text-emerald-600 shrink-0" />
+                      <div className="flex-1">
+                        <p className="text-xs font-medium">{check.label}</p>
+                        <p className="text-[10px] text-muted-foreground">{check.subtitle}</p>
+                      </div>
+                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-emerald-200 text-emerald-700 bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800">Verified</Badge>
+                    </div>
+                  ))}
+                </div>
+                <div className="rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 p-2.5 text-center">
+                  <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">Successfully Onboarded</p>
+                  <p className="text-[10px] text-emerald-600 dark:text-emerald-500">All KYC/AML checks passed</p>
+                </div>
               </CardContent>
             </Card>
           </div>
