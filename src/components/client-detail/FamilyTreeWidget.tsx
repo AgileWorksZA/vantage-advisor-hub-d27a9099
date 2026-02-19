@@ -57,32 +57,32 @@ interface NodeProps {
 }
 
 const TreeNode = ({ name, relationship, value, currencySymbol, isMain, status = "active" }: NodeProps) => (
-  <div className="flex flex-col items-center gap-1">
+  <div className="flex flex-col items-center gap-0.5">
     <div className="relative">
       <div
-        className="flex items-center justify-center rounded-full text-white font-semibold text-xs"
+        className="flex items-center justify-center rounded-full text-white font-semibold"
         style={{
           backgroundColor: getAvatarColor(name),
-          width: isMain ? 48 : 40,
-          height: isMain ? 48 : 40,
-          fontSize: isMain ? 14 : 11,
+          width: isMain ? 44 : 36,
+          height: isMain ? 44 : 36,
+          fontSize: isMain ? 13 : 10,
         }}
       >
         {getInitials(name)}
       </div>
       <span
-        className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-background ${
+        className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-background ${
           status === "active" ? "bg-emerald-500" : "bg-amber-500"
         }`}
       />
     </div>
-    <span className={`text-xs font-medium text-foreground text-center leading-tight max-w-[80px] truncate ${isMain ? "font-semibold" : ""}`}>
+    <span className={`text-[11px] font-medium text-foreground text-center leading-tight max-w-[72px] truncate ${isMain ? "font-semibold" : ""}`}>
       {name}
     </span>
     {relationship && (
-      <span className="text-[10px] text-muted-foreground">{relationship}</span>
+      <span className="text-[9px] text-muted-foreground">{relationship}</span>
     )}
-    <span className="text-[10px] font-medium text-muted-foreground">
+    <span className="text-[9px] font-medium text-muted-foreground">
       {formatValue(value, currencySymbol)}
     </span>
   </div>
@@ -119,7 +119,7 @@ const FamilyTreeWidget = ({
   const clientName = `${client.first_name} ${client.surname || ""}`.trim();
 
   return (
-    <Card className="h-full">
+    <Card className="h-full overflow-hidden">
       <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
         <div className="flex items-center gap-2">
           <GripVertical className="w-4 h-4 text-muted-foreground" />
@@ -129,7 +129,7 @@ const FamilyTreeWidget = ({
           <X className="w-4 h-4" />
         </Button>
       </CardHeader>
-      <CardContent className="px-4 pb-4 pt-0">
+      <CardContent className="px-4 pb-4 pt-0 min-h-0 overflow-auto">
         <div className="flex flex-col items-center">
           {/* Main client node */}
           <TreeNode
@@ -144,22 +144,22 @@ const FamilyTreeWidget = ({
           {allMembers.length > 0 && (
             <svg
               width="100%"
-              height="32"
-              className="my-1"
-              viewBox={`0 0 ${Math.max(allMembers.length * 100, 200)} 32`}
+              height="28"
+              className="my-0.5"
+              viewBox={`0 0 ${Math.max(allMembers.length * 90, 180)} 28`}
               preserveAspectRatio="xMidYMid meet"
             >
               {allMembers.map((_, i) => {
-                const totalWidth = allMembers.length * 100;
+                const totalWidth = allMembers.length * 90;
                 const centerX = totalWidth / 2;
-                const memberX = i * 100 + 50;
+                const memberX = i * 90 + 45;
                 return (
                   <line
                     key={i}
                     x1={centerX}
                     y1={0}
                     x2={memberX}
-                    y2={32}
+                    y2={28}
                     stroke="hsl(var(--border))"
                     strokeWidth={1.5}
                     strokeDasharray="4 2"
@@ -171,7 +171,7 @@ const FamilyTreeWidget = ({
 
           {/* Member nodes */}
           {allMembers.length > 0 ? (
-            <div className="flex flex-wrap justify-center gap-4 mt-1">
+            <div className="flex flex-wrap justify-center gap-3 mt-0.5">
               {allMembers.map((m) => (
                 <TreeNode
                   key={m.id}

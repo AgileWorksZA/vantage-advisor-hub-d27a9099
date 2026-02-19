@@ -350,39 +350,63 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
     }],
   }), [opportunityBreakdown, currencySymbol]);
 
-  // Combined grouped options for unified multi-select
-  const filterGroups: MultiSelectGroup[] = useMemo(() => [
-    {
-      label: "Household Members",
-      options: householdMembers.map(m => {
-        const memberContracts = allContracts.length;
-        const totalAssets = allContracts.reduce((s, c) => s + c.value, 0);
-        return {
-          value: `member:${m.id}`,
-          label: `${m.name} (${m.type})`,
-          icon: <User className="w-3.5 h-3.5 text-muted-foreground" />,
+  // Status dot helper for member icons
+  const memberStatusIcon = useCallback((index: number) => (
+    <span className="relative inline-flex">
+      <User className="w-3.5 h-3.5 text-muted-foreground" />
+      <span className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-background ${index % 3 === 2 ? "bg-amber-500" : "bg-emerald-500"}`} />
+    </span>
+  ), []);
+
+  // Combined grouped options: contracts nested under each household member
+  const filterGroups: MultiSelectGroup[] = useMemo(() => {
+    const clientName = `${client.first_name} ${client.surname || ""}`.trim();
+    const totalAssets = allContracts.reduce((s, c) => s + c.value, 0);
+
+    // Main client group with all contracts
+    const mainGroup: MultiSelectGroup = {
+      label: `${clientName} (Main)`,
+      options: [
+        {
+          value: "member:main",
+          label: clientName,
+          icon: memberStatusIcon(0),
           subtitle: `${currencySymbol} ${totalAssets.toLocaleString()}`,
-        };
-      }),
-    },
-    {
-      label: "Contracts",
-      options: allContracts.map(c => ({
-        value: `contract:${c.id}`,
-        label: `${c.name} (${c.category})`,
-        icon: <Briefcase className="w-3.5 h-3.5 text-muted-foreground" />,
-        subtitle: c.value > 0 ? `${currencySymbol} ${c.value.toLocaleString()}` : undefined,
-      })),
-    },
-  ], [householdMembers, allContracts, currencySymbol]);
+        },
+        ...allContracts.map(c => ({
+          value: `contract:${c.id}`,
+          label: `${c.name} (${c.category})`,
+          icon: <Briefcase className="w-3.5 h-3.5 text-muted-foreground" />,
+          subtitle: c.value > 0 ? `${currencySymbol} ${c.value.toLocaleString()}` : undefined,
+        })),
+      ],
+    };
+
+    // Other household members (no contracts mapped to them)
+    const memberGroups: MultiSelectGroup[] = householdMembers.map((m, i) => ({
+      label: `${m.name} (${m.type})`,
+      options: [
+        {
+          value: `member:${m.id}`,
+          label: m.name,
+          icon: memberStatusIcon(i + 1),
+          subtitle: m.type,
+        },
+      ],
+    }));
+
+    return [mainGroup, ...memberGroups];
+  }, [householdMembers, allContracts, currencySymbol, client.first_name, client.surname, memberStatusIcon]);
 
   // Auto-select all on mount / data change
+  const [hasInitialized, setHasInitialized] = useState(false);
   useEffect(() => {
     const allValues = filterGroups.flatMap(g => g.options.map(o => o.value));
-    if (allValues.length > 0 && selectedFilters.length === 0) {
+    if (allValues.length > 0 && !hasInitialized) {
       setSelectedFilters(allValues);
+      setHasInitialized(true);
     }
-  }, [filterGroups]);
+  }, [filterGroups, hasInitialized]);
 
   // Custom trigger label
   const renderFilterLabel = useCallback((selected: string[], allOptions: EnrichedOption[]) => {
@@ -399,16 +423,18 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
   }, []);
 
   // Selected member names for filter tags
+  const clientName = `${client.first_name} ${client.surname || ""}`.trim();
   const selectedMemberTags = useMemo(() => {
     return selectedFilters
       .filter(f => f.startsWith("member:"))
       .map(f => {
         const id = f.replace("member:", "");
+        if (id === "main") return { value: f, name: clientName };
         const member = householdMembers.find(m => m.id === id);
         return member ? { value: f, name: member.name } : null;
       })
       .filter(Boolean) as { value: string; name: string }[];
-  }, [selectedFilters, householdMembers]);
+  }, [selectedFilters, householdMembers, clientName]);
 
   // Total asset value for family tree widget
   const totalAssetValue = useMemo(() =>
