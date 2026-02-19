@@ -53,10 +53,10 @@ const defaultClientDashboardLayout: WidgetLayout[] = [
   { i: 'action-priority', x: 3, y: 6, w: 3, h: 3 },
   { i: 'key-dates', x: 6, y: 6, w: 3, h: 3 },
   { i: 'advisor-accounts', x: 0, y: 9, w: 3, h: 3 },
-  { i: 'outstanding-docs', x: 3, y: 9, w: 3, h: 3 },
-  { i: 'client-portfolio', x: 6, y: 9, w: 3, h: 3 },
-  { i: 'household-overview', x: 0, y: 12, w: 3, h: 3 },
-  { i: 'onboarding-kyc', x: 3, y: 12, w: 3, h: 3 },
+  { i: 'outstanding-docs', x: 3, y: 9, w: 3, h: 4 },
+  { i: 'client-portfolio', x: 6, y: 9, w: 3, h: 4 },
+  { i: 'household-overview', x: 0, y: 13, w: 3, h: 4 },
+  { i: 'onboarding-kyc', x: 3, y: 13, w: 3, h: 4 },
 ];
 
 const CLIENT_DASHBOARD_WIDGETS: WidgetConfig[] = [
