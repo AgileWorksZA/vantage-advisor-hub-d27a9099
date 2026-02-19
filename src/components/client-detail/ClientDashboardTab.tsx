@@ -389,11 +389,9 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
         <Button variant="outline" size="sm" className="h-10 text-xs gap-1" onClick={() => setAddMemberOpen(true)}>
           <Users className="h-3.5 w-3.5" /> Add Member
         </Button>
-      </div>
-
-      {/* Widget Settings */}
-      <div className="flex justify-end mb-2">
-        <WidgetSettingsDialog widgets={CLIENT_DASHBOARD_WIDGETS} hiddenWidgets={hiddenWidgets} onToggleWidget={handleToggleWidget} />
+        <div className="ml-auto">
+          <WidgetSettingsDialog widgets={CLIENT_DASHBOARD_WIDGETS} hiddenWidgets={hiddenWidgets} onToggleWidget={handleToggleWidget} />
+        </div>
       </div>
 
       {/* Draggable Widget Grid */}
