@@ -1,56 +1,52 @@
 
 
-## Space Out Dashboard Widgets & Use Available Whitespace
+## Align Advisor Dashboard with Client Dashboard Effects
 
 ### Goal
-Make the client dashboard feel more spacious and interactive by increasing widget heights, adding breathing room, and better utilizing the available screen real estate.
+Apply the same visual enhancements (taller widgets, increased row height, hover shadows) that were added to the Client Dashboard to the Advisor Dashboard for a consistent look.
 
 ### Changes
 
-#### 1. Increase widget heights strategically
+#### 1. Increase widget heights for chart/table widgets
 
-**File: `src/components/client-detail/ClientDashboardTab.tsx`**
+**File: `src/pages/Dashboard.tsx`**
 
-Update `defaultClientDashboardLayout` to give widgets more vertical space. Key widgets that benefit from extra height (charts, trees, tables) get `h: 4`, while simpler info cards stay at `h: 3`:
+Update `defaultDashboardLayout` to give the top row (data-heavy widgets with charts and tables) more vertical space:
 
 ```
-Row 0: portfolio-overview (h:4), valuation-change (h:4), geo-diversification (h:4)
-Row 1: family-tree (h:4, y:4), top-opportunities (h:4, y:4), opp-breakdown (h:4, y:4)
-Row 2: opp-value-summary (h:3, y:8), action-priority (h:3, y:8), key-dates (h:3, y:8)
-Row 3: advisor-accounts (h:3, y:11), outstanding-docs (h:3, y:11), client-portfolio (h:3, y:11)
-Row 4: household-overview (h:3, y:14), onboarding-kyc (h:3, y:14)
+Row 0: provider-view (h:4), aum-product (h:4), top-accounts (h:4)
+Row 1: birthdays (h:3, y:4), clients-value (h:3, y:4), corporate-actions (h:3, y:4)
+Row 2: onboarding-progress (h:3, y:7), client-opportunity-status (h:3, y:7), portfolio-analysis (h:3, y:7)
 ```
 
-This gives the top two rows (charts, opportunities, family tree) more breathing room while keeping simpler info widgets compact.
+The top row widgets (Provider View, AUM by Product, Top 5 Accounts) contain tables/charts that benefit from extra height. The bottom two rows (birthdays, corporate actions, onboarding, etc.) stay compact at h:3.
 
 #### 2. Increase grid row height
 
-**File: `src/components/client-detail/ClientDashboardTab.tsx`**
+**File: `src/pages/Dashboard.tsx`**
 
-Pass a larger `rowHeight` prop to `DraggableWidgetGrid`:
-- Change from the default `120` to `130` to add vertical breathing room between rows.
+Pass `rowHeight={130}` to the `DraggableWidgetGrid` component (matching the Client Dashboard).
 
-#### 3. Increase grid margin
+#### 3. Add hover interaction to all widget cards
 
-**File: `src/components/widgets/DraggableWidgetGrid.tsx`**
+**File: `src/pages/Dashboard.tsx`**
 
-Increase `GRID_MARGIN` from `16` to `20` to add more horizontal and vertical gaps between widgets, making the layout feel less cramped.
+Update all 7 inline `Card className="h-full"` occurrences to `Card className="h-full transition-shadow hover:shadow-md"`.
 
-#### 4. Add hover interaction to widget cards
+**Files: `src/components/dashboard/OnboardingProgressWidget.tsx`, `ClientOpportunityStatusWidget.tsx`, `PortfolioAnalysisWidget.tsx`**
 
-**File: `src/components/client-detail/ClientDashboardTab.tsx`**
+Update the `Card className="h-full"` in each sub-widget component to include `transition-shadow hover:shadow-md`.
 
-Add a subtle hover effect to widget Card components by updating their className to include:
-- `transition-shadow hover:shadow-md` -- gives a lift effect on hover
-- This makes widgets feel interactive and clickable
+Note: The grid margin (`GRID_MARGIN = 20`) was already updated in the previous change to `DraggableWidgetGrid.tsx`, so no change needed there.
 
 ### Summary of visual impact
-- Top-row chart widgets (Portfolio, Valuation, Geo Map) become taller and more prominent
-- Family Tree and Opportunities get extra height for better readability
-- Wider gaps between all widgets create a cleaner, more modern feel
-- Hover shadows add interactivity cues
+- Top-row widgets (Provider View, AUM by Product, Top Accounts) become taller and more prominent
+- Wider vertical spacing between all rows for a cleaner feel
+- Hover shadow on all widgets adds interactivity cues
+- Consistent look between Advisor and Client dashboards
 
 ### Files to Edit
-- `src/components/client-detail/ClientDashboardTab.tsx` -- layout heights, rowHeight prop, hover classes
-- `src/components/widgets/DraggableWidgetGrid.tsx` -- grid margin increase
-
+- `src/pages/Dashboard.tsx` -- layout heights, rowHeight prop, hover classes on 7 inline Cards
+- `src/components/dashboard/OnboardingProgressWidget.tsx` -- hover class
+- `src/components/dashboard/ClientOpportunityStatusWidget.tsx` -- hover class
+- `src/components/dashboard/PortfolioAnalysisWidget.tsx` -- hover class
