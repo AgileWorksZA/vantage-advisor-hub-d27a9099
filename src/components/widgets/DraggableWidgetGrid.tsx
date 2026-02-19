@@ -2,7 +2,7 @@ import { ReactNode, useRef, useState, useEffect } from 'react';
 import { Responsive } from 'react-grid-layout/legacy';
 import 'react-grid-layout/css/styles.css';
 
-const GRID_MARGIN = 16;
+const GRID_MARGIN = 20;
 
 // Target width for a standard widget (w:3 in original 12-col grid)
 // Fixed pixel width that never changes regardless of viewport
