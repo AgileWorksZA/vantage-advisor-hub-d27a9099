@@ -56,15 +56,15 @@ const sidebarItems = [{
 }];
 
 const defaultDashboardLayout: WidgetLayout[] = [
-  { i: 'provider-view', x: 0, y: 0, w: 3, h: 3 },
-  { i: 'aum-product', x: 3, y: 0, w: 3, h: 3 },
-  { i: 'top-accounts', x: 6, y: 0, w: 3, h: 3 },
-  { i: 'birthdays', x: 0, y: 3, w: 3, h: 3 },
-  { i: 'clients-value', x: 3, y: 3, w: 3, h: 3 },
-  { i: 'corporate-actions', x: 6, y: 3, w: 3, h: 3 },
-  { i: 'onboarding-progress', x: 0, y: 6, w: 3, h: 3 },
-  { i: 'client-opportunity-status', x: 3, y: 6, w: 3, h: 3 },
-  { i: 'portfolio-analysis', x: 6, y: 6, w: 3, h: 3 },
+  { i: 'provider-view', x: 0, y: 0, w: 3, h: 4 },
+  { i: 'aum-product', x: 3, y: 0, w: 3, h: 4 },
+  { i: 'top-accounts', x: 6, y: 0, w: 3, h: 4 },
+  { i: 'birthdays', x: 0, y: 4, w: 3, h: 3 },
+  { i: 'clients-value', x: 3, y: 4, w: 3, h: 3 },
+  { i: 'corporate-actions', x: 6, y: 4, w: 3, h: 3 },
+  { i: 'onboarding-progress', x: 0, y: 7, w: 3, h: 3 },
+  { i: 'client-opportunity-status', x: 3, y: 7, w: 3, h: 3 },
+  { i: 'portfolio-analysis', x: 6, y: 7, w: 3, h: 3 },
 ];
 
 const DASHBOARD_WIDGETS: WidgetConfig[] = [
@@ -322,10 +322,10 @@ const Dashboard = () => {
               ))}
             </div>
           ) : (
-          <DraggableWidgetGrid layout={visibleLayout} onLayoutChange={onLayoutChange}>
+          <DraggableWidgetGrid layout={visibleLayout} onLayoutChange={onLayoutChange} rowHeight={130}>
             {/* Provider View */}
             {isWidgetVisible('provider-view') && <div key="provider-view">
-              <Card className="h-full">
+              <Card className="h-full transition-shadow hover:shadow-md">
                 <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
                   <div className="flex items-center gap-2">
                     <GripVertical className="w-4 h-4 text-muted-foreground" />
@@ -389,7 +389,7 @@ const Dashboard = () => {
             </div>}
 
             {isWidgetVisible('top-accounts') && <div key="top-accounts">
-              <Card className="h-full">
+              <Card className="h-full transition-shadow hover:shadow-md">
                 <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
                   <div className="flex items-center gap-2">
                     <GripVertical className="w-4 h-4 text-muted-foreground" />
@@ -463,7 +463,7 @@ const Dashboard = () => {
 
             {/* AUM by Product */}
             {isWidgetVisible('aum-product') && <div key="aum-product">
-              <Card className="h-full">
+              <Card className="h-full transition-shadow hover:shadow-md">
                 <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
                   <div className="flex items-center gap-2">
                     <GripVertical className="w-4 h-4 text-muted-foreground" />
@@ -563,7 +563,7 @@ const Dashboard = () => {
 
             {/* Birthdays */}
             {isWidgetVisible('birthdays') && <div key="birthdays">
-              <Card className="h-full">
+              <Card className="h-full transition-shadow hover:shadow-md">
                 <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
                   <div className="flex items-center gap-2">
                     <GripVertical className="w-4 h-4 text-muted-foreground" />
@@ -617,7 +617,7 @@ const Dashboard = () => {
 
             {/* Clients by Value */}
             {isWidgetVisible('clients-value') && <div key="clients-value">
-              <Card className="h-full">
+              <Card className="h-full transition-shadow hover:shadow-md">
                 <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
                   <div className="flex items-center gap-2">
                     <GripVertical className="w-4 h-4 text-muted-foreground" />
@@ -682,7 +682,7 @@ const Dashboard = () => {
 
             {/* Upcoming Corporate Actions */}
             {isWidgetVisible('corporate-actions') && <div key="corporate-actions">
-              <Card className="h-full">
+              <Card className="h-full transition-shadow hover:shadow-md">
                 <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
                   <div className="flex items-center gap-2">
                     <GripVertical className="w-4 h-4 text-muted-foreground" />
