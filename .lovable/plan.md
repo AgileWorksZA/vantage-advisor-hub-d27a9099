@@ -1,17 +1,66 @@
 
 
-## Align Settings Gear with Contracts Dropdown Row
+## Combined Dropdown, Family Tree Widget, and Layout Changes
 
-### Change
-Move the WidgetSettingsDialog (gear icon) from its own separate row into the same row as the Contracts and Household dropdowns, pushed to the right side.
-
-### Technical Detail
+### 1. Combine Dropdowns into a Single Multi-Select
+Merge the "Contracts" and "Household Members" dropdowns into one unified multi-select with grouped options (using section headers inside the dropdown).
 
 **File:** `src/components/client-detail/ClientDashboardTab.tsx`
+- Remove the two separate `MultiSelect` components and their individual state (`selectedContracts`, `selectedMembers`)
+- Replace with a single `MultiSelect` that combines both option sets, prefixed with group labels
+- Combine into a single state array (e.g., `selectedFilters`) with prefixed values like `contract:on-0` and `member:id`
+- Update the `MultiSelect` component or use grouped `CommandGroup` sections inside the dropdown to visually separate "Household Members" from "Contracts"
 
-1. Remove the separate `<div className="flex justify-end mb-2">` wrapper around `WidgetSettingsDialog` (lines 394-397).
-2. Move the `WidgetSettingsDialog` component inside the toolbar div (line 374), after the "Add Member" button.
-3. Add `ml-auto` to the `WidgetSettingsDialog` (or wrap it in a `<div className="ml-auto">`) so it aligns to the right end of the row.
+**File:** `src/components/ui/multi-select.tsx`
+- Extend to support grouped options: accept `groups: { label: string; options: { value: string; label: string }[] }[]` as an alternative prop
+- Render each group with a `CommandGroup` heading inside the dropdown
 
-The toolbar row will then contain: Contracts dropdown | Household dropdown | Add Member button | (spacer) | Gear icon.
+### 2. New Family Tree Widget
+Add a new draggable widget showing selected household members and their relationships.
+
+**File:** `src/components/client-detail/ClientDashboardTab.tsx`
+- Add `family-tree` to `CLIENT_DASHBOARD_WIDGETS` and `defaultClientDashboardLayout`
+- Create the widget content inline or as a sub-component featuring:
+  - The main client at the center/top with initials avatar, name, and total asset value
+  - Connected household members displayed with:
+    - Circular initials icon with a colored dot indicator (green = active, amber = needs attention)
+    - Name label beneath
+    - Relationship type (e.g., "Spouse", "Child")
+    - Asset value summary
+  - Connecting lines between related members
+- Data sourced from `familyMembers` and `businesses` from `useClientRelationships`
+- Asset values derived from `allContracts` data (using the main client's total for the primary node; simulated proportional values for related members)
+
+### 3. Move "Add Member" Button
+Reposition the "Add Member" button to sit just to the left of the gear icon on the far right.
+
+**File:** `src/components/client-detail/ClientDashboardTab.tsx`
+- Move the `Button` inside the `ml-auto` wrapper, placing it before `WidgetSettingsDialog`
+- The layout becomes: Combined Dropdown | (spacer via ml-auto) | Add Member | Gear
+
+### Technical Details
+
+**MultiSelect grouped options structure:**
+```tsx
+interface MultiSelectGroup {
+  label: string;
+  options: { value: string; label: string }[];
+}
+
+interface MultiSelectProps {
+  options?: { value: string; label: string }[];
+  groups?: MultiSelectGroup[];
+  // ... rest unchanged
+}
+```
+
+**Family Tree widget rendering approach:**
+- Pure CSS/SVG layout with flexbox positioning
+- Main client node centered at top
+- Related members in a row below, connected by SVG lines
+- Each node: circular avatar with initials (bg color derived from name), small status dot, name, relationship label, and formatted asset value beneath
+
+**Files to edit:**
+- `src/components/ui/multi-select.tsx` -- add grouped options support
+- `src/components/client-detail/ClientDashboardTab.tsx` -- combine dropdowns, add family tree widget, reposition Add Member button
 
