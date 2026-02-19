@@ -1,22 +1,24 @@
 
 
-## Revert Widget Heights on Advisor Dashboard
+## Revert Client Dashboard Widget Heights to Standard
 
 ### What will change
 
-Restore the top-row widgets (`provider-view`, `aum-product`, `top-accounts`) back to their original height of `h: 3` (from `h: 4`), and adjust the `y` offsets for subsequent rows accordingly. Also revert `rowHeight` from `130` back to the default `120`.
+Restore all client dashboard widgets to the standard `h: 3` height (matching the advisor dashboard) and revert `rowHeight` from `130` back to `120`.
 
 ### Technical details
 
-**File: `src/pages/Dashboard.tsx`**
+**File: `src/components/client-detail/ClientDashboardTab.tsx`**
 
-1. Update `defaultDashboardLayout` (lines 58-68):
-   - Row 0: `h: 4` -> `h: 3` for all three top widgets
-   - Row 1: `y: 4` -> `y: 3` for birthdays, clients-value, corporate-actions
-   - Row 2: `y: 7` -> `y: 6` for onboarding-progress, client-opportunity-status, portfolio-analysis
+1. Update `defaultClientDashboardLayout` (lines 45-59):
+   - Row 0: `h: 4` -> `h: 3` for portfolio-overview, valuation-change, geo-diversification
+   - Row 1: `h: 4` -> `h: 3`, `y: 4` -> `y: 3` for family-tree, top-opportunities, opp-breakdown
+   - Row 2: `y: 8` -> `y: 6` for opp-value-summary, action-priority, key-dates
+   - Row 3: `y: 11` -> `y: 9` for advisor-accounts, outstanding-docs, client-portfolio
+   - Row 4: `y: 14` -> `y: 12` for household-overview, onboarding-kyc
 
-2. Revert `rowHeight` (line 325):
-   - Change `rowHeight={130}` back to `rowHeight={120}`
+2. Revert `rowHeight` (line 604):
+   - Change `rowHeight={130}` back to `rowHeight={120}` (or remove the prop to use the default)
 
-Note: The hover effects (`transition-shadow hover:shadow-md`) and grid margin (20px) will remain as they enhance interactivity without affecting widget sizing.
+The hover effects (`transition-shadow hover:shadow-md`) and 20px grid margin will remain unchanged, keeping the interactive feel consistent with the advisor dashboard.
 
