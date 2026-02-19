@@ -132,6 +132,7 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
   const [showAllDocs, setShowAllDocs] = useState(false);
   const [showAllPortfolio, setShowAllPortfolio] = useState(false);
   const [showAllHousehold, setShowAllHousehold] = useState(false);
+  const [showAllOpportunities, setShowAllOpportunities] = useState(false);
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
 
   // Widget layout persistence
@@ -779,8 +780,8 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
                  </div>
                </CardHeader>
               <CardContent className="pt-0">
-                <div className="space-y-0 max-h-[220px] overflow-auto">
-                  {opportunities.slice(0, 5).map(opp => {
+                <div className="space-y-0">
+                  {(showAllOpportunities ? opportunities.slice(0, 5) : opportunities.slice(0, 3)).map(opp => {
                     const cfg = getConfig(opp.type);
                     return (
                       <div key={opp.id} className="flex gap-2 py-1.5 border-b border-border/50 last:border-0">
@@ -799,6 +800,12 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
                     );
                   })}
                 </div>
+                {opportunities.slice(0, 5).length > 3 && (
+                  <Button variant="link" className="p-0 h-auto text-xs"
+                    onClick={() => setShowAllOpportunities(!showAllOpportunities)}>
+                    {showAllOpportunities ? "Show less" : `Show ${Math.min(opportunities.length, 5) - 3} more`}
+                  </Button>
+                )}
               </CardContent>
             </Card>
           </div>
