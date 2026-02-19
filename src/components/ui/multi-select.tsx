@@ -16,18 +16,26 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
+export interface EnrichedOption {
+  value: string;
+  label: string;
+  icon?: React.ReactNode;
+  subtitle?: string;
+}
+
 export interface MultiSelectGroup {
   label: string;
-  options: { value: string; label: string }[];
+  options: EnrichedOption[];
 }
 
 interface MultiSelectProps {
-  options?: { value: string; label: string }[];
+  options?: EnrichedOption[];
   groups?: MultiSelectGroup[];
   selected: string[];
   onChange: (selected: string[]) => void;
   placeholder?: string;
   className?: string;
+  renderTriggerLabel?: (selected: string[], allOptions: EnrichedOption[]) => React.ReactNode;
 }
 
 export function MultiSelect({
@@ -37,6 +45,7 @@ export function MultiSelect({
   onChange,
   placeholder = "Select...",
   className,
+  renderTriggerLabel,
 }: MultiSelectProps) {
   const [open, setOpen] = React.useState(false);
 
@@ -48,10 +57,17 @@ export function MultiSelect({
     }
   };
 
-  // Total option count for "all" display
   const allOptions = groups
     ? groups.flatMap(g => g.options)
     : options || [];
+
+  const triggerContent = renderTriggerLabel
+    ? renderTriggerLabel(selected, allOptions)
+    : selected.length === 0
+      ? <span className="text-muted-foreground">{placeholder}</span>
+      : selected.length === allOptions.length
+        ? <span>{placeholder} (all)</span>
+        : <span>{placeholder} ({selected.length})</span>;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -62,17 +78,11 @@ export function MultiSelect({
           aria-expanded={open}
           className={cn("justify-between min-w-[180px] h-10", className)}
         >
-          {selected.length === 0 ? (
-            <span className="text-muted-foreground">{placeholder}</span>
-          ) : selected.length === allOptions.length ? (
-            <span>{placeholder} (all)</span>
-          ) : (
-            <span>{placeholder} ({selected.length})</span>
-          )}
+          {triggerContent}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[280px] p-0 bg-popover z-50" align="start">
+      <PopoverContent className="w-[340px] p-0 bg-popover z-50" align="start">
         <Command>
           <CommandInput placeholder="Search..." />
           <CommandList className="max-h-[300px]">
@@ -85,14 +95,21 @@ export function MultiSelect({
                       key={option.value}
                       value={option.value}
                       onSelect={() => handleSelect(option.value)}
+                      className="flex items-center gap-2"
                     >
                       <Check
                         className={cn(
-                          "mr-2 h-4 w-4",
+                          "h-4 w-4 shrink-0",
                           selected.includes(option.value) ? "opacity-100" : "opacity-0"
                         )}
                       />
-                      {option.label}
+                      {option.icon && <span className="shrink-0">{option.icon}</span>}
+                      <span className="truncate flex-1">{option.label}</span>
+                      {option.subtitle && (
+                        <span className="ml-auto text-[10px] text-muted-foreground whitespace-nowrap">
+                          {option.subtitle}
+                        </span>
+                      )}
                     </CommandItem>
                   ))}
                 </CommandGroup>
@@ -104,14 +121,21 @@ export function MultiSelect({
                     key={option.value}
                     value={option.value}
                     onSelect={() => handleSelect(option.value)}
+                    className="flex items-center gap-2"
                   >
                     <Check
                       className={cn(
-                        "mr-2 h-4 w-4",
+                        "h-4 w-4 shrink-0",
                         selected.includes(option.value) ? "opacity-100" : "opacity-0"
                       )}
                     />
-                    {option.label}
+                    {option.icon && <span className="shrink-0">{option.icon}</span>}
+                    <span className="truncate flex-1">{option.label}</span>
+                    {option.subtitle && (
+                      <span className="ml-auto text-[10px] text-muted-foreground whitespace-nowrap">
+                        {option.subtitle}
+                      </span>
+                    )}
                   </CommandItem>
                 ))}
               </CommandGroup>

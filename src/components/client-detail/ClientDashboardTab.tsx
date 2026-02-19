@@ -1,11 +1,11 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { EChartsWrapper } from "@/components/ui/echarts-wrapper";
-import { MultiSelect, MultiSelectGroup } from "@/components/ui/multi-select";
+import { MultiSelect, MultiSelectGroup, EnrichedOption } from "@/components/ui/multi-select";
 import FamilyTreeWidget from "./FamilyTreeWidget";
 import { generateClient360Data, mapNationalityToJurisdiction, formatTotal } from "@/data/regional360ViewData";
 import { useClientRelationships } from "@/hooks/useClientRelationships";
@@ -19,7 +19,7 @@ import {
   Calendar, Gift, FileCheck, TrendingUp, TrendingDown, ArrowRight,
   Users, AlertTriangle, Clock, CheckCircle2, Target, Zap,
   ArrowRightLeft, Layers, Building2, Briefcase, Landmark, Receipt, Banknote,
-  GripVertical, X,
+  GripVertical, X, User,
 } from "lucide-react";
 import {
   Table,
@@ -354,13 +354,61 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
   const filterGroups: MultiSelectGroup[] = useMemo(() => [
     {
       label: "Household Members",
-      options: householdMembers.map(m => ({ value: `member:${m.id}`, label: `${m.name} (${m.type})` })),
+      options: householdMembers.map(m => {
+        const memberContracts = allContracts.length;
+        const totalAssets = allContracts.reduce((s, c) => s + c.value, 0);
+        return {
+          value: `member:${m.id}`,
+          label: `${m.name} (${m.type})`,
+          icon: <User className="w-3.5 h-3.5 text-muted-foreground" />,
+          subtitle: `${currencySymbol} ${totalAssets.toLocaleString()}`,
+        };
+      }),
     },
     {
       label: "Contracts",
-      options: allContracts.map(c => ({ value: `contract:${c.id}`, label: `${c.name} (${c.category})` })),
+      options: allContracts.map(c => ({
+        value: `contract:${c.id}`,
+        label: `${c.name} (${c.category})`,
+        icon: <Briefcase className="w-3.5 h-3.5 text-muted-foreground" />,
+        subtitle: c.value > 0 ? `${currencySymbol} ${c.value.toLocaleString()}` : undefined,
+      })),
     },
-  ], [householdMembers, allContracts]);
+  ], [householdMembers, allContracts, currencySymbol]);
+
+  // Auto-select all on mount / data change
+  useEffect(() => {
+    const allValues = filterGroups.flatMap(g => g.options.map(o => o.value));
+    if (allValues.length > 0 && selectedFilters.length === 0) {
+      setSelectedFilters(allValues);
+    }
+  }, [filterGroups]);
+
+  // Custom trigger label
+  const renderFilterLabel = useCallback((selected: string[], allOptions: EnrichedOption[]) => {
+    if (selected.length === 0) return <span className="text-muted-foreground">Filter</span>;
+    const memberCount = selected.filter(s => s.startsWith("member:")).length;
+    const contractCount = selected.filter(s => s.startsWith("contract:")).length;
+    const totalMembers = allOptions.filter(o => o.value.startsWith("member:")).length;
+    const totalContracts = allOptions.filter(o => o.value.startsWith("contract:")).length;
+    const isAll = memberCount === totalMembers && contractCount === totalContracts;
+    const parts: string[] = [];
+    if (memberCount > 0) parts.push(`${memberCount} Person${memberCount !== 1 ? "s" : ""}`);
+    if (contractCount > 0) parts.push(`${contractCount} Contract${contractCount !== 1 ? "s" : ""}`);
+    return <span>{isAll ? "All" : ""} {parts.join(", ")}</span>;
+  }, []);
+
+  // Selected member names for filter tags
+  const selectedMemberTags = useMemo(() => {
+    return selectedFilters
+      .filter(f => f.startsWith("member:"))
+      .map(f => {
+        const id = f.replace("member:", "");
+        const member = householdMembers.find(m => m.id === id);
+        return member ? { value: f, name: member.name } : null;
+      })
+      .filter(Boolean) as { value: string; name: string }[];
+  }, [selectedFilters, householdMembers]);
 
   // Total asset value for family tree widget
   const totalAssetValue = useMemo(() =>
@@ -388,7 +436,26 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
           onChange={setSelectedFilters}
           placeholder="Filter"
           className="min-w-[220px]"
+          renderTriggerLabel={renderFilterLabel}
         />
+        {/* Filter tags for selected persons */}
+        {selectedMemberTags.map(tag => (
+          <Badge
+            key={tag.value}
+            variant="secondary"
+            className="flex items-center gap-1 px-2 py-1 text-xs cursor-default"
+          >
+            <User className="w-3 h-3" />
+            {tag.name}
+            <button
+              type="button"
+              onClick={() => setSelectedFilters(prev => prev.filter(f => f !== tag.value))}
+              className="ml-1 hover:text-destructive transition-colors"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          </Badge>
+        ))}
         <div className="ml-auto flex items-center gap-2">
           <Button variant="outline" size="sm" className="h-10 text-xs gap-1" onClick={() => setAddMemberOpen(true)}>
             <Users className="h-3.5 w-3.5" /> Add Member
