@@ -43,20 +43,20 @@ interface ClientDashboardTabProps {
 
 // --- Widget layout config ---
 const defaultClientDashboardLayout: WidgetLayout[] = [
-  { i: 'portfolio-overview', x: 0, y: 0, w: 3, h: 3 },
-  { i: 'valuation-change', x: 3, y: 0, w: 3, h: 3 },
-  { i: 'geo-diversification', x: 6, y: 0, w: 3, h: 3 },
-  { i: 'family-tree', x: 0, y: 3, w: 3, h: 3 },
-  { i: 'top-opportunities', x: 3, y: 3, w: 3, h: 3 },
-  { i: 'opp-breakdown', x: 6, y: 3, w: 3, h: 3 },
-  { i: 'opp-value-summary', x: 0, y: 6, w: 3, h: 3 },
-  { i: 'action-priority', x: 3, y: 6, w: 3, h: 3 },
-  { i: 'key-dates', x: 6, y: 6, w: 3, h: 3 },
-  { i: 'advisor-accounts', x: 0, y: 9, w: 3, h: 3 },
-  { i: 'outstanding-docs', x: 3, y: 9, w: 3, h: 3 },
-  { i: 'client-portfolio', x: 6, y: 9, w: 3, h: 3 },
-  { i: 'household-overview', x: 0, y: 12, w: 3, h: 3 },
-  { i: 'onboarding-kyc', x: 3, y: 12, w: 3, h: 3 },
+  { i: 'portfolio-overview', x: 0, y: 0, w: 3, h: 4 },
+  { i: 'valuation-change', x: 3, y: 0, w: 3, h: 4 },
+  { i: 'geo-diversification', x: 6, y: 0, w: 3, h: 4 },
+  { i: 'family-tree', x: 0, y: 4, w: 3, h: 4 },
+  { i: 'top-opportunities', x: 3, y: 4, w: 3, h: 4 },
+  { i: 'opp-breakdown', x: 6, y: 4, w: 3, h: 4 },
+  { i: 'opp-value-summary', x: 0, y: 8, w: 3, h: 3 },
+  { i: 'action-priority', x: 3, y: 8, w: 3, h: 3 },
+  { i: 'key-dates', x: 6, y: 8, w: 3, h: 3 },
+  { i: 'advisor-accounts', x: 0, y: 11, w: 3, h: 3 },
+  { i: 'outstanding-docs', x: 3, y: 11, w: 3, h: 3 },
+  { i: 'client-portfolio', x: 6, y: 11, w: 3, h: 3 },
+  { i: 'household-overview', x: 0, y: 14, w: 3, h: 3 },
+  { i: 'onboarding-kyc', x: 3, y: 14, w: 3, h: 3 },
 ];
 
 const CLIENT_DASHBOARD_WIDGETS: WidgetConfig[] = [
@@ -601,7 +601,7 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
           ))}
         </div>
       ) : (
-      <DraggableWidgetGrid layout={visibleLayout} onLayoutChange={onLayoutChange}>
+      <DraggableWidgetGrid layout={visibleLayout} onLayoutChange={onLayoutChange} rowHeight={130}>
         {/* Portfolio Overview */}
         {isWidgetVisible('portfolio-overview') && (
           <div key="portfolio-overview">
@@ -629,7 +629,7 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
         {/* Change in Valuation */}
         {isWidgetVisible('valuation-change') && (
           <div key="valuation-change">
-            <Card className="h-full">
+            <Card className="h-full transition-shadow hover:shadow-md">
               <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
                 <div className="flex items-center gap-2">
                   <GripVertical className="w-4 h-4 text-muted-foreground" />
@@ -716,7 +716,7 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
         {/* Geographic Diversification */}
         {isWidgetVisible('geo-diversification') && (
           <div key="geo-diversification">
-            <Card className="h-full">
+            <Card className="h-full transition-shadow hover:shadow-md">
               <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
                 <div className="flex items-center gap-2">
                   <GripVertical className="w-4 h-4 text-muted-foreground" />
@@ -771,7 +771,7 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
         {/* Top Opportunities */}
         {isWidgetVisible('top-opportunities') && (
           <div key="top-opportunities">
-            <Card className="h-full">
+            <Card className="h-full transition-shadow hover:shadow-md">
               <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
                 <div className="flex items-center gap-2">
                   <GripVertical className="w-4 h-4 text-muted-foreground" />
@@ -818,7 +818,7 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
         {/* Opportunity Breakdown */}
         {isWidgetVisible('opp-breakdown') && (
           <div key="opp-breakdown">
-            <Card className="h-full">
+            <Card className="h-full transition-shadow hover:shadow-md">
               <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
                 <div className="flex items-center gap-2">
                   <GripVertical className="w-4 h-4 text-muted-foreground" />
@@ -836,7 +836,7 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
         {/* Opportunity Value Summary */}
         {isWidgetVisible('opp-value-summary') && (
           <div key="opp-value-summary">
-            <Card className="h-full">
+            <Card className="h-full transition-shadow hover:shadow-md">
               <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
                 <div className="flex items-center gap-2">
                   <GripVertical className="w-4 h-4 text-muted-foreground" />
@@ -880,7 +880,7 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
         {/* Action Priority */}
         {isWidgetVisible('action-priority') && (
           <div key="action-priority">
-            <Card className="h-full">
+            <Card className="h-full transition-shadow hover:shadow-md">
               <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
                 <div className="flex items-center gap-2">
                   <GripVertical className="w-4 h-4 text-muted-foreground" />
@@ -925,7 +925,7 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
         {/* Key Dates & Milestones */}
         {isWidgetVisible('key-dates') && (
           <div key="key-dates">
-            <Card className="h-full">
+            <Card className="h-full transition-shadow hover:shadow-md">
               <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
                 <div className="flex items-center gap-2">
                   <GripVertical className="w-4 h-4 text-muted-foreground" />
@@ -958,7 +958,7 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
         {/* Current Advisor & Accounts */}
         {isWidgetVisible('advisor-accounts') && (
           <div key="advisor-accounts">
-            <Card className="h-full">
+            <Card className="h-full transition-shadow hover:shadow-md">
               <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
                 <div className="flex items-center gap-2">
                   <GripVertical className="w-4 h-4 text-muted-foreground" />
@@ -1005,7 +1005,7 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
           const dueSoonCount = regionalDocs.filter(d => d.status === "Due Soon").length;
           return (
           <div key="outstanding-docs">
-            <Card className="h-full">
+            <Card className="h-full transition-shadow hover:shadow-md">
               <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
                 <div className="flex items-center gap-2">
                   <GripVertical className="w-4 h-4 text-muted-foreground" />
@@ -1064,7 +1064,7 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
         {/* Client Portfolio */}
         {isWidgetVisible('client-portfolio') && (
           <div key="client-portfolio">
-            <Card className="h-full">
+            <Card className="h-full transition-shadow hover:shadow-md">
               <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
                 <div className="flex items-center gap-2">
                   <GripVertical className="w-4 h-4 text-muted-foreground" />
@@ -1135,7 +1135,7 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
         {/* Household Overview */}
         {isWidgetVisible('household-overview') && (
           <div key="household-overview">
-            <Card className="h-full">
+            <Card className="h-full transition-shadow hover:shadow-md">
               <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
                 <div className="flex items-center gap-2">
                   <GripVertical className="w-4 h-4 text-muted-foreground" />
@@ -1205,7 +1205,7 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
         {/* Onboarding (KYC/AML) */}
         {isWidgetVisible('onboarding-kyc') && (
           <div key="onboarding-kyc">
-            <Card className="h-full">
+            <Card className="h-full transition-shadow hover:shadow-md">
               <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
                 <div className="flex items-center gap-2">
                   <GripVertical className="w-4 h-4 text-muted-foreground" />
