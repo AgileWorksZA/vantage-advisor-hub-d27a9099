@@ -32,7 +32,7 @@ export function OnboardingProgressWidget({ selectedAdvisorNames, onClose }: Onbo
   };
 
   return (
-    <Card className="h-full">
+    <Card className="h-full transition-shadow hover:shadow-md">
       <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
         <div className="flex items-center gap-2">
           <GripVertical className="w-4 h-4 text-muted-foreground" />
