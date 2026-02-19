@@ -240,6 +240,53 @@ export const useClientWorkflows = (clientId: string) => {
     }
   };
 
+  const updateWorkflowStatus = async (workflowId: string, newStatus: string) => {
+    try {
+      const { error } = await supabase
+        .from("workflows")
+        .update({ status: newStatus as any })
+        .eq("id", workflowId);
+
+      if (error) throw error;
+
+      // Optimistic update
+      setWorkflows(prev =>
+        prev.map(w => w.id === workflowId ? { ...w, status: newStatus } : w)
+      );
+      toast.success("Workflow status updated");
+    } catch (err: any) {
+      console.error("Error updating workflow status:", err);
+      toast.error("Failed to update status");
+      await fetchWorkflows();
+    }
+  };
+
+  const createAdviceWorkflow = async (name: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const { error } = await supabase
+        .from("advice_workflows")
+        .insert({
+          user_id: user.id,
+          client_id: clientId,
+          name,
+          current_step: 0,
+          status: "Active",
+          date: new Date().toISOString().split("T")[0],
+        });
+
+      if (error) throw error;
+
+      await fetchWorkflows();
+      toast.success("Advice workflow created");
+    } catch (err: any) {
+      console.error("Error creating advice workflow:", err);
+      toast.error(err.message || "Failed to create advice workflow");
+    }
+  };
+
   useEffect(() => {
     fetchWorkflows();
   }, [fetchWorkflows]);
@@ -256,5 +303,7 @@ export const useClientWorkflows = (clientId: string) => {
     refetch: fetchWorkflows,
     createWorkflow,
     createFaisControl,
+    updateWorkflowStatus,
+    createAdviceWorkflow,
   };
 };
