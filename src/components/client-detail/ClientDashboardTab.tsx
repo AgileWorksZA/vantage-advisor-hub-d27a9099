@@ -663,12 +663,16 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
                     <div key={item.label} className="flex justify-between items-center py-1 border-b border-border/50">
                       <span className="text-xs text-muted-foreground">{item.label}</span>
                       <div className="flex items-center gap-2">
-                        <svg width="48" height="16" className="shrink-0">
-                          <polyline points={polyPoints} fill="none" stroke={sparkColor} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                        <span className={`text-[10px] font-semibold tabular-nums ${isPositive ? 'text-emerald-600' : 'text-red-500'}`}>
-                          {isPositive ? '+' : ''}{item.changePct}%
-                        </span>
+                        {item.highlight && (
+                          <>
+                            <svg width="48" height="16" className="shrink-0">
+                              <polyline points={polyPoints} fill="none" stroke={sparkColor} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                            <span className={`text-[10px] font-semibold tabular-nums ${isPositive ? 'text-emerald-600' : 'text-red-500'}`}>
+                              {isPositive ? '+' : ''}{item.changePct}%
+                            </span>
+                          </>
+                        )}
                         <span className={`text-sm font-medium flex items-center gap-1 ${item.highlight ? (item.value >= 0 ? "text-emerald-600" : "text-red-500") : ""}`}>
                           {item.highlight && (item.value >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />)}
                           {formatTotal(item.value, currencySymbol)}
