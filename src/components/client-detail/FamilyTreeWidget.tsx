@@ -2,8 +2,9 @@ import React, { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { GripVertical, X } from "lucide-react";
+import { HoverCard, HoverCardTrigger, HoverCardContent } from "@/components/ui/hover-card";
 import { FamilyMemberListItem, BusinessListItem } from "@/hooks/useClientRelationships";
-import { Client } from "@/types/client";
+import { Client, calculateAge } from "@/types/client";
 
 interface FamilyTreeWidgetProps {
   client: Client;
@@ -23,6 +24,15 @@ const AVATAR_COLORS = [
   "hsl(150, 50%, 40%)",
   "hsl(0, 50%, 50%)",
   "hsl(45, 60%, 45%)",
+];
+
+const ACCOUNT_TYPES = [
+  "Retirement Annuity",
+  "Unit Trust",
+  "Tax-Free Savings",
+  "Living Annuity",
+  "Endowment",
+  "Preservation Fund",
 ];
 
 function getInitials(name: string) {
@@ -47,6 +57,32 @@ function formatValue(value: number, symbol: string) {
   return `${symbol}${value.toLocaleString()}`;
 }
 
+function generateMockAccounts(name: string, totalValue: number, currencySymbol: string) {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = (hash << 5) - hash + name.charCodeAt(i);
+  const count = 2 + (Math.abs(hash) % 2); // 2 or 3 accounts
+  const startIdx = Math.abs(hash) % ACCOUNT_TYPES.length;
+  const accounts: { name: string; value: number }[] = [];
+  let remaining = totalValue;
+  for (let i = 0; i < count; i++) {
+    const acctName = ACCOUNT_TYPES[(startIdx + i) % ACCOUNT_TYPES.length];
+    const value = i === count - 1 ? remaining : Math.round(remaining * (0.3 + ((hash >> (i * 3)) & 3) * 0.1));
+    accounts.push({ name: acctName, value: Math.max(0, value) });
+    remaining -= value;
+  }
+  return accounts;
+}
+
+function estimateAge(relationship: string | undefined, clientAge: number): number {
+  if (!relationship) return clientAge;
+  const rel = relationship.toLowerCase();
+  if (rel === "spouse") return clientAge + (clientAge % 3 === 0 ? -2 : 1);
+  if (rel === "child") return Math.max(1, clientAge - 25 + (clientAge % 5));
+  if (rel === "parent") return clientAge + 25 + (clientAge % 3);
+  if (rel === "sibling") return clientAge + (clientAge % 2 === 0 ? -3 : 2);
+  return clientAge; // business relationships
+}
+
 interface NodeProps {
   name: string;
   relationship?: string;
@@ -54,39 +90,76 @@ interface NodeProps {
   currencySymbol: string;
   isMain?: boolean;
   status?: "active" | "attention";
+  age?: number;
 }
 
-const TreeNode = ({ name, relationship, value, currencySymbol, isMain, status = "active" }: NodeProps) => (
-  <div className="flex flex-col items-center gap-0.5">
-    <div className="relative">
-      <div
-        className="flex items-center justify-center rounded-full text-white font-semibold"
-        style={{
-          backgroundColor: getAvatarColor(name),
-          width: isMain ? 44 : 36,
-          height: isMain ? 44 : 36,
-          fontSize: isMain ? 13 : 10,
-        }}
-      >
-        {getInitials(name)}
-      </div>
-      <span
-        className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-background ${
-          status === "active" ? "bg-emerald-500" : "bg-amber-500"
-        }`}
-      />
+const TreeNode = ({ name, relationship, value, currencySymbol, isMain, status = "active", age }: NodeProps) => {
+  const accounts = useMemo(() => generateMockAccounts(name, value, currencySymbol), [name, value, currencySymbol]);
+
+  return (
+    <div className="flex flex-col items-center gap-0.5">
+      <HoverCard openDelay={200} closeDelay={100}>
+        <HoverCardTrigger asChild>
+          <div className="relative cursor-pointer">
+            <div
+              className="flex items-center justify-center rounded-full text-white font-semibold"
+              style={{
+                backgroundColor: getAvatarColor(name),
+                width: isMain ? 44 : 36,
+                height: isMain ? 44 : 36,
+                fontSize: isMain ? 13 : 10,
+              }}
+            >
+              {getInitials(name)}
+            </div>
+            <span
+              className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-background ${
+                status === "active" ? "bg-emerald-500" : "bg-amber-500"
+              }`}
+            />
+          </div>
+        </HoverCardTrigger>
+        <HoverCardContent className="w-56 p-3" side="top" sideOffset={8}>
+          <p className="text-xs font-semibold text-foreground mb-2">{name}</p>
+          <table className="w-full text-[10px]">
+            <thead>
+              <tr className="border-b border-border">
+                <th className="text-left pb-1 text-muted-foreground font-medium">Account</th>
+                <th className="text-right pb-1 text-muted-foreground font-medium">AUM</th>
+              </tr>
+            </thead>
+            <tbody>
+              {accounts.map((a, i) => (
+                <tr key={i} className="border-b border-border/50 last:border-0">
+                  <td className="py-1 text-foreground">{a.name}</td>
+                  <td className="py-1 text-right font-medium text-foreground">{formatValue(a.value, currencySymbol)}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td className="pt-1 font-semibold text-foreground">Total</td>
+                <td className="pt-1 text-right font-semibold text-foreground">{formatValue(value, currencySymbol)}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </HoverCardContent>
+      </HoverCard>
+      <span className={`text-[11px] font-medium text-foreground text-center leading-tight max-w-[88px] truncate ${isMain ? "font-semibold" : ""}`}>
+        {name}
+      </span>
+      {age !== undefined && (
+        <span className="text-[9px] text-muted-foreground">Age {age}</span>
+      )}
+      {relationship && (
+        <span className="text-[9px] text-muted-foreground">{relationship}</span>
+      )}
+      <span className="text-[9px] font-medium text-muted-foreground">
+        {formatValue(value, currencySymbol)}
+      </span>
     </div>
-    <span className={`text-[11px] font-medium text-foreground text-center leading-tight max-w-[72px] truncate ${isMain ? "font-semibold" : ""}`}>
-      {name}
-    </span>
-    {relationship && (
-      <span className="text-[9px] text-muted-foreground">{relationship}</span>
-    )}
-    <span className="text-[9px] font-medium text-muted-foreground">
-      {formatValue(value, currencySymbol)}
-    </span>
-  </div>
-);
+  );
+};
 
 const FamilyTreeWidget = ({
   client,
@@ -96,6 +169,8 @@ const FamilyTreeWidget = ({
   currencySymbol,
   onClose,
 }: FamilyTreeWidgetProps) => {
+  const clientAge = calculateAge(client.date_of_birth);
+
   const allMembers = useMemo(() => {
     const members = [
       ...familyMembers.map((f, i) => ({
@@ -104,6 +179,7 @@ const FamilyTreeWidget = ({
         relationship: f.familyType,
         status: (i % 3 === 2 ? "attention" : "active") as "active" | "attention",
         value: Math.round(totalAssetValue * (0.05 + (i * 0.08) % 0.3)),
+        age: estimateAge(f.familyType, clientAge),
       })),
       ...businesses.map((b, i) => ({
         id: b.id,
@@ -111,10 +187,11 @@ const FamilyTreeWidget = ({
         relationship: b.type,
         status: "active" as const,
         value: Math.round(totalAssetValue * (0.1 + (i * 0.05) % 0.2)),
+        age: undefined as number | undefined,
       })),
     ];
     return members;
-  }, [familyMembers, businesses, totalAssetValue]);
+  }, [familyMembers, businesses, totalAssetValue, clientAge]);
 
   const clientName = `${client.first_name} ${client.surname || ""}`.trim();
 
@@ -131,16 +208,15 @@ const FamilyTreeWidget = ({
       </CardHeader>
       <CardContent className="px-4 pb-4 pt-0 min-h-0 overflow-auto">
         <div className="flex flex-col items-center">
-          {/* Main client node */}
           <TreeNode
             name={clientName}
             value={totalAssetValue}
             currencySymbol={currencySymbol}
             isMain
             status="active"
+            age={clientAge || undefined}
           />
 
-          {/* Connecting lines */}
           {allMembers.length > 0 && (
             <svg
               width="100%"
@@ -169,9 +245,8 @@ const FamilyTreeWidget = ({
             </svg>
           )}
 
-          {/* Member nodes */}
           {allMembers.length > 0 ? (
-            <div className="flex flex-wrap justify-center gap-3 mt-0.5">
+            <div className="flex flex-wrap justify-around gap-4 w-full mt-0.5">
               {allMembers.map((m) => (
                 <TreeNode
                   key={m.id}
@@ -180,6 +255,7 @@ const FamilyTreeWidget = ({
                   value={m.value}
                   currencySymbol={currencySymbol}
                   status={m.status}
+                  age={m.age}
                 />
               ))}
             </div>
