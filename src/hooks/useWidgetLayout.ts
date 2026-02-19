@@ -105,8 +105,27 @@ export const useWidgetLayout = ({ pageId, defaultLayout, userId }: UseWidgetLayo
                   onConflict: 'user_id,page_id',
                 }
               );
-          } else {
-            setLayout(savedLayout);
+        } else {
+            // Check for new widgets missing from saved layout
+            const savedIds = new Set(savedLayout.map(item => item.i));
+            const missingWidgets = defaultLayout.filter(item => !savedIds.has(item.i));
+
+            if (missingWidgets.length > 0) {
+              const mergedLayout = [...savedLayout, ...missingWidgets];
+              setLayout(mergedLayout);
+              await supabase
+                .from('user_widget_layouts')
+                .upsert({
+                  user_id: userId,
+                  page_id: pageId,
+                  layout: mergedLayout as unknown as Json,
+                  updated_at: new Date().toISOString(),
+                }, {
+                  onConflict: 'user_id,page_id'
+                });
+            } else {
+              setLayout(savedLayout);
+            }
           }
         }
       }
