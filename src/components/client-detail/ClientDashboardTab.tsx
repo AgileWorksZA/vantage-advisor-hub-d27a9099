@@ -8,6 +8,7 @@ import { EChartsWrapper } from "@/components/ui/echarts-wrapper";
 import { MultiSelect, MultiSelectGroup, EnrichedOption } from "@/components/ui/multi-select";
 import FamilyTreeWidget from "./FamilyTreeWidget";
 import { generateClient360Data, mapNationalityToJurisdiction, formatTotal } from "@/data/regional360ViewData";
+import { getOutstandingDocsForRegion } from "@/data/documentTypes";
 import { useClientRelationships } from "@/hooks/useClientRelationships";
 import { Client, calculateAge, formatBirthday } from "@/types/client";
 import { DraggableWidgetGrid } from "@/components/widgets/DraggableWidgetGrid";
@@ -19,7 +20,7 @@ import {
   Calendar, Gift, FileCheck, TrendingUp, TrendingDown, ArrowRight,
   Users, AlertTriangle, Clock, CheckCircle2, Target, Zap,
   ArrowRightLeft, Layers, Building2, Briefcase, Landmark, Receipt, Banknote,
-  GripVertical, X, User, Shield, Phone, Mail, CircleCheckBig, UserPlus,
+  GripVertical, X, User, Shield, Phone, Mail, CircleCheckBig, UserPlus, Send,
 } from "lucide-react";
 import {
   Table,
@@ -80,11 +81,7 @@ const advisorData = [
   { type: "Secondary", advisor: "Van Zyl, Christo", relationship: "Shared", rating: "4", role: "Investment Advisor" },
 ];
 
-const outstandingDocs = [
-  { document: "FICA - Address verification", workflow: "FICA - Individual" },
-  { document: "Proof of income", workflow: "Annual Review" },
-  { document: "Risk profile questionnaire", workflow: "Advice Cycle" },
-];
+// outstandingDocs now sourced from getOutstandingDocsForRegion
 
 // --- Helpers ---
 function seededRandom(seed: string): () => number {
@@ -987,37 +984,63 @@ const ClientDashboardTab = ({ client, clientId, onTabChange, userId }: ClientDas
         )}
 
         {/* Outstanding Documents */}
-        {isWidgetVisible('outstanding-docs') && (
+        {isWidgetVisible('outstanding-docs') && (() => {
+          const regionalDocs = getOutstandingDocsForRegion(selectedRegion, clientId);
+          const overdueCount = regionalDocs.filter(d => d.status === "Overdue").length;
+          const pendingCount = regionalDocs.filter(d => d.status === "Pending").length;
+          const dueSoonCount = regionalDocs.filter(d => d.status === "Due Soon").length;
+          return (
           <div key="outstanding-docs">
             <Card className="h-full">
               <CardHeader className="widget-drag-handle flex flex-row items-center justify-between py-3 px-4 cursor-move">
                 <div className="flex items-center gap-2">
                   <GripVertical className="w-4 h-4 text-muted-foreground" />
-                   <CardTitle className="text-sm font-medium">Outstanding Documents</CardTitle>
-                 </div>
-                 <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleToggleWidget('outstanding-docs', false)}><X className="w-4 h-4" /></Button>
-               </CardHeader>
+                  <FileCheck className="h-4 w-4 text-muted-foreground" />
+                  <CardTitle className="text-sm font-medium">Outstanding Documents</CardTitle>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  {overdueCount > 0 && <Badge variant="destructive" className="text-[10px] px-1.5 py-0">{overdueCount} Overdue</Badge>}
+                  {dueSoonCount > 0 && <Badge className="text-[10px] px-1.5 py-0 bg-amber-500 text-white border-amber-500 hover:bg-amber-600">{dueSoonCount} Due Soon</Badge>}
+                  {pendingCount > 0 && <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{pendingCount} Pending</Badge>}
+                  <Button variant="outline" size="sm" className="h-6 text-[10px] px-2 ml-1">
+                    <Send className="w-3 h-3 mr-1" />Request All
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleToggleWidget('outstanding-docs', false)}><X className="w-4 h-4" /></Button>
+                </div>
+              </CardHeader>
               <CardContent className="px-4 pb-4">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="text-xs font-normal h-8 px-3">Document</TableHead>
-                      <TableHead className="text-xs font-normal h-8 px-3">Workflow</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {outstandingDocs.map((doc, index) => (
-                      <TableRow key={index}>
-                        <TableCell className="text-sm py-2 px-3">{doc.document}</TableCell>
-                        <TableCell className="text-sm py-2 px-3">{doc.workflow}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                <div className="space-y-0 max-h-[260px] overflow-auto">
+                  {regionalDocs.map((doc, index) => {
+                    const statusDotColor = doc.status === "Overdue"
+                      ? "bg-destructive"
+                      : doc.status === "Due Soon"
+                        ? "bg-amber-500"
+                        : "bg-blue-500";
+                    const daysText = doc.daysOverdue > 0
+                      ? `${doc.daysOverdue} days overdue`
+                      : `Due in ${Math.abs(doc.daysOverdue)} days`;
+                    const daysColor = doc.daysOverdue > 0 ? "text-destructive" : "text-muted-foreground";
+                    const priorityVariant = doc.priority === "High" ? "destructive" : "outline";
+                    return (
+                      <div key={index} className="flex items-start gap-2.5 py-2 border-b border-border/50 last:border-0">
+                        <div className={`w-2 h-2 rounded-full ${statusDotColor} shrink-0 mt-1.5`} />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium truncate">{doc.document}</p>
+                          <p className="text-[10px] text-muted-foreground truncate">{doc.workflow}</p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className={`text-[10px] ${daysColor} whitespace-nowrap`}>{daysText}</span>
+                          <Badge variant={priorityVariant} className="text-[10px] px-1.5 py-0">{doc.priority}</Badge>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </CardContent>
             </Card>
           </div>
-        )}
+          );
+        })()}
 
         {/* Client Portfolio */}
         {isWidgetVisible('client-portfolio') && (
