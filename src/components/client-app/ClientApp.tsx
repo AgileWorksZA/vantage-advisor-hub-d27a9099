@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Home, PieChart, MessageSquare, FileText, MoreHorizontal, Bell } from "lucide-react";
+import { Home, PieChart, MessageSquare, FileText, MoreHorizontal, Bell, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import ClientPickerDialog from "./ClientPickerDialog";
@@ -8,6 +8,7 @@ import ClientPortfolioTab from "./ClientPortfolioTab";
 import ClientMessagesTab from "./ClientMessagesTab";
 import ClientDocumentsTab from "./ClientDocumentsTab";
 import ClientMoreTab from "./ClientMoreTab";
+import ClientSettingsMenu from "./ClientSettingsMenu";
 
 type ClientTab = "home" | "portfolio" | "messages" | "documents" | "more";
 
@@ -39,6 +40,7 @@ const ClientApp = () => {
     }
   });
   const [showPicker, setShowPicker] = useState(!selectedClient);
+  const [showSettings, setShowSettings] = useState(false);
 
   const handleSelectClient = (client: SelectedClient) => {
     setSelectedClient(client);
@@ -56,6 +58,14 @@ const ClientApp = () => {
     return (
       <div className="relative w-full h-full bg-background">
         <ClientPickerDialog onSelect={handleSelectClient} />
+      </div>
+    );
+  }
+
+  if (showSettings) {
+    return (
+      <div className="relative w-full h-full bg-background">
+        <ClientSettingsMenu onBack={() => setShowSettings(false)} onChangeClient={handleChangeClient} />
       </div>
     );
   }
@@ -100,6 +110,9 @@ const ClientApp = () => {
             <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-destructive text-destructive-foreground text-[10px] rounded-full flex items-center justify-center">
               2
             </span>
+          </Button>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowSettings(true)}>
+            <Settings className="h-4 w-4" />
           </Button>
           <button onClick={handleChangeClient} className="shrink-0">
             <div className="h-8 w-8 rounded-full bg-[hsl(220,60%,50%)] flex items-center justify-center text-white text-xs font-bold">
