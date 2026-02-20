@@ -54,7 +54,7 @@ const AppContent = () => {
     }
     return (
       <div className="fixed inset-0 z-[90] bg-slate-950 flex items-center justify-center">
-        <div className="w-[393px] h-[852px] rounded-none overflow-hidden ring-[6px] ring-slate-800 shadow-2xl shadow-black/50 relative">
+        <div className="w-[393px] h-[852px] rounded-[40px] overflow-hidden ring-[6px] ring-slate-800 shadow-2xl shadow-black/50 relative">
           {showSplash ? <MobileSplashScreen /> : <MobileApp />}
         </div>
       </div>
@@ -71,7 +71,7 @@ const AppContent = () => {
     }
     return (
       <div className="fixed inset-0 z-[90] bg-slate-950 flex items-center justify-center">
-        <div className="w-[393px] h-[852px] rounded-none overflow-hidden ring-[6px] ring-slate-800 shadow-2xl shadow-black/50 relative">
+        <div className="w-[393px] h-[852px] rounded-[40px] overflow-hidden ring-[6px] ring-slate-800 shadow-2xl shadow-black/50 relative">
           {showSplash ? <ClientSplashScreen /> : <ClientApp />}
         </div>
       </div>
