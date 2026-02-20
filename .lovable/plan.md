@@ -1,93 +1,110 @@
 
-
-## Revamp Practice Personnel List with Database-Driven, Region-Aware Team Members
+## Rename "Mobile" to "Adviser App" and Add a New "Client App"
 
 ### Overview
 
-Replace the hardcoded South African personnel list on the Practice page with a dynamic, database-driven view. The page will show an adviser dropdown filtered by the current jurisdiction, and display team members linked to the selected adviser. All PSG references will be replaced with Vantage branding.
+The current Web/Mobile toggle will become a three-way selector: **Web**, **Adviser App**, and **Client App**. The existing mobile experience becomes the "Adviser App" (unchanged functionality, just renamed). A brand-new "Client App" will be created with its own splash screen, bottom tab navigation, and client-facing content derived from the client dashboard widgets.
 
-### Changes
+### What the Client App will include
 
-#### 1. Replace hardcoded `personnelData` with database-sourced team members
+The Client App ("ClientFirst") is a mobile-frame experience similar to AdvisorFirst but designed from the client's perspective. It will feature:
 
-The Practice page currently uses a static `personnelData` array with 6 South African entries. This will be replaced with a query to the `team_members` table, filtered by:
-- The current jurisdiction (from `RegionContext`)
-- The selected adviser (from a new dropdown)
+**Bottom tabs:**
+1. **Home** -- Portfolio summary (total AUM, asset allocation donut, valuation change sparkline), upcoming meetings with adviser, and key dates/milestones
+2. **Portfolio** -- Holdings breakdown, geographic diversification map, performance chart (reusing data generators from `ClientDashboardTab`)
+3. **Messages** -- Simplified chat interface to communicate with their adviser (mock WhatsApp-style thread)
+4. **Documents** -- List of outstanding documents and uploaded docs (from `getOutstandingDocsForRegion` and client document types)
+5. **More** -- Profile info, adviser contact card, settings
 
-#### 2. Add adviser dropdown filter
+**Header:** "ClientFirst" branding (similar gradient style to "AdvisorFirst"), client avatar, notification bell
 
-At the top of the Personnel List, add a `Select` dropdown populated with primary advisers from the `team_members` table for the current jurisdiction. When an adviser is selected, only their team members (matching `team_name`) are displayed. The first adviser is auto-selected on load or jurisdiction change.
+**Splash screen:** "ClientFirst" with tagline "Your Wealth Companion" and Vantage branding
 
-#### 3. Replace all PSG references
-
-Across the affected files, replace:
-- `psg.co.za` email domains with `vantage.co`
-- `"PSG Wealth Tygervalley"`, `"PSG Support Team"` with Vantage equivalents
-- `"PSG Securities"` section heading and username label
-- `"myPSG"` portal references with `"myVantage"`
-- `"Planning your wealth with PSG"` with `"Planning your wealth with Vantage"`
-- `"PSG Balanced"` fund reference with a generic alternative
-- `"PSG Wealth Building Fund"` product reference
-- `"PSL Compliance team"` with `"Compliance team"`
-
-#### 4. Make Profile tab jurisdiction-aware
-
-The ProfileTab currently shows SA-specific fields (SA ID number `7905245013084`, phone prefix `27`, address with Province/Western Cape/South Africa). These will adapt based on the selected team member's jurisdiction using helpers from `jurisdiction-utils.ts`.
+**Client selection:** Since this is a demo, a client picker will appear on first load letting the user choose which client to impersonate (from the clients table).
 
 ### Technical Details
 
-**File: `src/pages/Practice.tsx`**
+**File: `src/contexts/AppModeContext.tsx`**
+1. Change `AppMode` type from `"web" | "mobile"` to `"web" | "adviser" | "client"`
+2. Update storage key handling: `"mobile"` stored value maps to `"adviser"` for backward compat
+3. Show splash for both `"adviser"` and `"client"` modes
 
-1. Remove the hardcoded `personnelData` array (lines 29-36)
-2. Import `useRegion` from `@/contexts/RegionContext` and `useTeamMembers` from `@/hooks/useTeamMembers`
-3. Add state for `selectedAdvisorTeam` (string, the team_name of the selected primary adviser)
-4. In `PersonnelList`:
-   - Filter `teamMembers` by current `selectedRegion` jurisdiction
-   - Extract unique primary advisers (where `is_primary_adviser === true`) for the dropdown
-   - Add a `Select` dropdown above the table to pick an adviser
-   - Display only members whose `team_name` matches the selected adviser's team
-   - Auto-select first adviser when jurisdiction changes
-5. Update the personnel table columns to show: Name, Role, Email, Team, Status (Active)
-6. When clicking a team member, pass their data (including jurisdiction) to `PersonnelSettings`
-7. Replace all `psg.co.za` emails with `vantage.co`
-8. Replace `"myPSG"` with `"myVantage"` in the Preferences tab
-9. Replace `"PSG Securities"` section with `"Trading Platform"` in the Integrations tab
-10. Replace `"Planning your wealth with PSG"` with `"Planning your wealth with Vantage"` in the Referrals tab
-11. Update the ProfileTab to use jurisdiction-aware ID labels and placeholder data
+**File: `src/components/dashboard/UserMenu.tsx`**
+1. Replace the two-button Web/Mobile toggle with a three-button toggle: Web | Adviser App | Client App
+2. Update `setMode("mobile")` calls to `setMode("adviser")`
+3. Add `setMode("client")` for the Client App button
+4. Use `Smartphone` icon for Adviser App, `User` icon for Client App
 
-**File: `src/components/practice/TeamsTab.tsx`**
+**File: `src/components/mobile/MobileSettingsMenu.tsx`**
+1. Update Web/Mobile toggle to three-way: Web | Adviser | Client
+2. Replace label "Mobile" with "Adviser"
 
-1. Replace hardcoded `initialTeamsData` with database-driven data from `useTeamMembers`
-2. Accept a `jurisdiction` and `advisorTeamName` prop to filter displayed teams
-3. Replace PSG team names: `"PSG Wealth Tygervalley"` -> `"Vantage Wealth Tygervalley"`, `"PSG Support Team"` -> `"Vantage Support Team"`
+**File: `src/App.tsx`**
+1. Import new `ClientApp` and `ClientSplashScreen` components
+2. Update the mode check: `mode === "adviser"` renders MobileApp (renamed from `mobile`), `mode === "client"` renders ClientApp
+3. Keep the phone-frame wrapper for both adviser and client modes
 
-**File: `src/components/practice/ActivityLogTabEnhanced.tsx`**
+**New file: `src/components/client-app/ClientSplashScreen.tsx`**
+- Similar to `MobileSplashScreen` but branded "ClientFirst" with tagline "Your Wealth Companion"
+- Same gradient background and loading bar animation
 
-- Replace `"PSG Securities Ltd Local"` with `"Vantage Securities Local"`
-- Replace `"PSG Wealth Building Fund"` with `"Vantage Growth Fund"`
+**New file: `src/components/client-app/ClientApp.tsx`**
+- Main client app shell with header ("ClientFirst" branding), bottom tab bar, and content area
+- Tabs: Home, Portfolio, Messages, Documents, More
+- On first load, shows a client picker dialog (fetches from `clients` table) so user can choose which client to impersonate
+- Stores selected client ID in localStorage (`vantage-client-app-selected-client`)
+- Passes client data down to all tab components
 
-**File: `src/components/client-detail/ClientRecentActivityTab.tsx`**
+**New file: `src/components/client-app/ClientHomeTab.tsx`**
+- Portfolio summary card (total AUM, asset allocation pie chart using ECharts)
+- Valuation change with sparkline (reusing `generateClient360Data`)
+- Upcoming meetings section (mock data: next adviser meeting date/time)
+- Key dates widget (birthday, policy renewals, review dates)
+- Quick action buttons: "Message Adviser", "Upload Document", "Request Meeting"
 
-- Replace `"PSG Wealth Building Fund"` with `"Vantage Growth Fund"`
+**New file: `src/components/client-app/ClientPortfolioTab.tsx`**
+- Holdings breakdown table with fund names, values, allocation percentages
+- Asset allocation donut chart (ECharts)
+- Geographic diversification mini-map (reusing `WorldMapSVG`)
+- Performance sparkline for selected period (6m/1y/3y/5y toggle)
 
-**File: `src/components/client-detail/ClientNotesTab.tsx`**
+**New file: `src/components/client-app/ClientMessagesTab.tsx`**
+- Simple chat thread with mock conversation between client and adviser
+- Message input at bottom (non-functional, demo only)
+- Shows adviser name/avatar at top
+- Recent messages with timestamps, read receipts
 
-- Replace `"Visible on myPSG"` column header with `"Visible on Portal"`
+**New file: `src/components/client-app/ClientDocumentsTab.tsx`**
+- Outstanding documents section (using `getOutstandingDocsForRegion`)
+- Uploaded documents list with status badges (Pending, Approved, Expired)
+- Upload button (non-functional demo)
 
-**File: `src/hooks/useClientNotes.ts`**
+**New file: `src/components/client-app/ClientMoreTab.tsx`**
+- Client profile summary (name, contact details, ID number)
+- Adviser contact card with call/email actions
+- Dark mode toggle
+- Switch back to Web/Adviser mode
+- Sign out
 
-- Rename `visibleMyPSG` property to `visiblePortal`
+**New file: `src/components/client-app/ClientPickerDialog.tsx`**
+- Modal dialog shown on first launch of client app
+- Fetches clients from database, displays as searchable list
+- User selects a client to "impersonate" for the demo
+- Stores selection in localStorage
 
-**File: `src/components/command-center/PortfolioDriftNudge.tsx`**
-
-- Replace `"PSG Balanced"` with `"Vantage Balanced"`
+### Files to Create
+- `src/components/client-app/ClientSplashScreen.tsx`
+- `src/components/client-app/ClientApp.tsx`
+- `src/components/client-app/ClientHomeTab.tsx`
+- `src/components/client-app/ClientPortfolioTab.tsx`
+- `src/components/client-app/ClientMessagesTab.tsx`
+- `src/components/client-app/ClientDocumentsTab.tsx`
+- `src/components/client-app/ClientMoreTab.tsx`
+- `src/components/client-app/ClientPickerDialog.tsx`
 
 ### Files to Edit
-- `src/pages/Practice.tsx` -- major refactor: database-driven, adviser dropdown, PSG removal
-- `src/components/practice/TeamsTab.tsx` -- database-driven, remove PSG names
-- `src/components/practice/ActivityLogTabEnhanced.tsx` -- replace PSG references
-- `src/components/client-detail/ClientRecentActivityTab.tsx` -- replace PSG reference
-- `src/components/client-detail/ClientNotesTab.tsx` -- replace myPSG column label
-- `src/hooks/useClientNotes.ts` -- rename visibleMyPSG field
-- `src/components/command-center/PortfolioDriftNudge.tsx` -- replace PSG fund name
-
+- `src/contexts/AppModeContext.tsx`
+- `src/App.tsx`
+- `src/components/dashboard/UserMenu.tsx`
+- `src/components/mobile/MobileSettingsMenu.tsx`
+- `src/components/mobile/MobileApp.tsx` (update "AdvisorFirst" header text reference to match rename, update mode references from `"mobile"` to `"adviser"`)
