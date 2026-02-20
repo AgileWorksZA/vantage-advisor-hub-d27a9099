@@ -7,6 +7,7 @@ import { ThemeProvider } from "next-themes";
 import { RegionProvider } from "@/contexts/RegionContext";
 import { PageContextProvider } from "@/contexts/PageContext";
 import { AppModeProvider, useAppMode } from "@/contexts/AppModeContext";
+import { useIsMobile } from "@/hooks/use-mobile";
 import MobileSplashScreen from "@/components/mobile/MobileSplashScreen";
 import MobileApp from "@/components/mobile/MobileApp";
 import ClientSplashScreen from "@/components/client-app/ClientSplashScreen";
@@ -41,8 +42,16 @@ const queryClient = new QueryClient();
 
 const AppContent = () => {
   const { mode, showSplash } = useAppMode();
+  const isMobile = useIsMobile();
 
   if (mode === "adviser") {
+    if (isMobile) {
+      return (
+        <div className="fixed inset-0 z-[90] bg-background">
+          {showSplash ? <MobileSplashScreen /> : <MobileApp />}
+        </div>
+      );
+    }
     return (
       <div className="fixed inset-0 z-[90] bg-slate-950 flex items-center justify-center">
         <div className="w-[393px] h-[852px] rounded-[40px] overflow-hidden ring-[6px] ring-slate-800 shadow-2xl shadow-black/50 relative">
@@ -53,6 +62,13 @@ const AppContent = () => {
   }
 
   if (mode === "client") {
+    if (isMobile) {
+      return (
+        <div className="fixed inset-0 z-[90] bg-background">
+          {showSplash ? <ClientSplashScreen /> : <ClientApp />}
+        </div>
+      );
+    }
     return (
       <div className="fixed inset-0 z-[90] bg-slate-950 flex items-center justify-center">
         <div className="w-[393px] h-[852px] rounded-[40px] overflow-hidden ring-[6px] ring-slate-800 shadow-2xl shadow-black/50 relative">
