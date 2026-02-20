@@ -1,53 +1,66 @@
 
 
-## Add Voice-to-Adviser Chat in Client App
+## Interactive Widget Home Screen for Client App
 
 ### Overview
 
-Add a microphone FAB (floating action button) to the Client App that opens a full-screen voice chat interface. The client speaks, speech is transcribed to text and displayed as chat bubbles, and contextual action suggestions appear at the bottom based on what was said. Tapping an action either delivers a canned response or offers to message the adviser.
+Replace the static quick-action buttons (Message Adviser, Upload Document, Request Meeting) on the Client App home screen with rich, interactive widget cards. The widgets will mirror the adviser dashboard experience (Portfolio Overview, Valuation, Geographic Diversification, Family, Client Portfolio, Household, Onboarding) but rendered as vertically-stacked mobile cards. Clients can customize which widgets appear and their order via a settings gear in the section header.
 
-### User Flow
+### Widget Catalogue
 
-1. Client sees a microphone FAB above the bottom tab bar (visible on all tabs)
-2. Tapping it opens a full-screen chat view with a back arrow header ("Talk to Adviser")
-3. A mic button at the bottom starts browser SpeechRecognition
-4. Transcribed text appears as client chat bubbles in real time
-5. When recording stops, the system analyses the transcript and shows suggested action chips at the bottom (e.g. "Check portfolio performance", "Schedule a meeting", "Message adviser about risk cover")
-6. Tapping a suggestion either:
-   - Shows an inline AI-style response (for informational queries)
-   - Opens a pre-filled message to send to the adviser (for actionable items)
+The following widgets will be available (all data sourced from existing `generateClient360Data` and seeded helpers already used in `ClientDashboardTab`):
+
+1. **Portfolio Summary** (default: visible) - Gradient hero card with total AUM, monthly change %, retained from current design
+2. **Client Portfolio** - Donut chart, total value, 12-month performance sparkline, top products with growth %
+3. **Change in Valuation** - Period selector (6M/1Y/3Y/5Y), Starting Value, Deposits/Withdrawals, Investment Returns, Ending Value with sparklines
+4. **Geographic Diversification** - World map SVG with region dots and percentage legend
+5. **Family and Relationships** - Circular avatars with relationship labels, names, ages, and AUM per member
+6. **Household** - Combined value with YTD growth, list of members with sparklines and growth %
+7. **Onboarding** - KYC/AML verification status with masked personal details and check statuses
+8. **Holdings** (default: visible) - Existing product listing, retained
+9. **Upcoming Meeting** (default: visible) - Existing meeting card, retained
+
+### Customization
+
+- A "Customise" button (sliders icon) will appear in the home tab header area
+- Tapping it opens a bottom sheet / overlay listing all available widgets with toggle switches
+- Widget visibility preferences are stored in `localStorage` (keyed per client) so no backend changes needed
+- Widgets render in a fixed vertical stack order (mobile-friendly, no drag-and-drop needed on small screens)
 
 ### Technical Details
 
-**New file: `src/components/client-app/ClientVoiceChat.tsx`**
+**Edit: `src/components/client-app/ClientHomeTab.tsx`**
 
-A full-screen component with:
-- **Header**: Back arrow + "Talk to Adviser" title
-- **Chat area**: ScrollArea showing transcribed speech as client bubbles and system/adviser responses as left-aligned bubbles
-- **Suggested actions bar**: Horizontal scrollable chips at the bottom, generated from keyword matching in the transcript (reusing the `extractActions` pattern from `MobileVoiceMemo.tsx` but with client-relevant keywords like "portfolio", "meeting", "risk", "retirement", "tax", "statement")
-- **Input area**: Large centered mic button that toggles recording on/off. Uses browser `SpeechRecognition` API (same pattern as `MobileVoiceMemo.tsx`)
-- **Action handling**:
-  - Informational actions (e.g. "Check portfolio") show a simulated adviser response in the chat
-  - Communication actions (e.g. "Message adviser") switch to the Messages tab with a pre-filled draft
+Major rewrite of this component:
+- Import data generation helpers from `regional360ViewData` and seeded random utilities (same pattern as `ClientDashboardTab`)
+- Add `useState` for `visibleWidgets` (string array of widget IDs), initialized from `localStorage`
+- Add `showCustomise` state for the widget picker overlay
+- Replace the quick-actions grid with a vertical stack of widget cards
+- Each widget is a self-contained card component rendered conditionally based on `visibleWidgets`
+- Widget rendering logic extracted from `ClientDashboardTab` patterns but simplified for mobile (single-column, compact sizing)
 
-Action keyword mapping (client-context):
-- "portfolio", "performance", "returns" -> "portfolio" type -> Shows summary response
-- "meeting", "schedule", "appointment" -> "meeting" type -> Offers to message adviser
-- "risk", "cover", "insurance" -> "insurance" type -> Shows info + message option
-- "statement", "document", "report" -> "document" type -> Offers to check documents
-- "tax", "retirement", "planning" -> "planning" type -> Offers to message adviser
+**New: `src/components/client-app/ClientHomeWidgetPicker.tsx`**
 
-**Edit: `src/components/client-app/ClientApp.tsx`**
+A simple overlay/sheet component:
+- Header with "Customise Home" title and close button
+- List of all widget IDs with labels and toggle switches
+- Changes immediately update the parent's `visibleWidgets` state and persist to `localStorage`
 
-- Import `ClientVoiceChat`
-- Add `showVoiceChat` state (boolean, default false)
-- Add a mic FAB button positioned `absolute bottom-[4.5rem] right-4 z-20` (same pattern as adviser app's `MobileVoiceMemo`)
-- When `showVoiceChat` is true, render `ClientVoiceChat` as a full-screen overlay
-- Pass a callback so voice chat can switch to Messages tab with a draft message (via `setActiveTab("messages")`)
+**Widget implementation details (all inside ClientHomeTab):**
+
+- **Client Portfolio**: Small donut chart (inline SVG, no ECharts needed for mobile perf), total value, monthly change, top 3 products with mini sparklines
+- **Change in Valuation**: Period tabs (6M/1Y/3Y/5Y), 4-row breakdown with sparklines and percentage badges, same data logic as `ClientDashboardTab`
+- **Geographic Diversification**: Reuse `WorldMapSVG` component, region dots with percentage legend below
+- **Family and Relationships**: Horizontal scroll of circular avatar nodes with initials, relationship label, age, and AUM value
+- **Household**: Combined value header with YTD growth, vertical list of members with sparklines
+- **Onboarding**: Masked personal details grid, 3 verification checks with status icons, success banner
 
 ### Files to Create
-- `src/components/client-app/ClientVoiceChat.tsx`
+- `src/components/client-app/ClientHomeWidgetPicker.tsx`
 
 ### Files to Edit
-- `src/components/client-app/ClientApp.tsx` (add FAB + voice chat state)
+- `src/components/client-app/ClientHomeTab.tsx` (major rewrite with widget system)
+
+### No Backend Changes Required
+All data comes from existing deterministic generators. Widget preferences stored in localStorage.
 
