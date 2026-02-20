@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { LogOut, Moon, Sun, Sparkles, Monitor, Smartphone } from "lucide-react";
+import { LogOut, Moon, Sun, Sparkles, Monitor, Smartphone, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -29,12 +29,10 @@ export function UserMenu({ userName, userEmail, onSignOut }: UserMenuProps) {
     return stored !== "false";
   });
 
-  // Prevent hydration mismatch
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Get initials from userName (first letter of first word)
   const getInitial = (name: string) => {
     return name.charAt(0).toUpperCase();
   };
@@ -43,8 +41,6 @@ export function UserMenu({ userName, userEmail, onSignOut }: UserMenuProps) {
     setOpen(false);
     onSignOut();
   };
-
-
 
   const toggleTheme = () => {
     setTheme(resolvedTheme === "dark" ? "light" : "dark");
@@ -85,12 +81,12 @@ export function UserMenu({ userName, userEmail, onSignOut }: UserMenuProps) {
           {userEmail && (
             <span className="text-xs text-purple-500">{userEmail}</span>
           )}
-          {/* Web / Mobile Toggle */}
+          {/* Web / Adviser App / Client App Toggle */}
           <div className="flex mt-3 bg-muted rounded-full p-0.5">
             <button
               onClick={() => { setMode("web"); setOpen(false); }}
               className={cn(
-                "flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all",
+                "flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium transition-all",
                 mode === "web"
                   ? "bg-background text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
@@ -100,16 +96,28 @@ export function UserMenu({ userName, userEmail, onSignOut }: UserMenuProps) {
               Web
             </button>
             <button
-              onClick={() => { setMode("mobile"); setOpen(false); }}
+              onClick={() => { setMode("adviser"); setOpen(false); }}
               className={cn(
-                "flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all",
-                mode === "mobile"
+                "flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium transition-all",
+                mode === "adviser"
                   ? "bg-background text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
               <Smartphone className="h-3 w-3" />
-              Mobile
+              Adviser
+            </button>
+            <button
+              onClick={() => { setMode("client"); setOpen(false); }}
+              className={cn(
+                "flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium transition-all",
+                mode === "client"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <User className="h-3 w-3" />
+              Client
             </button>
           </div>
         </div>

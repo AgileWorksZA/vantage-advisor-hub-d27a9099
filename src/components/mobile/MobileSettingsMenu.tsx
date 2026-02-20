@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, Settings, LogOut, Moon, Sun, Sparkles, Monitor, Smartphone, Globe, Users, Mic } from "lucide-react";
+import { ArrowLeft, Settings, LogOut, Moon, Sun, Sparkles, Monitor, Smartphone, User, Globe, Users, Mic } from "lucide-react";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -116,12 +116,12 @@ const MobileSettingsMenu = ({ onBack }: MobileSettingsMenuProps) => {
           {userEmail && (
             <span className="text-xs text-purple-500">{userEmail}</span>
           )}
-          {/* Web / Mobile Toggle */}
+          {/* Web / Adviser / Client Toggle */}
           <div className="flex mt-3 bg-muted rounded-full p-0.5">
             <button
               onClick={() => { setMode("web"); }}
               className={cn(
-                "flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all",
+                "flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium transition-all",
                 mode === "web"
                   ? "bg-background text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
@@ -131,16 +131,28 @@ const MobileSettingsMenu = ({ onBack }: MobileSettingsMenuProps) => {
               Web
             </button>
             <button
-              onClick={() => { setMode("mobile"); }}
+              onClick={() => { setMode("adviser"); }}
               className={cn(
-                "flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all",
-                mode === "mobile"
+                "flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium transition-all",
+                mode === "adviser"
                   ? "bg-background text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
               <Smartphone className="h-3 w-3" />
-              Mobile
+              Adviser
+            </button>
+            <button
+              onClick={() => { setMode("client"); }}
+              className={cn(
+                "flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium transition-all",
+                mode === "client"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <User className="h-3 w-3" />
+              Client
             </button>
           </div>
         </div>

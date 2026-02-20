@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback, ReactNode } from "react";
 
-type AppMode = "web" | "mobile";
+type AppMode = "web" | "adviser" | "client";
 
 interface AppModeContextType {
   mode: AppMode;
@@ -15,15 +15,18 @@ const STORAGE_KEY = "vantage-app-mode";
 export function AppModeProvider({ children }: { children: ReactNode }) {
   const [mode, setModeState] = useState<AppMode>(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
-    return stored === "mobile" ? "mobile" : "web";
+    if (stored === "mobile" || stored === "adviser") return "adviser";
+    if (stored === "client") return "client";
+    return "web";
   });
   const [showSplash, setShowSplash] = useState(() => {
-    return localStorage.getItem(STORAGE_KEY) === "mobile";
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored === "mobile" || stored === "adviser" || stored === "client";
   });
 
   const setMode = useCallback((newMode: AppMode) => {
     localStorage.setItem(STORAGE_KEY, newMode);
-    if (newMode === "mobile") {
+    if (newMode === "adviser" || newMode === "client") {
       setShowSplash(true);
       setModeState(newMode);
       setTimeout(() => setShowSplash(false), 3000);
@@ -33,9 +36,9 @@ export function AppModeProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // On initial load, if mode is mobile, show splash for 3s
+  // On initial load, if mode is adviser/client, show splash for 3s
   useState(() => {
-    if (mode === "mobile") {
+    if (mode === "adviser" || mode === "client") {
       setTimeout(() => setShowSplash(false), 3000);
     }
   });
