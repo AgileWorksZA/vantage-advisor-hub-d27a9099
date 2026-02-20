@@ -9,6 +9,8 @@ import { PageContextProvider } from "@/contexts/PageContext";
 import { AppModeProvider, useAppMode } from "@/contexts/AppModeContext";
 import MobileSplashScreen from "@/components/mobile/MobileSplashScreen";
 import MobileApp from "@/components/mobile/MobileApp";
+import ClientSplashScreen from "@/components/client-app/ClientSplashScreen";
+import ClientApp from "@/components/client-app/ClientApp";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import TermsOfUse from "./pages/TermsOfUse";
@@ -40,11 +42,21 @@ const queryClient = new QueryClient();
 const AppContent = () => {
   const { mode, showSplash } = useAppMode();
 
-  if (mode === "mobile") {
+  if (mode === "adviser") {
     return (
       <div className="fixed inset-0 z-[90] bg-slate-950 flex items-center justify-center">
         <div className="w-[393px] h-[852px] rounded-[40px] overflow-hidden ring-[6px] ring-slate-800 shadow-2xl shadow-black/50 relative">
           {showSplash ? <MobileSplashScreen /> : <MobileApp />}
+        </div>
+      </div>
+    );
+  }
+
+  if (mode === "client") {
+    return (
+      <div className="fixed inset-0 z-[90] bg-slate-950 flex items-center justify-center">
+        <div className="w-[393px] h-[852px] rounded-[40px] overflow-hidden ring-[6px] ring-slate-800 shadow-2xl shadow-black/50 relative">
+          {showSplash ? <ClientSplashScreen /> : <ClientApp />}
         </div>
       </div>
     );
