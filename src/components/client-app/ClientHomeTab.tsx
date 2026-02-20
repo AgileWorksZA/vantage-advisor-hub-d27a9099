@@ -1,11 +1,12 @@
-import { useMemo, useState, useCallback } from "react";
-import { Calendar, TrendingUp, TrendingDown, SlidersHorizontal, Shield, Phone, Mail, CheckCircle2, User } from "lucide-react";
+import { useMemo, useState, useCallback, useRef } from "react";
+import { Calendar, TrendingUp, TrendingDown, SlidersHorizontal, Shield, Phone, Mail, CheckCircle2, User, GripVertical } from "lucide-react";
 import { generateClient360Data, formatTotal } from "@/data/regional360ViewData";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Switch } from "@/components/ui/switch";
 import WorldMapSVG from "@/components/client-detail/WorldMapSVG";
 import SparklineSvg from "@/components/client-detail/portfolio/SparklineSvg";
-import ClientHomeWidgetPicker, { ClientWidgetConfig } from "./ClientHomeWidgetPicker";
 
 interface ClientHomeTabProps {
   clientId: string;
@@ -13,7 +14,7 @@ interface ClientHomeTabProps {
   nationality: string | null;
 }
 
-const ALL_WIDGETS: ClientWidgetConfig[] = [
+const ALL_WIDGETS: { id: string; label: string }[] = [
   { id: "portfolio-summary", label: "Portfolio Summary" },
   { id: "client-portfolio", label: "Client Portfolio" },
   { id: "valuation", label: "Change in Valuation" },
@@ -42,7 +43,6 @@ function seededRandom(seed: string): () => number {
 }
 
 const ClientHomeTab = ({ clientId, clientName, nationality }: ClientHomeTabProps) => {
-  const [showPicker, setShowPicker] = useState(false);
   const [visibleWidgets, setVisibleWidgets] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem(`client-home-widgets-${clientId}`);
@@ -50,12 +50,42 @@ const ClientHomeTab = ({ clientId, clientName, nationality }: ClientHomeTabProps
     } catch { return DEFAULT_VISIBLE; }
   });
 
+  const [widgetOrder, setWidgetOrder] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem(`client-home-widget-order-${clientId}`);
+      return saved ? JSON.parse(saved) : ALL_WIDGETS.map(w => w.id);
+    } catch { return ALL_WIDGETS.map(w => w.id); }
+  });
+
+  const dragIndexRef = useRef<number | null>(null);
+
   const handleToggle = useCallback((id: string, visible: boolean) => {
     setVisibleWidgets(prev => {
       const next = visible ? [...prev, id] : prev.filter(w => w !== id);
       localStorage.setItem(`client-home-widgets-${clientId}`, JSON.stringify(next));
       return next;
     });
+  }, [clientId]);
+
+  const handleDragStart = useCallback((index: number) => {
+    dragIndexRef.current = index;
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+  }, []);
+
+  const handleDrop = useCallback((dropIndex: number) => {
+    const dragIndex = dragIndexRef.current;
+    if (dragIndex === null || dragIndex === dropIndex) return;
+    setWidgetOrder(prev => {
+      const next = [...prev];
+      const [dragged] = next.splice(dragIndex, 1);
+      next.splice(dropIndex, 0, dragged);
+      localStorage.setItem(`client-home-widget-order-${clientId}`, JSON.stringify(next));
+      return next;
+    });
+    dragIndexRef.current = null;
   }, [clientId]);
 
   const isVisible = (id: string) => visibleWidgets.includes(id);
@@ -229,294 +259,318 @@ const ClientHomeTab = ({ clientId, clientName, nationality }: ClientHomeTabProps
           <h2 className="text-lg font-bold text-foreground">Hello, {clientName.split(" ")[0]}</h2>
           <p className="text-xs text-muted-foreground">Here's your portfolio overview</p>
         </div>
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowPicker(true)}>
-          <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
-        </Button>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="end" className="w-64 p-0 z-50 bg-popover border border-border shadow-lg">
+            <div className="px-3 py-2 border-b border-border">
+              <p className="text-sm font-semibold text-foreground">Customise Home</p>
+              <p className="text-[10px] text-muted-foreground">Toggle visibility and drag to reorder</p>
+            </div>
+            <div className="py-1 max-h-[300px] overflow-y-auto">
+              {widgetOrder.map((wId, index) => {
+                const widget = ALL_WIDGETS.find(w => w.id === wId);
+                if (!widget) return null;
+                return (
+                  <div
+                    key={widget.id}
+                    draggable
+                    onDragStart={() => handleDragStart(index)}
+                    onDragOver={handleDragOver}
+                    onDrop={() => handleDrop(index)}
+                    className="flex items-center gap-2 px-3 py-1.5 cursor-grab active:cursor-grabbing hover:bg-muted/50 transition-colors"
+                  >
+                    <GripVertical className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    <span className="text-xs text-foreground flex-1">{widget.label}</span>
+                    <Switch
+                      checked={visibleWidgets.includes(widget.id)}
+                      onCheckedChange={(checked) => handleToggle(widget.id, checked)}
+                      className="scale-75"
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </PopoverContent>
+        </Popover>
       </div>
 
-      {/* Portfolio Summary */}
-      {isVisible("portfolio-summary") && (
-        <div className="bg-gradient-to-br from-[hsl(220,60%,50%)] to-[hsl(260,50%,40%)] rounded-2xl p-4 text-white">
-          <p className="text-xs text-white/70 mb-1">Total Portfolio Value</p>
-          <p className="text-2xl font-bold">
-            {currencySymbol} {totalAUM.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-          </p>
-          <div className={`flex items-center gap-1 mt-1 text-xs ${isPositive ? "text-emerald-300" : "text-red-300"}`}>
-            {isPositive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-            <span>{isPositive ? "+" : ""}{changePercent.toFixed(2)}% this month</span>
-          </div>
-        </div>
-      )}
-
-      {/* Client Portfolio Widget */}
-      {isVisible("client-portfolio") && (
-        <Card className="border-border">
-          <CardHeader className="py-3 px-4">
-            <CardTitle className="text-sm font-medium">Client Portfolio</CardTitle>
-          </CardHeader>
-          <CardContent className="px-4 pb-4 pt-0">
-            <div className="flex items-center gap-4 mb-3">
-              {renderDonut(72, donutSegments)}
-              <div>
-                <p className="text-lg font-bold text-foreground">{currencySymbol} {totalAUM.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
-                <p className="text-xs text-emerald-600 font-medium">+{portfolioMonthlyChange}% this month</p>
-              </div>
-            </div>
-            <div className="space-y-2">
-              {portfolioProducts.map((p, i) => (
-                <div key={i} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: p.color }} />
-                    <span className="text-xs text-foreground truncate">{p.name}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <SparklineSvg data={p.sparkData} positive={p.growth >= 0} width={40} height={14} />
-                    <span className={`text-[10px] font-semibold tabular-nums ${p.growth >= 0 ? "text-emerald-600" : "text-destructive"}`}>
-                      {p.growth >= 0 ? "+" : ""}{p.growth}%
-                    </span>
-                  </div>
+      {/* Widgets rendered in user-defined order */}
+      {widgetOrder.filter(id => isVisible(id)).map(widgetId => {
+        switch (widgetId) {
+          case "portfolio-summary":
+            return (
+              <div key={widgetId} className="bg-gradient-to-br from-[hsl(220,60%,50%)] to-[hsl(260,50%,40%)] rounded-2xl p-4 text-white">
+                <p className="text-xs text-white/70 mb-1">Total Portfolio Value</p>
+                <p className="text-2xl font-bold">
+                  {currencySymbol} {totalAUM.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                </p>
+                <div className={`flex items-center gap-1 mt-1 text-xs ${isPositive ? "text-emerald-300" : "text-red-300"}`}>
+                  {isPositive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                  <span>{isPositive ? "+" : ""}{changePercent.toFixed(2)}% this month</span>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Change in Valuation */}
-      {isVisible("valuation") && (
-        <Card className="border-border">
-          <CardHeader className="py-3 px-4 flex flex-row items-center justify-between">
-            <CardTitle className="text-sm font-medium">Change in Valuation</CardTitle>
-            <div className="flex items-center gap-1">
-              {(['6m', '1y', '3y', '5y'] as const).map(p => (
-                <button
-                  key={p}
-                  onClick={() => setValuationPeriod(p)}
-                  className={`px-2 py-0.5 rounded text-[9px] transition-all ${
-                    valuationPeriod === p
-                      ? 'bg-primary text-primary-foreground font-semibold'
-                      : 'text-muted-foreground hover:bg-muted'
-                  }`}
-                >{p.toUpperCase()}</button>
-              ))}
-            </div>
-          </CardHeader>
-          <CardContent className="px-4 pb-4 pt-0 space-y-2">
-            {valuationData.items.map(item => (
-              <div key={item.label} className="flex justify-between items-center py-1 border-b border-border/50">
-                <span className="text-xs text-muted-foreground">{item.label}</span>
-                <div className="flex items-center gap-2">
-                  {item.highlight && (
-                    <>
-                      <SparklineSvg data={item.sparkData} positive={item.value >= 0} width={40} height={14} />
-                      <span className={`text-[10px] font-semibold tabular-nums ${item.value >= 0 ? "text-emerald-600" : "text-destructive"}`}>
-                        {item.changePct >= 0 ? "+" : ""}{item.changePct}%
+              </div>
+            );
+          case "client-portfolio":
+            return (
+              <Card key={widgetId} className="border-border">
+                <CardHeader className="py-3 px-4">
+                  <CardTitle className="text-sm font-medium">Client Portfolio</CardTitle>
+                </CardHeader>
+                <CardContent className="px-4 pb-4 pt-0">
+                  <div className="flex items-center gap-4 mb-3">
+                    {renderDonut(72, donutSegments)}
+                    <div>
+                      <p className="text-lg font-bold text-foreground">{currencySymbol} {totalAUM.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+                      <p className="text-xs text-emerald-600 font-medium">+{portfolioMonthlyChange}% this month</p>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    {portfolioProducts.map((p, i) => (
+                      <div key={i} className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: p.color }} />
+                          <span className="text-xs text-foreground truncate">{p.name}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <SparklineSvg data={p.sparkData} positive={p.growth >= 0} width={40} height={14} />
+                          <span className={`text-[10px] font-semibold tabular-nums ${p.growth >= 0 ? "text-emerald-600" : "text-destructive"}`}>
+                            {p.growth >= 0 ? "+" : ""}{p.growth}%
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          case "valuation":
+            return (
+              <Card key={widgetId} className="border-border">
+                <CardHeader className="py-3 px-4 flex flex-row items-center justify-between">
+                  <CardTitle className="text-sm font-medium">Change in Valuation</CardTitle>
+                  <div className="flex items-center gap-1">
+                    {(['6m', '1y', '3y', '5y'] as const).map(p => (
+                      <button
+                        key={p}
+                        onClick={() => setValuationPeriod(p)}
+                        className={`px-2 py-0.5 rounded text-[9px] transition-all ${
+                          valuationPeriod === p
+                            ? 'bg-primary text-primary-foreground font-semibold'
+                            : 'text-muted-foreground hover:bg-muted'
+                        }`}
+                      >{p.toUpperCase()}</button>
+                    ))}
+                  </div>
+                </CardHeader>
+                <CardContent className="px-4 pb-4 pt-0 space-y-2">
+                  {valuationData.items.map(item => (
+                    <div key={item.label} className="flex justify-between items-center py-1 border-b border-border/50">
+                      <span className="text-xs text-muted-foreground">{item.label}</span>
+                      <div className="flex items-center gap-2">
+                        {item.highlight && (
+                          <>
+                            <SparklineSvg data={item.sparkData} positive={item.value >= 0} width={40} height={14} />
+                            <span className={`text-[10px] font-semibold tabular-nums ${item.value >= 0 ? "text-emerald-600" : "text-destructive"}`}>
+                              {item.changePct >= 0 ? "+" : ""}{item.changePct}%
+                            </span>
+                          </>
+                        )}
+                        <span className={`text-xs font-medium ${item.highlight ? (item.value >= 0 ? "text-emerald-600" : "text-destructive") : "text-foreground"}`}>
+                          {formatTotal(item.value, currencySymbol)}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                  <div className="flex justify-between items-center pt-1">
+                    <span className="text-xs font-semibold text-foreground">Ending Value</span>
+                    <div className="flex items-center gap-2">
+                      <SparklineSvg data={valuationData.endSparkData} positive={valuationData.endChangePct >= 0} width={40} height={14} />
+                      <span className={`text-[10px] font-semibold tabular-nums ${valuationData.endChangePct >= 0 ? "text-emerald-600" : "text-destructive"}`}>
+                        {valuationData.endChangePct >= 0 ? "+" : ""}{valuationData.endChangePct}%
                       </span>
-                    </>
-                  )}
-                  <span className={`text-xs font-medium ${item.highlight ? (item.value >= 0 ? "text-emerald-600" : "text-destructive") : "text-foreground"}`}>
-                    {formatTotal(item.value, currencySymbol)}
-                  </span>
-                </div>
-              </div>
-            ))}
-            <div className="flex justify-between items-center pt-1">
-              <span className="text-xs font-semibold text-foreground">Ending Value</span>
-              <div className="flex items-center gap-2">
-                <SparklineSvg data={valuationData.endSparkData} positive={valuationData.endChangePct >= 0} width={40} height={14} />
-                <span className={`text-[10px] font-semibold tabular-nums ${valuationData.endChangePct >= 0 ? "text-emerald-600" : "text-destructive"}`}>
-                  {valuationData.endChangePct >= 0 ? "+" : ""}{valuationData.endChangePct}%
-                </span>
-                <span className="text-xs font-bold text-foreground">{formatTotal(valuationData.endingValue, currencySymbol)}</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Geographic Diversification */}
-      {isVisible("geo") && (
-        <Card className="border-border">
-          <CardHeader className="py-3 px-4">
-            <CardTitle className="text-sm font-medium">Geographic Diversification</CardTitle>
-          </CardHeader>
-          <CardContent className="px-4 pb-4 pt-0">
-            <div className="relative h-32 mb-3">
-              <WorldMapSVG className="w-full h-full" />
-              {geoDiversification.map((region) => (
-                <div
-                  key={region.name}
-                  className="absolute flex items-center justify-center"
-                  style={{ left: `${region.x}%`, top: `${region.y}%`, transform: "translate(-50%, -50%)" }}
-                >
-                  <span
-                    className="w-3 h-3 rounded-full border-2 border-background shadow-sm"
-                    style={{ backgroundColor: region.color }}
-                  />
-                </div>
-              ))}
-            </div>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-              {geoDiversification.map(r => (
-                <div key={r.name} className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: r.color }} />
-                    <span className="text-[10px] text-muted-foreground">{r.name}</span>
+                      <span className="text-xs font-bold text-foreground">{formatTotal(valuationData.endingValue, currencySymbol)}</span>
+                    </div>
                   </div>
-                  <span className="text-[10px] font-semibold text-foreground">{r.value}%</span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Family & Relationships */}
-      {isVisible("family") && (
-        <Card className="border-border">
-          <CardHeader className="py-3 px-4">
-            <CardTitle className="text-sm font-medium">Family & Relationships</CardTitle>
-          </CardHeader>
-          <CardContent className="px-4 pb-4 pt-0">
-            <div className="flex gap-4 overflow-x-auto pb-2">
-              {/* Primary */}
-              <div className="flex flex-col items-center gap-1 min-w-[64px]">
-                <div className="w-11 h-11 rounded-full bg-primary/10 flex items-center justify-center border-2 border-primary/30">
-                  <span className="text-xs font-bold text-primary">{clientName.charAt(0)}</span>
-                </div>
-                <span className="text-[10px] font-medium text-foreground text-center">You</span>
-                <span className="text-[9px] text-muted-foreground">{currencySymbol} {totalAUM.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
-              </div>
-              {familyMembers.map((m, i) => (
-                <div key={i} className="flex flex-col items-center gap-1 min-w-[64px]">
-                  <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center">
-                    <span className="text-[10px] font-bold text-muted-foreground">{m.initials}</span>
+                </CardContent>
+              </Card>
+            );
+          case "geo":
+            return (
+              <Card key={widgetId} className="border-border">
+                <CardHeader className="py-3 px-4">
+                  <CardTitle className="text-sm font-medium">Geographic Diversification</CardTitle>
+                </CardHeader>
+                <CardContent className="px-4 pb-4 pt-0">
+                  <div className="relative h-32 mb-3">
+                    <WorldMapSVG className="w-full h-full" />
+                    {geoDiversification.map((region) => (
+                      <div
+                        key={region.name}
+                        className="absolute flex items-center justify-center"
+                        style={{ left: `${region.x}%`, top: `${region.y}%`, transform: "translate(-50%, -50%)" }}
+                      >
+                        <span
+                          className="w-3 h-3 rounded-full border-2 border-background shadow-sm"
+                          style={{ backgroundColor: region.color }}
+                        />
+                      </div>
+                    ))}
                   </div>
-                  <span className="text-[10px] font-medium text-foreground text-center">{m.name}</span>
-                  <span className="text-[9px] text-muted-foreground">{m.relationship}, {m.age}</span>
-                  <span className="text-[9px] text-muted-foreground">{currencySymbol} {m.aum.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Household */}
-      {isVisible("household") && (
-        <Card className="border-border">
-          <CardHeader className="py-3 px-4">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium">Household</CardTitle>
-              <span className="text-xs text-emerald-600 font-medium">YTD +{householdData.ytdGrowth}%</span>
-            </div>
-            <p className="text-lg font-bold text-foreground">{currencySymbol} {householdData.total.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
-          </CardHeader>
-          <CardContent className="px-4 pb-4 pt-0 space-y-2">
-            {householdData.members.map((m, i) => (
-              <div key={i} className="flex items-center justify-between py-1 border-b border-border/50 last:border-0">
-                <div className="flex items-center gap-2 min-w-0">
-                  <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                  <div className="min-w-0">
-                    <p className="text-xs font-medium text-foreground truncate">{m.name}</p>
-                    <p className="text-[10px] text-muted-foreground">{m.role}</p>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                    {geoDiversification.map(r => (
+                      <div key={r.name} className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: r.color }} />
+                          <span className="text-[10px] text-muted-foreground">{r.name}</span>
+                        </div>
+                        <span className="text-[10px] font-semibold text-foreground">{r.value}%</span>
+                      </div>
+                    ))}
                   </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <SparklineSvg data={m.sparkData} positive={m.growth >= 0} width={36} height={12} />
-                  <span className={`text-[10px] font-semibold tabular-nums ${m.growth >= 0 ? "text-emerald-600" : "text-destructive"}`}>
-                    {m.growth >= 0 ? "+" : ""}{m.growth}%
-                  </span>
-                  <span className="text-xs font-medium text-foreground">{currencySymbol} {m.value.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                </CardContent>
+              </Card>
+            );
+          case "family":
+            return (
+              <Card key={widgetId} className="border-border">
+                <CardHeader className="py-3 px-4">
+                  <CardTitle className="text-sm font-medium">Family & Relationships</CardTitle>
+                </CardHeader>
+                <CardContent className="px-4 pb-4 pt-0">
+                  <div className="flex gap-4 overflow-x-auto pb-2">
+                    <div className="flex flex-col items-center gap-1 min-w-[64px]">
+                      <div className="w-11 h-11 rounded-full bg-primary/10 flex items-center justify-center border-2 border-primary/30">
+                        <span className="text-xs font-bold text-primary">{clientName.charAt(0)}</span>
+                      </div>
+                      <span className="text-[10px] font-medium text-foreground text-center">You</span>
+                      <span className="text-[9px] text-muted-foreground">{currencySymbol} {totalAUM.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                    </div>
+                    {familyMembers.map((m, i) => (
+                      <div key={i} className="flex flex-col items-center gap-1 min-w-[64px]">
+                        <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center">
+                          <span className="text-[10px] font-bold text-muted-foreground">{m.initials}</span>
+                        </div>
+                        <span className="text-[10px] font-medium text-foreground text-center">{m.name}</span>
+                        <span className="text-[9px] text-muted-foreground">{m.relationship}, {m.age}</span>
+                        <span className="text-[9px] text-muted-foreground">{currencySymbol} {m.aum.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          case "household":
+            return (
+              <Card key={widgetId} className="border-border">
+                <CardHeader className="py-3 px-4">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm font-medium">Household</CardTitle>
+                    <span className="text-xs text-emerald-600 font-medium">YTD +{householdData.ytdGrowth}%</span>
+                  </div>
+                  <p className="text-lg font-bold text-foreground">{currencySymbol} {householdData.total.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+                </CardHeader>
+                <CardContent className="px-4 pb-4 pt-0 space-y-2">
+                  {householdData.members.map((m, i) => (
+                    <div key={i} className="flex items-center justify-between py-1 border-b border-border/50 last:border-0">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-xs font-medium text-foreground truncate">{m.name}</p>
+                          <p className="text-[10px] text-muted-foreground">{m.role}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <SparklineSvg data={m.sparkData} positive={m.growth >= 0} width={36} height={12} />
+                        <span className={`text-[10px] font-semibold tabular-nums ${m.growth >= 0 ? "text-emerald-600" : "text-destructive"}`}>
+                          {m.growth >= 0 ? "+" : ""}{m.growth}%
+                        </span>
+                        <span className="text-xs font-medium text-foreground">{currencySymbol} {m.value.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            );
+          case "onboarding":
+            return (
+              <Card key={widgetId} className="border-border">
+                <CardHeader className="py-3 px-4">
+                  <CardTitle className="text-sm font-medium">Onboarding</CardTitle>
+                </CardHeader>
+                <CardContent className="px-4 pb-4 pt-0 space-y-3">
+                  <div className="grid grid-cols-2 gap-2 text-[10px]">
+                    <div><span className="text-muted-foreground block">Name</span><span className="font-medium text-foreground">{clientName}</span></div>
+                    <div><span className="text-muted-foreground block">ID Number</span><span className="font-medium text-foreground">••••••••</span></div>
+                    <div className="flex items-center gap-1"><Phone className="h-3 w-3 text-muted-foreground" /><span className="text-muted-foreground">••••••••</span></div>
+                    <div className="flex items-center gap-1"><Mail className="h-3 w-3 text-muted-foreground" /><span className="text-muted-foreground">•••@••••</span></div>
+                  </div>
+                  <div className="space-y-1.5">
+                    {onboardingChecks.map((check, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                        <div>
+                          <p className="text-[10px] font-medium text-foreground">{check.label}</p>
+                          <p className="text-[9px] text-muted-foreground">{check.subtitle}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-2">
+                    <Shield className="h-4 w-4 text-emerald-600 shrink-0" />
+                    <span className="text-[10px] font-medium text-emerald-700 dark:text-emerald-400">Successfully Onboarded & Compliant</span>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          case "holdings":
+            return (
+              <div key={widgetId}>
+                <h3 className="text-sm font-semibold text-foreground mb-2">Your Holdings</h3>
+                <div className="space-y-2">
+                  {data.onPlatformProducts.slice(0, 3).map((p, i) => (
+                    <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-card border border-border">
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium text-foreground truncate">{p.product}</p>
+                        <p className="text-[10px] text-muted-foreground">{p.investmentHouse}</p>
+                      </div>
+                      <p className="text-xs font-semibold text-foreground shrink-0">{p.amount}</p>
+                    </div>
+                  ))}
+                  {data.externalProducts.slice(0, 2).map((p, i) => (
+                    <div key={`ext-${i}`} className="flex items-center justify-between p-3 rounded-xl bg-card border border-border">
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium text-foreground truncate">{p.product}</p>
+                        <p className="text-[10px] text-muted-foreground">{p.provider}</p>
+                      </div>
+                      <p className="text-xs font-semibold text-foreground shrink-0">{p.amount}</p>
+                    </div>
+                  ))}
                 </div>
               </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Onboarding */}
-      {isVisible("onboarding") && (
-        <Card className="border-border">
-          <CardHeader className="py-3 px-4">
-            <CardTitle className="text-sm font-medium">Onboarding</CardTitle>
-          </CardHeader>
-          <CardContent className="px-4 pb-4 pt-0 space-y-3">
-            <div className="grid grid-cols-2 gap-2 text-[10px]">
-              <div><span className="text-muted-foreground block">Name</span><span className="font-medium text-foreground">{clientName}</span></div>
-              <div><span className="text-muted-foreground block">ID Number</span><span className="font-medium text-foreground">••••••••</span></div>
-              <div className="flex items-center gap-1"><Phone className="h-3 w-3 text-muted-foreground" /><span className="text-muted-foreground">••••••••</span></div>
-              <div className="flex items-center gap-1"><Mail className="h-3 w-3 text-muted-foreground" /><span className="text-muted-foreground">•••@••••</span></div>
-            </div>
-            <div className="space-y-1.5">
-              {onboardingChecks.map((check, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+            );
+          case "meeting":
+            return (
+              <div key={widgetId}>
+                <h3 className="text-sm font-semibold text-foreground mb-2">Upcoming Meeting</h3>
+                <div className="p-3 rounded-xl bg-card border border-border flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <Calendar className="h-4 w-4 text-primary" />
+                  </div>
                   <div>
-                    <p className="text-[10px] font-medium text-foreground">{check.label}</p>
-                    <p className="text-[9px] text-muted-foreground">{check.subtitle}</p>
+                    <p className="text-xs font-medium text-foreground">Annual Portfolio Review</p>
+                    <p className="text-[10px] text-muted-foreground">Next Thursday at 10:00 AM</p>
                   </div>
                 </div>
-              ))}
-            </div>
-            <div className="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-2">
-              <Shield className="h-4 w-4 text-emerald-600 shrink-0" />
-              <span className="text-[10px] font-medium text-emerald-700 dark:text-emerald-400">Successfully Onboarded & Compliant</span>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Holdings */}
-      {isVisible("holdings") && (
-        <div>
-          <h3 className="text-sm font-semibold text-foreground mb-2">Your Holdings</h3>
-          <div className="space-y-2">
-            {data.onPlatformProducts.slice(0, 3).map((p, i) => (
-              <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-card border border-border">
-                <div className="min-w-0">
-                  <p className="text-xs font-medium text-foreground truncate">{p.product}</p>
-                  <p className="text-[10px] text-muted-foreground">{p.investmentHouse}</p>
-                </div>
-                <p className="text-xs font-semibold text-foreground shrink-0">{p.amount}</p>
               </div>
-            ))}
-            {data.externalProducts.slice(0, 2).map((p, i) => (
-              <div key={`ext-${i}`} className="flex items-center justify-between p-3 rounded-xl bg-card border border-border">
-                <div className="min-w-0">
-                  <p className="text-xs font-medium text-foreground truncate">{p.product}</p>
-                  <p className="text-[10px] text-muted-foreground">{p.provider}</p>
-                </div>
-                <p className="text-xs font-semibold text-foreground shrink-0">{p.amount}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Upcoming Meeting */}
-      {isVisible("meeting") && (
-        <div>
-          <h3 className="text-sm font-semibold text-foreground mb-2">Upcoming Meeting</h3>
-          <div className="p-3 rounded-xl bg-card border border-border flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-              <Calendar className="h-4 w-4 text-primary" />
-            </div>
-            <div>
-              <p className="text-xs font-medium text-foreground">Annual Portfolio Review</p>
-              <p className="text-[10px] text-muted-foreground">Next Thursday at 10:00 AM</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <ClientHomeWidgetPicker
-        open={showPicker}
-        onOpenChange={setShowPicker}
-        widgets={ALL_WIDGETS}
-        visibleWidgets={visibleWidgets}
-        onToggle={handleToggle}
-      />
+            );
+          default:
+            return null;
+        }
+      })}
     </div>
   );
 };
