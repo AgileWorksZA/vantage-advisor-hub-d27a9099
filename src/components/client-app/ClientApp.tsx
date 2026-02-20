@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Home, PieChart, MessageSquare, FileText, MoreHorizontal, Bell, Settings } from "lucide-react";
+import { Home, PieChart, MessageSquare, FileText, MoreHorizontal, Bell, Settings, Mic } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import ClientPickerDialog from "./ClientPickerDialog";
@@ -9,6 +9,7 @@ import ClientMessagesTab from "./ClientMessagesTab";
 import ClientDocumentsTab from "./ClientDocumentsTab";
 import ClientMoreTab from "./ClientMoreTab";
 import ClientSettingsMenu from "./ClientSettingsMenu";
+import ClientVoiceChat from "./ClientVoiceChat";
 
 type ClientTab = "home" | "portfolio" | "messages" | "documents" | "more";
 
@@ -41,6 +42,7 @@ const ClientApp = () => {
   });
   const [showPicker, setShowPicker] = useState(!selectedClient);
   const [showSettings, setShowSettings] = useState(false);
+  const [showVoiceChat, setShowVoiceChat] = useState(false);
 
   const handleSelectClient = (client: SelectedClient) => {
     setSelectedClient(client);
@@ -50,6 +52,12 @@ const ClientApp = () => {
 
   const handleChangeClient = () => {
     setShowPicker(true);
+  };
+
+  const handleMessageAdviser = (draft: string) => {
+    setShowVoiceChat(false);
+    setActiveTab("messages");
+    // Draft message could be passed via state/context in future
   };
 
   const clientName = selectedClient ? `${selectedClient.first_name} ${selectedClient.surname}` : "";
@@ -125,6 +133,23 @@ const ClientApp = () => {
       <main className="flex-1 overflow-y-auto">
         {renderContent()}
       </main>
+
+      {/* Voice Chat FAB */}
+      <button
+        onClick={() => setShowVoiceChat(true)}
+        className="absolute bottom-[4.5rem] right-4 z-20 w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center active:scale-95 transition-transform"
+        aria-label="Talk to adviser"
+      >
+        <Mic className="h-5 w-5" />
+      </button>
+
+      {/* Voice Chat Overlay */}
+      {showVoiceChat && (
+        <ClientVoiceChat
+          onClose={() => setShowVoiceChat(false)}
+          onMessageAdviser={handleMessageAdviser}
+        />
+      )}
 
       {/* Bottom Tab Bar */}
       <nav className="sticky bottom-0 z-10 flex items-center justify-around h-14 bg-background border-t border-border shrink-0">
