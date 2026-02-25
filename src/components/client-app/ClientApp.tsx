@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { getRegionalData } from "@/data/regionalData";
 import { Home, PieChart, MessageSquare, FileText, MoreHorizontal, Bell, Mic } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -61,6 +62,10 @@ const ClientApp = () => {
   };
 
   const clientName = selectedClient ? `${selectedClient.first_name} ${selectedClient.surname}` : "";
+  const adviserName = useMemo(() => {
+    const region = localStorage.getItem("vantage-selected-region") || "ZA";
+    return getRegionalData(region).advisors[0].name;
+  }, []);
 
   if (showPicker) {
     return (
@@ -79,7 +84,7 @@ const ClientApp = () => {
       case "portfolio":
         return <ClientPortfolioTab clientId={selectedClient.id} nationality={null} />;
       case "messages":
-        return <ClientMessagesTab clientName={clientName} />;
+        return <ClientMessagesTab clientName={clientName} advisorName={adviserName} />;
       case "documents":
         return <ClientDocumentsTab clientName={clientName} />;
       case "more":
