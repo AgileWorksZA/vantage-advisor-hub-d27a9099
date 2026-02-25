@@ -1,26 +1,30 @@
 
 
-## Remove Settings Gear from Client App Header
+## Show Real Adviser Name in Client Messages Tab
 
 ### Overview
-Remove the gear/settings icon button from the top-right header area of the Client App. This is a simple UI cleanup.
+Replace the hardcoded "Your Adviser" label in the Client App Messages tab with the actual primary adviser name from the last selected jurisdiction's regional data.
 
 ### Changes
 
 **Edit: `src/components/client-app/ClientApp.tsx`**
 
-- Remove the `Settings` icon from the `lucide-react` import (if not used elsewhere)
-- Remove the `showSettings` state and the settings screen render block
-- Remove the Settings `Button` from the header's action buttons area
-- Remove the `ClientSettingsMenu` import (no longer needed)
-
-The notification bell, avatar/client-switcher button, and all other header elements remain unchanged.
+- Import `useMemo` from React and `getRegionalData` from `@/data/regionalData`
+- Read the selected region from `localStorage` (key `vantage-selected-region`, default `"ZA"`) to get the current jurisdiction
+- Derive the primary adviser name: `getRegionalData(region).advisors[0].name`
+- Pass `advisorName` prop to `ClientMessagesTab`:
+  ```
+  <ClientMessagesTab clientName={clientName} advisorName={adviserName} />
+  ```
 
 ### Technical Details
 
-1. Remove the `Settings` import from lucide-react (line 2)
-2. Remove `showSettings` state declaration (line 43)
-3. Remove the settings screen conditional block (lines 68-73) that renders `ClientSettingsMenu`
-4. Remove the settings gear `Button` in the header (lines 100-102)
-5. Remove the `ClientSettingsMenu` import (line 10)
+The region is already persisted in localStorage by `RegionContext`. We read it directly rather than importing the context (to avoid adding a provider dependency to the Client App shell). The first advisor in each region's `advisors` array serves as the primary adviser.
+
+Only two lines change in `ClientApp.tsx`:
+1. Add import for `useMemo` and `getRegionalData`
+2. Derive `adviserName` from regional data
+3. Pass it to the `ClientMessagesTab` component (line 82)
+
+No changes needed to `ClientMessagesTab.tsx` since it already accepts an optional `advisorName` prop with a default fallback.
 
