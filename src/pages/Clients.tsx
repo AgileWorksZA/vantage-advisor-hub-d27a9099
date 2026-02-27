@@ -3,14 +3,14 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
-import { 
-  LayoutDashboard, 
-  Users, 
+import {
+  LayoutDashboard,
+  Users,
   Briefcase,
-  Mail, 
+  Mail,
   CalendarIcon,
-  ListTodo, 
-  LineChart, 
+  ListTodo,
+  LineChart,
   Building2,
   X,
   RefreshCw,
@@ -23,14 +23,7 @@ import commandCenterIcon from "@/assets/command-center-icon.png";
 import vantageLogo from "@/assets/vantage-logo.png";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { MultiSelect } from "@/components/ui/multi-select";
 import { Badge } from "@/components/ui/badge";
 import { useClients, type ClientListItem } from "@/hooks/useClients";
@@ -48,15 +41,23 @@ import GlobalAIChat from "@/components/ai-assistant/GlobalAIChat";
 function getClientDotClass(client: ClientListItem): string {
   const clientData = generateClient360Data(client.id, client.nationality, client.countryOfIssue);
   const products = [
-    ...clientData.onPlatformProducts.map(p => ({ category: "Investment", currentValue: p.amountValue, productName: p.product } as any)),
-    ...clientData.externalProducts.map(p => ({ category: "External Investment", currentValue: p.amountValue, productName: p.product } as any)),
-    ...clientData.platformCashAccounts.map(p => ({ category: "Cash", currentValue: p.amountValue, productName: p.name } as any)),
-    ...clientData.riskProducts.map(p => ({ category: "Risk/Insurance", currentValue: 0, productName: p.holdingName } as any)),
+    ...clientData.onPlatformProducts.map(
+      (p) => ({ category: "Investment", currentValue: p.amountValue, productName: p.product }) as any,
+    ),
+    ...clientData.externalProducts.map(
+      (p) => ({ category: "External Investment", currentValue: p.amountValue, productName: p.product }) as any,
+    ),
+    ...clientData.platformCashAccounts.map(
+      (p) => ({ category: "Cash", currentValue: p.amountValue, productName: p.name }) as any,
+    ),
+    ...clientData.riskProducts.map(
+      (p) => ({ category: "Risk/Insurance", currentValue: 0, productName: p.holdingName }) as any,
+    ),
   ];
   const gaps = buildGapOpportunities(products, false, client.id);
-  const types = gaps.map(g => g.type);
-  if (types.some(t => getOpportunityPriority(t) === "urgent")) return "bg-red-500";
-  if (types.some(t => getOpportunityPriority(t) === "important")) return "bg-orange-500";
+  const types = gaps.map((g) => g.type);
+  if (types.some((t) => getOpportunityPriority(t) === "urgent")) return "bg-red-500";
+  if (types.some((t) => getOpportunityPriority(t) === "important")) return "bg-orange-500";
   return "bg-emerald-500";
 }
 
@@ -95,26 +96,31 @@ const Clients = () => {
   const [authLoading, setAuthLoading] = useState(true);
   const [includeInactive, setIncludeInactive] = useState(false);
   const [selectedProfileFilters, setSelectedProfileFilters] = useState<string[]>(
-    profileFilterOptions.map(o => o.value)
+    profileFilterOptions.map((o) => o.value),
   );
   const [searchQuery, setSearchQuery] = useState("");
   const [addDialogOpen, setAddDialogOpen] = useState(false);
-  
+
   // Add Client Choice Dialog state
   const [choiceDialogOpen, setChoiceDialogOpen] = useState(false);
   const [selectedMode, setSelectedMode] = useState<"simple" | "advice">("simple");
   const [newClientForWizard, setNewClientForWizard] = useState<{ id: string; name: string } | null>(null);
   const [showWizard, setShowWizard] = useState(false);
-  
+
   // Dashboard widget filter state
   const [filterSource, setFilterSource] = useState<string | null>(null);
   const [filteredNames, setFilteredNames] = useState<string[]>([]);
-  const [widgetData, setWidgetData] = useState<Record<string, { birthday?: string; age?: number; value?: string; bookPercent?: string }>>({});
-  
+  const [widgetData, setWidgetData] = useState<
+    Record<string, { birthday?: string; age?: number; value?: string; bookPercent?: string }>
+  >({});
+
   // Client type filter state
-  const [selectedClientTypes, setSelectedClientTypes] = useState<string[]>(
-    ["individual", "business", "trust", "family"]
-  );
+  const [selectedClientTypes, setSelectedClientTypes] = useState<string[]>([
+    "individual",
+    "business",
+    "trust",
+    "family",
+  ]);
 
   const { clients, loading: clientsLoading, refetch } = useClients();
   const { recentClientIds, loading: recentLoading } = useRecentlyViewedClients();
@@ -123,38 +129,38 @@ const Clients = () => {
   // Map selected advisor initials to full names for filtering
   const selectedAdvisorNames = useMemo(() => {
     return regionalData.advisors
-      .filter(advisor => selectedAdvisors.includes(advisor.initials))
-      .map(advisor => advisor.name);
+      .filter((advisor) => selectedAdvisors.includes(advisor.initials))
+      .map((advisor) => advisor.name);
   }, [regionalData.advisors, selectedAdvisors]);
 
   // Read URL parameters for Dashboard widget filters
   useEffect(() => {
-    const filter = searchParams.get('filter');
-    const dataParam = searchParams.get('data');
-    
+    const filter = searchParams.get("filter");
+    const dataParam = searchParams.get("data");
+
     if (filter && dataParam) {
       try {
         const parsedData = JSON.parse(decodeURIComponent(dataParam));
-        setFilterSource(filter === 'birthdays' ? 'Upcoming Birthdays' : 'Top Accounts');
-        
+        setFilterSource(filter === "birthdays" ? "Upcoming Birthdays" : "Top Accounts");
+
         // Build lookup map by name
         const dataMap: Record<string, any> = {};
         parsedData.forEach((item: any) => {
           const name = item.name.toLowerCase();
-          if (filter === 'birthdays') {
+          if (filter === "birthdays") {
             dataMap[name] = { birthday: item.birthday, age: item.age };
           } else {
             dataMap[name] = { value: item.value, bookPercent: item.bookPercent };
           }
         });
         setWidgetData(dataMap);
-        
+
         // Extract names for filtering
         const nameList = parsedData.map((item: any) => item.name);
         setFilteredNames(nameList);
-        setSelectedProfileFilters(profileFilterOptions.map(o => o.value));
+        setSelectedProfileFilters(profileFilterOptions.map((o) => o.value));
       } catch (e) {
-        console.error('Failed to parse widget data:', e);
+        console.error("Failed to parse widget data:", e);
         setFilterSource(null);
         setFilteredNames([]);
         setWidgetData({});
@@ -167,23 +173,23 @@ const Clients = () => {
   }, [searchParams]);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setAuthLoading(false);
-        
-        if (!session?.user) {
-          navigate("/auth");
-        }
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setAuthLoading(false);
+
+      if (!session?.user) {
+        navigate("/auth");
       }
-    );
+    });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setAuthLoading(false);
-      
+
       if (!session?.user) {
         navigate("/auth");
       }
@@ -196,8 +202,6 @@ const Clients = () => {
     await supabase.auth.signOut();
     navigate("/auth");
   };
-
-
 
   // Handler for choice dialog selection
   const handleChoiceSelected = (choice: "simple" | "advice") => {
@@ -232,25 +236,25 @@ const Clients = () => {
       // If coming from Dashboard widget, filter by name list
       if (filteredNames.length > 0) {
         const clientFullName = client.client.toLowerCase();
-        const matchesName = filteredNames.some(name => {
-          const nameParts = name.toLowerCase().split(' ');
+        const matchesName = filteredNames.some((name) => {
+          const nameParts = name.toLowerCase().split(" ");
           const surname = nameParts[nameParts.length - 1];
           const firstName = nameParts[0];
           return clientFullName.includes(surname) || clientFullName.includes(firstName);
         });
         if (!matchesName) return false;
       }
-      
+
       // Filter by profile type (only if not coming from dashboard filter)
       if (!filterSource && selectedProfileFilters.length < profileFilterOptions.length) {
         const profileType = client.profileType;
         // Standard profile types
         if (!selectedProfileFilters.includes(profileType)) return false;
       }
-      
+
       // Filter by inactive state
       if (!includeInactive && client.profileState === "Inactive") return false;
-      
+
       // Filter by search query
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
@@ -261,10 +265,19 @@ const Clients = () => {
           client.identification.includes(query)
         );
       }
-      
+
       return true;
     });
-  }, [clients, selectedClientTypes, selectedAdvisorNames, filteredNames, filterSource, selectedProfileFilters, includeInactive, searchQuery]);
+  }, [
+    clients,
+    selectedClientTypes,
+    selectedAdvisorNames,
+    filteredNames,
+    filterSource,
+    selectedProfileFilters,
+    includeInactive,
+    searchQuery,
+  ]);
 
   // Determine display clients: recently viewed (recency order) when no search, full results otherwise
   const displayClients = useMemo(() => {
@@ -274,7 +287,7 @@ const Clients = () => {
     // No search: show only recently viewed, in recency order
     if (recentClientIds.length === 0) return [];
     return recentClientIds
-      .map(id => filteredClients.find(c => c.id === id))
+      .map((id) => filteredClients.find((c) => c.id === id))
       .filter((c): c is NonNullable<typeof c> => Boolean(c));
   }, [filteredClients, recentClientIds, searchQuery, filterSource]);
 
@@ -308,30 +321,29 @@ const Clients = () => {
     setFilteredNames([]);
     setFilterSource(null);
     setWidgetData({});
-    setSelectedProfileFilters(profileFilterOptions.map(o => o.value));
+    setSelectedProfileFilters(profileFilterOptions.map((o) => o.value));
     setSelectedClientTypes(["individual", "business", "trust", "family"]);
   };
 
   // Get widget data for a client by fuzzy name matching
   const getWidgetDataForClient = (clientName: string) => {
     const clientLower = clientName.toLowerCase();
-    
+
     for (const [widgetName, data] of Object.entries(widgetData)) {
       let surname: string;
       let firstName: string;
-      
-      if (widgetName.includes(',')) {
-        const commaParts = widgetName.split(',').map(p => p.trim());
+
+      if (widgetName.includes(",")) {
+        const commaParts = widgetName.split(",").map((p) => p.trim());
         surname = commaParts[0];
-        firstName = commaParts[1] || '';
+        firstName = commaParts[1] || "";
       } else {
-        const spaceParts = widgetName.split(' ');
+        const spaceParts = widgetName.split(" ");
         surname = spaceParts[spaceParts.length - 1];
         firstName = spaceParts[0];
       }
-      
-      if (clientLower.includes(surname.toLowerCase()) || 
-          (firstName && clientLower.includes(firstName.toLowerCase()))) {
+
+      if (clientLower.includes(surname.toLowerCase()) || (firstName && clientLower.includes(firstName.toLowerCase()))) {
         return data;
       }
     }
@@ -342,34 +354,34 @@ const Clients = () => {
     <div className="h-screen bg-muted/30 flex overflow-hidden">
       {/* Sidebar - Fixed */}
       <aside className="w-16 bg-[hsl(180,25%,25%)] flex flex-col items-center py-4 gap-1 shrink-0">
-        <Button variant="ghost" size="icon" className="w-10 h-10 text-white/80 hover:bg-white/10 mb-4" onClick={() => navigate("/command-center")} title="Practice Overview">
-          <img src={commandCenterIcon} alt="Command Center" className="w-5 h-5" />
+        <Button
+          variant="ghost"
+          size="icon"
+          className="w-10 h-10 text-white/80 hover:bg-white/10 mb-4"
+          onClick={() => navigate("/command-center")}
+          title="Practice Overview"
+        >
+          <img src={commandCenterIcon} alt="Command Center" className="w-6 h-6" />
         </Button>
         {sidebarItems.map((item) => (
           <button
             key={item.label}
             onClick={() => navigate(item.path)}
             className={`w-full flex flex-col items-center py-2 text-xs gap-1 ${
-              item.path === "/clients" 
-                ? "bg-white/10 text-white" 
-                : "text-white/60 hover:bg-white/5 hover:text-white/80"
+              item.path === "/clients" ? "bg-white/10 text-white" : "text-white/60 hover:bg-white/5 hover:text-white/80"
             }`}
           >
             <item.icon className="w-5 h-5" />
             <span>{item.label}</span>
           </button>
         ))}
-        
+
         {/* Spacer to push logo to bottom */}
         <div className="flex-1" />
-        
+
         {/* VANTAGE Logo - rotated to read bottom to top */}
         <div className="mb-2 overflow-visible">
-          <img 
-            src={vantageLogo} 
-            alt="Vantage" 
-            className="h-[80px] w-auto object-contain -rotate-90 origin-center"
-          />
+          <img src={vantageLogo} alt="Vantage" className="h-[80px] w-auto object-contain -rotate-90 origin-center" />
         </div>
       </aside>
 
@@ -388,7 +400,7 @@ const Clients = () => {
         <main className="flex-1 p-6 overflow-auto">
           {/* Add Profile Row */}
           <div className="flex items-center justify-end mb-4">
-            <Button 
+            <Button
               className="bg-[hsl(180,70%,45%)] hover:bg-[hsl(180,70%,40%)] text-white"
               onClick={() => setChoiceDialogOpen(true)}
             >
@@ -403,8 +415,8 @@ const Clients = () => {
                 {searchQuery ? "SEARCH RESULTS" : "RECENTLY VIEWED CLIENTS"}
               </h2>
               <div className="flex items-center gap-2">
-                <Input 
-                  placeholder="Search clients..." 
+                <Input
+                  placeholder="Search clients..."
                   className="w-64 bg-background"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -412,16 +424,16 @@ const Clients = () => {
                 <Button className="bg-[hsl(180,70%,45%)] hover:bg-[hsl(180,70%,40%)] text-white" size="sm">
                   Search
                 </Button>
-                <Button 
-                  variant="outline" 
-                  size="icon" 
+                <Button
+                  variant="outline"
+                  size="icon"
                   className="border-[hsl(180,70%,45%)] text-[hsl(180,70%,45%)]"
                   onClick={refetch}
                 >
                   <RefreshCw className="w-4 h-4" />
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="sm"
                   className="border-[hsl(180,70%,45%)] text-[hsl(180,70%,45%)] hover:bg-[hsl(180,70%,45%)]/10"
                 >
@@ -442,39 +454,38 @@ const Clients = () => {
                   className="w-48"
                 />
                 <div className="flex items-center gap-2 ml-2">
-                  <Switch 
-                    checked={includeInactive} 
-                    onCheckedChange={setIncludeInactive}
-                  />
+                  <Switch checked={includeInactive} onCheckedChange={setIncludeInactive} />
                   <span className="text-sm text-muted-foreground whitespace-nowrap">Include inactive clients</span>
                 </div>
               </div>
             </div>
 
             {/* Filter Tags Row */}
-            {((selectedProfileFilters.length < profileFilterOptions.length && selectedProfileFilters.length > 0) || 
-             (selectedClientTypes.length < clientTypeOptions.length && selectedClientTypes.length > 0)) && (
+            {((selectedProfileFilters.length < profileFilterOptions.length && selectedProfileFilters.length > 0) ||
+              (selectedClientTypes.length < clientTypeOptions.length && selectedClientTypes.length > 0)) && (
               <div className="flex items-center gap-2 mb-3 flex-wrap">
                 <span className="text-xs text-muted-foreground">Filtered by:</span>
-                {selectedProfileFilters.length < profileFilterOptions.length && selectedProfileFilters.map(type => (
-                  <Badge key={`profile-${type}`} variant="secondary" className="text-xs gap-1">
-                    {profileFilterOptions.find(o => o.value === type)?.label}
-                    <X
-                      className="h-3 w-3 cursor-pointer"
-                      onClick={() => setSelectedProfileFilters(prev => prev.filter(t => t !== type))}
-                    />
-                  </Badge>
-                ))}
-                {selectedClientTypes.length < clientTypeOptions.length && selectedClientTypes.map(type => (
-                  <Badge key={`type-${type}`} variant="secondary" className="text-xs gap-1">
-                    {clientTypeOptions.find(o => o.value === type)?.label}
-                    <X
-                      className="h-3 w-3 cursor-pointer"
-                      onClick={() => setSelectedClientTypes(prev => prev.filter(t => t !== type))}
-                    />
-                  </Badge>
-                ))}
-                <button 
+                {selectedProfileFilters.length < profileFilterOptions.length &&
+                  selectedProfileFilters.map((type) => (
+                    <Badge key={`profile-${type}`} variant="secondary" className="text-xs gap-1">
+                      {profileFilterOptions.find((o) => o.value === type)?.label}
+                      <X
+                        className="h-3 w-3 cursor-pointer"
+                        onClick={() => setSelectedProfileFilters((prev) => prev.filter((t) => t !== type))}
+                      />
+                    </Badge>
+                  ))}
+                {selectedClientTypes.length < clientTypeOptions.length &&
+                  selectedClientTypes.map((type) => (
+                    <Badge key={`type-${type}`} variant="secondary" className="text-xs gap-1">
+                      {clientTypeOptions.find((o) => o.value === type)?.label}
+                      <X
+                        className="h-3 w-3 cursor-pointer"
+                        onClick={() => setSelectedClientTypes((prev) => prev.filter((t) => t !== type))}
+                      />
+                    </Badge>
+                  ))}
+                <button
                   className="text-[hsl(180,70%,45%)] text-xs hover:underline ml-2"
                   onClick={() => {
                     clearDashboardFilter();
@@ -497,11 +508,9 @@ const Clients = () => {
             ) : displayClients.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
                 <Users className="w-12 h-12 mb-4 opacity-50" />
-                <p className="text-lg font-medium">
-                  {searchQuery ? "No clients found" : "No recently viewed clients"}
-                </p>
+                <p className="text-lg font-medium">{searchQuery ? "No clients found" : "No recently viewed clients"}</p>
                 <p className="text-sm">
-                  {searchQuery 
+                  {searchQuery
                     ? "Try adjusting your filters or search query"
                     : "Search for a client or click a profile to get started"}
                 </p>
@@ -516,10 +525,10 @@ const Clients = () => {
                     <TableHead className="text-xs font-normal text-muted-foreground">Title</TableHead>
                     <TableHead className="text-xs font-normal text-muted-foreground">Identification</TableHead>
                     <TableHead className="text-xs font-normal text-muted-foreground">Age</TableHead>
-                    {filterSource === 'Upcoming Birthdays' && (
+                    {filterSource === "Upcoming Birthdays" && (
                       <TableHead className="text-xs font-normal text-muted-foreground">Birthday</TableHead>
                     )}
-                    {filterSource === 'Top Accounts' && (
+                    {filterSource === "Top Accounts" && (
                       <TableHead className="text-xs font-normal text-muted-foreground">Account Value</TableHead>
                     )}
                     <TableHead className="text-xs font-normal text-muted-foreground">Contact Details</TableHead>
@@ -533,8 +542,8 @@ const Clients = () => {
                 </TableHeader>
                 <TableBody>
                   {displayClients.map((client) => (
-                    <TableRow 
-                      key={client.id} 
+                    <TableRow
+                      key={client.id}
                       className="hover:bg-muted/50 cursor-pointer"
                       onClick={() => navigate(`/clients/${client.id}`)}
                     >
@@ -554,12 +563,12 @@ const Clients = () => {
                       <TableCell className="text-sm">{client.title}</TableCell>
                       <TableCell className="text-sm">{client.identification}</TableCell>
                       <TableCell className="text-sm">{client.age || ""}</TableCell>
-                      {filterSource === 'Upcoming Birthdays' && (
+                      {filterSource === "Upcoming Birthdays" && (
                         <TableCell className="text-sm font-medium text-primary">
                           {getWidgetDataForClient(client.client)?.birthday || "—"}
                         </TableCell>
                       )}
-                      {filterSource === 'Top Accounts' && (
+                      {filterSource === "Top Accounts" && (
                         <TableCell className="text-sm font-medium text-emerald-600">
                           {getWidgetDataForClient(client.client)?.value || "—"}
                         </TableCell>
@@ -572,9 +581,7 @@ const Clients = () => {
                       </TableCell>
                       <TableCell className="text-sm">{client.advisor}</TableCell>
                       <TableCell className="text-sm">{client.familyGroup}</TableCell>
-                      {selectedRegion === "ZA" && (
-                        <TableCell className="text-sm">{client.language}</TableCell>
-                      )}
+                      {selectedRegion === "ZA" && <TableCell className="text-sm">{client.language}</TableCell>}
                       <TableCell className="text-sm">{client.dateCreated}</TableCell>
                     </TableRow>
                   ))}
@@ -606,9 +613,9 @@ const Clients = () => {
       />
 
       {/* Add Client Dialog */}
-      <AddClientDialog 
-        open={addDialogOpen} 
-        onOpenChange={setAddDialogOpen} 
+      <AddClientDialog
+        open={addDialogOpen}
+        onOpenChange={setAddDialogOpen}
         onClientAdded={refetch}
         onClientCreated={handleClientCreated}
       />
