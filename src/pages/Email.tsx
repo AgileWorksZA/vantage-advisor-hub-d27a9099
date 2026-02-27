@@ -210,7 +210,7 @@ const EmailPage = () => {
           <img 
             src={vantageLogo} 
             alt="Vantage" 
-            className="h-[80px] w-auto object-contain -rotate-90 origin-center"
+            className="h-[96px] w-auto object-contain -rotate-90 origin-center"
           />
         </div>
       </aside>
