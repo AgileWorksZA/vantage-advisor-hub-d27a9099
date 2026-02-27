@@ -10,10 +10,29 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
-import { 
-  LayoutDashboard, Users, Briefcase, Mail, CalendarIcon, ListTodo, LineChart, Building2, Plus,
-  Search, ArrowLeft, User as UserIcon, Settings, 
-  Phone, FileText, MessageSquare, Shield, Activity, CreditCard, ShieldCheck, Users2, Building
+import {
+  LayoutDashboard,
+  Users,
+  Briefcase,
+  Mail,
+  CalendarIcon,
+  ListTodo,
+  LineChart,
+  Building2,
+  Plus,
+  Search,
+  ArrowLeft,
+  User as UserIcon,
+  Settings,
+  Phone,
+  FileText,
+  MessageSquare,
+  Shield,
+  Activity,
+  CreditCard,
+  ShieldCheck,
+  Users2,
+  Building,
 } from "lucide-react";
 import commandCenterIcon from "@/assets/command-center-icon.png";
 import vantageLogo from "@/assets/vantage-logo.png";
@@ -27,12 +46,66 @@ import GlobalAIChat from "@/components/ai-assistant/GlobalAIChat";
 
 // Sample personnel data
 const personnelData = [
-  { id: "1", name: "Barend Daniel Jordaan", initials: "BD", preferredName: "Danie", role: "Senior Adviser", email: "danie.jordaan@psg.co.za", team: "Danie Jordaan Financial Planning LTD", status: "Active" },
-  { id: "2", name: "Mariska Comins", initials: "MC", preferredName: "Mariska", role: "Adviser", email: "mariska.comins@psg.co.za", team: "Mariska Comin Team", status: "Active" },
-  { id: "3", name: "Johan van der Berg", initials: "JB", preferredName: "Johan", role: "Support", email: "johan.vdberg@psg.co.za", team: "myPractice & Test", status: "Active" },
-  { id: "4", name: "Dale Abels", initials: "DA", preferredName: "Dale", role: "Adviser", email: "dale.abels@psg.co.za", team: "myPractice & Test", status: "Active" },
-  { id: "5", name: "Kalpesh Abhangi", initials: "KA", preferredName: "Kalpesh", role: "Compliance", email: "kalpesh.abhangi@psg.co.za", team: "PSL Compliance team", status: "Active" },
-  { id: "6", name: "Chad Alexander", initials: "CA", preferredName: "Chad", role: "Adviser", email: "chad.alexander@psg.co.za", team: "myPractice & Test", status: "Inactive" },
+  {
+    id: "1",
+    name: "Barend Daniel Jordaan",
+    initials: "BD",
+    preferredName: "Danie",
+    role: "Senior Adviser",
+    email: "danie.jordaan@psg.co.za",
+    team: "Danie Jordaan Financial Planning LTD",
+    status: "Active",
+  },
+  {
+    id: "2",
+    name: "Mariska Comins",
+    initials: "MC",
+    preferredName: "Mariska",
+    role: "Adviser",
+    email: "mariska.comins@psg.co.za",
+    team: "Mariska Comin Team",
+    status: "Active",
+  },
+  {
+    id: "3",
+    name: "Johan van der Berg",
+    initials: "JB",
+    preferredName: "Johan",
+    role: "Support",
+    email: "johan.vdberg@psg.co.za",
+    team: "myPractice & Test",
+    status: "Active",
+  },
+  {
+    id: "4",
+    name: "Dale Abels",
+    initials: "DA",
+    preferredName: "Dale",
+    role: "Adviser",
+    email: "dale.abels@psg.co.za",
+    team: "myPractice & Test",
+    status: "Active",
+  },
+  {
+    id: "5",
+    name: "Kalpesh Abhangi",
+    initials: "KA",
+    preferredName: "Kalpesh",
+    role: "Compliance",
+    email: "kalpesh.abhangi@psg.co.za",
+    team: "PSL Compliance team",
+    status: "Active",
+  },
+  {
+    id: "6",
+    name: "Chad Alexander",
+    initials: "CA",
+    preferredName: "Chad",
+    role: "Adviser",
+    email: "chad.alexander@psg.co.za",
+    team: "myPractice & Test",
+    status: "Inactive",
+  },
 ];
 
 const sidebarItems = [
@@ -65,12 +138,14 @@ const Practice = () => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedPerson, setSelectedPerson] = useState<typeof personnelData[0] | null>(null);
+  const [selectedPerson, setSelectedPerson] = useState<(typeof personnelData)[0] | null>(null);
   const [activeTab, setActiveTab] = useState("profile");
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -106,19 +181,20 @@ const Practice = () => {
 
   const userName = user?.user_metadata?.full_name || "Adviser";
   const userEmail = user?.email || "adviser@vantage.co";
-  const filteredPersonnel = personnelData.filter(p => 
-    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.team.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredPersonnel = personnelData.filter(
+    (p) =>
+      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.team.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   return (
     <div className="h-screen bg-muted/30 flex overflow-hidden">
       {/* Sidebar - Fixed */}
       <aside className="w-16 bg-[hsl(180,25%,25%)] flex flex-col items-center py-4 gap-1 shrink-0">
-        <Button 
-          variant="ghost" 
-          size="icon" 
+        <Button
+          variant="ghost"
+          size="icon"
           className="w-10 h-10 text-white/80 hover:bg-white/10 mb-4"
           onClick={() => navigate("/command-center")}
           title="Practice Overview"
@@ -139,17 +215,13 @@ const Practice = () => {
             <span>{item.label}</span>
           </button>
         ))}
-        
+
         {/* Spacer to push logo to bottom */}
         <div className="flex-1" />
-        
+
         {/* VANTAGE Logo - rotated to read bottom to top */}
         <div className="mb-2 overflow-visible">
-          <img 
-            src={vantageLogo} 
-            alt="Vantage" 
-            className="h-[80px] w-auto object-contain -rotate-90 origin-center"
-          />
+          <img src={vantageLogo} alt="Vantage" className="h-[100px] w-auto object-contain -rotate-90 origin-center" />
         </div>
       </aside>
 
@@ -167,14 +239,14 @@ const Practice = () => {
         {/* Content - Scrollable */}
         <main className="flex-1 p-6 overflow-auto">
           {!selectedPerson ? (
-            <PersonnelList 
-              personnel={filteredPersonnel} 
+            <PersonnelList
+              personnel={filteredPersonnel}
               searchQuery={searchQuery}
               setSearchQuery={setSearchQuery}
-              onSelectPerson={setSelectedPerson} 
+              onSelectPerson={setSelectedPerson}
             />
           ) : (
-            <PersonnelSettings 
+            <PersonnelSettings
               person={selectedPerson}
               activeTab={activeTab}
               setActiveTab={setActiveTab}
@@ -189,125 +261,118 @@ const Practice = () => {
 };
 
 // Personnel List Component
-const PersonnelList = ({ 
-  personnel, 
-  searchQuery, 
-  setSearchQuery, 
-  onSelectPerson 
-}: { 
-  personnel: typeof personnelData; 
+const PersonnelList = ({
+  personnel,
+  searchQuery,
+  setSearchQuery,
+  onSelectPerson,
+}: {
+  personnel: typeof personnelData;
   searchQuery: string;
   setSearchQuery: (q: string) => void;
-  onSelectPerson: (p: typeof personnelData[0]) => void;
+  onSelectPerson: (p: (typeof personnelData)[0]) => void;
 }) => {
   const navigate = useNavigate();
-  
-  return (
-  <div>
-    <div className="flex items-center justify-between mb-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Practice Settings</h1>
-        <p className="text-muted-foreground">Manage your practice personnel and their settings</p>
-      </div>
-      <div className="flex gap-2">
-        <Button className="bg-[hsl(180,70%,45%)] hover:bg-[hsl(180,70%,40%)]">
-          <Plus className="w-4 h-4 mr-2" />
-          Add Team Member
-        </Button>
-        <Button 
-          variant="outline"
-          onClick={() => navigate("/administration")}
-        >
-          <Settings className="w-4 h-4 mr-2" />
-          Administration
-        </Button>
-      </div>
-    </div>
 
-    <Card>
-      <CardHeader className="pb-4">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">Team Members</CardTitle>
-          <div className="relative w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input 
-              placeholder="Search team members..." 
-              className="pl-10"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-semibold">Practice Settings</h1>
+          <p className="text-muted-foreground">Manage your practice personnel and their settings</p>
+        </div>
+        <div className="flex gap-2">
+          <Button className="bg-[hsl(180,70%,45%)] hover:bg-[hsl(180,70%,40%)]">
+            <Plus className="w-4 h-4 mr-2" />
+            Add Team Member
+          </Button>
+          <Button variant="outline" onClick={() => navigate("/administration")}>
+            <Settings className="w-4 h-4 mr-2" />
+            Administration
+          </Button>
+        </div>
+      </div>
+
+      <Card>
+        <CardHeader className="pb-4">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg">Team Members</CardTitle>
+            <div className="relative w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Search team members..."
+                className="pl-10"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
           </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-muted-foreground border-b">
-                <th className="pb-3 font-medium">#</th>
-                <th className="pb-3 font-medium">Name</th>
-                <th className="pb-3 font-medium">Role</th>
-                <th className="pb-3 font-medium">Email</th>
-                <th className="pb-3 font-medium">Team</th>
-                <th className="pb-3 font-medium">Status</th>
-                <th className="pb-3 font-medium"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {personnel.map((person, index) => (
-                <tr key={person.id} className="border-b border-border/50 hover:bg-muted/50">
-                  <td className="py-3">{index + 1}</td>
-                  <td className="py-3">
-                    <div className="flex items-center gap-2">
-                      <span className="w-8 h-8 rounded-full bg-[hsl(180,70%,45%)] text-white text-xs flex items-center justify-center font-medium">
-                        {person.initials}
-                      </span>
-                      <div>
-                        <p className="font-medium">{person.name}</p>
-                        <p className="text-xs text-muted-foreground">"{person.preferredName}"</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="py-3">{person.role}</td>
-                  <td className="py-3 text-muted-foreground">{person.email}</td>
-                  <td className="py-3 text-[hsl(180,70%,45%)]">{person.team}</td>
-                  <td className="py-3">
-                    <span className={`px-2 py-1 rounded-full text-xs ${
-                      person.status === "Active" 
-                        ? "bg-green-100 text-green-700" 
-                        : "bg-gray-100 text-gray-600"
-                    }`}>
-                      {person.status}
-                    </span>
-                  </td>
-                  <td className="py-3">
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => onSelectPerson(person)}
-                    >
-                      <Settings className="w-4 h-4" />
-                    </Button>
-                  </td>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-muted-foreground border-b">
+                  <th className="pb-3 font-medium">#</th>
+                  <th className="pb-3 font-medium">Name</th>
+                  <th className="pb-3 font-medium">Role</th>
+                  <th className="pb-3 font-medium">Email</th>
+                  <th className="pb-3 font-medium">Team</th>
+                  <th className="pb-3 font-medium">Status</th>
+                  <th className="pb-3 font-medium"></th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </CardContent>
-    </Card>
-  </div>
+              </thead>
+              <tbody>
+                {personnel.map((person, index) => (
+                  <tr key={person.id} className="border-b border-border/50 hover:bg-muted/50">
+                    <td className="py-3">{index + 1}</td>
+                    <td className="py-3">
+                      <div className="flex items-center gap-2">
+                        <span className="w-8 h-8 rounded-full bg-[hsl(180,70%,45%)] text-white text-xs flex items-center justify-center font-medium">
+                          {person.initials}
+                        </span>
+                        <div>
+                          <p className="font-medium">{person.name}</p>
+                          <p className="text-xs text-muted-foreground">"{person.preferredName}"</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-3">{person.role}</td>
+                    <td className="py-3 text-muted-foreground">{person.email}</td>
+                    <td className="py-3 text-[hsl(180,70%,45%)]">{person.team}</td>
+                    <td className="py-3">
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs ${
+                          person.status === "Active" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"
+                        }`}
+                      >
+                        {person.status}
+                      </span>
+                    </td>
+                    <td className="py-3">
+                      <Button variant="ghost" size="sm" onClick={() => onSelectPerson(person)}>
+                        <Settings className="w-4 h-4" />
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 
 // Personnel Settings Component
-const PersonnelSettings = ({ 
-  person, 
-  activeTab, 
-  setActiveTab, 
-  onBack 
-}: { 
-  person: typeof personnelData[0];
+const PersonnelSettings = ({
+  person,
+  activeTab,
+  setActiveTab,
+  onBack,
+}: {
+  person: (typeof personnelData)[0];
   activeTab: string;
   setActiveTab: (tab: string) => void;
   onBack: () => void;
@@ -323,7 +388,9 @@ const PersonnelSettings = ({
         </span>
         <div>
           <h1 className="text-xl font-semibold">{person.name}</h1>
-          <p className="text-sm text-muted-foreground">{person.role} • {person.team}</p>
+          <p className="text-sm text-muted-foreground">
+            {person.role} • {person.team}
+          </p>
         </div>
       </div>
     </div>
@@ -336,9 +403,7 @@ const PersonnelSettings = ({
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors ${
-              activeTab === tab.id
-                ? "bg-[hsl(180,70%,45%)] text-white"
-                : "text-muted-foreground hover:bg-muted"
+              activeTab === tab.id ? "bg-[hsl(180,70%,45%)] text-white" : "text-muted-foreground hover:bg-muted"
             }`}
           >
             <tab.icon className="w-4 h-4" />
@@ -370,7 +435,7 @@ const PersonnelSettings = ({
 );
 
 // Profile Tab
-const ProfileTab = ({ person }: { person: typeof personnelData[0] }) => (
+const ProfileTab = ({ person }: { person: (typeof personnelData)[0] }) => (
   <div className="space-y-8">
     <div className="flex justify-between items-center">
       <h2 className="text-xl font-semibold text-[hsl(180,70%,45%)]">Profile</h2>
@@ -564,7 +629,9 @@ const PreferencesTab = () => (
           <Label className="text-muted-foreground">Reporting password for Excel files</Label>
           <div className="flex gap-2">
             <Input type="password" placeholder="Leave blank to keep current" />
-            <Button variant="outline" size="sm">Use OTP</Button>
+            <Button variant="outline" size="sm">
+              Use OTP
+            </Button>
           </div>
         </div>
         <div className="grid grid-cols-2 items-center gap-4">
@@ -694,7 +761,9 @@ const CommunicationTab = () => (
                   <SelectItem value="no">No</SelectItem>
                 </SelectContent>
               </Select>
-              <Button variant="outline" size="sm">+ Add filter</Button>
+              <Button variant="outline" size="sm">
+                + Add filter
+              </Button>
             </div>
           </div>
         </div>
@@ -703,7 +772,9 @@ const CommunicationTab = () => (
         <div className="flex items-center justify-between">
           <div>
             <Label className="text-muted-foreground">Delay import failure notifications on weekends</Label>
-            <p className="text-xs text-muted-foreground">Import notifications generated after 17:00 on a Friday will be delayed until 07:00 on the following Monday</p>
+            <p className="text-xs text-muted-foreground">
+              Import notifications generated after 17:00 on a Friday will be delayed until 07:00 on the following Monday
+            </p>
           </div>
           <Select defaultValue="yes">
             <SelectTrigger className="w-20">
@@ -762,7 +833,9 @@ const CommunicationTab = () => (
                   <SelectItem value="no">No</SelectItem>
                 </SelectContent>
               </Select>
-              <Button variant="outline" size="sm">Configure</Button>
+              <Button variant="outline" size="sm">
+                Configure
+              </Button>
             </div>
           </div>
           <div className="flex items-center justify-between">
@@ -777,7 +850,9 @@ const CommunicationTab = () => (
                   <SelectItem value="no">No</SelectItem>
                 </SelectContent>
               </Select>
-              <Button variant="outline" size="sm">Configure</Button>
+              <Button variant="outline" size="sm">
+                Configure
+              </Button>
             </div>
           </div>
         </div>
@@ -787,7 +862,8 @@ const CommunicationTab = () => (
     <div className="space-y-4">
       <h3 className="font-medium text-lg">Notification subscriptions</h3>
       <p className="text-sm text-muted-foreground">
-        To receive a notification, please tick the relevant checkbox. Entering an e-mail address per notification will override your own e-mail address as the recipient.
+        To receive a notification, please tick the relevant checkbox. Entering an e-mail address per notification will
+        override your own e-mail address as the recipient.
       </p>
       <div className="grid gap-3 max-w-xl">
         {[
@@ -797,11 +873,13 @@ const CommunicationTab = () => (
           "Client detail changes made by user",
           "Receive SMS notifications",
           "Import failure notifications",
-          "Receive review date due emails"
+          "Receive review date due emails",
         ].map((notification) => (
           <div key={notification} className="flex items-center gap-3">
             <Checkbox id={notification} />
-            <Label htmlFor={notification} className="text-sm">{notification}</Label>
+            <Label htmlFor={notification} className="text-sm">
+              {notification}
+            </Label>
             <Input className="flex-1" placeholder="Override email (optional)" />
           </div>
         ))}
@@ -820,7 +898,9 @@ const IntegrationsTab = () => (
 
     <div className="space-y-6">
       <h3 className="font-medium text-lg">Astute Life</h3>
-      <p className="text-sm text-muted-foreground">Please note that Astute life and risk updates will be charged to your Astute username at the normal cost.</p>
+      <p className="text-sm text-muted-foreground">
+        Please note that Astute life and risk updates will be charged to your Astute username at the normal cost.
+      </p>
       <div className="grid gap-4 max-w-xl">
         <div className="flex items-center gap-4">
           <Label className="w-48 text-muted-foreground">Accept Astute disclaimer</Label>
@@ -878,14 +958,18 @@ const VoIPTab = () => (
             <SelectItem value="all">All items</SelectItem>
           </SelectContent>
         </Select>
-        <Button variant="outline" size="sm">Toggle all</Button>
+        <Button variant="outline" size="sm">
+          Toggle all
+        </Button>
       </div>
 
       <div className="border rounded-lg overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-muted/50">
             <tr>
-              <th className="w-10 p-3"><Checkbox /></th>
+              <th className="w-10 p-3">
+                <Checkbox />
+              </th>
               <th className="w-10 p-3 text-left">#</th>
               <th className="w-20 p-3 text-left">Access</th>
               <th className="p-3 text-left">Name</th>
@@ -895,7 +979,9 @@ const VoIPTab = () => (
           <tbody>
             {personnelData.slice(0, 5).map((member, index) => (
               <tr key={member.id} className="border-t">
-                <td className="p-3"><Checkbox /></td>
+                <td className="p-3">
+                  <Checkbox />
+                </td>
                 <td className="p-3">{index + 1}</td>
                 <td className="p-3 text-red-500 font-bold">✕</td>
                 <td className="p-3">{member.name}</td>
@@ -937,7 +1023,7 @@ const ReferralsTab = () => (
           "Medical",
           "Short Term Insurance (Commercial)",
           "Short Term Insurance (Personal)",
-          "Stockbroking"
+          "Stockbroking",
         ].map((service) => (
           <div key={service} className="grid grid-cols-3 items-center gap-4">
             <Label className="text-muted-foreground">{service}</Label>
@@ -950,7 +1036,7 @@ const ReferralsTab = () => (
 );
 
 // Mailbox Tab
-const MailboxTab = ({ person }: { person: typeof personnelData[0] }) => (
+const MailboxTab = ({ person }: { person: (typeof personnelData)[0] }) => (
   <div className="space-y-8">
     <h2 className="text-xl font-semibold text-[hsl(180,70%,45%)]">Mailbox settings</h2>
 
@@ -989,7 +1075,9 @@ const MailboxTab = ({ person }: { person: typeof personnelData[0] }) => (
         <table className="w-full text-sm">
           <thead className="bg-muted/50">
             <tr>
-              <th className="w-10 p-3"><Checkbox /></th>
+              <th className="w-10 p-3">
+                <Checkbox />
+              </th>
               <th className="w-10 p-3 text-left">#</th>
               <th className="w-20 p-3 text-left">Access</th>
               <th className="p-3 text-left">Name</th>
@@ -999,7 +1087,9 @@ const MailboxTab = ({ person }: { person: typeof personnelData[0] }) => (
           <tbody>
             {personnelData.slice(0, 5).map((member, index) => (
               <tr key={member.id} className="border-t">
-                <td className="p-3"><Checkbox /></td>
+                <td className="p-3">
+                  <Checkbox />
+                </td>
                 <td className="p-3">{index + 1}</td>
                 <td className="p-3 text-red-500 font-bold">✕</td>
                 <td className="p-3">{member.name}</td>
