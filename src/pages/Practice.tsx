@@ -221,7 +221,7 @@ const Practice = () => {
 
         {/* VANTAGE Logo - rotated to read bottom to top */}
         <div className="mb-2 overflow-visible">
-          <img src={vantageLogo} alt="Vantage" className="h-[100px] w-auto object-contain -rotate-90 origin-center" />
+          <img src={vantageLogo} alt="Vantage" className="h-[120px] w-auto object-contain -rotate-90 origin-center" />
         </div>
       </aside>
 
