@@ -43,9 +43,9 @@ const queryClient = new QueryClient();
 const AppContent = () => {
   const { mode, showSplash } = useAppMode();
   const isMobile = useIsMobile();
-  const isRootPath = window.location.pathname === "/";
+  const isWebOnlyPath = ["/", "/auth", "/signup", "/signup-confirmation"].includes(window.location.pathname);
 
-  if (mode === "adviser" && !isRootPath) {
+  if (mode === "adviser" && !isWebOnlyPath) {
     if (isMobile) {
       return (
         <div className="fixed inset-0 z-[90] bg-background">
@@ -62,7 +62,7 @@ const AppContent = () => {
     );
   }
 
-  if (mode === "client" && !isRootPath) {
+  if (mode === "client" && !isWebOnlyPath) {
     if (isMobile) {
       return (
         <div className="fixed inset-0 z-[90] bg-background">
