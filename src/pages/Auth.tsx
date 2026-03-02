@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
+import { useAppMode } from "@/contexts/AppModeContext";
 import { checkPasswordLeaked } from "@/lib/password-security";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,6 +37,7 @@ type AuthFormErrors = {
 const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { setMode } = useAppMode();
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -53,6 +55,7 @@ const Auth = () => {
         setUser(session?.user ?? null);
         
         if (session?.user) {
+          setMode("web");
           navigate("/dashboard");
         }
       }
@@ -64,6 +67,7 @@ const Auth = () => {
       setUser(session?.user ?? null);
       
       if (session?.user) {
+        setMode("web");
         navigate("/dashboard");
       }
     });
