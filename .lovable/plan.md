@@ -1,35 +1,21 @@
 
 
-## Fix Navigation to Root Landing Page "/"
+## Redirect Client App Profile Avatar to Settings (More Tab)
 
 ### Problem
-The `AppModeContext` persists the app mode ("web", "adviser", or "client") in `localStorage`. When `mode` is "adviser" or "client", the `AppContent` component in `App.tsx` renders the mobile/client shell **instead of** the `BrowserRouter` routes. This means the "/" landing page is completely inaccessible once a user switches to adviser or client mode.
-
-### Solution
-Update `AppContent` in `src/App.tsx` to check the current URL. If the path is exactly "/", always render the standard web routes (the `BrowserRouter`) regardless of the stored mode. This ensures the marketing/landing page at "/" is always reachable.
+In the Client App header, tapping the user profile avatar (showing initials like "CA") triggers `handleChangeClient()`, which opens the client picker/search screen. The user wants this button to navigate to the "More" tab instead, which already contains Switch Client, Switch to Web, and Switch to Adviser App options.
 
 ### Changes
 
-**Edit: `src/App.tsx`**
+**Edit: `src/components/client-app/ClientApp.tsx`**
 
-- At the top of `AppContent`, read `window.location.pathname`
-- If the pathname is exactly `"/"`, skip the adviser/client mode rendering and fall through to the `BrowserRouter` with all routes
-- The adviser and client mode blocks remain unchanged for all other paths
+- Line 120: Change the `onClick` handler on the profile avatar button from `handleChangeClient` to `() => setActiveTab("more")`
+- This navigates to the existing "More" tab which includes:
+  - Dark Mode toggle
+  - Switch Client button
+  - Switch to Web button
+  - Switch to Adviser App button
+  - Sign Out button
 
-### Technical Detail
-
-```text
-Before (simplified):
-  if mode === "adviser" -> render MobileApp
-  if mode === "client"  -> render ClientApp
-  else                  -> render BrowserRouter
-
-After:
-  isRootPath = window.location.pathname === "/"
-  if mode === "adviser" AND NOT isRootPath -> render MobileApp
-  if mode === "client"  AND NOT isRootPath -> render ClientApp
-  else                                    -> render BrowserRouter
-```
-
-This is a two-line change -- add one variable and add `&& !isRootPath` to both mode conditionals.
+This is a single-line change. The "More" tab already provides a "Switch Client" button that calls `handleChangeClient`, so the client search functionality remains accessible from there.
 
