@@ -117,7 +117,7 @@ const ClientApp = () => {
               2
             </span>
           </Button>
-          <button onClick={handleChangeClient} className="shrink-0">
+          <button onClick={() => setActiveTab("more")} className="shrink-0">
             <div className="h-8 w-8 rounded-full bg-[hsl(220,60%,50%)] flex items-center justify-center text-white text-xs font-bold">
               {selectedClient?.first_name.charAt(0)}{selectedClient?.surname.charAt(0)}
             </div>
