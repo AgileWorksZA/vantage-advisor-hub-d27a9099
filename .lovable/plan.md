@@ -1,30 +1,35 @@
 
 
-## Show Real Adviser Name in Client Messages Tab
+## Fix Navigation to Root Landing Page "/"
 
-### Overview
-Replace the hardcoded "Your Adviser" label in the Client App Messages tab with the actual primary adviser name from the last selected jurisdiction's regional data.
+### Problem
+The `AppModeContext` persists the app mode ("web", "adviser", or "client") in `localStorage`. When `mode` is "adviser" or "client", the `AppContent` component in `App.tsx` renders the mobile/client shell **instead of** the `BrowserRouter` routes. This means the "/" landing page is completely inaccessible once a user switches to adviser or client mode.
+
+### Solution
+Update `AppContent` in `src/App.tsx` to check the current URL. If the path is exactly "/", always render the standard web routes (the `BrowserRouter`) regardless of the stored mode. This ensures the marketing/landing page at "/" is always reachable.
 
 ### Changes
 
-**Edit: `src/components/client-app/ClientApp.tsx`**
+**Edit: `src/App.tsx`**
 
-- Import `useMemo` from React and `getRegionalData` from `@/data/regionalData`
-- Read the selected region from `localStorage` (key `vantage-selected-region`, default `"ZA"`) to get the current jurisdiction
-- Derive the primary adviser name: `getRegionalData(region).advisors[0].name`
-- Pass `advisorName` prop to `ClientMessagesTab`:
-  ```
-  <ClientMessagesTab clientName={clientName} advisorName={adviserName} />
-  ```
+- At the top of `AppContent`, read `window.location.pathname`
+- If the pathname is exactly `"/"`, skip the adviser/client mode rendering and fall through to the `BrowserRouter` with all routes
+- The adviser and client mode blocks remain unchanged for all other paths
 
-### Technical Details
+### Technical Detail
 
-The region is already persisted in localStorage by `RegionContext`. We read it directly rather than importing the context (to avoid adding a provider dependency to the Client App shell). The first advisor in each region's `advisors` array serves as the primary adviser.
+```text
+Before (simplified):
+  if mode === "adviser" -> render MobileApp
+  if mode === "client"  -> render ClientApp
+  else                  -> render BrowserRouter
 
-Only two lines change in `ClientApp.tsx`:
-1. Add import for `useMemo` and `getRegionalData`
-2. Derive `adviserName` from regional data
-3. Pass it to the `ClientMessagesTab` component (line 82)
+After:
+  isRootPath = window.location.pathname === "/"
+  if mode === "adviser" AND NOT isRootPath -> render MobileApp
+  if mode === "client"  AND NOT isRootPath -> render ClientApp
+  else                                    -> render BrowserRouter
+```
 
-No changes needed to `ClientMessagesTab.tsx` since it already accepts an optional `advisorName` prop with a default fallback.
+This is a two-line change -- add one variable and add `&& !isRootPath` to both mode conditionals.
 
