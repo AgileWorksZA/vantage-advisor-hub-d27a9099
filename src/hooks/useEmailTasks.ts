@@ -21,6 +21,8 @@ export interface EmailTask {
 
 export interface LinkedTaskDisplay {
   id: string;
+  task_id: string;
+  client_id: string | null;
   task_number: number;
   title: string | null;
   task_type: string | null;
