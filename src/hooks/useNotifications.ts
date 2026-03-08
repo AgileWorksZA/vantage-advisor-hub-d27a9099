@@ -74,17 +74,36 @@ export const useNotifications = () => {
     } catch {}
   }, []);
 
+  // Fetch sound settings directly to avoid hook nesting issues
+  useEffect(() => {
+    if (!userId) return;
+    supabase
+      .from("user_settings")
+      .select("notification_sound_enabled, notification_push_enabled, notification_critical_only_sound")
+      .eq("user_id", userId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) {
+          setSoundSettings({
+            notification_sound_enabled: (data as any).notification_sound_enabled ?? true,
+            notification_push_enabled: (data as any).notification_push_enabled ?? false,
+            notification_critical_only_sound: (data as any).notification_critical_only_sound ?? false,
+          });
+        }
+      });
+  }, [userId]);
+
   const handleNewNotification = useCallback(
     (notification: Notification) => {
-      const soundEnabled = settings?.notification_sound_enabled ?? true;
-      const criticalOnly = settings?.notification_critical_only_sound ?? false;
-      const pushEnabled = settings?.notification_push_enabled ?? false;
+      const soundEnabled = soundSettings.notification_sound_enabled;
+      const criticalOnly = soundSettings.notification_critical_only_sound;
+      const pushEnabled = soundSettings.notification_push_enabled;
 
       const shouldSound = soundEnabled && (!criticalOnly || isCriticalNotification(notification));
       if (shouldSound) playSound();
       if (pushEnabled) showPushNotification(notification);
     },
-    [settings, playSound, showPushNotification]
+    [soundSettings, playSound, showPushNotification]
   );
 
   const fetchNotifications = useCallback(async () => {
