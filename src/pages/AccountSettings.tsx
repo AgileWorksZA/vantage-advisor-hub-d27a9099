@@ -79,7 +79,8 @@ const AccountSettings = () => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
-  const [activeSection, setActiveSection] = useState("profile");
+  const [searchParams] = useSearchParams();
+  const [activeSection, setActiveSection] = useState(searchParams.get("section") || "profile");
   const { selectedRegion } = useRegion();
   const { settings, isLoading: settingsLoading, upsertSettings } = useUserSettings();
 
