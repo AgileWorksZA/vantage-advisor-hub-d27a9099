@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
@@ -20,6 +20,8 @@ import {
   FileText,
   ArrowLeft,
 } from "lucide-react";
+import { detectOpportunityTypes, getOpportunityConfig } from "@/lib/opportunity-detection";
+import { OpportunityTagBadge } from "@/components/email/OpportunityTagBadge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
