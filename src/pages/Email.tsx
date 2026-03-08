@@ -430,7 +430,17 @@ const EmailPage = () => {
                                 {email.from}
                               </td>
                               <td className={cn("p-3", !email.isRead && "text-[hsl(180,70%,45%)]")}>
-                                {email.subject}
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span className="truncate">{email.subject}</span>
+                                  {email.detectedOpportunities.map((oppType) => (
+                                    <OpportunityTagBadge
+                                      key={oppType}
+                                      type={oppType}
+                                      sourceText={email.subject}
+                                      clientName={email.clients[0]?.name}
+                                    />
+                                  ))}
+                                </div>
                               </td>
                               <td className="p-3 text-muted-foreground">{email.receivedOn}</td>
                               <td className="p-3">
