@@ -52,7 +52,8 @@ export const NotificationDropdown = () => {
   const { notifications, unreadCount, markAsRead, dismiss, clearAll } = useNotifications();
   const [open, setOpen] = useState(false);
 
-  const groupedNotifications = groupByDate(notifications);
+  const limitedNotifications = notifications.slice(0, 5);
+  const groupedNotifications = groupByDate(limitedNotifications);
 
   const handleDismiss = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -63,7 +64,7 @@ export const NotificationDropdown = () => {
     markAsRead(notification.id);
     if (notification.type === "task" && notification.task_id) {
       setOpen(false);
-      navigate("/tasks");
+      navigate(`/tasks?taskId=${notification.task_id}`);
     }
   };
 
@@ -90,7 +91,7 @@ export const NotificationDropdown = () => {
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-0 shadow-lg border" align="end" sideOffset={8}>
+      <PopoverContent className="w-96 p-0 shadow-lg border" align="end" sideOffset={8}>
         <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/30">
           <h3 className="font-semibold text-sm">Notifications</h3>
           <div className="flex items-center gap-1">
@@ -142,7 +143,7 @@ export const NotificationDropdown = () => {
                               <OpportunityTagInline type={notification.opportunity_tag} />
                             )}
                           </div>
-                          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+          <p className="text-xs text-muted-foreground mt-0.5">
                             {notification.description}
                           </p>
                         </div>

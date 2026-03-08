@@ -59,6 +59,7 @@ interface TaskDetailSheetProps {
   onDelete: (taskId: string) => Promise<boolean>;
   onTogglePin: (taskId: string, isPinned: boolean) => void;
   onAddNote: (taskId: string, note: string, isInternal: boolean) => Promise<boolean>;
+  defaultTab?: string;
 }
 
 export function TaskDetailSheet({
@@ -69,6 +70,7 @@ export function TaskDetailSheet({
   onDelete,
   onTogglePin,
   onAddNote,
+  defaultTab,
 }: TaskDetailSheetProps) {
   const { taskTypes, taskStatuses, taskPriorities, taskCategories, taskResolutionTypes, taskSources } = useTaskTypes();
   const { clients } = useClients();
@@ -76,8 +78,14 @@ export function TaskDetailSheet({
   const [editedTask, setEditedTask] = useState<Partial<EnhancedTask>>({});
   const [newNote, setNewNote] = useState("");
   const [isInternalNote, setIsInternalNote] = useState(false);
-  const [activeTab, setActiveTab] = useState("details");
+  const [activeTab, setActiveTab] = useState(defaultTab || "details");
   const [composeDialogOpen, setComposeDialogOpen] = useState(false);
+
+  // Reset tab when defaultTab or task changes
+  useEffect(() => {
+    if (defaultTab) setActiveTab(defaultTab);
+    else setActiveTab("details");
+  }, [defaultTab, task?.id]);
 
   // Hooks for related data
   const { taskClients, fetchTaskClients, addClient, removeClient } = useTaskClients(task?.id);

@@ -1,30 +1,32 @@
 
 
-## Make Notification Dropdown Items Clickable with Task Navigation + Limit to 5
+## Default to Web View After Login
 
-### Changes — `src/components/dashboard/NotificationDropdown.tsx`
+### Problem
+When a user logs in via the `/auth` page, two issues arise:
+1. If the stored app mode is "adviser" or "client", the `/auth` route itself gets intercepted by the mobile/client shell and never renders the login form
+2. After successful login, the user navigates to `/dashboard` but may see the mobile/client shell instead of the web dashboard
 
-1. **Navigate to task detail on click**: Update `handleNotificationClick` so that clicking a task notification navigates to `/tasks?taskId={task_id}` instead of just `/tasks`. This allows the Tasks page to auto-open the TaskDetailSheet showing the timeline.
+### Solution (two changes)
 
-2. **Limit dropdown to 5 notifications**: Instead of showing all notifications in the dropdown, take only the first 5 (already sorted by date desc from the hook). Show a "Show more" link for the rest.
+**1. Bypass mode shell for `/auth` route (`src/App.tsx`)**
+- Expand the `isRootPath` check to also include `/auth`, `/signup`, and `/signup-confirmation` paths
+- Rename to something like `isWebOnlyPath` for clarity
+- This ensures auth-related pages always render through the standard BrowserRouter
 
-3. **Remove `line-clamp-2`** from notification description so text isn't cut off. Replace with full visibility of title and description.
+```text
+Before:  const isRootPath = window.location.pathname === "/"
+After:   const isWebOnlyPath = ["/", "/auth", "/signup", "/signup-confirmation"].includes(window.location.pathname)
+```
 
-4. **Widen popover** slightly (from `w-80` to `w-96`) to give more room for notification text.
+Update both mode conditionals to use `!isWebOnlyPath` instead of `!isRootPath`.
 
-### Changes — `src/pages/Tasks.tsx`
+**2. Reset mode to "web" on successful login (`src/pages/Auth.tsx`)**
+- Import `useAppMode` from the AppModeContext
+- In the `onAuthStateChange` callback (and `getSession` check), call `setMode("web")` before navigating to `/dashboard`
+- This ensures post-login always lands in the web view regardless of previously stored mode
 
-1. **Read `taskId` from URL query params** on mount. If present, find the matching task and auto-open `TaskDetailSheet` with the "activity" tab selected so the timeline is immediately visible.
-
-### Changes — `src/pages/Notifications.tsx`
-
-1. **Same navigation pattern**: Update `handleNotificationClick` to navigate to `/tasks?taskId={task_id}` for task notifications.
-
-### Summary
-
-| File | Change |
-|------|--------|
-| `NotificationDropdown.tsx` | Limit to 5 items, remove text truncation, navigate with taskId param |
-| `Tasks.tsx` | Read taskId query param, auto-open TaskDetailSheet on activity tab |
-| `Notifications.tsx` | Navigate with taskId param for task notifications |
+### Files to Edit
+- `src/App.tsx` -- expand path bypass list (1 line change)
+- `src/pages/Auth.tsx` -- import `useAppMode`, call `setMode("web")` on login success (3 lines added)
 

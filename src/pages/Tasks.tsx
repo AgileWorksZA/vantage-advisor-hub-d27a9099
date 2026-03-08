@@ -113,6 +113,7 @@ const Tasks = () => {
   });
   const [selectedTask, setSelectedTask] = useState<EnhancedTask | null>(null);
   const [detailSheetOpen, setDetailSheetOpen] = useState(false);
+  const [detailSheetDefaultTab, setDetailSheetDefaultTab] = useState<string | undefined>(undefined);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
   const [kanbanGroupBy, setKanbanGroupBy] = useState<KanbanGroupBy>("none");
@@ -210,10 +211,28 @@ const Tasks = () => {
     }
   };
 
-  const handleTaskClick = (task: EnhancedTask) => {
+  const handleTaskClick = useCallback((task: EnhancedTask) => {
     setSelectedTask(task);
+    setDetailSheetDefaultTab(undefined);
     setDetailSheetOpen(true);
-  };
+  }, []);
+
+  // Deep-link: open task from URL ?taskId=...
+  const urlTaskId = searchParams.get("taskId");
+  useEffect(() => {
+    if (urlTaskId && allTasks.length > 0 && !detailSheetOpen) {
+      const task = allTasks.find(t => t.id === urlTaskId);
+      if (task) {
+        setSelectedTask(task);
+        setDetailSheetDefaultTab("activity");
+        setDetailSheetOpen(true);
+        // Clean up the URL param
+        const newParams = new URLSearchParams(searchParams);
+        newParams.delete("taskId");
+        setSearchParams(newParams, { replace: true });
+      }
+    }
+  }, [urlTaskId, allTasks, detailSheetOpen, searchParams, setSearchParams]);
 
   if (authLoading) {
     return (
@@ -309,7 +328,7 @@ const Tasks = () => {
         </main>
       </div>
 
-      <TaskDetailSheet task={selectedTask} open={detailSheetOpen} onClose={() => { setDetailSheetOpen(false); setSelectedTask(null); }} onUpdate={updateTask} onDelete={deleteTask} onTogglePin={togglePin} onAddNote={addNote} />
+      <TaskDetailSheet task={selectedTask} open={detailSheetOpen} onClose={() => { setDetailSheetOpen(false); setSelectedTask(null); setDetailSheetDefaultTab(undefined); }} onUpdate={updateTask} onDelete={deleteTask} onTogglePin={togglePin} onAddNote={addNote} defaultTab={detailSheetDefaultTab} />
       <CreateTaskDialog open={createDialogOpen} onClose={() => setCreateDialogOpen(false)} onCreate={createTask} />
       <GlobalAIChat currentPage="tasks" />
     </div>
