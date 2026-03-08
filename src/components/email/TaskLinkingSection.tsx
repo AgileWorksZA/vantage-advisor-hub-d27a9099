@@ -30,6 +30,8 @@ import { format } from "date-fns";
 
 interface LinkedTask {
   id: string;
+  task_id: string;
+  client_id: string | null;
   task_number: number;
   title: string | null;
   task_type: string | null;
