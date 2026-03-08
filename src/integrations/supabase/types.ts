@@ -4205,7 +4205,10 @@ export type Database = {
           notification_calendar_reminders: boolean | null
           notification_client_updates: boolean | null
           notification_compliance_alerts: boolean | null
+          notification_critical_only_sound: boolean
           notification_email: boolean | null
+          notification_push_enabled: boolean
+          notification_sound_enabled: boolean
           notification_task_reminders: boolean | null
           time_format: string | null
           timezone: string | null
@@ -4223,7 +4226,10 @@ export type Database = {
           notification_calendar_reminders?: boolean | null
           notification_client_updates?: boolean | null
           notification_compliance_alerts?: boolean | null
+          notification_critical_only_sound?: boolean
           notification_email?: boolean | null
+          notification_push_enabled?: boolean
+          notification_sound_enabled?: boolean
           notification_task_reminders?: boolean | null
           time_format?: string | null
           timezone?: string | null
@@ -4241,7 +4247,10 @@ export type Database = {
           notification_calendar_reminders?: boolean | null
           notification_client_updates?: boolean | null
           notification_compliance_alerts?: boolean | null
+          notification_critical_only_sound?: boolean
           notification_email?: boolean | null
+          notification_push_enabled?: boolean
+          notification_sound_enabled?: boolean
           notification_task_reminders?: boolean | null
           time_format?: string | null
           timezone?: string | null
