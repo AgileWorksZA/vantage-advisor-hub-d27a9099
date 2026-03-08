@@ -211,10 +211,28 @@ const Tasks = () => {
     }
   };
 
-  const handleTaskClick = (task: EnhancedTask) => {
+  const handleTaskClick = useCallback((task: EnhancedTask) => {
     setSelectedTask(task);
+    setDetailSheetDefaultTab(undefined);
     setDetailSheetOpen(true);
-  };
+  }, []);
+
+  // Deep-link: open task from URL ?taskId=...
+  const urlTaskId = searchParams.get("taskId");
+  useEffect(() => {
+    if (urlTaskId && allTasks.length > 0 && !detailSheetOpen) {
+      const task = allTasks.find(t => t.id === urlTaskId);
+      if (task) {
+        setSelectedTask(task);
+        setDetailSheetDefaultTab("activity");
+        setDetailSheetOpen(true);
+        // Clean up the URL param
+        const newParams = new URLSearchParams(searchParams);
+        newParams.delete("taskId");
+        setSearchParams(newParams, { replace: true });
+      }
+    }
+  }, [urlTaskId, allTasks, detailSheetOpen, searchParams, setSearchParams]);
 
   if (authLoading) {
     return (
