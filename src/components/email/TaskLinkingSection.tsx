@@ -94,8 +94,9 @@ export const TaskLinkingSection = ({
                 size="sm"
                 onClick={onGuessTask}
                 className="gap-1.5 text-xs h-7"
+                disabled={isGuessing}
               >
-                <Sparkles className="w-3.5 h-3.5" />
+                {isGuessing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
                 Guess Task
               </Button>
               <Button
