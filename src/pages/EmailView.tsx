@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
@@ -20,6 +20,8 @@ import {
   FileText,
   ArrowLeft,
 } from "lucide-react";
+import { detectOpportunityTypes, getOpportunityConfig } from "@/lib/opportunity-detection";
+import { OpportunityTagBadge } from "@/components/email/OpportunityTagBadge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -79,6 +81,35 @@ const EmailView = () => {
   const [taskLinkConfirmation, setTaskLinkConfirmation] = useState<string | null>(null);
   const [isGuessing, setIsGuessing] = useState(false);
   const [aiOpportunities, setAiOpportunities] = useState<IdentifiedOpportunity[]>([]);
+  const hasAutoGuessed = useRef(false);
+
+  // Auto-detect opportunities from email content (instant, keyword-based)
+  const detectedOpportunities = useMemo(() => {
+    if (!email) return [];
+    const text = `${email.subject || ""} ${email.body_preview || ""}`;
+    return detectOpportunityTypes(text);
+  }, [email]);
+
+  // Auto-generate AI opportunity objects from keyword detection
+  const keywordOpportunities = useMemo<IdentifiedOpportunity[]>(() => {
+    if (!email || detectedOpportunities.length === 0) return [];
+    return detectedOpportunities.map((type) => {
+      const config = getOpportunityConfig(type);
+      return {
+        type,
+        description: `Detected from email content keywords related to ${config.label.toLowerCase()}.`,
+        suggestedTitle: `${config.label} opportunity – ${email.subject || "Email"}`,
+        suggestedPriority: "Medium",
+      };
+    });
+  }, [email, detectedOpportunities]);
+
+  // Merge keyword + AI edge-function opportunities
+  const mergedOpportunities = useMemo(() => {
+    const aiTypes = new Set(aiOpportunities.map((o) => o.type));
+    const unique = keywordOpportunities.filter((o) => !aiTypes.has(o.type));
+    return [...aiOpportunities, ...unique];
+  }, [aiOpportunities, keywordOpportunities]);
 
   // Attachment linking state
   const [attachmentDialogOpen, setAttachmentDialogOpen] = useState(false);
@@ -116,6 +147,14 @@ const EmailView = () => {
       setEditableClients(linkedClients);
     }
   }, [linkedClients, editableClients.length]);
+
+  // Auto-run AI guess task on email load
+  useEffect(() => {
+    if (email && id && editableClients.length > 0 && !hasAutoGuessed.current && !isGuessing) {
+      hasAutoGuessed.current = true;
+      handleGuessTask();
+    }
+  }, [email, id, editableClients.length]);
 
   // Set the page context with the primary linked client's advisor initials
   useEffect(() => {
@@ -348,85 +387,85 @@ const EmailView = () => {
           </div>
         ) : (
           <ScrollArea className="flex-1">
-            <div className="p-6 max-w-5xl mx-auto space-y-4">
+            <div className="p-4 max-w-5xl mx-auto space-y-1.5">
               {/* Action Bar */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => navigate(`/email?folder=${encodeURIComponent(email.folder)}`)}
-                  className="gap-1.5"
+                  className="gap-1 h-7 text-xs"
                 >
-                  <ArrowLeft className="w-4 h-4" />
+                  <ArrowLeft className="w-3.5 h-3.5" />
                   Back
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handleArchive}
-                  className="gap-1.5"
+                  className="gap-1 h-7 text-xs"
                 >
-                  <Archive className="w-4 h-4" />
-                  Move to archive
+                  <Archive className="w-3.5 h-3.5" />
+                  Archive
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handleReply}
-                  className="gap-1.5"
+                  className="gap-1 h-7 text-xs"
                 >
-                  <Reply className="w-4 h-4" />
+                  <Reply className="w-3.5 h-3.5" />
                   Reply
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handleForward}
-                  className="gap-1.5"
+                  className="gap-1 h-7 text-xs"
                 >
-                  <Forward className="w-4 h-4" />
+                  <Forward className="w-3.5 h-3.5" />
                   Forward
                 </Button>
               </div>
 
               {/* Subject + Date */}
-              <div className="flex items-start justify-between gap-4">
-                <h1 className="text-xl font-semibold">
+              <div className="flex items-start justify-between gap-3">
+                <h1 className="text-lg font-semibold leading-tight">
                   {email.subject || "(No Subject)"}
                 </h1>
-                <span className="text-sm text-muted-foreground whitespace-nowrap">
+                <span className="text-xs text-muted-foreground whitespace-nowrap pt-0.5">
                   {formatDateTime(email.received_at || email.sent_at)}
                 </span>
               </div>
 
               {/* Metadata Section */}
-              <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+              <div className="bg-muted/50 rounded-lg p-3 space-y-1.5">
                 {/* From */}
-                <div className="flex items-center gap-3">
-                  <Label className="w-16 text-sm text-muted-foreground">From</Label>
+                <div className="flex items-center gap-2">
+                  <Label className="w-14 text-xs text-muted-foreground">From</Label>
                   <Input
                     value={email.from_address}
                     readOnly
-                    className="flex-1 bg-background"
+                    className="flex-1 bg-background h-7 text-xs"
                   />
                 </div>
 
                 {/* To */}
-                <div className="flex items-center gap-3">
-                  <Label className="w-16 text-sm text-muted-foreground">To</Label>
+                <div className="flex items-center gap-2">
+                  <Label className="w-14 text-xs text-muted-foreground">To</Label>
                   <Input
                     value={email.to_addresses?.join(", ") || ""}
                     readOnly
-                    className="flex-1 bg-background"
+                    className="flex-1 bg-background h-7 text-xs"
                   />
                 </div>
 
                 {/* Clients */}
-                <div className="flex items-start gap-3">
-                  <Label className="w-16 text-sm text-muted-foreground pt-2">
+                <div className="flex items-start gap-2">
+                  <Label className="w-14 text-xs text-muted-foreground pt-1.5">
                     Clients
                   </Label>
-                  <div className="flex-1 flex flex-wrap items-center gap-2">
+                  <div className="flex-1 flex flex-wrap items-center gap-1.5">
                     {editableClients.map((client) => (
                       <ClientAvatarBadge
                         key={client.id}
@@ -447,11 +486,28 @@ const EmailView = () => {
                     />
                   </div>
                 </div>
+
+                {/* Inline Opportunity Tags */}
+                {detectedOpportunities.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <Label className="w-14 text-xs text-muted-foreground">Insights</Label>
+                    <div className="flex flex-wrap items-center gap-1">
+                      {detectedOpportunities.map((type) => (
+                        <OpportunityTagBadge
+                          key={type}
+                          type={type}
+                          sourceText={`${email.subject || ""} ${email.body_preview || ""}`}
+                          clientName={editableClients[0] ? formatClientName(editableClients[0].first_name, editableClients[0].surname, editableClients[0].initials) : undefined}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Task Link Confirmation Banner */}
               {taskLinkConfirmation && (
-                <div className="bg-[hsl(180,70%,45%)]/10 border border-[hsl(180,70%,45%)] text-[hsl(180,70%,45%)] px-4 py-2 rounded-lg text-sm">
+                <div className="bg-[hsl(180,70%,45%)]/10 border border-[hsl(180,70%,45%)] text-[hsl(180,70%,45%)] px-3 py-1.5 rounded-lg text-xs">
                   {taskLinkConfirmation}
                 </div>
               )}
@@ -469,27 +525,28 @@ const EmailView = () => {
 
               {/* AI Insights Panel */}
               <AIInsightsPanel
-                opportunities={aiOpportunities}
+                opportunities={mergedOpportunities}
                 onCreateTask={(opp) => {
                   toast({ title: `Task "${opp.suggestedTitle}" ready to create`, description: "Navigate to Tasks to complete setup." });
                   navigate(`/tasks?newTask=${encodeURIComponent(opp.suggestedTitle)}&type=${encodeURIComponent(opp.type)}&priority=${encodeURIComponent(opp.suggestedPriority)}`);
                 }}
+                isLoading={isGuessing}
               />
 
               {/* Attachments */}
               {attachments.length > 0 && (
-                <div className="flex items-center gap-3">
-                  <Label className="w-16 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <Label className="w-14 text-xs text-muted-foreground">
                     Attachments
                   </Label>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-1.5">
                     {attachments.map((attachment) => (
                       <button
                         key={attachment.id}
                         onClick={() => window.open(attachment.file_path, "_blank")}
-                        className="flex items-center gap-2 px-3 py-1.5 bg-muted/50 rounded border border-border hover:bg-muted transition-colors text-sm"
+                        className="flex items-center gap-1.5 px-2 py-1 bg-muted/50 rounded border border-border hover:bg-muted transition-colors text-xs"
                       >
-                        <FileText className="w-4 h-4 text-primary" />
+                        <FileText className="w-3.5 h-3.5 text-primary" />
                         {attachment.file_name}
                       </button>
                     ))}
@@ -497,7 +554,7 @@ const EmailView = () => {
                       variant="outline"
                       size="sm"
                       onClick={handleOpenAttachmentDialog}
-                      className="h-7 text-xs"
+                      className="h-6 text-[10px]"
                     >
                       Classify & Save
                     </Button>
@@ -506,7 +563,7 @@ const EmailView = () => {
               )}
 
               {/* Email Body */}
-              <div className="bg-accent/30 rounded-lg p-6">
+              <div className="bg-accent/30 rounded-lg p-4">
                 {sanitizedHtml ? (
                   <div
                     className="prose prose-sm max-w-none dark:prose-invert"

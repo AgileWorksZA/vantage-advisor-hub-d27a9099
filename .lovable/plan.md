@@ -1,30 +1,32 @@
 
 
-## Auto-Identify Opportunities & Compact Email View Layout
+## Default to Web View After Login
 
-### Changes
+### Problem
+When a user logs in via the `/auth` page, two issues arise:
+1. If the stored app mode is "adviser" or "client", the `/auth` route itself gets intercepted by the mobile/client shell and never renders the login form
+2. After successful login, the user navigates to `/dashboard` but may see the mobile/client shell instead of the web dashboard
 
-**1. Auto-trigger opportunity detection on email load (`src/pages/EmailView.tsx`)**
-- Use `detectOpportunityTypes` from `src/lib/opportunity-detection.ts` to instantly detect opportunities from the email subject + body when the email loads (no button click needed)
-- Populate `aiOpportunities` state via a `useMemo` that maps detected types into `IdentifiedOpportunity` objects with auto-generated descriptions
-- Keep the "Guess Task" button for the heavier AI edge-function matching, but show the lightweight keyword-detected opportunities immediately
-- Auto-run the edge function `guess-email-tasks` once on load (via `useEffect`) so AI insights appear without user action
+### Solution (two changes)
 
-**2. Reduce vertical spacing throughout the top sections (`src/pages/EmailView.tsx`)**
-- Change outer container from `space-y-4` to `space-y-2`
-- Change inner padding from `p-6` to `p-4`
-- Reduce metadata section padding from `p-4` to `p-3` and inner spacing from `space-y-3` to `space-y-2`
-- Use smaller input heights in From/To fields (`h-8`)
-- Reduce action bar button sizes
-- Reduce subject font from `text-xl` to `text-lg`
-- Move AI Insights Panel and Task Linking to start collapsed by default (they expand on content)
+**1. Bypass mode shell for `/auth` route (`src/App.tsx`)**
+- Expand the `isRootPath` check to also include `/auth`, `/signup`, and `/signup-confirmation` paths
+- Rename to something like `isWebOnlyPath` for clarity
+- This ensures auth-related pages always render through the standard BrowserRouter
 
-**3. Show inline opportunity tags in metadata area (`src/pages/EmailView.tsx`)**
-- Add a row in the metadata section showing detected opportunity badges (using `OpportunityTagBadge` from the existing component) right below the Clients row, so they're visible without scrolling
+```text
+Before:  const isRootPath = window.location.pathname === "/"
+After:   const isWebOnlyPath = ["/", "/auth", "/signup", "/signup-confirmation"].includes(window.location.pathname)
+```
+
+Update both mode conditionals to use `!isWebOnlyPath` instead of `!isRootPath`.
+
+**2. Reset mode to "web" on successful login (`src/pages/Auth.tsx`)**
+- Import `useAppMode` from the AppModeContext
+- In the `onAuthStateChange` callback (and `getSession` check), call `setMode("web")` before navigating to `/dashboard`
+- This ensures post-login always lands in the web view regardless of previously stored mode
 
 ### Files to Edit
-| File | Change |
-|------|--------|
-| `src/pages/EmailView.tsx` | Auto-detect opportunities on load, auto-run guess-task, compact spacing, inline opportunity tags |
-| `src/components/email/AIInsightsPanel.tsx` | Default to collapsed when auto-populated (user can expand) |
+- `src/App.tsx` -- expand path bypass list (1 line change)
+- `src/pages/Auth.tsx` -- import `useAppMode`, call `setMode("web")` on login success (3 lines added)
 
