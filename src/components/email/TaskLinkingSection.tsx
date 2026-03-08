@@ -179,7 +179,14 @@ export const TaskLinkingSection = ({
                           : `Task-${task.task_number}`}
                       </TableCell>
                       <TableCell className="text-sm">
-                        {task.title || "-"}
+                        {task.title ? (
+                          <span
+                            className="cursor-pointer text-primary hover:underline"
+                            onClick={() => navigate(`/tasks`)}
+                          >
+                            {task.title}
+                          </span>
+                        ) : "-"}
                       </TableCell>
                       <TableCell className="text-sm">
                         {task.task_type || "-"}
