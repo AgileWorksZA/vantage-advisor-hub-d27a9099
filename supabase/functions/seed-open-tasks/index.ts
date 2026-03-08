@@ -45,7 +45,7 @@ const jurisdictionTemplates: TaskTemplate[] = [
   { type: "Portfolio Review", title: "Superannuation performance review", jurisdictions: ["Australia"] },
   { type: "Compliance", title: "SMSF compliance audit preparation", jurisdictions: ["Australia"] },
   { type: "Follow-up", title: "Super salary sacrifice arrangement follow-up", jurisdictions: ["Australia"] },
-  { type: "Tax Planning", title: "Div 293 tax assessment review", jurisdictions: ["Australia"] },
+  { type: "Follow-up", title: "Div 293 tax assessment review", jurisdictions: ["Australia"] },
   { type: "Investment", title: "Transition to retirement strategy review", jurisdictions: ["Australia"] },
 
   // Canada
