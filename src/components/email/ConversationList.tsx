@@ -10,6 +10,8 @@ import { format, isToday, isYesterday } from "date-fns";
 import { ConversationSummary, DirectMessageChannel } from "@/hooks/useDirectMessages";
 import { useWhatsAppFavourites } from "@/hooks/useWhatsAppFavourites";
 import { useClients } from "@/hooks/useClients";
+import { detectOpportunityTypes } from "@/lib/opportunity-detection";
+import { OpportunityTagBadge } from "./OpportunityTagBadge";
 
 type TabType = "recent" | "favourites" | "contacts";
 
