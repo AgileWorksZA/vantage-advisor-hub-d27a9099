@@ -198,7 +198,14 @@ export const TaskLinkingSection = ({
                         {formatDueDate(task.due_date)}
                       </TableCell>
                       <TableCell className="text-sm">
-                        {task.client_name || task.client_initials || "-"}
+                        {task.client_name || task.client_initials ? (
+                          <span
+                            className="cursor-pointer text-primary hover:underline"
+                            onClick={() => task.client_id && navigate(`/client/${task.client_id}`)}
+                          >
+                            {task.client_name || task.client_initials}
+                          </span>
+                        ) : "-"}
                       </TableCell>
                     </TableRow>
                   ))
