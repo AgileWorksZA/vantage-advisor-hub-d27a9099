@@ -1,12 +1,17 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { ConversationList } from "./ConversationList";
 import { ChatPanel } from "./ChatPanel";
-import { useDirectMessages, DirectMessageChannel } from "@/hooks/useDirectMessages";
+import { useDirectMessages, DirectMessageChannel, ConversationSummary } from "@/hooks/useDirectMessages";
 import { CommunicationChannel } from "@/hooks/useCommunicationCampaigns";
 import { useRegion } from "@/contexts/RegionContext";
+import { ContentFilter } from "@/hooks/useEmails";
+
+const OPPORTUNITY_KEYWORDS = /\b(opportunity|recommend|rebalance|top[\s-]?up|review|contribution|switch|beneficiary|annuity|retirement|estate|tax|insurance|risk|hedge|diversif)/i;
+const TASK_KEYWORDS = /\b(task|todo|to-do|action item|follow[\s-]?up|deadline|assign|complete|outstanding|overdue|remind)/i;
 
 interface ChatInterfaceProps {
   channel: CommunicationChannel;
+  contentFilter?: ContentFilter;
 }
 
 const mapChannelToDirectChannel = (channel: CommunicationChannel): DirectMessageChannel => {
