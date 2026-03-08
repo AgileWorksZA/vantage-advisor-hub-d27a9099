@@ -417,12 +417,20 @@ const EmailView = () => {
               <TaskLinkingSection
                 linkedTasks={linkedTasks}
                 onToggleLink={handleToggleTaskLink}
-                onGuessTask={() => toast({ title: "AI task matching coming soon" })}
+                onGuessTask={handleGuessTask}
                 onSearchTask={() => setTaskSearchOpen(true)}
                 onNewTask={() => navigate("/tasks")}
-                onGuessCompletedTask={() =>
-                  toast({ title: "Completed task matching coming soon" })
-                }
+                onGuessCompletedTask={() => handleGuessTask(true)}
+                isGuessing={isGuessing}
+              />
+
+              {/* AI Insights Panel */}
+              <AIInsightsPanel
+                opportunities={aiOpportunities}
+                onCreateTask={(opp) => {
+                  toast({ title: `Task "${opp.suggestedTitle}" ready to create`, description: "Navigate to Tasks to complete setup." });
+                  navigate(`/tasks?newTask=${encodeURIComponent(opp.suggestedTitle)}&type=${encodeURIComponent(opp.type)}&priority=${encodeURIComponent(opp.suggestedPriority)}`);
+                }}
               />
 
               {/* Attachments */}
