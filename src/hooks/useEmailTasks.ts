@@ -52,10 +52,12 @@ export const useEmailTasks = (emailId: string | null) => {
         .select(`
           *,
           tasks!email_tasks_task_id_fkey(
+            id,
             task_number,
             title,
             task_type,
             due_date,
+            client_id,
             clients!tasks_client_id_fkey(first_name, surname)
           )
         `)
