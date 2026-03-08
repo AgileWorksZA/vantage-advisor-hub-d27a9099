@@ -81,6 +81,35 @@ const EmailView = () => {
   const [taskLinkConfirmation, setTaskLinkConfirmation] = useState<string | null>(null);
   const [isGuessing, setIsGuessing] = useState(false);
   const [aiOpportunities, setAiOpportunities] = useState<IdentifiedOpportunity[]>([]);
+  const hasAutoGuessed = useRef(false);
+
+  // Auto-detect opportunities from email content (instant, keyword-based)
+  const detectedOpportunities = useMemo(() => {
+    if (!email) return [];
+    const text = `${email.subject || ""} ${email.body_preview || ""}`;
+    return detectOpportunityTypes(text);
+  }, [email]);
+
+  // Auto-generate AI opportunity objects from keyword detection
+  const keywordOpportunities = useMemo<IdentifiedOpportunity[]>(() => {
+    if (!email || detectedOpportunities.length === 0) return [];
+    return detectedOpportunities.map((type) => {
+      const config = getOpportunityConfig(type);
+      return {
+        type,
+        description: `Detected from email content keywords related to ${config.label.toLowerCase()}.`,
+        suggestedTitle: `${config.label} opportunity – ${email.subject || "Email"}`,
+        suggestedPriority: "Medium",
+      };
+    });
+  }, [email, detectedOpportunities]);
+
+  // Merge keyword + AI edge-function opportunities
+  const mergedOpportunities = useMemo(() => {
+    const aiTypes = new Set(aiOpportunities.map((o) => o.type));
+    const unique = keywordOpportunities.filter((o) => !aiTypes.has(o.type));
+    return [...aiOpportunities, ...unique];
+  }, [aiOpportunities, keywordOpportunities]);
 
   // Attachment linking state
   const [attachmentDialogOpen, setAttachmentDialogOpen] = useState(false);
