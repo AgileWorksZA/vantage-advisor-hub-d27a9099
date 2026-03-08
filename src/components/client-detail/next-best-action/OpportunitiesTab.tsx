@@ -21,6 +21,27 @@ const ROUTINE_TYPES = ["upsell", "migration", "bank scrape"];
 const typeConfig = opportunityTypeConfig;
 const getConfig = getOpportunityConfig;
 
+interface OpportunitiesTabProps {
+  opportunities: PrepOpportunity[];
+  products: PrepProduct[];
+  householdView?: boolean;
+  onOptimise?: () => void;
+  hasScanned?: boolean;
+  isScanning?: boolean;
+  onTaxLossClick?: () => void;
+  jurisdiction?: string;
+}
+
+export interface GapOpportunity {
+  id: string;
+  type: string;
+  description: string;
+  suggestedAction: string;
+  clientName?: string;
+  opportunitySize?: number;
+  dateIdentified?: string;
+}
+
 const currencyMap: Record<string, { code: string; locale: string }> = {
   ZA: { code: "ZAR", locale: "en-ZA" },
   AU: { code: "AUD", locale: "en-AU" },
