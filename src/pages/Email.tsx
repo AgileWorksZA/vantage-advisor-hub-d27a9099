@@ -383,7 +383,7 @@ const EmailPage = () => {
                     </div>
                   ) : (
                     <table className="w-full text-sm">
-                      <thead className="bg-muted/30 sticky top-0">
+                      <thead className="bg-muted/30 sticky top-0 z-10">
                          <tr className="border-b border-border">
                           <th className="w-10 py-1.5 px-3"></th>
                           <th className="w-10 py-1.5 px-3"></th>
