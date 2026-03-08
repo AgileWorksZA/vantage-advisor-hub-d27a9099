@@ -37,7 +37,7 @@ const jurisdictionTemplates: TaskTemplate[] = [
   { type: "Follow-up", title: "RA top-up follow-up before tax year end", jurisdictions: ["South Africa"] },
   { type: "Document Request", title: "Request Section 11F certificate", jurisdictions: ["South Africa"] },
   { type: "Portfolio Review", title: "Living annuity withdrawal rate review", jurisdictions: ["South Africa"] },
-  { type: "Tax Planning", title: "TFSA contribution limit review", jurisdictions: ["South Africa"] },
+  { type: "Follow-up", title: "TFSA contribution limit review", jurisdictions: ["South Africa"] },
   { type: "Portfolio Review", title: "JSE offshore allocation rebalance", jurisdictions: ["South Africa"] },
 
   // Australia
