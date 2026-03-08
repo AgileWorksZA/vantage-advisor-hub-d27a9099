@@ -81,6 +81,12 @@ export function TaskDetailSheet({
   const [activeTab, setActiveTab] = useState(defaultTab || "details");
   const [composeDialogOpen, setComposeDialogOpen] = useState(false);
 
+  // Reset tab when defaultTab or task changes
+  useEffect(() => {
+    if (defaultTab) setActiveTab(defaultTab);
+    else setActiveTab("details");
+  }, [defaultTab, task?.id]);
+
   // Hooks for related data
   const { taskClients, fetchTaskClients, addClient, removeClient } = useTaskClients(task?.id);
   const { taskDocuments, fetchTaskDocuments } = useTaskDocuments(task?.id);
