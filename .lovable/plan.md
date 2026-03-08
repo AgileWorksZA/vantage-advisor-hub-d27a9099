@@ -1,38 +1,32 @@
 
 
-## Add Cross-Channel Filter for Messages with Tasks/Opportunities
+## Default to Web View After Login
 
-### What
-Add toggle filter buttons in the header bar (next to Date/Filter/Settings/Refresh) that filter messages across all channels (Email, WhatsApp, SMS, Push) to show only those with linked tasks or identified opportunities.
+### Problem
+When a user logs in via the `/auth` page, two issues arise:
+1. If the stored app mode is "adviser" or "client", the `/auth` route itself gets intercepted by the mobile/client shell and never renders the login form
+2. After successful login, the user navigates to `/dashboard` but may see the mobile/client shell instead of the web dashboard
 
-### Approach
+### Solution (two changes)
 
-**1. Add filter state to `src/pages/Email.tsx`**
-- Add `contentFilter` state: `"all" | "has-tasks" | "has-opportunities"`
-- Add two toggle buttons in the header bar (between channel tabs and the right-side actions): "Has Tasks" (ListTodo icon) and "Has Opportunities" (Lightbulb icon), styled as active/inactive toggles
-- Pass `contentFilter` down to both the email list and the ChatInterface
+**1. Bypass mode shell for `/auth` route (`src/App.tsx`)**
+- Expand the `isRootPath` check to also include `/auth`, `/signup`, and `/signup-confirmation` paths
+- Rename to something like `isWebOnlyPath` for clarity
+- This ensures auth-related pages always render through the standard BrowserRouter
 
-**2. Filter emails by linked tasks (`src/hooks/useEmails.ts`)**
-- Accept optional `contentFilter` param
-- When `"has-tasks"`: after fetching emails, query `email_tasks` to get email IDs that have linked tasks, then filter the list to only those
-- When `"has-opportunities"`: scan email body content for opportunity keywords (or check if AI insights were previously identified — since opportunities aren't persisted, use body content heuristics: keywords like "opportunity", "recommend", "rebalance", "top-up", "review", "contribution", "switch", "beneficiary")
-- Return filtered list
+```text
+Before:  const isRootPath = window.location.pathname === "/"
+After:   const isWebOnlyPath = ["/", "/auth", "/signup", "/signup-confirmation"].includes(window.location.pathname)
+```
 
-**3. Filter chat conversations (`src/components/email/ChatInterface.tsx`)**
-- Accept `contentFilter` prop
-- When `"has-tasks"` or `"has-opportunities"`: filter `conversations` list to those whose last message or message history contains task-related or opportunity-related content keywords
-- Pass filtered conversations to ConversationList
+Update both mode conditionals to use `!isWebOnlyPath` instead of `!isRootPath`.
 
-**4. UI Design**
-- Two small pill/toggle buttons in the header: `🔗 Tasks` and `💡 Opportunities`
-- Active state uses teal highlight consistent with existing design
-- Both can be active simultaneously (AND filter) or independently
-- Show count badge on each when active
+**2. Reset mode to "web" on successful login (`src/pages/Auth.tsx`)**
+- Import `useAppMode` from the AppModeContext
+- In the `onAuthStateChange` callback (and `getSession` check), call `setMode("web")` before navigating to `/dashboard`
+- This ensures post-login always lands in the web view regardless of previously stored mode
 
 ### Files to Edit
-| File | Change |
-|------|--------|
-| `src/pages/Email.tsx` | Add filter state, toggle buttons in header, pass to children |
-| `src/hooks/useEmails.ts` | Add `contentFilter` param, query `email_tasks` junction for task filter, keyword scan for opportunities |
-| `src/components/email/ChatInterface.tsx` | Accept and apply `contentFilter` to conversation filtering |
+- `src/App.tsx` -- expand path bypass list (1 line change)
+- `src/pages/Auth.tsx` -- import `useAppMode`, call `setMode("web")` on login success (3 lines added)
 

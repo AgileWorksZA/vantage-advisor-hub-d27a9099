@@ -33,6 +33,7 @@ import {
   ChevronsRight,
   Loader2,
   Settings,
+  Lightbulb,
 } from "lucide-react";
 import commandCenterIcon from "@/assets/command-center-icon.png";
 import vantageLogo from "@/assets/vantage-logo.png";
@@ -82,6 +83,16 @@ const EmailPage = () => {
   const [activeChannel, setActiveChannel] = useState<CommunicationChannel>("Email");
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
   const [emailViewOpen, setEmailViewOpen] = useState(false);
+  const [filterTasks, setFilterTasks] = useState(false);
+  const [filterOpportunities, setFilterOpportunities] = useState(false);
+
+  const contentFilter = filterTasks && filterOpportunities
+    ? "has-both" as const
+    : filterTasks
+    ? "has-tasks" as const
+    : filterOpportunities
+    ? "has-opportunities" as const
+    : "all" as const;
 
   const { settings: emailSettings, isConnected, loading: settingsLoading } = useEmailSettings();
   
@@ -105,7 +116,7 @@ const EmailPage = () => {
     }
   }, [settingsLoading, emailSettings?.fetch_mode, searchParams]);
 
-  const { emails: rawEmails, loading: emailsLoading, isFetching, folderCounts, refetch, triggerFetch, moveToFolder, markAsRead } = useEmails(activeFolder);
+  const { emails: rawEmails, loading: emailsLoading, isFetching, folderCounts, refetch, triggerFetch, moveToFolder, markAsRead } = useEmails(activeFolder, contentFilter);
   const { selectedRegion } = useRegion();
 
   // Map region code to country name for jurisdiction filtering
@@ -231,8 +242,33 @@ const EmailPage = () => {
           {/* Left side: Channel tabs */}
           <CommunicationTypeSelector value={activeChannel} onChange={setActiveChannel} />
 
-          {/* Right side: Date, Filter, Setup, Refresh */}
+          {/* Right side: Content filters, Date, Filter, Setup, Refresh */}
           <div className="flex items-center gap-2">
+            <Button
+              variant={filterTasks ? "default" : "outline"}
+              size="sm"
+              className={cn(
+                "h-8 gap-1.5",
+                filterTasks && "bg-[hsl(180,70%,45%)] hover:bg-[hsl(180,70%,40%)] text-white border-transparent"
+              )}
+              onClick={() => setFilterTasks(!filterTasks)}
+            >
+              <ListTodo className="w-4 h-4" />
+              Tasks
+            </Button>
+            <Button
+              variant={filterOpportunities ? "default" : "outline"}
+              size="sm"
+              className={cn(
+                "h-8 gap-1.5",
+                filterOpportunities && "bg-[hsl(180,70%,45%)] hover:bg-[hsl(180,70%,40%)] text-white border-transparent"
+              )}
+              onClick={() => setFilterOpportunities(!filterOpportunities)}
+            >
+              <Lightbulb className="w-4 h-4" />
+              Opportunities
+            </Button>
+            <div className="w-px h-6 bg-border" />
             <Button variant="outline" size="sm" className="h-8">
               <Calendar className="w-4 h-4 mr-1" />
               Date selection
@@ -426,7 +462,7 @@ const EmailPage = () => {
               </>
             ) : (
               /* Chat Interface for WhatsApp/SMS/Push */
-              <ChatInterface channel={activeChannel} />
+              <ChatInterface channel={activeChannel} contentFilter={contentFilter} />
             )}
           </div>
         </main>
