@@ -1,32 +1,42 @@
 
 
-## Default to Web View After Login
+## Enhance Notification Dropdown
 
-### Problem
-When a user logs in via the `/auth` page, two issues arise:
-1. If the stored app mode is "adviser" or "client", the `/auth` route itself gets intercepted by the mobile/client shell and never renders the login form
-2. After successful login, the user navigates to `/dashboard` but may see the mobile/client shell instead of the web dashboard
+### Changes
 
-### Solution (two changes)
+**1. Settings gear icon in dropdown header** (`NotificationDropdown.tsx`)
+- Add a `Settings` (gear) icon button next to "Clear All" in the header bar
+- Clicking it navigates to `/account-settings` with the notifications section pre-selected (via query param `?section=notifications`)
 
-**1. Bypass mode shell for `/auth` route (`src/App.tsx`)**
-- Expand the `isRootPath` check to also include `/auth`, `/signup`, and `/signup-confirmation` paths
-- Rename to something like `isWebOnlyPath` for clarity
-- This ensures auth-related pages always render through the standard BrowserRouter
+**2. Notification settings dialog** (`NotificationDropdown.tsx`)
+- The gear links to the existing Account Settings > Notifications section which already has toggles for Task Reminders, Calendar Reminders, Client Updates, Compliance Alerts
+- Update `AccountSettings.tsx` to read `?section=notifications` from URL and auto-select that section on mount
 
-```text
-Before:  const isRootPath = window.location.pathname === "/"
-After:   const isWebOnlyPath = ["/", "/auth", "/signup", "/signup-confirmation"].includes(window.location.pathname)
-```
+**3. Task notifications link to task detail** (`NotificationDropdown.tsx`)
+- Add `taskId` field to notification data
+- For task-type notifications, clicking navigates to `/tasks` (the tasks page where `TaskDetailSheet` can be opened)
+- Use `useNavigate` to route on click
 
-Update both mode conditionals to use `!isWebOnlyPath` instead of `!isRootPath`.
+**4. Opportunity/type tags on notifications** (`NotificationDropdown.tsx`)
+- Add optional `opportunityTag` field to the `Notification` interface (e.g. "Switch", "Quote", "Onboarding", "Review", "Failed Instruction")
+- Render a small colored `Badge` next to the title showing the tag
+- Use consistent color mapping matching existing opportunity tag patterns
 
-**2. Reset mode to "web" on successful login (`src/pages/Auth.tsx`)**
-- Import `useAppMode` from the AppModeContext
-- In the `onAuthStateChange` callback (and `getSession` check), call `setMode("web")` before navigating to `/dashboard`
-- This ensures post-login always lands in the web view regardless of previously stored mode
+**5. "Show more" footer** (`NotificationDropdown.tsx`)
+- Add a sticky footer at bottom of the dropdown showing `Show more (X)` where X is total notification count
+- Clicking navigates to a new `/notifications` route
 
-### Files to Edit
-- `src/App.tsx` -- expand path bypass list (1 line change)
-- `src/pages/Auth.tsx` -- import `useAppMode`, call `setMode("web")` on login success (3 lines added)
+**6. Full Notifications page** (`src/pages/Notifications.tsx`)
+- New page showing all notifications in a full-width list grouped by date
+- Same styling as dropdown but expanded
+- Add route in `App.tsx`
+
+### Files to create/edit
+
+| File | Action |
+|------|--------|
+| `src/components/dashboard/NotificationDropdown.tsx` | Add gear icon, tags, task linking, show more footer |
+| `src/pages/AccountSettings.tsx` | Read `?section=` query param to auto-select section |
+| `src/pages/Notifications.tsx` | New full notifications page |
+| `src/App.tsx` | Add `/notifications` route |
 
