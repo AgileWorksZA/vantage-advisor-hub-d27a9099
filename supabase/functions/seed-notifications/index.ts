@@ -42,16 +42,25 @@ Deno.serve(async (req) => {
     // Clear existing notifications for this user
     await supabase.from("notifications").delete().eq("user_id", userId);
 
+    // Fetch real task IDs to link notifications
+    const { data: tasks } = await supabase
+      .from("tasks")
+      .select("id, title")
+      .eq("user_id", userId)
+      .limit(5);
+
+    const taskIds = (tasks || []).map((t: any) => t.id);
+
     const notifications = [
-      { type: "task", title: "Task", description: "This is just a test enjoy!", created_at: "2025-07-08T10:00:00Z", is_read: false, task_id: null, opportunity_tag: "Cross-sell" },
-      { type: "general", title: "Reminder", description: "This is just a test enjoy!", created_at: "2025-07-08T11:00:00Z", is_read: false, task_id: null, opportunity_tag: null },
-      { type: "transaction", title: "Transaction", description: "This is just a test enjoy!", created_at: "2025-07-08T12:00:00Z", is_read: false, task_id: null, opportunity_tag: "Upsell" },
-      { type: "communication", title: "Communication", description: "This is just a test enjoy!", created_at: "2025-07-08T13:00:00Z", is_read: false, task_id: null, opportunity_tag: null },
-      { type: "task", title: "Task Onboarding Task - ONBOARD - 94911", description: "The task has been completed.", created_at: "2025-08-07T09:00:00Z", is_read: true, task_id: null, opportunity_tag: "New Business" },
-      { type: "task", title: "Task Onboarding Task - ONBOARD - 94911", description: "The task has been completed.", created_at: "2025-08-08T09:00:00Z", is_read: true, task_id: null, opportunity_tag: null },
-      { type: "task", title: "Annual Review", description: "The task has been completed.", created_at: "2025-08-13T09:00:00Z", is_read: true, task_id: null, opportunity_tag: "Portfolio Review" },
-      { type: "task", title: "Portfolio Review", description: "The task has been completed.", created_at: "2025-08-13T10:00:00Z", is_read: true, task_id: null, opportunity_tag: "Portfolio Review" },
-      { type: "task", title: "Task ONBOARD - 96724", description: "Client onboarding pending review.", created_at: "2025-09-11T09:00:00Z", is_read: false, task_id: null, opportunity_tag: "New Business" },
+      { type: "task", title: tasks?.[0]?.title || "Task ONBOARD - 96724", description: "Client onboarding pending review.", created_at: "2025-09-11T09:00:00Z", is_read: false, task_id: taskIds[0] || null, opportunity_tag: "New Business" },
+      { type: "general", title: "Reminder", description: "Monthly portfolio review reminder for all clients.", created_at: "2025-09-10T11:00:00Z", is_read: false, task_id: null, opportunity_tag: null },
+      { type: "transaction", title: "Transaction Alert", description: "Large withdrawal detected on client account.", created_at: "2025-09-10T12:00:00Z", is_read: false, task_id: null, opportunity_tag: "Upsell" },
+      { type: "communication", title: "Client Message", description: "New message from client regarding policy update.", created_at: "2025-09-10T13:00:00Z", is_read: false, task_id: null, opportunity_tag: null },
+      { type: "task", title: tasks?.[1]?.title || "Task Onboarding Task - ONBOARD - 94911", description: "The task has been completed.", created_at: "2025-08-07T09:00:00Z", is_read: true, task_id: taskIds[1] || null, opportunity_tag: "New Business" },
+      { type: "task", title: tasks?.[2]?.title || "Annual Review", description: "Annual review completed successfully.", created_at: "2025-08-13T09:00:00Z", is_read: true, task_id: taskIds[2] || null, opportunity_tag: "Portfolio Review" },
+      { type: "task", title: tasks?.[3]?.title || "Portfolio Review", description: "Portfolio review completed.", created_at: "2025-08-13T10:00:00Z", is_read: true, task_id: taskIds[3] || null, opportunity_tag: "Portfolio Review" },
+      { type: "task", title: tasks?.[4]?.title || "Compliance Check", description: "Compliance documentation review pending.", created_at: "2025-08-12T09:00:00Z", is_read: true, task_id: taskIds[4] || null, opportunity_tag: null },
+      { type: "task", title: "Follow-up Required", description: "Client follow-up after annual review meeting.", created_at: "2025-08-08T09:00:00Z", is_read: true, task_id: null, opportunity_tag: null },
     ].map((n) => ({ ...n, user_id: userId }));
 
     const { error } = await supabase.from("notifications").insert(notifications);
