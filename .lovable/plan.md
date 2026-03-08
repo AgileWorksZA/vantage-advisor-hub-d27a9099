@@ -1,32 +1,76 @@
 
 
-## Default to Web View After Login
+## Real-Time Persistent Notification System
 
-### Problem
-When a user logs in via the `/auth` page, two issues arise:
-1. If the stored app mode is "adviser" or "client", the `/auth` route itself gets intercepted by the mobile/client shell and never renders the login form
-2. After successful login, the user navigates to `/dashboard` but may see the mobile/client shell instead of the web dashboard
+### Overview
+Create a `notifications` table in the database, a shared hook (`useNotifications`) that fetches and subscribes to real-time changes, a seed function to populate initial data, and update both the dropdown and full-page components to use live data instead of hardcoded arrays.
 
-### Solution (two changes)
+### 1. Database Migration — Create `notifications` table
 
-**1. Bypass mode shell for `/auth` route (`src/App.tsx`)**
-- Expand the `isRootPath` check to also include `/auth`, `/signup`, and `/signup-confirmation` paths
-- Rename to something like `isWebOnlyPath` for clarity
-- This ensures auth-related pages always render through the standard BrowserRouter
+```sql
+CREATE TABLE public.notifications (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  type text NOT NULL DEFAULT 'general',
+  title text NOT NULL,
+  description text,
+  is_read boolean NOT NULL DEFAULT false,
+  is_dismissed boolean NOT NULL DEFAULT false,
+  task_id uuid REFERENCES public.tasks(id) ON DELETE SET NULL,
+  opportunity_tag text,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
 
-```text
-Before:  const isRootPath = window.location.pathname === "/"
-After:   const isWebOnlyPath = ["/", "/auth", "/signup", "/signup-confirmation"].includes(window.location.pathname)
+ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view own notifications"
+  ON public.notifications FOR SELECT TO authenticated
+  USING (user_id = auth.uid());
+
+CREATE POLICY "Users can update own notifications"
+  ON public.notifications FOR UPDATE TO authenticated
+  USING (user_id = auth.uid());
+
+CREATE POLICY "Users can delete own notifications"
+  ON public.notifications FOR DELETE TO authenticated
+  USING (user_id = auth.uid());
+
+CREATE POLICY "Users can insert own notifications"
+  ON public.notifications FOR INSERT TO authenticated
+  WITH CHECK (user_id = auth.uid());
+
+-- Enable realtime
+ALTER PUBLICATION supabase_realtime ADD TABLE public.notifications;
 ```
 
-Update both mode conditionals to use `!isWebOnlyPath` instead of `!isRootPath`.
+### 2. New Hook — `src/hooks/useNotifications.ts`
+- Fetch notifications where `is_dismissed = false`, ordered by `created_at desc`
+- Subscribe to realtime `postgres_changes` on the `notifications` table filtered by user_id
+- Expose: `notifications`, `unreadCount`, `markAsRead(id)`, `dismiss(id)`, `markAllRead()`, `clearAll()`
+- Each mutation calls supabase update/delete and optimistically updates local state
 
-**2. Reset mode to "web" on successful login (`src/pages/Auth.tsx`)**
-- Import `useAppMode` from the AppModeContext
-- In the `onAuthStateChange` callback (and `getSession` check), call `setMode("web")` before navigating to `/dashboard`
-- This ensures post-login always lands in the web view regardless of previously stored mode
+### 3. Seed Function — `supabase/functions/seed-notifications/index.ts`
+- Insert the same 9 sample notifications (matching current hardcoded data) for the authenticated user
+- Register in `supabase/config.toml`
 
-### Files to Edit
-- `src/App.tsx` -- expand path bypass list (1 line change)
-- `src/pages/Auth.tsx` -- import `useAppMode`, call `setMode("web")` on login success (3 lines added)
+### 4. Update `NotificationDropdown.tsx`
+- Replace `useState(initialNotifications)` with `useNotifications()`
+- Wire dismiss/clear/markRead to the hook's mutation functions
+- Remove hardcoded `initialNotifications` array
+
+### 5. Update `Notifications.tsx` (full page)
+- Replace `useState(allNotifications)` with `useNotifications()`
+- Wire all actions (dismiss, clear all, mark all read) to hook mutations
+- Remove hardcoded `allNotifications` array
+
+### Files to create/edit
+
+| File | Action |
+|------|--------|
+| Database migration | Create `notifications` table with RLS + realtime |
+| `src/hooks/useNotifications.ts` | New shared hook with realtime subscription |
+| `supabase/functions/seed-notifications/index.ts` | New seed function |
+| `supabase/config.toml` | Register seed function |
+| `src/components/dashboard/NotificationDropdown.tsx` | Use hook instead of hardcoded data |
+| `src/pages/Notifications.tsx` | Use hook instead of hardcoded data |
 
