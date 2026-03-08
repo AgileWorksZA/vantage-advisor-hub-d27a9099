@@ -27,6 +27,7 @@ import vantageLogo from "@/assets/vantage-logo.png";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { RichTextEditor } from "@/components/email/RichTextEditor";
 import { TaskLinkingSection } from "@/components/email/TaskLinkingSection";
+import { AIInsightsPanel, IdentifiedOpportunity } from "@/components/email/AIInsightsPanel";
 import {
   ClientAvatarBadge,
   formatClientName,
