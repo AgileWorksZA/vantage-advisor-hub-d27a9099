@@ -56,6 +56,7 @@ export const TaskLinkingSection = ({
   onNewTask,
   onGuessCompletedTask,
   isReadOnly = false,
+  isGuessing = false,
 }: TaskLinkingSectionProps) => {
   const [isOpen, setIsOpen] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
