@@ -187,7 +187,39 @@ export const useEmails = (folder?: Email["folder"] | null, contentFilter: Conten
         };
       });
 
-      setEmails(transformedEmails);
+      // Apply content filters
+      let filteredEmails = transformedEmails;
+
+      if (contentFilter === "has-tasks" || contentFilter === "has-both") {
+        // Query email_tasks junction to find emails with linked tasks
+        const { data: taskLinks } = await supabase
+          .from("email_tasks")
+          .select("email_id");
+        const emailIdsWithTasks = new Set((taskLinks || []).map((t: any) => t.email_id));
+        filteredEmails = filteredEmails.filter(e => emailIdsWithTasks.has(e.id));
+      }
+
+      if (contentFilter === "has-opportunities" || contentFilter === "has-both") {
+        // Get full email bodies for keyword matching
+        const emailIds = filteredEmails.map(e => e.id);
+        if (emailIds.length > 0) {
+          const { data: bodyData } = await supabase
+            .from("emails")
+            .select("id, body_preview, body_html, subject")
+            .in("id", emailIds);
+          const opportunityIds = new Set(
+            (bodyData || [])
+              .filter((e: any) => {
+                const text = `${e.subject || ""} ${e.body_preview || ""} ${e.body_html || ""}`;
+                return OPPORTUNITY_KEYWORDS.test(text);
+              })
+              .map((e: any) => e.id)
+          );
+          filteredEmails = filteredEmails.filter(e => opportunityIds.has(e.id));
+        }
+      }
+
+      setEmails(filteredEmails);
 
       // Get folder counts
       const { data: countData } = await supabase
