@@ -77,6 +77,8 @@ const EmailView = () => {
   // Task linking state
   const [taskSearchOpen, setTaskSearchOpen] = useState(false);
   const [taskLinkConfirmation, setTaskLinkConfirmation] = useState<string | null>(null);
+  const [isGuessing, setIsGuessing] = useState(false);
+  const [aiOpportunities, setAiOpportunities] = useState<IdentifiedOpportunity[]>([]);
 
   // Attachment linking state
   const [attachmentDialogOpen, setAttachmentDialogOpen] = useState(false);
