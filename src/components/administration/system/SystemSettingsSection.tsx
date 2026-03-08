@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { CalendarIcon, Loader2, ListChecks, Database } from "lucide-react";
+import { CalendarIcon, Loader2, ListChecks, Database, Bell } from "lucide-react";
 import { useAdminData } from "@/hooks/useAdminData";
 import { AdminSectionHeader } from "../AdminSectionHeader";
 import { AdminDataTable, ColumnDef } from "../AdminDataTable";
@@ -158,6 +158,7 @@ export function SystemSettingsSection() {
   const [seedingCalendar, setSeedingCalendar] = useState(false);
   const [seedingOpenTasks, setSeedingOpenTasks] = useState(false);
   const [seedingAll, setSeedingAll] = useState(false);
+  const [seedingNotifications, setSeedingNotifications] = useState(false);
   const [seedProgress, setSeedProgress] = useState("");
 
   const seedSequence = [
@@ -175,6 +176,7 @@ export function SystemSettingsSection() {
     { name: "seed-open-tasks", label: "Open Tasks" },
     { name: "seed-onboarding-tasks", label: "Onboarding Tasks" },
     { name: "seed-tlh-clients", label: "TLH Clients" },
+    { name: "seed-notifications", label: "Notifications" },
   ];
 
   const handleSeedAll = async () => {
@@ -286,6 +288,38 @@ export function SystemSettingsSection() {
     }
   };
 
+  const handleSeedNotifications = async () => {
+    setSeedingNotifications(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        toast.error("Not authenticated");
+        return;
+      }
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/seed-notifications`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      const result = await response.json();
+      if (result.success) {
+        toast.success(`Seeded ${result.count} notifications`);
+      } else {
+        toast.error(result.error || "Failed to seed notifications");
+      }
+    } catch (error: any) {
+      toast.error("Failed to seed notifications");
+      console.error(error);
+    } finally {
+      setSeedingNotifications(false);
+    }
+  };
+
   return (
     <div className="p-6 space-y-6">
       <Tabs
@@ -349,6 +383,19 @@ export function SystemSettingsSection() {
                 <ListChecks className="w-4 h-4 mr-2" />
               )}
               {seedingOpenTasks ? "Seeding Tasks..." : "Seed Open Tasks"}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSeedNotifications}
+              disabled={seedingNotifications || seedingAll}
+            >
+              {seedingNotifications ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Bell className="w-4 h-4 mr-2" />
+              )}
+              {seedingNotifications ? "Seeding Notifications..." : "Seed Notifications"}
             </Button>
           </div>
 
