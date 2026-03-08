@@ -69,7 +69,7 @@ const jurisdictionTemplates: TaskTemplate[] = [
   { type: "Follow-up", title: "RMD calculation and distribution follow-up", jurisdictions: ["United States"] },
   { type: "Document Request", title: "Request W-2 and 1099 tax documents", jurisdictions: ["United States"] },
   { type: "Portfolio Review", title: "Roth conversion opportunity analysis", jurisdictions: ["United States"] },
-  { type: "Tax Planning", title: "HSA contribution strategy review", jurisdictions: ["United States"] },
+  { type: "Follow-up", title: "HSA contribution strategy review", jurisdictions: ["United States"] },
   { type: "Follow-up", title: "IRA rollover processing follow-up", jurisdictions: ["United States"] },
 ];
 
