@@ -107,6 +107,9 @@ const AccountSettings = () => {
   const [notificationCalendarReminders, setNotificationCalendarReminders] = useState(true);
   const [notificationClientUpdates, setNotificationClientUpdates] = useState(true);
   const [notificationComplianceAlerts, setNotificationComplianceAlerts] = useState(true);
+  const [notificationSoundEnabled, setNotificationSoundEnabled] = useState(true);
+  const [notificationPushEnabled, setNotificationPushEnabled] = useState(false);
+  const [notificationCriticalOnlySound, setNotificationCriticalOnlySound] = useState(false);
 
   // Email settings state
   const [emailSignature, setEmailSignature] = useState("");
