@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { detectOpportunityTypes } from "@/lib/opportunity-detection";
 
 export interface Email {
   id: string;
@@ -43,6 +44,7 @@ export interface EmailListItem {
   hasAttachment: boolean;
   isRead: boolean;
   folder: Email["folder"];
+  detectedOpportunities: string[];
 }
 
 const formatDate = (dateString: string | null): string => {
@@ -173,6 +175,7 @@ export const useEmails = (folder?: Email["folder"] | null, contentFilter: Conten
           resolvedClient = clientsList.find(c => c.id === matchedClients[0].id) || null;
         }
         
+        const scanText = `${email.subject || ""} ${email.body_preview || ""}`;
         return {
           id: email.id,
           from: email.from_address,
@@ -184,6 +187,7 @@ export const useEmails = (folder?: Email["folder"] | null, contentFilter: Conten
           hasAttachment: email.has_attachments,
           isRead: email.is_read,
           folder: email.folder,
+          detectedOpportunities: detectOpportunityTypes(scanText),
         };
       });
 

@@ -1,9 +1,9 @@
 import React, { useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, ArrowRightLeft, Layers, Building2, Briefcase, Landmark, Receipt, Banknote } from "lucide-react";
 import type { PrepOpportunity, PrepProduct } from "@/hooks/useClientMeetingPrep";
 import { getOpportunityPriority, type Priority } from "@/lib/opportunity-priority";
+import { opportunityTypeConfig, getOpportunityConfig } from "@/lib/opportunity-detection";
 import PrioritySectionHeader from "./PrioritySectionHeader";
 
 /** Deterministic check: ~30% of clients are "green" (routine-only) */
@@ -16,6 +16,10 @@ export function isGreenClient(clientId: string): boolean {
 }
 
 const ROUTINE_TYPES = ["upsell", "migration", "bank scrape"];
+
+// Re-export for backward compatibility
+const typeConfig = opportunityTypeConfig;
+const getConfig = getOpportunityConfig;
 
 interface OpportunitiesTabProps {
   opportunities: PrepOpportunity[];
@@ -37,22 +41,6 @@ export interface GapOpportunity {
   opportunitySize?: number;
   dateIdentified?: string;
 }
-
-const typeConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
-  "Upsell": { label: "Growth", color: "bg-emerald-100 text-emerald-700 border-emerald-200", icon: <TrendingUp className="w-3.5 h-3.5" /> },
-  "Cross-sell": { label: "Cross-sell", color: "bg-cyan-100 text-cyan-700 border-cyan-200", icon: <ArrowRightLeft className="w-3.5 h-3.5" /> },
-  "Migration": { label: "Migration", color: "bg-violet-100 text-violet-700 border-violet-200", icon: <Layers className="w-3.5 h-3.5" /> },
-  "Platform": { label: "Platform", color: "bg-orange-100 text-orange-700 border-orange-200", icon: <Building2 className="w-3.5 h-3.5" /> },
-  "New Business": { label: "New Business", color: "bg-blue-100 text-blue-700 border-blue-200", icon: <Briefcase className="w-3.5 h-3.5" /> },
-  "Bank Scrape": { label: "Bank Scrape", color: "bg-amber-100 text-amber-700 border-amber-200", icon: <Landmark className="w-3.5 h-3.5" /> },
-  "Tax Loss": { label: "Tax Loss", color: "bg-rose-100 text-rose-700 border-rose-200", icon: <Receipt className="w-3.5 h-3.5" /> },
-  "Idle Cash": { label: "Idle Cash", color: "bg-yellow-100 text-yellow-700 border-yellow-200", icon: <Banknote className="w-3.5 h-3.5" /> },
-};
-
-const getConfig = (type: string) => {
-  const key = Object.keys(typeConfig).find(k => type.toLowerCase().includes(k.toLowerCase()));
-  return key ? typeConfig[key] : typeConfig["Upsell"];
-};
 
 const currencyMap: Record<string, { code: string; locale: string }> = {
   ZA: { code: "ZAR", locale: "en-ZA" },
