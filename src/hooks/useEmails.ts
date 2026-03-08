@@ -87,7 +87,11 @@ const matchClientsForEmail = (fromAddress: string, clients: ClientRecord[]): Mat
     }));
 };
 
-export const useEmails = (folder?: Email["folder"] | null) => {
+export type ContentFilter = "all" | "has-tasks" | "has-opportunities" | "has-both";
+
+const OPPORTUNITY_KEYWORDS = /\b(opportunity|recommend|rebalance|top[\s-]?up|review|contribution|switch|beneficiary|annuity|retirement|estate|tax|insurance|risk|hedge|diversif)/i;
+
+export const useEmails = (folder?: Email["folder"] | null, contentFilter: ContentFilter = "all") => {
   const [emails, setEmails] = useState<EmailListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
