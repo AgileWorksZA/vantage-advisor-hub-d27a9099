@@ -175,6 +175,7 @@ export const useEmails = (folder?: Email["folder"] | null, contentFilter: Conten
           resolvedClient = clientsList.find(c => c.id === matchedClients[0].id) || null;
         }
         
+        const scanText = `${email.subject || ""} ${email.body_preview || ""}`;
         return {
           id: email.id,
           from: email.from_address,
@@ -186,6 +187,7 @@ export const useEmails = (folder?: Email["folder"] | null, contentFilter: Conten
           hasAttachment: email.has_attachments,
           isRead: email.is_read,
           folder: email.folder,
+          detectedOpportunities: detectOpportunityTypes(scanText),
         };
       });
 
