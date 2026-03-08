@@ -21,6 +21,8 @@ export interface EmailTask {
 
 export interface LinkedTaskDisplay {
   id: string;
+  task_id: string;
+  client_id: string | null;
   task_number: number;
   title: string | null;
   task_type: string | null;
@@ -50,10 +52,12 @@ export const useEmailTasks = (emailId: string | null) => {
         .select(`
           *,
           tasks!email_tasks_task_id_fkey(
+            id,
             task_number,
             title,
             task_type,
             due_date,
+            client_id,
             clients!tasks_client_id_fkey(first_name, surname)
           )
         `)
@@ -69,6 +73,8 @@ export const useEmailTasks = (emailId: string | null) => {
           : surname || firstName || null;
         return {
           id: et.id,
+          task_id: et.tasks?.id || et.task_id,
+          client_id: et.tasks?.client_id || null,
           task_number: et.tasks?.task_number || 0,
           title: et.tasks?.title || null,
           task_type: et.tasks?.task_type || null,

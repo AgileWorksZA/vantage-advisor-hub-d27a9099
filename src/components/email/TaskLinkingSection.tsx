@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   ChevronDown,
   ChevronUp,
@@ -29,6 +30,8 @@ import { format } from "date-fns";
 
 interface LinkedTask {
   id: string;
+  task_id: string;
+  client_id: string | null;
   task_number: number;
   title: string | null;
   task_type: string | null;
@@ -60,6 +63,7 @@ export const TaskLinkingSection = ({
   isReadOnly = false,
   isGuessing = false,
 }: TaskLinkingSectionProps) => {
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 5;
@@ -175,7 +179,14 @@ export const TaskLinkingSection = ({
                           : `Task-${task.task_number}`}
                       </TableCell>
                       <TableCell className="text-sm">
-                        {task.title || "-"}
+                        {task.title ? (
+                          <span
+                            className="cursor-pointer text-primary hover:underline"
+                            onClick={() => navigate(`/tasks`)}
+                          >
+                            {task.title}
+                          </span>
+                        ) : "-"}
                       </TableCell>
                       <TableCell className="text-sm">
                         {task.task_type || "-"}
@@ -187,7 +198,14 @@ export const TaskLinkingSection = ({
                         {formatDueDate(task.due_date)}
                       </TableCell>
                       <TableCell className="text-sm">
-                        {task.client_name || task.client_initials || "-"}
+                        {task.client_name || task.client_initials ? (
+                          <span
+                            className="cursor-pointer text-primary hover:underline"
+                            onClick={() => task.client_id && navigate(`/client/${task.client_id}`)}
+                          >
+                            {task.client_name || task.client_initials}
+                          </span>
+                        ) : "-"}
                       </TableCell>
                     </TableRow>
                   ))
