@@ -54,7 +54,7 @@ const jurisdictionTemplates: TaskTemplate[] = [
   { type: "Document Request", title: "Request T4 and T5 tax slips", jurisdictions: ["Canada"] },
   { type: "Portfolio Review", title: "RESP education savings strategy review", jurisdictions: ["Canada"] },
   { type: "Follow-up", title: "RRIF minimum withdrawal calculation", jurisdictions: ["Canada"] },
-  { type: "Tax Planning", title: "Capital gains inclusion rate impact analysis", jurisdictions: ["Canada"] },
+  { type: "Follow-up", title: "Capital gains inclusion rate impact analysis", jurisdictions: ["Canada"] },
 
   // United Kingdom
   { type: "Compliance", title: "NI number verification", jurisdictions: ["United Kingdom"] },
