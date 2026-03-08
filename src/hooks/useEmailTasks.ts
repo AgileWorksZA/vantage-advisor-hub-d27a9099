@@ -27,6 +27,7 @@ export interface LinkedTaskDisplay {
   assignee: string | null;
   due_date: string | null;
   client_initials: string | null;
+  client_name: string | null;
   is_linked: boolean;
 }
 
