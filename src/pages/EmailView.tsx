@@ -28,6 +28,7 @@ import commandCenterIcon from "@/assets/command-center-icon.png";
 import vantageLogo from "@/assets/vantage-logo.png";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { TaskLinkingSection } from "@/components/email/TaskLinkingSection";
+import { AIInsightsPanel, IdentifiedOpportunity } from "@/components/email/AIInsightsPanel";
 import {
   ClientAvatarBadge,
   formatClientName,
