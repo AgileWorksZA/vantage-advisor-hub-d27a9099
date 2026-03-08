@@ -113,6 +113,7 @@ const Tasks = () => {
   });
   const [selectedTask, setSelectedTask] = useState<EnhancedTask | null>(null);
   const [detailSheetOpen, setDetailSheetOpen] = useState(false);
+  const [detailSheetDefaultTab, setDetailSheetDefaultTab] = useState<string | undefined>(undefined);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
   const [kanbanGroupBy, setKanbanGroupBy] = useState<KanbanGroupBy>("none");
