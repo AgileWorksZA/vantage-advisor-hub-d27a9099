@@ -384,18 +384,18 @@ const EmailPage = () => {
                   ) : (
                     <table className="w-full text-sm">
                       <thead className="bg-muted/30 sticky top-0">
-                        <tr className="border-b border-border">
-                          <th className="w-10 p-3"></th>
-                          <th className="w-10 p-3"></th>
-                          <th className="text-left p-3 font-medium text-muted-foreground">From</th>
-                          <th className="text-left p-3 font-medium text-muted-foreground">Subject</th>
-                          <th className="text-left p-3 font-medium text-muted-foreground">
+                         <tr className="border-b border-border">
+                          <th className="w-10 py-1.5 px-3"></th>
+                          <th className="w-10 py-1.5 px-3"></th>
+                          <th className="text-left py-1.5 px-3 font-medium text-muted-foreground">From</th>
+                          <th className="text-left py-1.5 px-3 font-medium text-muted-foreground">Subject</th>
+                          <th className="text-left py-1.5 px-3 font-medium text-muted-foreground">
                             <div className="flex items-center gap-1">
                               Received on
                               <span className="text-xs">↓</span>
                             </div>
                           </th>
-                          <th className="text-left p-3 font-medium text-muted-foreground">Clients</th>
+                          <th className="text-left py-1.5 px-3 font-medium text-muted-foreground">Clients</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -415,21 +415,21 @@ const EmailPage = () => {
                                 !email.isRead && "font-medium bg-muted/10"
                               )}
                             >
-                              <td className="p-3" onClick={(e) => e.stopPropagation()}>
+                               <td className="py-1.5 px-3" onClick={(e) => e.stopPropagation()}>
                                 <Checkbox
                                   checked={selectedEmails.includes(email.id)}
                                   onCheckedChange={() => toggleEmailSelection(email.id)}
                                 />
                               </td>
-                              <td className="p-3">
+                              <td className="py-1.5 px-3">
                                 {email.hasAttachment && (
                                   <Paperclip className="w-4 h-4 text-muted-foreground" />
                                 )}
                               </td>
-                              <td className={cn("p-3", !email.isRead && "text-[hsl(180,70%,45%)]")}>
+                              <td className={cn("py-1.5 px-3", !email.isRead && "text-[hsl(180,70%,45%)]")}>
                                 {email.from}
                               </td>
-                              <td className={cn("p-3", !email.isRead && "text-[hsl(180,70%,45%)]")}>
+                              <td className={cn("py-1.5 px-3", !email.isRead && "text-[hsl(180,70%,45%)]")}>
                                 <div className="flex items-center gap-1.5 flex-wrap">
                                   <span className="truncate">{email.subject}</span>
                                   {email.detectedOpportunities.map((oppType) => (
@@ -442,8 +442,8 @@ const EmailPage = () => {
                                   ))}
                                 </div>
                               </td>
-                              <td className="p-3 text-muted-foreground">{email.receivedOn}</td>
-                              <td className="p-3">
+                              <td className="py-1.5 px-3 text-muted-foreground">{email.receivedOn}</td>
+                              <td className="py-1.5 px-3">
                                 <EmailClientBadges clients={email.clients} />
                               </td>
                             </tr>
