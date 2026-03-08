@@ -21,7 +21,7 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { detectOpportunityTypes, getOpportunityConfig } from "@/lib/opportunity-detection";
-import { OpportunityTagBadge } from "@/components/email/OpportunityTagBadge";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -487,22 +487,6 @@ const EmailView = () => {
                   </div>
                 </div>
 
-                {/* Inline Opportunity Tags */}
-                {detectedOpportunities.length > 0 && (
-                  <div className="flex items-center gap-2">
-                    <Label className="w-14 text-xs text-muted-foreground">Insights</Label>
-                    <div className="flex flex-wrap items-center gap-1">
-                      {detectedOpportunities.map((type) => (
-                        <OpportunityTagBadge
-                          key={type}
-                          type={type}
-                          sourceText={`${email.subject || ""} ${email.body_preview || ""}`}
-                          clientName={editableClients[0] ? formatClientName(editableClients[0].first_name, editableClients[0].surname, editableClients[0].initials) : undefined}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
 
               {/* Task Link Confirmation Banner */}
