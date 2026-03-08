@@ -52,7 +52,7 @@ const jurisdictionTemplates: TaskTemplate[] = [
   { type: "Follow-up", title: "RRSP contribution reminder before deadline", jurisdictions: ["Canada"] },
   { type: "Portfolio Review", title: "TFSA rebalance review", jurisdictions: ["Canada"] },
   { type: "Document Request", title: "Request T4 and T5 tax slips", jurisdictions: ["Canada"] },
-  { type: "Investment", title: "RESP education savings strategy review", jurisdictions: ["Canada"] },
+  { type: "Portfolio Review", title: "RESP education savings strategy review", jurisdictions: ["Canada"] },
   { type: "Follow-up", title: "RRIF minimum withdrawal calculation", jurisdictions: ["Canada"] },
   { type: "Tax Planning", title: "Capital gains inclusion rate impact analysis", jurisdictions: ["Canada"] },
 
