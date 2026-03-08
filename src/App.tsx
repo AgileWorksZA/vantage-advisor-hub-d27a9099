@@ -109,6 +109,7 @@ const AppContent = () => {
         <Route path="/paia-manual" element={<PaiaManual />} />
         <Route path="/disclaimer" element={<Disclaimer />} />
         <Route path="/help" element={<Help />} />
+        <Route path="/notifications" element={<Notifications />} />
         
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
