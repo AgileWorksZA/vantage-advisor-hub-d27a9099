@@ -187,7 +187,7 @@ export const TaskLinkingSection = ({
                         {formatDueDate(task.due_date)}
                       </TableCell>
                       <TableCell className="text-sm">
-                        {task.client_initials || "-"}
+                        {task.client_name || task.client_initials || "-"}
                       </TableCell>
                     </TableRow>
                   ))
