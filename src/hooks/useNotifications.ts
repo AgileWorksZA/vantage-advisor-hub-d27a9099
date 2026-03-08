@@ -7,6 +7,19 @@ interface NotificationSoundSettings {
   notification_critical_only_sound: boolean;
 }
 
+export interface Notification {
+  id: string;
+  user_id: string;
+  type: "task" | "communication" | "transaction" | "general";
+  title: string;
+  description: string | null;
+  is_read: boolean;
+  is_dismissed: boolean;
+  task_id: string | null;
+  opportunity_tag: string | null;
+  created_at: string;
+}
+
 // Simple beep as a data URI so we don't need an external file
 const NOTIFICATION_SOUND_URI =
   "data:audio/wav;base64,UklGRlQFAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YTAFAACAgICAgICAgICAgICAgICAgICA" +
@@ -27,7 +40,11 @@ function isCriticalNotification(n: Notification): boolean {
 export const useNotifications = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
-  const { settings } = useUserSettings();
+  const [soundSettings, setSoundSettings] = useState<NotificationSoundSettings>({
+    notification_sound_enabled: true,
+    notification_push_enabled: false,
+    notification_critical_only_sound: false,
+  });
   const knownIdsRef = useRef<Set<string>>(new Set());
   const initialLoadDone = useRef(false);
 
