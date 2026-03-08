@@ -73,6 +73,8 @@ export const useEmailTasks = (emailId: string | null) => {
           : surname || firstName || null;
         return {
           id: et.id,
+          task_id: et.tasks?.id || et.task_id,
+          client_id: et.tasks?.client_id || null,
           task_number: et.tasks?.task_number || 0,
           title: et.tasks?.title || null,
           task_type: et.tasks?.task_type || null,
