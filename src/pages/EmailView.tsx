@@ -148,6 +148,14 @@ const EmailView = () => {
     }
   }, [linkedClients, editableClients.length]);
 
+  // Auto-run AI guess task on email load
+  useEffect(() => {
+    if (email && id && editableClients.length > 0 && !hasAutoGuessed.current && !isGuessing) {
+      hasAutoGuessed.current = true;
+      handleGuessTask();
+    }
+  }, [email, id, editableClients.length]);
+
   // Set the page context with the primary linked client's advisor initials
   useEffect(() => {
     const primaryClient = linkedClients[0];
