@@ -142,7 +142,7 @@ export const NotificationDropdown = () => {
                               <OpportunityTagInline type={notification.opportunity_tag} />
                             )}
                           </div>
-                          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+          <p className="text-xs text-muted-foreground mt-0.5">
                             {notification.description}
                           </p>
                         </div>

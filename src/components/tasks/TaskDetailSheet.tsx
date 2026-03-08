@@ -59,6 +59,7 @@ interface TaskDetailSheetProps {
   onDelete: (taskId: string) => Promise<boolean>;
   onTogglePin: (taskId: string, isPinned: boolean) => void;
   onAddNote: (taskId: string, note: string, isInternal: boolean) => Promise<boolean>;
+  defaultTab?: string;
 }
 
 export function TaskDetailSheet({
@@ -69,6 +70,7 @@ export function TaskDetailSheet({
   onDelete,
   onTogglePin,
   onAddNote,
+  defaultTab,
 }: TaskDetailSheetProps) {
   const { taskTypes, taskStatuses, taskPriorities, taskCategories, taskResolutionTypes, taskSources } = useTaskTypes();
   const { clients } = useClients();
