@@ -110,21 +110,6 @@ export const ConversationList = ({
             </Badge>
           )}
         </div>
-        {(() => {
-          const opps = detectOpportunityTypes(conversation.last_message || "");
-          return opps.length > 0 ? (
-            <div className="flex flex-wrap gap-1 mt-1">
-              {opps.map((oppType) => (
-                <OpportunityTagBadge
-                  key={oppType}
-                  type={oppType}
-                  sourceText={conversation.last_message || ""}
-                  clientName={conversation.client_name}
-                />
-              ))}
-            </div>
-          ) : null;
-        })()}
       </div>
     </button>
   );
