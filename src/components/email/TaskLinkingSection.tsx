@@ -8,6 +8,7 @@ import {
   FileText,
   ChevronLeft,
   ChevronRight,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -45,6 +46,7 @@ interface TaskLinkingSectionProps {
   onNewTask?: () => void;
   onGuessCompletedTask?: () => void;
   isReadOnly?: boolean;
+  isGuessing?: boolean;
 }
 
 export const TaskLinkingSection = ({
@@ -55,6 +57,7 @@ export const TaskLinkingSection = ({
   onNewTask,
   onGuessCompletedTask,
   isReadOnly = false,
+  isGuessing = false,
 }: TaskLinkingSectionProps) => {
   const [isOpen, setIsOpen] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -92,8 +95,9 @@ export const TaskLinkingSection = ({
                 size="sm"
                 onClick={onGuessTask}
                 className="gap-1.5 text-xs h-7"
+                disabled={isGuessing}
               >
-                <Sparkles className="w-3.5 h-3.5" />
+                {isGuessing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
                 Guess Task
               </Button>
               <Button

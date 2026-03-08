@@ -28,6 +28,7 @@ import commandCenterIcon from "@/assets/command-center-icon.png";
 import vantageLogo from "@/assets/vantage-logo.png";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { TaskLinkingSection } from "@/components/email/TaskLinkingSection";
+import { AIInsightsPanel, IdentifiedOpportunity } from "@/components/email/AIInsightsPanel";
 import {
   ClientAvatarBadge,
   formatClientName,
@@ -76,6 +77,8 @@ const EmailView = () => {
   // Task linking state
   const [taskSearchOpen, setTaskSearchOpen] = useState(false);
   const [taskLinkConfirmation, setTaskLinkConfirmation] = useState<string | null>(null);
+  const [isGuessing, setIsGuessing] = useState(false);
+  const [aiOpportunities, setAiOpportunities] = useState<IdentifiedOpportunity[]>([]);
 
   // Attachment linking state
   const [attachmentDialogOpen, setAttachmentDialogOpen] = useState(false);
@@ -189,6 +192,49 @@ const EmailView = () => {
         `Task has been linked. ${linkedTasks.length} task${linkedTasks.length !== 1 ? "s" : ""} found`
       );
       setTimeout(() => setTaskLinkConfirmation(null), 5000);
+    }
+  };
+
+  // AI Guess Task handler
+  const handleGuessTask = async (includeCompleted = false) => {
+    if (!id) return;
+    setIsGuessing(true);
+    setAiOpportunities([]);
+    try {
+      const { data, error } = await supabase.functions.invoke("guess-email-tasks", {
+        body: {
+          emailId: id,
+          clientIds: editableClients.map((c) => c.id),
+          includeCompleted,
+        },
+      });
+
+      if (error) throw error;
+
+      const matched = data?.matchedTasks || [];
+      let linked = 0;
+      for (const match of matched) {
+        if (match.confidence === "high" || match.confidence === "medium") {
+          const success = await linkTask(match.taskId);
+          if (success) linked++;
+        }
+      }
+
+      if (linked > 0) {
+        setTaskLinkConfirmation(
+          `AI matched ${linked} task${linked > 1 ? "s" : ""}. ${matched.length} total match${matched.length !== 1 ? "es" : ""} found.`
+        );
+        setTimeout(() => setTaskLinkConfirmation(null), 5000);
+      } else if (matched.length === 0) {
+        toast({ title: "No matching tasks found", description: `${(data?.identifiedOpportunities || []).length} new opportunities identified.` });
+      }
+
+      setAiOpportunities(data?.identifiedOpportunities || []);
+    } catch (err: any) {
+      console.error("Guess task error:", err);
+      toast({ title: "AI task matching failed", description: err.message || "Please try again.", variant: "destructive" });
+    } finally {
+      setIsGuessing(false);
     }
   };
 
@@ -414,12 +460,20 @@ const EmailView = () => {
               <TaskLinkingSection
                 linkedTasks={linkedTasks}
                 onToggleLink={handleToggleTaskLink}
-                onGuessTask={() => toast({ title: "AI task matching coming soon" })}
+                onGuessTask={handleGuessTask}
                 onSearchTask={() => setTaskSearchOpen(true)}
                 onNewTask={() => navigate("/tasks")}
-                onGuessCompletedTask={() =>
-                  toast({ title: "Completed task matching coming soon" })
-                }
+                onGuessCompletedTask={() => handleGuessTask(true)}
+                isGuessing={isGuessing}
+              />
+
+              {/* AI Insights Panel */}
+              <AIInsightsPanel
+                opportunities={aiOpportunities}
+                onCreateTask={(opp) => {
+                  toast({ title: `Task "${opp.suggestedTitle}" ready to create`, description: "Navigate to Tasks to complete setup." });
+                  navigate(`/tasks?newTask=${encodeURIComponent(opp.suggestedTitle)}&type=${encodeURIComponent(opp.type)}&priority=${encodeURIComponent(opp.suggestedPriority)}`);
+                }}
               />
 
               {/* Attachments */}

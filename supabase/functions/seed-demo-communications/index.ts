@@ -182,27 +182,86 @@ function generateEmailBody(
   const clientName = `${client.title || ''} ${client.surname}`.trim();
   const firstName = client.first_name;
   const value = `${config.currency}${(Math.random() * 500000 + 50000).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`;
+  const sign = config.firmName;
+  const adv = advisorName;
 
   if (direction === 'Inbound') {
-    const bodies = [
+    // Category-specific inbound templates
+    const categoryBodies: Record<string, { html: string; preview: string }[]> = {
+      compliance: [
+        { html: `<p>Hi,</p><p>I've been meaning to send through my updated documents. I have a new proof of address (utility bill from last month) and my ID is still the same. Should I email them or upload somewhere?</p><p>Also, could you confirm what else might be outstanding on my file?</p><p>Thanks,<br>${firstName}</p>`, preview: `I've been meaning to send through my updated documents. I have a new proof of address...` },
+        { html: `<p>Good morning,</p><p>I received your letter about my compliance documents expiring. I'll get the updated proof of address to you by end of week. Do you also need a new copy of my ID?</p><p>Regards,<br>${firstName}</p>`, preview: `I received your letter about my compliance documents expiring...` },
+      ],
+      portfolio: [
+        { html: `<p>Hi,</p><p>I saw the market dropped quite a bit yesterday. My portfolio seems to have lost about 3% this month. Should I be concerned? I'm wondering if we should move some funds to more conservative options.</p><p>Can we set up a call to discuss?</p><p>Thanks,<br>${firstName}</p>`, preview: `I saw the market dropped quite a bit yesterday. My portfolio seems to have lost about 3%...` },
+        { html: `<p>Hello,</p><p>I've been looking at my latest statement and noticed my equity allocation seems higher than we agreed. It looks like it's drifted from 60% to about 68%. Should we rebalance?</p><p>Kind regards,<br>${firstName}</p>`, preview: `I noticed my equity allocation seems higher than we agreed. It looks like it's drifted...` },
+      ],
+      investment: [
+        { html: `<p>Hi,</p><p>I'd like to increase my monthly debit order from ${config.currency}5,000 to ${config.currency}8,000 starting next month. Can you also check if my beneficiary nominations are up to date?</p><p>Also, I received a bonus of ${config.currency}50,000 and would like your advice on where to invest it - perhaps a top-up to my retirement fund?</p><p>Thanks,<br>${firstName}</p>`, preview: `I'd like to increase my monthly debit order and invest my bonus of ${config.currency}50,000...` },
+        { html: `<p>Good day,</p><p>I've been thinking about diversifying into offshore investments. What options do you recommend? I have about ${config.currency}200,000 available to invest.</p><p>Can we schedule a meeting to discuss?</p><p>Regards,<br>${firstName}</p>`, preview: `I've been thinking about diversifying into offshore investments. What options do you recommend?` },
+      ],
+      tax: [
+        { html: `<p>Hi,</p><p>Tax season is coming up and I wanted to check - do I have any remaining contribution room for my retirement fund? I'd like to maximize my deduction before the deadline.</p><p>Also, could you send me my tax certificate for the past financial year?</p><p>Thanks,<br>${firstName}</p>`, preview: `Tax season is coming up. Do I have any remaining contribution room for my retirement fund?` },
+        { html: `<p>Hello,</p><p>My accountant is asking for all investment-related tax documents. Could you please send through the relevant certificates and a capital gains summary for the year?</p><p>Kind regards,<br>${firstName}</p>`, preview: `My accountant is asking for all investment-related tax documents...` },
+      ],
+      claims: [
+        { html: `<p>Hi,</p><p>I submitted my disability claim last month and haven't heard back. Could you please check the status? The claim reference was #CL-7892. My doctor has additional reports if needed.</p><p>Thanks,<br>${firstName}</p>`, preview: `I submitted my disability claim last month. Could you check the status? Claim #CL-7892...` },
+      ],
+      review: [
+        { html: `<p>Hi,</p><p>Thanks for the reminder about our annual review. I'm available next Tuesday or Thursday afternoon. Before we meet, I'd like to discuss: 1) My retirement readiness, 2) Life cover adequacy, 3) Whether my investment mix is still appropriate.</p><p>Looking forward to it,<br>${firstName}</p>`, preview: `Thanks for the reminder about our annual review. I'm available next Tuesday or Thursday...` },
+      ],
+      inquiry: [
+        { html: `<p>Hi,</p><p>I have a few questions about my portfolio: What is my current total value? What returns have I earned over the past 12 months? And are there any fees I should be aware of?</p><p>Thanks,<br>${firstName}</p>`, preview: `I have a few questions about my portfolio: current value, 12-month returns, and fees...` },
+      ],
+      urgent: [
+        { html: `<p>Hi,</p><p>Please call me as soon as possible. I need to make an urgent withdrawal from my investment account due to an unforeseen expense. I need about ${config.currency}75,000 within the next few days if possible.</p><p>Thanks,<br>${firstName}</p>`, preview: `Please call me urgently. I need to make an urgent withdrawal of ${config.currency}75,000...` },
+      ],
+    };
+    const pool = categoryBodies[category] || [
       { html: `<p>Hi,</p><p>I have some questions about ${subject.toLowerCase()}. Could we schedule a call to discuss?</p><p>Thanks,<br>${firstName}</p>`, preview: `I have some questions about ${subject.toLowerCase()}. Could we schedule a call...` },
       { html: `<p>Good morning,</p><p>Thank you for the update. I've reviewed the documents and everything looks good.</p><p>Best regards,<br>${firstName}</p>`, preview: `Thank you for the update. I've reviewed the documents and everything looks good.` },
-      { html: `<p>Hi,</p><p>Please find attached the requested documents. Let me know if you need anything else.</p><p>Kind regards,<br>${firstName}</p>`, preview: `Please find attached the requested documents. Let me know if you need anything else.` },
-      { html: `<p>Hello,</p><p>I'd like to discuss my current investment strategy. Are you available this week?</p><p>Thanks,<br>${firstName}</p>`, preview: `I'd like to discuss my current investment strategy. Are you available this week?` },
-      { html: `<p>Hi,</p><p>I noticed a discrepancy in my latest statement. Could you please look into it?</p><p>Regards,<br>${firstName}</p>`, preview: `I noticed a discrepancy in my latest statement. Could you please look into it?` },
     ];
-    const body = bodies[Math.floor(Math.random() * bodies.length)];
+    const body = pool[Math.floor(Math.random() * pool.length)];
     return { bodyHtml: `<div style="font-family: Arial, sans-serif;">${body.html}</div>`, bodyPreview: body.preview };
   }
 
-  // Outbound
-  const bodies = [
-    { html: `<p>Dear ${clientName},</p><p>Please find attached the latest information regarding ${subject.toLowerCase()}.</p><p>Your current portfolio value stands at ${value}, reflecting strong performance over the period.</p><p>Please don't hesitate to reach out if you have any questions.</p><p>Kind regards,<br><strong>${advisorName}</strong><br>Financial Adviser | ${config.firmName}</p>`, preview: `Dear ${clientName}, Please find attached the latest information regarding ${subject.toLowerCase()}...` },
-    { html: `<p>Dear ${clientName},</p><p>I'm writing to follow up on our recent discussion about your financial planning.</p><p>I've prepared some recommendations which I believe will help optimise your portfolio. I'd like to schedule a meeting to review these with you.</p><p>Warm regards,<br><strong>${advisorName}</strong><br>Financial Adviser | ${config.firmName}</p>`, preview: `Dear ${clientName}, I'm writing to follow up on our recent discussion about your financial planning...` },
-    { html: `<p>Dear ${clientName},</p><p>This is to confirm that your request has been processed successfully.</p><p>The changes will take effect within 3-5 business days. You will receive a confirmation once complete.</p><p>Best regards,<br><strong>${advisorName}</strong><br>Financial Adviser | ${config.firmName}</p>`, preview: `Dear ${clientName}, This is to confirm that your request has been processed successfully...` },
-    { html: `<p>Dear ${clientName},</p><p>Thank you for meeting with me. As discussed, I've prepared the following action items:</p><ul><li>Review current asset allocation</li><li>Update beneficiary nominations</li><li>Schedule next quarterly review</li></ul><p>Kind regards,<br><strong>${advisorName}</strong><br>Financial Adviser | ${config.firmName}</p>`, preview: `Dear ${clientName}, Thank you for meeting with me. As discussed, I've prepared the following action items...` },
+  // Outbound - category-specific
+  const categoryBodies: Record<string, { html: string; preview: string }[]> = {
+    compliance: [
+      { html: `<p>Dear ${clientName},</p><p>Our records indicate that your FICA/KYC compliance documents are due for renewal. Specifically, we require:</p><ul><li>Updated proof of residence (not older than 3 months)</li><li>Copy of valid identification document</li><li>Updated source of funds declaration</li></ul><p>Please submit these at your earliest convenience to ensure uninterrupted service on your accounts.</p><p>Kind regards,<br><strong>${adv}</strong><br>Financial Adviser | ${sign}</p>`, preview: `Your FICA/KYC compliance documents are due for renewal. We require updated proof of residence, ID, and source of funds...` },
+    ],
+    portfolio: [
+      { html: `<p>Dear ${clientName},</p><p>I'm pleased to share your quarterly portfolio review. Here are the key highlights:</p><ul><li><strong>Current portfolio value:</strong> ${value}</li><li><strong>Quarterly return:</strong> +3.8%</li><li><strong>Allocation drift:</strong> Your equity exposure has increased from 60% to 68% due to market gains</li></ul><p>I recommend we rebalance your portfolio to bring it back in line with your risk profile. This would involve reducing equity by approximately 8% and increasing fixed income holdings.</p><p>Shall I proceed with the rebalancing, or would you prefer to discuss first?</p><p>Kind regards,<br><strong>${adv}</strong><br>Financial Adviser | ${sign}</p>`, preview: `Your quarterly portfolio review: current value ${value}, quarterly return +3.8%. Allocation drift detected - recommend rebalancing...` },
+      { html: `<p>Dear ${clientName},</p><p>Following recent market movements, I wanted to provide you with an update on your portfolio performance.</p><p>Your portfolio is currently valued at ${value}. Despite short-term volatility, your diversified strategy continues to perform well against benchmarks. Year-to-date returns are at 8.2% vs the benchmark of 7.1%.</p><p>No immediate action is required, but I'd recommend we schedule a review in the coming weeks.</p><p>Warm regards,<br><strong>${adv}</strong><br>Financial Adviser | ${sign}</p>`, preview: `Portfolio update: currently valued at ${value}. Year-to-date returns 8.2% vs benchmark 7.1%...` },
+    ],
+    investment: [
+      { html: `<p>Dear ${clientName},</p><p>With the tax year end approaching, I'd like to highlight an opportunity to maximize your retirement fund contribution.</p><p>Based on my calculations, you have approximately ${config.currency}120,000 in remaining contribution room. A top-up before the deadline would provide a significant tax deduction and boost your long-term retirement savings.</p><p>I've also identified some attractive offshore investment options that could complement your current portfolio. Would you like me to prepare a detailed proposal?</p><p>Kind regards,<br><strong>${adv}</strong><br>Financial Adviser | ${sign}</p>`, preview: `Tax year end opportunity: you have ${config.currency}120,000 remaining contribution room. A top-up would provide a significant tax deduction...` },
+    ],
+    tax: [
+      { html: `<p>Dear ${clientName},</p><p>I've prepared a summary of your tax-relevant investment information for the current tax year:</p><ul><li><strong>Estimated capital gains:</strong> ${config.currency}45,000</li><li><strong>Dividend income:</strong> ${config.currency}12,500</li><li><strong>Deductible contributions:</strong> ${config.currency}87,000</li></ul><p>I notice potential tax-loss harvesting opportunities on two underperforming funds that could offset approximately ${config.currency}15,000 in capital gains. Shall I proceed with switching these to similar funds?</p><p>Your tax certificates will be available for download shortly.</p><p>Best regards,<br><strong>${adv}</strong><br>Financial Adviser | ${sign}</p>`, preview: `Tax summary: estimated capital gains ${config.currency}45,000, dividend income ${config.currency}12,500. Tax-loss harvesting opportunity identified...` },
+    ],
+    claims: [
+      { html: `<p>Dear ${clientName},</p><p>I have an update on your disability claim (Reference: #CL-7892).</p><p>The insurer has reviewed the initial documentation and requires the following additional information:</p><ul><li>Updated medical report from your treating physician</li><li>Most recent blood test results</li><li>Specialist referral letter</li></ul><p>Please submit these documents by the end of the month to avoid any delays in processing. I'm happy to assist with coordinating with your healthcare providers.</p><p>Kind regards,<br><strong>${adv}</strong><br>Financial Adviser | ${sign}</p>`, preview: `Update on disability claim #CL-7892: insurer requires additional medical documentation...` },
+    ],
+    review: [
+      { html: `<p>Dear ${clientName},</p><p>Following our annual review meeting, here is a summary of the agreed action items:</p><ol><li>Switch Fund A to Fund B to reduce fees and improve diversification</li><li>Update beneficiary nomination to include your spouse</li><li>Increase life cover by ${config.currency}500,000 to match updated needs analysis</li><li>Submit updated FICA compliance documents</li><li>Schedule quarterly portfolio reviews going forward</li></ol><p>I will begin processing items 1-3 immediately. Please submit the compliance documents at your earliest convenience.</p><p>Our next review is scheduled for 3 months from now.</p><p>Warm regards,<br><strong>${adv}</strong><br>Financial Adviser | ${sign}</p>`, preview: `Annual review summary: 1) Switch Fund A→B, 2) Update beneficiary, 3) Increase life cover by ${config.currency}500k, 4) Submit FICA docs...` },
+    ],
+    confirmation: [
+      { html: `<p>Dear ${clientName},</p><p>This is to confirm that the following changes have been processed on your account:</p><ul><li>Premium adjustment from ${config.currency}3,500 to ${config.currency}4,200 per month</li><li>Effective date: 1st of next month</li><li>Updated debit order instruction sent to your bank</li></ul><p>Please ensure sufficient funds are available on the debit date. You will receive a revised policy schedule within 10 business days.</p><p>Best regards,<br><strong>${adv}</strong><br>Financial Adviser | ${sign}</p>`, preview: `Confirmation: premium adjustment from ${config.currency}3,500 to ${config.currency}4,200/month processed. Effective 1st of next month...` },
+    ],
+    policy: [
+      { html: `<p>Dear ${clientName},</p><p>I'm writing to inform you of important changes affecting your retirement annuity/pension:</p><ul><li>The fund has announced a change in fee structure, reducing annual management charges from 1.2% to 0.95%</li><li>New investment options have been added including a balanced ESG fund</li><li>Your current withdrawal rate of 5.5% is within the recommended range</li></ul><p>I recommend we review your drawdown strategy at our next meeting to ensure it remains sustainable over the long term.</p><p>Kind regards,<br><strong>${adv}</strong><br>Financial Adviser | ${sign}</p>`, preview: `Important changes to your retirement annuity: fee reduction to 0.95%, new ESG fund option, withdrawal rate review recommended...` },
+    ],
+    onboarding: [
+      { html: `<p>Dear ${clientName},</p><p>Welcome to ${sign}! We're delighted to have you as a client.</p><p>As your dedicated financial adviser, I'll be working with you to create a comprehensive financial plan. Here's what to expect:</p><ol><li>Initial fact-finding meeting to understand your goals and circumstances</li><li>Risk profiling assessment</li><li>Comprehensive financial needs analysis</li><li>Tailored investment and protection recommendations</li></ol><p>I've attached our client onboarding pack which includes the necessary forms. Please complete and return these before our first meeting.</p><p>I look forward to working with you.</p><p>Warm regards,<br><strong>${adv}</strong><br>Financial Adviser | ${sign}</p>`, preview: `Welcome to ${sign}! Here's what to expect: fact-finding meeting, risk profiling, needs analysis, and tailored recommendations...` },
+    ],
+  };
+
+  const pool = categoryBodies[category] || [
+    { html: `<p>Dear ${clientName},</p><p>Please find attached the latest information regarding ${subject.toLowerCase()}.</p><p>Your current portfolio value stands at ${value}, reflecting strong performance over the period.</p><p>Please don't hesitate to reach out if you have any questions.</p><p>Kind regards,<br><strong>${adv}</strong><br>Financial Adviser | ${sign}</p>`, preview: `Dear ${clientName}, Please find attached the latest information regarding ${subject.toLowerCase()}...` },
+    { html: `<p>Dear ${clientName},</p><p>Thank you for meeting with me. As discussed, I've prepared the following action items:</p><ul><li>Review current asset allocation</li><li>Update beneficiary nominations</li><li>Schedule next quarterly review</li></ul><p>Kind regards,<br><strong>${adv}</strong><br>Financial Adviser | ${sign}</p>`, preview: `Dear ${clientName}, Thank you for meeting with me. Action items: review allocation, update beneficiaries, schedule review...` },
   ];
-  const body = bodies[Math.floor(Math.random() * bodies.length)];
+  const body = pool[Math.floor(Math.random() * pool.length)];
   return { bodyHtml: `<div style="font-family: Arial, sans-serif; max-width: 600px;">${body.html}</div>`, bodyPreview: body.preview };
 }
 
