@@ -328,7 +328,7 @@ const Tasks = () => {
         </main>
       </div>
 
-      <TaskDetailSheet task={selectedTask} open={detailSheetOpen} onClose={() => { setDetailSheetOpen(false); setSelectedTask(null); }} onUpdate={updateTask} onDelete={deleteTask} onTogglePin={togglePin} onAddNote={addNote} />
+      <TaskDetailSheet task={selectedTask} open={detailSheetOpen} onClose={() => { setDetailSheetOpen(false); setSelectedTask(null); setDetailSheetDefaultTab(undefined); }} onUpdate={updateTask} onDelete={deleteTask} onTogglePin={togglePin} onAddNote={addNote} defaultTab={detailSheetDefaultTab} />
       <CreateTaskDialog open={createDialogOpen} onClose={() => setCreateDialogOpen(false)} onCreate={createTask} />
       <GlobalAIChat currentPage="tasks" />
     </div>

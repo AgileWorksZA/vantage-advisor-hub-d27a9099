@@ -78,7 +78,7 @@ export function TaskDetailSheet({
   const [editedTask, setEditedTask] = useState<Partial<EnhancedTask>>({});
   const [newNote, setNewNote] = useState("");
   const [isInternalNote, setIsInternalNote] = useState(false);
-  const [activeTab, setActiveTab] = useState("details");
+  const [activeTab, setActiveTab] = useState(defaultTab || "details");
   const [composeDialogOpen, setComposeDialogOpen] = useState(false);
 
   // Hooks for related data

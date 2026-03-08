@@ -52,7 +52,8 @@ export const NotificationDropdown = () => {
   const { notifications, unreadCount, markAsRead, dismiss, clearAll } = useNotifications();
   const [open, setOpen] = useState(false);
 
-  const groupedNotifications = groupByDate(notifications);
+  const limitedNotifications = notifications.slice(0, 5);
+  const groupedNotifications = groupByDate(limitedNotifications);
 
   const handleDismiss = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
