@@ -32,3 +32,6 @@ verify_jwt = false
 [functions.seed-email-tasks]
 verify_jwt = false
 
+[functions.seed-notifications]
+verify_jwt = false
+

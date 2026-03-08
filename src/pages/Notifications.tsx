@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Bell, X, CheckSquare, MessageSquare, CreditCard, UserCircle, ArrowLeft, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,30 +7,8 @@ import { cn } from "@/lib/utils";
 import { getOpportunityConfig } from "@/lib/opportunity-detection";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { supabase } from "@/integrations/supabase/client";
-import { useEffect } from "react";
-
-interface Notification {
-  id: string;
-  type: "task" | "communication" | "transaction" | "general";
-  title: string;
-  description: string;
-  date: string;
-  isRead: boolean;
-  taskId?: string;
-  opportunityTag?: string;
-}
-
-const allNotifications: Notification[] = [
-  { id: "1", type: "task", title: "Task", description: "This is just a test enjoy!", date: "2025-07-08", isRead: false, taskId: "task-1", opportunityTag: "Cross-sell" },
-  { id: "2", type: "general", title: "Reminder", description: "This is just a test enjoy!", date: "2025-07-08", isRead: false },
-  { id: "3", type: "transaction", title: "Transaction", description: "This is just a test enjoy!", date: "2025-07-08", isRead: false, opportunityTag: "Upsell" },
-  { id: "4", type: "communication", title: "Communication", description: "This is just a test enjoy!", date: "2025-07-08", isRead: false },
-  { id: "5", type: "task", title: "Task Onboarding Task - ONBOARD - 94911", description: "The task has been completed.", date: "2025-08-07", isRead: true, taskId: "task-5", opportunityTag: "New Business" },
-  { id: "6", type: "task", title: "Task Onboarding Task - ONBOARD - 94911", description: "The task has been completed.", date: "2025-08-08", isRead: true, taskId: "task-6" },
-  { id: "7", type: "task", title: "Annual Review", description: "The task has been completed.", date: "2025-08-13", isRead: true, taskId: "task-7", opportunityTag: "Portfolio Review" },
-  { id: "8", type: "task", title: "Portfolio Review", description: "The task has been completed.", date: "2025-08-13", isRead: true, taskId: "task-8", opportunityTag: "Portfolio Review" },
-  { id: "9", type: "task", title: "Task ONBOARD - 96724", description: "Client onboarding pending review.", date: "2025-09-11", isRead: false, taskId: "task-9", opportunityTag: "New Business" },
-];
+import { useState, useEffect } from "react";
+import { useNotifications, type Notification } from "@/hooks/useNotifications";
 
 const getNotificationIcon = (type: Notification["type"]) => {
   switch (type) {
@@ -55,8 +32,9 @@ const getNotificationColor = (type: Notification["type"], isRead: boolean) => {
 const groupByDate = (notifications: Notification[]) => {
   const groups: { [key: string]: Notification[] } = {};
   notifications.forEach((n) => {
-    if (!groups[n.date]) groups[n.date] = [];
-    groups[n.date].push(n);
+    const date = n.created_at.split("T")[0];
+    if (!groups[date]) groups[date] = [];
+    groups[date].push(n);
   });
   return Object.entries(groups).sort(([a], [b]) => new Date(b).getTime() - new Date(a).getTime());
 };
@@ -68,7 +46,7 @@ const formatDate = (dateStr: string) => {
 
 const Notifications = () => {
   const navigate = useNavigate();
-  const [notifications, setNotifications] = useState<Notification[]>(allNotifications);
+  const { notifications, markAsRead, dismiss, markAllRead, clearAll } = useNotifications();
   const [userName, setUserName] = useState("User");
 
   useEffect(() => {
@@ -79,21 +57,11 @@ const Notifications = () => {
 
   const groupedNotifications = groupByDate(notifications);
 
-  const handleDismiss = (id: string) => {
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
-  };
-
-  const handleClearAll = () => setNotifications([]);
-
   const handleNotificationClick = (notification: Notification) => {
-    setNotifications((prev) => prev.map((n) => (n.id === notification.id ? { ...n, isRead: true } : n)));
-    if (notification.type === "task" && notification.taskId) {
+    markAsRead(notification.id);
+    if (notification.type === "task" && notification.task_id) {
       navigate("/tasks");
     }
-  };
-
-  const handleMarkAllRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
   };
 
   return (
@@ -116,18 +84,9 @@ const Notifications = () => {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={handleMarkAllRead}>
-                  Mark all read
-                </Button>
-                <Button variant="outline" size="sm" onClick={handleClearAll}>
-                  Clear All
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => navigate("/account-settings?section=notifications")}
-                >
+                <Button variant="outline" size="sm" onClick={markAllRead}>Mark all read</Button>
+                <Button variant="outline" size="sm" onClick={clearAll}>Clear All</Button>
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate("/account-settings?section=notifications")}>
                   <Settings className="w-4 h-4" />
                 </Button>
               </div>
@@ -135,18 +94,14 @@ const Notifications = () => {
 
             {notifications.length === 0 ? (
               <Card>
-                <CardContent className="py-12 text-center text-muted-foreground">
-                  No notifications
-                </CardContent>
+                <CardContent className="py-12 text-center text-muted-foreground">No notifications</CardContent>
               </Card>
             ) : (
               <div className="space-y-4">
                 {groupedNotifications.map(([date, items]) => (
                   <Card key={date}>
                     <CardHeader className="py-3 px-4 bg-muted/30">
-                      <CardTitle className="text-xs font-medium text-muted-foreground">
-                        {formatDate(date)}
-                      </CardTitle>
+                      <CardTitle className="text-xs font-medium text-muted-foreground">{formatDate(date)}</CardTitle>
                     </CardHeader>
                     <CardContent className="p-0 divide-y divide-border/50">
                       {items.map((notification) => (
@@ -154,28 +109,20 @@ const Notifications = () => {
                           key={notification.id}
                           className={cn(
                             "px-4 py-3 flex items-start gap-3 cursor-pointer transition-colors hover:bg-muted/50",
-                            !notification.isRead && "bg-accent/30"
+                            !notification.is_read && "bg-accent/30"
                           )}
                           onClick={() => handleNotificationClick(notification)}
                         >
-                          <div
-                            className={cn(
-                              "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center",
-                              getNotificationColor(notification.type, notification.isRead)
-                            )}
-                          >
+                          <div className={cn("flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center", getNotificationColor(notification.type, notification.is_read))}>
                             {getNotificationIcon(notification.type)}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1.5 flex-wrap">
-                              <p className={cn(
-                                "text-sm leading-tight",
-                                notification.isRead ? "text-muted-foreground" : "font-medium text-foreground"
-                              )}>
+                              <p className={cn("text-sm leading-tight", notification.is_read ? "text-muted-foreground" : "font-medium text-foreground")}>
                                 {notification.title}
                               </p>
-                              {notification.opportunityTag && (() => {
-                                const config = getOpportunityConfig(notification.opportunityTag);
+                              {notification.opportunity_tag && (() => {
+                                const config = getOpportunityConfig(notification.opportunity_tag);
                                 return (
                                   <Badge variant="outline" className={`${config.color} text-[9px] px-1.5 py-0 leading-tight`}>
                                     {config.label}
@@ -183,15 +130,13 @@ const Notifications = () => {
                                 );
                               })()}
                             </div>
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                              {notification.description}
-                            </p>
+                            <p className="text-xs text-muted-foreground mt-0.5">{notification.description}</p>
                           </div>
                           <Button
                             variant="ghost"
                             size="icon"
                             className="h-6 w-6 flex-shrink-0 opacity-50 hover:opacity-100"
-                            onClick={(e) => { e.stopPropagation(); handleDismiss(notification.id); }}
+                            onClick={(e) => { e.stopPropagation(); dismiss(notification.id); }}
                           >
                             <X className="w-3.5 h-3.5" />
                           </Button>
