@@ -242,8 +242,33 @@ const EmailPage = () => {
           {/* Left side: Channel tabs */}
           <CommunicationTypeSelector value={activeChannel} onChange={setActiveChannel} />
 
-          {/* Right side: Date, Filter, Setup, Refresh */}
+          {/* Right side: Content filters, Date, Filter, Setup, Refresh */}
           <div className="flex items-center gap-2">
+            <Button
+              variant={filterTasks ? "default" : "outline"}
+              size="sm"
+              className={cn(
+                "h-8 gap-1.5",
+                filterTasks && "bg-[hsl(180,70%,45%)] hover:bg-[hsl(180,70%,40%)] text-white border-transparent"
+              )}
+              onClick={() => setFilterTasks(!filterTasks)}
+            >
+              <ListTodo className="w-4 h-4" />
+              Tasks
+            </Button>
+            <Button
+              variant={filterOpportunities ? "default" : "outline"}
+              size="sm"
+              className={cn(
+                "h-8 gap-1.5",
+                filterOpportunities && "bg-[hsl(180,70%,45%)] hover:bg-[hsl(180,70%,40%)] text-white border-transparent"
+              )}
+              onClick={() => setFilterOpportunities(!filterOpportunities)}
+            >
+              <Lightbulb className="w-4 h-4" />
+              Opportunities
+            </Button>
+            <div className="w-px h-6 bg-border" />
             <Button variant="outline" size="sm" className="h-8">
               <Calendar className="w-4 h-4 mr-1" />
               Date selection
