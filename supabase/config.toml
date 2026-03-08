@@ -29,3 +29,6 @@ verify_jwt = false
 [functions.guess-email-tasks]
 verify_jwt = false
 
+[functions.seed-email-tasks]
+verify_jwt = false
+

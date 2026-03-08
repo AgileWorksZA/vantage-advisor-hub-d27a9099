@@ -35,6 +35,7 @@ interface LinkedTask {
   assignee: string | null;
   due_date: string | null;
   client_initials: string | null;
+  client_name: string | null;
   is_linked: boolean;
 }
 
@@ -84,7 +85,7 @@ export const TaskLinkingSection = ({
               ) : (
                 <ChevronDown className="w-4 h-4" />
               )}
-              Task linking
+              Task linking ({linkedTasks.length})
             </button>
           </CollapsibleTrigger>
 
@@ -169,7 +170,9 @@ export const TaskLinkingSection = ({
                         />
                       </TableCell>
                       <TableCell className="text-sm font-mono">
-                        Task-{task.task_number}
+                        {task.task_type === "Switch" || task.task_type === "Quote"
+                          ? `Transaction-${task.task_number}`
+                          : `Task-${task.task_number}`}
                       </TableCell>
                       <TableCell className="text-sm">
                         {task.title || "-"}
@@ -184,7 +187,7 @@ export const TaskLinkingSection = ({
                         {formatDueDate(task.due_date)}
                       </TableCell>
                       <TableCell className="text-sm">
-                        {task.client_initials || "-"}
+                        {task.client_name || task.client_initials || "-"}
                       </TableCell>
                     </TableRow>
                   ))
