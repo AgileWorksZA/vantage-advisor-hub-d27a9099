@@ -36,8 +36,8 @@ const jurisdictionTemplates: TaskTemplate[] = [
   { type: "Compliance", title: "FICA compliance verification", jurisdictions: ["South Africa"] },
   { type: "Follow-up", title: "RA top-up follow-up before tax year end", jurisdictions: ["South Africa"] },
   { type: "Document Request", title: "Request Section 11F certificate", jurisdictions: ["South Africa"] },
-  { type: "Investment", title: "Living annuity withdrawal rate review", jurisdictions: ["South Africa"] },
-  { type: "Tax Planning", title: "TFSA contribution limit review", jurisdictions: ["South Africa"] },
+  { type: "Portfolio Review", title: "Living annuity withdrawal rate review", jurisdictions: ["South Africa"] },
+  { type: "Follow-up", title: "TFSA contribution limit review", jurisdictions: ["South Africa"] },
   { type: "Portfolio Review", title: "JSE offshore allocation rebalance", jurisdictions: ["South Africa"] },
 
   // Australia
@@ -45,31 +45,31 @@ const jurisdictionTemplates: TaskTemplate[] = [
   { type: "Portfolio Review", title: "Superannuation performance review", jurisdictions: ["Australia"] },
   { type: "Compliance", title: "SMSF compliance audit preparation", jurisdictions: ["Australia"] },
   { type: "Follow-up", title: "Super salary sacrifice arrangement follow-up", jurisdictions: ["Australia"] },
-  { type: "Tax Planning", title: "Div 293 tax assessment review", jurisdictions: ["Australia"] },
-  { type: "Investment", title: "Transition to retirement strategy review", jurisdictions: ["Australia"] },
+  { type: "Follow-up", title: "Div 293 tax assessment review", jurisdictions: ["Australia"] },
+  { type: "Portfolio Review", title: "Transition to retirement strategy review", jurisdictions: ["Australia"] },
 
   // Canada
   { type: "Follow-up", title: "RRSP contribution reminder before deadline", jurisdictions: ["Canada"] },
   { type: "Portfolio Review", title: "TFSA rebalance review", jurisdictions: ["Canada"] },
   { type: "Document Request", title: "Request T4 and T5 tax slips", jurisdictions: ["Canada"] },
-  { type: "Investment", title: "RESP education savings strategy review", jurisdictions: ["Canada"] },
+  { type: "Portfolio Review", title: "RESP education savings strategy review", jurisdictions: ["Canada"] },
   { type: "Follow-up", title: "RRIF minimum withdrawal calculation", jurisdictions: ["Canada"] },
-  { type: "Tax Planning", title: "Capital gains inclusion rate impact analysis", jurisdictions: ["Canada"] },
+  { type: "Follow-up", title: "Capital gains inclusion rate impact analysis", jurisdictions: ["Canada"] },
 
   // United Kingdom
   { type: "Compliance", title: "NI number verification", jurisdictions: ["United Kingdom"] },
   { type: "Follow-up", title: "ISA allowance top-up reminder", jurisdictions: ["United Kingdom"] },
   { type: "Portfolio Review", title: "SIPP drawdown strategy review", jurisdictions: ["United Kingdom"] },
-  { type: "Investment", title: "Flexi-access drawdown rate review", jurisdictions: ["United Kingdom"] },
-  { type: "Tax Planning", title: "Dividend allowance utilisation review", jurisdictions: ["United Kingdom"] },
+  { type: "Portfolio Review", title: "Flexi-access drawdown rate review", jurisdictions: ["United Kingdom"] },
+  { type: "Follow-up", title: "Dividend allowance utilisation review", jurisdictions: ["United Kingdom"] },
   { type: "Document Request", title: "Request HMRC tax summary", jurisdictions: ["United Kingdom"] },
 
   // United States
   { type: "Portfolio Review", title: "401(k) allocation rebalancing review", jurisdictions: ["United States"] },
   { type: "Follow-up", title: "RMD calculation and distribution follow-up", jurisdictions: ["United States"] },
   { type: "Document Request", title: "Request W-2 and 1099 tax documents", jurisdictions: ["United States"] },
-  { type: "Investment", title: "Roth conversion opportunity analysis", jurisdictions: ["United States"] },
-  { type: "Tax Planning", title: "HSA contribution strategy review", jurisdictions: ["United States"] },
+  { type: "Portfolio Review", title: "Roth conversion opportunity analysis", jurisdictions: ["United States"] },
+  { type: "Follow-up", title: "HSA contribution strategy review", jurisdictions: ["United States"] },
   { type: "Follow-up", title: "IRA rollover processing follow-up", jurisdictions: ["United States"] },
 ];
 
