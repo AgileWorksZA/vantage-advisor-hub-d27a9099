@@ -57,7 +57,7 @@ export const AIInsightsPanel = ({
   onCreateTask,
   isLoading = false,
 }: AIInsightsPanelProps) => {
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
 
   if (opportunities.length === 0 && !isLoading) return null;
 
