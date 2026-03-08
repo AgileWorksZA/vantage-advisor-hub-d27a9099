@@ -460,7 +460,7 @@ const EmailView = () => {
               <TaskLinkingSection
                 linkedTasks={linkedTasks}
                 onToggleLink={handleToggleTaskLink}
-                onGuessTask={handleGuessTask}
+                onGuessTask={() => handleGuessTask()}
                 onSearchTask={() => setTaskSearchOpen(true)}
                 onNewTask={() => navigate("/tasks")}
                 onGuessCompletedTask={() => handleGuessTask(true)}
