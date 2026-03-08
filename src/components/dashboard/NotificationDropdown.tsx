@@ -1,6 +1,8 @@
 import { useState } from "react";
-import { Bell, X, CheckSquare, MessageSquare, CreditCard, UserCircle } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Bell, X, CheckSquare, MessageSquare, CreditCard, UserCircle, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Popover,
   PopoverContent,
@@ -8,6 +10,7 @@ import {
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { getOpportunityConfig } from "@/lib/opportunity-detection";
 
 interface Notification {
   id: string;
@@ -17,6 +20,8 @@ interface Notification {
   date: string;
   isRead: boolean;
   link?: string;
+  taskId?: string;
+  opportunityTag?: string;
 }
 
 const initialNotifications: Notification[] = [
@@ -27,6 +32,8 @@ const initialNotifications: Notification[] = [
     description: "This is just a test enjoy!",
     date: "2025-07-08",
     isRead: false,
+    taskId: "task-1",
+    opportunityTag: "Cross-sell",
   },
   {
     id: "2",
@@ -43,6 +50,7 @@ const initialNotifications: Notification[] = [
     description: "This is just a test enjoy!",
     date: "2025-07-08",
     isRead: false,
+    opportunityTag: "Upsell",
   },
   {
     id: "4",
@@ -59,6 +67,8 @@ const initialNotifications: Notification[] = [
     description: "The task has been completed.",
     date: "2025-08-07",
     isRead: true,
+    taskId: "task-5",
+    opportunityTag: "New Business",
   },
   {
     id: "6",
@@ -67,6 +77,7 @@ const initialNotifications: Notification[] = [
     description: "The task has been completed.",
     date: "2025-08-08",
     isRead: true,
+    taskId: "task-6",
   },
   {
     id: "7",
@@ -75,6 +86,8 @@ const initialNotifications: Notification[] = [
     description: "The task has been completed.",
     date: "2025-08-13",
     isRead: true,
+    taskId: "task-7",
+    opportunityTag: "Portfolio Review",
   },
   {
     id: "8",
@@ -83,6 +96,8 @@ const initialNotifications: Notification[] = [
     description: "The task has been completed.",
     date: "2025-08-13",
     isRead: true,
+    taskId: "task-8",
+    opportunityTag: "Portfolio Review",
   },
   {
     id: "9",
@@ -91,6 +106,8 @@ const initialNotifications: Notification[] = [
     description: "Client onboarding pending review.",
     date: "2025-09-11",
     isRead: false,
+    taskId: "task-9",
+    opportunityTag: "New Business",
   },
 ];
 
@@ -144,6 +161,7 @@ const formatDate = (dateStr: string) => {
 };
 
 export const NotificationDropdown = () => {
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>(initialNotifications);
   const [open, setOpen] = useState(false);
 
@@ -163,7 +181,21 @@ export const NotificationDropdown = () => {
     setNotifications((prev) =>
       prev.map((n) => (n.id === notification.id ? { ...n, isRead: true } : n))
     );
-    // Could navigate to relevant page here
+    if (notification.type === "task" && notification.taskId) {
+      setOpen(false);
+      navigate("/tasks");
+    }
+  };
+
+  const handleSettingsClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setOpen(false);
+    navigate("/account-settings?section=notifications");
+  };
+
+  const handleShowMore = () => {
+    setOpen(false);
+    navigate("/notifications");
   };
 
   return (
@@ -189,19 +221,29 @@ export const NotificationDropdown = () => {
       >
         <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/30">
           <h3 className="font-semibold text-sm">Notifications</h3>
-          {notifications.length > 0 && (
+          <div className="flex items-center gap-1">
+            {notifications.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-auto py-1 px-2 text-xs text-[hsl(180,70%,45%)] hover:text-[hsl(180,70%,35%)] hover:bg-transparent"
+                onClick={handleClearAll}
+              >
+                Clear All
+              </Button>
+            )}
             <Button
               variant="ghost"
-              size="sm"
-              className="h-auto py-1 px-2 text-xs text-[hsl(180,70%,45%)] hover:text-[hsl(180,70%,35%)] hover:bg-transparent"
-              onClick={handleClearAll}
+              size="icon"
+              className="h-7 w-7 text-muted-foreground hover:text-foreground"
+              onClick={handleSettingsClick}
             >
-              Clear All
+              <Settings className="w-4 h-4" />
             </Button>
-          )}
+          </div>
         </div>
 
-        <ScrollArea className="max-h-[400px]">
+        <ScrollArea className="max-h-[350px]">
           {notifications.length === 0 ? (
             <div className="py-8 text-center text-muted-foreground text-sm">
               No notifications
@@ -232,12 +274,17 @@ export const NotificationDropdown = () => {
                           {getNotificationIcon(notification.type)}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className={cn(
-                            "text-sm leading-tight",
-                            notification.isRead ? "text-muted-foreground" : "font-medium text-foreground"
-                          )}>
-                            {notification.title}
-                          </p>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <p className={cn(
+                              "text-sm leading-tight",
+                              notification.isRead ? "text-muted-foreground" : "font-medium text-foreground"
+                            )}>
+                              {notification.title}
+                            </p>
+                            {notification.opportunityTag && (
+                              <OpportunityTagInline type={notification.opportunityTag} />
+                            )}
+                          </div>
                           <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
                             {notification.description}
                           </p>
@@ -258,7 +305,32 @@ export const NotificationDropdown = () => {
             </div>
           )}
         </ScrollArea>
+
+        {notifications.length > 0 && (
+          <div className="border-t px-4 py-2.5 bg-muted/30">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full h-auto py-1.5 text-xs text-[hsl(180,70%,45%)] hover:text-[hsl(180,70%,35%)] hover:bg-transparent font-medium"
+              onClick={handleShowMore}
+            >
+              Show more ({notifications.length})
+            </Button>
+          </div>
+        )}
       </PopoverContent>
     </Popover>
+  );
+};
+
+const OpportunityTagInline = ({ type }: { type: string }) => {
+  const config = getOpportunityConfig(type);
+  return (
+    <Badge
+      variant="outline"
+      className={`${config.color} text-[9px] px-1.5 py-0 leading-tight`}
+    >
+      {config.label}
+    </Badge>
   );
 };

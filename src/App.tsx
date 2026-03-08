@@ -37,6 +37,7 @@ import ComposeEmail from "./pages/ComposeEmail";
 import Administration from "./pages/Administration";
 import AccountSettings from "./pages/AccountSettings";
 import Help from "./pages/Help";
+import Notifications from "./pages/Notifications";
 
 const queryClient = new QueryClient();
 
