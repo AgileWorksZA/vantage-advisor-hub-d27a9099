@@ -85,7 +85,7 @@ export const TaskLinkingSection = ({
               ) : (
                 <ChevronDown className="w-4 h-4" />
               )}
-              Task linking
+              Task linking ({linkedTasks.length})
             </button>
           </CollapsibleTrigger>
 
