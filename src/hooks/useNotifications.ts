@@ -1,18 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useUserSettings } from "@/hooks/useUserSettings";
 
-export interface Notification {
-  id: string;
-  user_id: string;
-  type: "task" | "communication" | "transaction" | "general";
-  title: string;
-  description: string | null;
-  is_read: boolean;
-  is_dismissed: boolean;
-  task_id: string | null;
-  opportunity_tag: string | null;
-  created_at: string;
+interface NotificationSoundSettings {
+  notification_sound_enabled: boolean;
+  notification_push_enabled: boolean;
+  notification_critical_only_sound: boolean;
 }
 
 // Simple beep as a data URI so we don't need an external file
