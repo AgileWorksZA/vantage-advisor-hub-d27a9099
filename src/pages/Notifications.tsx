@@ -59,8 +59,12 @@ const Notifications = () => {
 
   const handleNotificationClick = (notification: Notification) => {
     markAsRead(notification.id);
-    if (notification.type === "task" && notification.task_id) {
-      navigate(`/tasks?taskId=${notification.task_id}`);
+    if (notification.type === "task") {
+      if (notification.task_id) {
+        navigate(`/tasks?taskId=${notification.task_id}`);
+      } else {
+        navigate("/tasks");
+      }
     }
   };
 
