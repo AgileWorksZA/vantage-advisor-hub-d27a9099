@@ -219,7 +219,25 @@ const AccountSettings = () => {
       notification_calendar_reminders: notificationCalendarReminders,
       notification_client_updates: notificationClientUpdates,
       notification_compliance_alerts: notificationComplianceAlerts,
+      notification_sound_enabled: notificationSoundEnabled,
+      notification_push_enabled: notificationPushEnabled,
+      notification_critical_only_sound: notificationCriticalOnlySound,
     });
+  };
+
+  const handlePushToggle = async (enabled: boolean) => {
+    if (enabled && typeof window !== "undefined" && "Notification" in window) {
+      const permission = await Notification.requestPermission();
+      if (permission === "denied") {
+        toast({
+          title: "Push notifications blocked",
+          description: "Please enable notifications in your browser settings to use this feature.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+    setNotificationPushEnabled(enabled);
   };
 
   const handleSaveEmailSettings = () => {
