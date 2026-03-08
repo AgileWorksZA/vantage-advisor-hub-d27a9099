@@ -288,6 +288,38 @@ export function SystemSettingsSection() {
     }
   };
 
+  const handleSeedNotifications = async () => {
+    setSeedingNotifications(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        toast.error("Not authenticated");
+        return;
+      }
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/seed-notifications`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      const result = await response.json();
+      if (result.success) {
+        toast.success(`Seeded ${result.count} notifications`);
+      } else {
+        toast.error(result.error || "Failed to seed notifications");
+      }
+    } catch (error: any) {
+      toast.error("Failed to seed notifications");
+      console.error(error);
+    } finally {
+      setSeedingNotifications(false);
+    }
+  };
+
   return (
     <div className="p-6 space-y-6">
       <Tabs
