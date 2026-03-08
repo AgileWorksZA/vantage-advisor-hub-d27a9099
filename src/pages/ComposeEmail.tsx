@@ -267,6 +267,52 @@ const ComposeEmail = () => {
     }
   };
 
+  // AI Guess Task handler
+  const handleGuessTask = async (includeCompleted = false) => {
+    if (!currentEmailId) {
+      toast({ title: "Save or reply to an email first to use AI task matching" });
+      return;
+    }
+    setIsGuessing(true);
+    setAiOpportunities([]);
+    try {
+      const { data, error } = await supabase.functions.invoke("guess-email-tasks", {
+        body: {
+          emailId: currentEmailId,
+          clientIds: linkedClients.map((c) => c.id),
+          includeCompleted,
+        },
+      });
+
+      if (error) throw error;
+
+      const matched = data?.matchedTasks || [];
+      let linked = 0;
+      for (const match of matched) {
+        if (match.confidence === "high" || match.confidence === "medium") {
+          const success = await linkTask(match.taskId);
+          if (success) linked++;
+        }
+      }
+
+      if (linked > 0) {
+        setTaskLinkConfirmation(
+          `AI matched ${linked} task${linked > 1 ? "s" : ""}. ${matched.length} total match${matched.length !== 1 ? "es" : ""} found.`
+        );
+        setTimeout(() => setTaskLinkConfirmation(null), 5000);
+      } else if (matched.length === 0) {
+        toast({ title: "No matching tasks found", description: `${(data?.identifiedOpportunities || []).length} new opportunities identified.` });
+      }
+
+      setAiOpportunities(data?.identifiedOpportunities || []);
+    } catch (err: any) {
+      console.error("Guess task error:", err);
+      toast({ title: "AI task matching failed", description: err.message || "Please try again.", variant: "destructive" });
+    } finally {
+      setIsGuessing(false);
+    }
+  };
+
   const handleAttachFile = () => {
     // For now, open the dialog with mock attachments from original email
     // In production, this would handle file upload
