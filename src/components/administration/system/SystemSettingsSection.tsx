@@ -384,6 +384,19 @@ export function SystemSettingsSection() {
               )}
               {seedingOpenTasks ? "Seeding Tasks..." : "Seed Open Tasks"}
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSeedNotifications}
+              disabled={seedingNotifications || seedingAll}
+            >
+              {seedingNotifications ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Bell className="w-4 h-4 mr-2" />
+              )}
+              {seedingNotifications ? "Seeding Notifications..." : "Seed Notifications"}
+            </Button>
           </div>
 
           <div className="mt-4">
