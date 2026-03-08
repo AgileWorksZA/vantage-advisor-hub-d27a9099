@@ -170,7 +170,9 @@ export const TaskLinkingSection = ({
                         />
                       </TableCell>
                       <TableCell className="text-sm font-mono">
-                        Task-{task.task_number}
+                        {task.task_type === "Switch" || task.task_type === "Quote"
+                          ? `Transaction-${task.task_number}`
+                          : `Task-${task.task_number}`}
                       </TableCell>
                       <TableCell className="text-sm">
                         {task.title || "-"}
