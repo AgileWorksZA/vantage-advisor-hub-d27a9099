@@ -45,6 +45,7 @@ interface TaskLinkingSectionProps {
   onNewTask?: () => void;
   onGuessCompletedTask?: () => void;
   isReadOnly?: boolean;
+  isGuessing?: boolean;
 }
 
 export const TaskLinkingSection = ({
