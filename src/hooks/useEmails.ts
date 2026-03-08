@@ -43,6 +43,7 @@ export interface EmailListItem {
   hasAttachment: boolean;
   isRead: boolean;
   folder: Email["folder"];
+  detectedOpportunities: string[];
 }
 
 const formatDate = (dateString: string | null): string => {
