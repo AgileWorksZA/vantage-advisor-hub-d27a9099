@@ -107,6 +107,9 @@ const AccountSettings = () => {
   const [notificationCalendarReminders, setNotificationCalendarReminders] = useState(true);
   const [notificationClientUpdates, setNotificationClientUpdates] = useState(true);
   const [notificationComplianceAlerts, setNotificationComplianceAlerts] = useState(true);
+  const [notificationSoundEnabled, setNotificationSoundEnabled] = useState(true);
+  const [notificationPushEnabled, setNotificationPushEnabled] = useState(false);
+  const [notificationCriticalOnlySound, setNotificationCriticalOnlySound] = useState(false);
 
   // Email settings state
   const [emailSignature, setEmailSignature] = useState("");
@@ -125,6 +128,9 @@ const AccountSettings = () => {
       setNotificationCalendarReminders(settings.notification_calendar_reminders ?? true);
       setNotificationClientUpdates(settings.notification_client_updates ?? true);
       setNotificationComplianceAlerts(settings.notification_compliance_alerts ?? true);
+      setNotificationSoundEnabled(settings.notification_sound_enabled ?? true);
+      setNotificationPushEnabled(settings.notification_push_enabled ?? false);
+      setNotificationCriticalOnlySound(settings.notification_critical_only_sound ?? false);
       setEmailSignature(settings.email_signature || "");
       setDefaultFromPrimaryAdviser(settings.default_from_primary_adviser ?? false);
     }
@@ -213,7 +219,25 @@ const AccountSettings = () => {
       notification_calendar_reminders: notificationCalendarReminders,
       notification_client_updates: notificationClientUpdates,
       notification_compliance_alerts: notificationComplianceAlerts,
+      notification_sound_enabled: notificationSoundEnabled,
+      notification_push_enabled: notificationPushEnabled,
+      notification_critical_only_sound: notificationCriticalOnlySound,
     });
+  };
+
+  const handlePushToggle = async (enabled: boolean) => {
+    if (enabled && typeof window !== "undefined" && "Notification" in window) {
+      const permission = await Notification.requestPermission();
+      if (permission === "denied") {
+        toast({
+          title: "Push notifications blocked",
+          description: "Please enable notifications in your browser settings to use this feature.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+    setNotificationPushEnabled(enabled);
   };
 
   const handleSaveEmailSettings = () => {
@@ -551,6 +575,36 @@ const AccountSettings = () => {
                         disabled={!notificationEmail}
                       />
                     </div>
+                    <Separator />
+
+                    <p className="text-sm font-medium text-foreground pt-1">Sound & Push Alerts</p>
+
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label>Notification Sound</Label>
+                        <p className="text-xs text-muted-foreground">Play a sound when new notifications arrive</p>
+                      </div>
+                      <Switch checked={notificationSoundEnabled} onCheckedChange={setNotificationSoundEnabled} />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label>Critical Alerts Only</Label>
+                        <p className="text-xs text-muted-foreground">Only play sound for compliance and urgent alerts</p>
+                      </div>
+                      <Switch
+                        checked={notificationCriticalOnlySound}
+                        onCheckedChange={setNotificationCriticalOnlySound}
+                        disabled={!notificationSoundEnabled}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label>Browser Push Notifications</Label>
+                        <p className="text-xs text-muted-foreground">Show desktop notifications for new alerts</p>
+                      </div>
+                      <Switch checked={notificationPushEnabled} onCheckedChange={handlePushToggle} />
+                    </div>
+
                     <Separator />
                     <Button onClick={handleSaveNotifications} disabled={upsertSettings.isPending}>
                       {upsertSettings.isPending ? (
