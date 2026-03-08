@@ -83,6 +83,16 @@ const EmailPage = () => {
   const [activeChannel, setActiveChannel] = useState<CommunicationChannel>("Email");
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
   const [emailViewOpen, setEmailViewOpen] = useState(false);
+  const [filterTasks, setFilterTasks] = useState(false);
+  const [filterOpportunities, setFilterOpportunities] = useState(false);
+
+  const contentFilter = filterTasks && filterOpportunities
+    ? "has-both" as const
+    : filterTasks
+    ? "has-tasks" as const
+    : filterOpportunities
+    ? "has-opportunities" as const
+    : "all" as const;
 
   const { settings: emailSettings, isConnected, loading: settingsLoading } = useEmailSettings();
   
