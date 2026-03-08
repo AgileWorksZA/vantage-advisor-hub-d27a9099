@@ -61,7 +61,7 @@ const jurisdictionTemplates: TaskTemplate[] = [
   { type: "Follow-up", title: "ISA allowance top-up reminder", jurisdictions: ["United Kingdom"] },
   { type: "Portfolio Review", title: "SIPP drawdown strategy review", jurisdictions: ["United Kingdom"] },
   { type: "Portfolio Review", title: "Flexi-access drawdown rate review", jurisdictions: ["United Kingdom"] },
-  { type: "Tax Planning", title: "Dividend allowance utilisation review", jurisdictions: ["United Kingdom"] },
+  { type: "Follow-up", title: "Dividend allowance utilisation review", jurisdictions: ["United Kingdom"] },
   { type: "Document Request", title: "Request HMRC tax summary", jurisdictions: ["United Kingdom"] },
 
   // United States
