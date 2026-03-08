@@ -128,6 +128,9 @@ const AccountSettings = () => {
       setNotificationCalendarReminders(settings.notification_calendar_reminders ?? true);
       setNotificationClientUpdates(settings.notification_client_updates ?? true);
       setNotificationComplianceAlerts(settings.notification_compliance_alerts ?? true);
+      setNotificationSoundEnabled(settings.notification_sound_enabled ?? true);
+      setNotificationPushEnabled(settings.notification_push_enabled ?? false);
+      setNotificationCriticalOnlySound(settings.notification_critical_only_sound ?? false);
       setEmailSignature(settings.email_signature || "");
       setDefaultFromPrimaryAdviser(settings.default_from_primary_adviser ?? false);
     }
