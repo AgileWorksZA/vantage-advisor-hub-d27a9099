@@ -158,6 +158,7 @@ export function SystemSettingsSection() {
   const [seedingCalendar, setSeedingCalendar] = useState(false);
   const [seedingOpenTasks, setSeedingOpenTasks] = useState(false);
   const [seedingAll, setSeedingAll] = useState(false);
+  const [seedingNotifications, setSeedingNotifications] = useState(false);
   const [seedProgress, setSeedProgress] = useState("");
 
   const seedSequence = [
