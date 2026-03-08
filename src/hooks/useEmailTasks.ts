@@ -61,18 +61,26 @@ export const useEmailTasks = (emailId: string | null) => {
 
       if (fetchError) throw fetchError;
 
-      const transformedTasks: LinkedTaskDisplay[] = (data || []).map((et: any) => ({
-        id: et.id,
-        task_number: et.tasks?.task_number || 0,
-        title: et.tasks?.title || null,
-        task_type: et.tasks?.task_type || null,
-        assignee: null, // Would need profiles join
-        due_date: et.tasks?.due_date || null,
-        client_initials: et.tasks?.clients
-          ? `${et.tasks.clients.first_name?.[0] || ""}${et.tasks.clients.surname?.[0] || ""}`.toUpperCase()
-          : null,
-        is_linked: et.is_linked,
-      }));
+      const transformedTasks: LinkedTaskDisplay[] = (data || []).map((et: any) => {
+        const firstName = et.tasks?.clients?.first_name || "";
+        const surname = et.tasks?.clients?.surname || "";
+        const clientName = surname && firstName
+          ? `${surname}, ${firstName[0]} (${firstName})`
+          : surname || firstName || null;
+        return {
+          id: et.id,
+          task_number: et.tasks?.task_number || 0,
+          title: et.tasks?.title || null,
+          task_type: et.tasks?.task_type || null,
+          assignee: null,
+          due_date: et.tasks?.due_date || null,
+          client_initials: et.tasks?.clients
+            ? `${firstName?.[0] || ""}${surname?.[0] || ""}`.toUpperCase()
+            : null,
+          client_name: clientName,
+          is_linked: et.is_linked,
+        };
+      });
 
       setLinkedTasks(transformedTasks);
     } catch (err: any) {
