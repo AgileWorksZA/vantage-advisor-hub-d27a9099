@@ -116,7 +116,7 @@ const EmailPage = () => {
     }
   }, [settingsLoading, emailSettings?.fetch_mode, searchParams]);
 
-  const { emails: rawEmails, loading: emailsLoading, isFetching, folderCounts, refetch, triggerFetch, moveToFolder, markAsRead } = useEmails(activeFolder);
+  const { emails: rawEmails, loading: emailsLoading, isFetching, folderCounts, refetch, triggerFetch, moveToFolder, markAsRead } = useEmails(activeFolder, contentFilter);
   const { selectedRegion } = useRegion();
 
   // Map region code to country name for jurisdiction filtering
