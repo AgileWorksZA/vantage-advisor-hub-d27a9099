@@ -17,6 +17,9 @@ export interface UserSettings {
   date_format: string | null;
   time_format: string | null;
   default_calendar_view: string | null;
+  notification_sound_enabled: boolean;
+  notification_push_enabled: boolean;
+  notification_critical_only_sound: boolean;
   created_at: string;
   updated_at: string;
 }

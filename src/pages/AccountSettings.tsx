@@ -576,6 +576,36 @@ const AccountSettings = () => {
                       />
                     </div>
                     <Separator />
+
+                    <p className="text-sm font-medium text-foreground pt-1">Sound & Push Alerts</p>
+
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label>Notification Sound</Label>
+                        <p className="text-xs text-muted-foreground">Play a sound when new notifications arrive</p>
+                      </div>
+                      <Switch checked={notificationSoundEnabled} onCheckedChange={setNotificationSoundEnabled} />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label>Critical Alerts Only</Label>
+                        <p className="text-xs text-muted-foreground">Only play sound for compliance and urgent alerts</p>
+                      </div>
+                      <Switch
+                        checked={notificationCriticalOnlySound}
+                        onCheckedChange={setNotificationCriticalOnlySound}
+                        disabled={!notificationSoundEnabled}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label>Browser Push Notifications</Label>
+                        <p className="text-xs text-muted-foreground">Show desktop notifications for new alerts</p>
+                      </div>
+                      <Switch checked={notificationPushEnabled} onCheckedChange={handlePushToggle} />
+                    </div>
+
+                    <Separator />
                     <Button onClick={handleSaveNotifications} disabled={upsertSettings.isPending}>
                       {upsertSettings.isPending ? (
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
