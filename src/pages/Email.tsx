@@ -33,6 +33,7 @@ import {
   ChevronsRight,
   Loader2,
   Settings,
+  Lightbulb,
 } from "lucide-react";
 import commandCenterIcon from "@/assets/command-center-icon.png";
 import vantageLogo from "@/assets/vantage-logo.png";
