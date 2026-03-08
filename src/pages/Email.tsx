@@ -462,7 +462,7 @@ const EmailPage = () => {
               </>
             ) : (
               /* Chat Interface for WhatsApp/SMS/Push */
-              <ChatInterface channel={activeChannel} />
+              <ChatInterface channel={activeChannel} contentFilter={contentFilter} />
             )}
           </div>
         </main>

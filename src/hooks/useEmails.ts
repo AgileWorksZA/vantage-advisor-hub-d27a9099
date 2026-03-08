@@ -242,7 +242,7 @@ export const useEmails = (folder?: Email["folder"] | null, contentFilter: Conten
       setLoading(false);
       setIsFetching(false);
     }
-  }, [folder, allClients.length, fetchClients]);
+  }, [folder, allClients.length, fetchClients, contentFilter]);
 
   // Trigger fetch with spinner (for refresh button)
   const triggerFetch = useCallback(() => {
