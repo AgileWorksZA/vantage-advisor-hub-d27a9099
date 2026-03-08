@@ -63,6 +63,7 @@ export const TaskLinkingSection = ({
   isReadOnly = false,
   isGuessing = false,
 }: TaskLinkingSectionProps) => {
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 5;
