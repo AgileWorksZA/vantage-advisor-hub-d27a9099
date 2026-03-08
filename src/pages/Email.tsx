@@ -432,14 +432,6 @@ const EmailPage = () => {
                               <td className="py-1.5 px-3">
                                 <div className="flex items-center gap-1.5 flex-wrap">
                                   <span className="truncate">{email.subject}</span>
-                                  {email.detectedOpportunities.map((oppType) => (
-                                    <OpportunityTagBadge
-                                      key={oppType}
-                                      type={oppType}
-                                      sourceText={email.subject}
-                                      clientName={email.clients[0]?.name}
-                                    />
-                                  ))}
                                 </div>
                               </td>
                               <td className="py-1.5 px-3 text-muted-foreground">{email.receivedOn}</td>
