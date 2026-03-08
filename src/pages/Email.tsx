@@ -48,6 +48,7 @@ import { ChatInterface } from "@/components/email/ChatInterface";
 import { EmailViewDialog } from "@/components/email/EmailViewDialog";
 import { cn } from "@/lib/utils";
 import GlobalAIChat from "@/components/ai-assistant/GlobalAIChat";
+import { OpportunityTagBadge } from "@/components/email/OpportunityTagBadge";
 
 type EmailFolder = Email["folder"];
 
