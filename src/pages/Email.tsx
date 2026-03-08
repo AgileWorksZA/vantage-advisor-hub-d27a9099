@@ -426,10 +426,10 @@ const EmailPage = () => {
                                   <Paperclip className="w-4 h-4 text-muted-foreground" />
                                 )}
                               </td>
-                              <td className={cn("py-1.5 px-3", !email.isRead && "text-[hsl(180,70%,45%)]")}>
+                              <td className="py-1.5 px-3">
                                 {email.from}
                               </td>
-                              <td className={cn("py-1.5 px-3", !email.isRead && "text-[hsl(180,70%,45%)]")}>
+                              <td className="py-1.5 px-3">
                                 <div className="flex items-center gap-1.5 flex-wrap">
                                   <span className="truncate">{email.subject}</span>
                                   {email.detectedOpportunities.map((oppType) => (
