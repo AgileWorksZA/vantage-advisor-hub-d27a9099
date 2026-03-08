@@ -63,7 +63,7 @@ export const NotificationDropdown = () => {
     markAsRead(notification.id);
     if (notification.type === "task" && notification.task_id) {
       setOpen(false);
-      navigate("/tasks");
+      navigate(`/tasks?taskId=${notification.task_id}`);
     }
   };
 
