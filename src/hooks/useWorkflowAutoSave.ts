@@ -13,7 +13,7 @@ export const useWorkflowAutoSave = ({
 }: AutoSaveOptions) => {
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isDirtyRef = useRef(false);
 
   const save = useCallback(async () => {

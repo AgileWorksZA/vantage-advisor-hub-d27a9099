@@ -760,7 +760,7 @@ function OnboardingCard({
     }
 
     // Animate checks sequentially
-    const timers: NodeJS.Timeout[] = [];
+    const timers: ReturnType<typeof setTimeout>[] = [];
     timers.push(setTimeout(() => {
       setCheckStates(prev => ({
         ...prev,
