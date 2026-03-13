@@ -11,6 +11,7 @@ export interface ClientCalendarEvent {
   location: string | null;
   status: string;
   color: string | null;
+  aiPrepNote: string | null;
 }
 
 export const useClientCalendarEvents = (clientId: string | undefined) => {
