@@ -39,7 +39,7 @@ export default function WebMeetingProgressBar({
   ];
 
   return (
-    <div className="flex items-center justify-between px-4 py-4">
+    <div className="flex items-center justify-between px-4 py-2">
       {steps.map((step, idx) => {
         const isCompleted = idx < activeIdx;
         const isActive = idx === activeIdx;
@@ -49,10 +49,10 @@ export default function WebMeetingProgressBar({
           <div key={step.key} className="flex items-center flex-1 last:flex-none">
             <button
               onClick={() => onStepClick(step.key)}
-              className="flex flex-col items-center gap-1.5 min-w-0"
+              className="flex flex-col items-center gap-0.5 min-w-0"
             >
               <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold transition-all
+                className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold transition-all
                   ${isCompleted ? "bg-primary text-primary-foreground" : ""}
                   ${isActive ? "ring-2 ring-primary ring-offset-2 ring-offset-background bg-primary/10 text-primary" : ""}
                   ${isFuture ? "border border-muted-foreground/30 text-muted-foreground/50" : ""}
