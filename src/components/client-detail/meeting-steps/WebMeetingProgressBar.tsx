@@ -49,7 +49,7 @@ export default function WebMeetingProgressBar({
           <div key={step.key} className="flex items-center flex-1 last:flex-none">
             <button
               onClick={() => onStepClick(step.key)}
-              className="flex flex-col items-center gap-1.5 min-w-0"
+              className="flex flex-col items-center gap-0.5 min-w-0"
             >
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold transition-all
