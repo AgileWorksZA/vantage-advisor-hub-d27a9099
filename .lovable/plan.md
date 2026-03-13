@@ -1,49 +1,32 @@
 
 
-## Seed Meeting Prep Data
+## Default to Web View After Login
 
-The Prep step pulls from 6 tables. **Communications** and **tasks** are already seeded. The missing data sources are: **client_notes**, **documents**, **project_opportunities** (+ parent `opportunity_projects`), and **client_products** (needs existing `products`).
+### Problem
+When a user logs in via the `/auth` page, two issues arise:
+1. If the stored app mode is "adviser" or "client", the `/auth` route itself gets intercepted by the mobile/client shell and never renders the login form
+2. After successful login, the user navigates to `/dashboard` but may see the mobile/client shell instead of the web dashboard
 
-### New Edge Function: `seed-meeting-prep-data`
+### Solution (two changes)
 
-A single `supabase/functions/seed-meeting-prep-data/index.ts` that seeds the 4 missing tables for all clients.
+**1. Bypass mode shell for `/auth` route (`src/App.tsx`)**
+- Expand the `isRootPath` check to also include `/auth`, `/signup`, and `/signup-confirmation` paths
+- Rename to something like `isWebOnlyPath` for clarity
+- This ensures auth-related pages always render through the standard BrowserRouter
 
-**1. Client Notes** (`client_notes`) — 3-5 per client
-- Jurisdiction-aware subjects: "FICA verification follow-up" (ZA), "Superannuation rollover discussion" (AU), "RRSP contribution review" (CA), "ISA transfer notes" (GB), "401(k) rollover discussion" (US)
-- Interaction types: "Note", "Email", "Call"
-- Priorities: Low/Medium/High
-- Dated over the past 6 months
+```text
+Before:  const isRootPath = window.location.pathname === "/"
+After:   const isWebOnlyPath = ["/", "/auth", "/signup", "/signup-confirmation"].includes(window.location.pathname)
+```
 
-**2. Documents** (`documents`) — 3-6 per client
-- Mix of statuses: Pending, Complete, Expired
-- Links to existing `document_types` for category resolution
-- Jurisdiction-aware names: "FICA - Proof of ID" (ZA), "Tax File Declaration" (AU), "KYC Verification" (CA), "ISA Transfer Form" (GB), "W-9 Form" (US)
-- Some with past expiry dates to trigger "Expired" status and recommended actions
+Update both mode conditionals to use `!isWebOnlyPath` instead of `!isRootPath`.
 
-**3. Opportunity Projects + Project Opportunities** — 1-2 per client
-- Creates an `opportunity_projects` row per user/region, then `project_opportunities` linked to clients
-- Types: "Portfolio Rebalancing", "Life Cover Gap", "Retirement Planning", "Tax Optimization", "Estate Planning"
-- Includes `potential_revenue`, `confidence`, `suggested_action`, `reasoning`
+**2. Reset mode to "web" on successful login (`src/pages/Auth.tsx`)**
+- Import `useAppMode` from the AppModeContext
+- In the `onAuthStateChange` callback (and `getSession` check), call `setMode("web")` before navigating to `/dashboard`
+- This ensures post-login always lands in the web view regardless of previously stored mode
 
-**4. Client Products** (`client_products`) — 2-4 per client
-- Links to existing `products` table (seeded by `seed-providers-data`)
-- Fetches real product IDs; if none exist, skips
-- Realistic `current_value`, `premium_amount`, `policy_number`, `status: "Active"`
-
-### Flow
-1. Fetch all clients with jurisdiction
-2. Fetch existing `document_types` and `products` for FK references
-3. Delete existing seeded data (idempotent) — delete where `user_id` matches
-4. Batch insert into all 4 tables
-
-### Integration
-- Register in `supabase/config.toml` with `verify_jwt = false`
-- Add to seed sequence in `SystemSettingsSection.tsx` after "Demo Tasks" and before "TLH Clients"
-
-### Files
-| File | Action |
-|------|--------|
-| `supabase/functions/seed-meeting-prep-data/index.ts` | Create |
-| `supabase/config.toml` | Add function config |
-| `src/components/administration/system/SystemSettingsSection.tsx` | Add to seed sequence |
+### Files to Edit
+- `src/App.tsx` -- expand path bypass list (1 line change)
+- `src/pages/Auth.tsx` -- import `useAppMode`, call `setMode("web")` on login success (3 lines added)
 
