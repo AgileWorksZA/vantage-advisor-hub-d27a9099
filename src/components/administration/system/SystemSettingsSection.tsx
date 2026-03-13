@@ -175,6 +175,7 @@ export function SystemSettingsSection() {
     { name: "seed-demo-tasks", label: "Demo Tasks" },
     { name: "seed-open-tasks", label: "Open Tasks" },
     { name: "seed-onboarding-tasks", label: "Onboarding Tasks" },
+    { name: "seed-meeting-prep-data", label: "Meeting Prep Data" },
     { name: "seed-tlh-clients", label: "TLH Clients" },
     { name: "seed-notifications", label: "Notifications" },
     { name: "seed-meeting-recordings", label: "Meeting Recordings" },
