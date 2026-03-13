@@ -103,7 +103,7 @@ const ClientMeetingsTab = () => {
   return (
     <div className="flex gap-4 h-[calc(100vh-280px)] min-h-[500px]">
       {/* Left Panel - Meeting List */}
-      <div className="w-72 shrink-0">
+      <div className="w-72 shrink-0 overflow-hidden">
         <h3 className="text-sm font-semibold text-foreground mb-3">Meetings</h3>
         <ScrollArea className="h-[calc(100%-32px)]">
           <div className="space-y-2 pr-2">

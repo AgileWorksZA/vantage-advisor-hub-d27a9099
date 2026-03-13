@@ -2,7 +2,9 @@ import { useState } from "react";
 import { useClientMeetingPrep } from "@/hooks/useClientMeetingPrep";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Plus, FileText, Mail, Phone, Package, TrendingUp, ListTodo, File, Sparkles, Loader2, X, Target } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Plus, FileText, Mail, Phone, Package, TrendingUp, ListTodo, File, Sparkles, Loader2, X, Target, Calendar, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 
 export interface KeyOutcome {
@@ -13,6 +15,13 @@ export interface KeyOutcome {
   note: string | null;
   transcriptTimestamp: string | null;
   transcriptSnippet: string | null;
+}
+
+type DetailType = "note" | "communication" | "task" | "document" | "product" | "opportunity";
+
+interface DetailView {
+  type: DetailType;
+  data: any;
 }
 
 interface WebPrepStepProps {
@@ -26,6 +35,7 @@ interface WebPrepStepProps {
 export default function WebPrepStep({ clientId, clientName, keyOutcomes, onAddOutcome, onRemoveOutcome }: WebPrepStepProps) {
   const { notes, communications, tasks, documents, opportunities, products, loading } = useClientMeetingPrep(clientId);
   const [newOutcome, setNewOutcome] = useState("");
+  const [selectedDetail, setSelectedDetail] = useState<DetailView | null>(null);
 
   if (loading) {
     return (
@@ -65,11 +75,29 @@ export default function WebPrepStep({ clientId, clientName, keyOutcomes, onAddOu
           {(notes.length > 0 || communications.length > 0) && (
             <Section title="Previous Engagements">
               {notes.map((n) => (
-                <ContextRow key={n.id} icon={<FileText className="h-3.5 w-3.5" />} tagLabel="Note" tagColor="bg-blue-500/10 text-blue-600" text={n.subject} meta={format(new Date(n.date), "dd MMM")} />
+                <ContextRow
+                  key={n.id}
+                  icon={<FileText className="h-3.5 w-3.5" />}
+                  tagLabel="Note"
+                  tagColor="bg-blue-500/10 text-blue-600"
+                  text={n.subject}
+                  meta={format(new Date(n.date), "dd MMM")}
+                  onClick={() => setSelectedDetail({ type: "note", data: n })}
+                />
               ))}
               {communications.map((c) => {
                 const Icon = interactionIcon[c.channel] || Mail;
-                return <ContextRow key={c.id} icon={<Icon className="h-3.5 w-3.5" />} tagLabel={c.channel} tagColor="bg-violet-500/10 text-violet-600" text={c.subject} meta={format(new Date(c.date), "dd MMM")} />;
+                return (
+                  <ContextRow
+                    key={c.id}
+                    icon={<Icon className="h-3.5 w-3.5" />}
+                    tagLabel={c.channel}
+                    tagColor="bg-violet-500/10 text-violet-600"
+                    text={c.subject}
+                    meta={format(new Date(c.date), "dd MMM")}
+                    onClick={() => setSelectedDetail({ type: "communication", data: c })}
+                  />
+                );
               })}
             </Section>
           )}
@@ -78,7 +106,15 @@ export default function WebPrepStep({ clientId, clientName, keyOutcomes, onAddOu
           {products.length > 0 && (
             <Section title="Transactions">
               {products.map((p) => (
-                <ContextRow key={p.id} icon={<Package className="h-3.5 w-3.5" />} tagLabel="Product" tagColor="bg-emerald-500/10 text-emerald-600" text={p.productName} meta={p.currentValue ? `R ${p.currentValue.toLocaleString()}` : undefined} />
+                <ContextRow
+                  key={p.id}
+                  icon={<Package className="h-3.5 w-3.5" />}
+                  tagLabel="Product"
+                  tagColor="bg-emerald-500/10 text-emerald-600"
+                  text={p.productName}
+                  meta={p.currentValue ? `R ${p.currentValue.toLocaleString()}` : undefined}
+                  onClick={() => setSelectedDetail({ type: "product", data: p })}
+                />
               ))}
             </Section>
           )}
@@ -87,7 +123,15 @@ export default function WebPrepStep({ clientId, clientName, keyOutcomes, onAddOu
           {opportunities.length > 0 && (
             <Section title="Opportunities for Growth">
               {opportunities.map((o) => (
-                <ContextRow key={o.id} icon={<TrendingUp className="h-3.5 w-3.5" />} tagLabel="Opportunity" tagColor="bg-amber-500/10 text-amber-600" text={o.opportunityType} meta={o.potentialRevenue ? `R ${o.potentialRevenue.toLocaleString()}` : undefined} />
+                <ContextRow
+                  key={o.id}
+                  icon={<TrendingUp className="h-3.5 w-3.5" />}
+                  tagLabel="Opportunity"
+                  tagColor="bg-amber-500/10 text-amber-600"
+                  text={o.opportunityType}
+                  meta={o.potentialRevenue ? `R ${o.potentialRevenue.toLocaleString()}` : undefined}
+                  onClick={() => setSelectedDetail({ type: "opportunity", data: o })}
+                />
               ))}
             </Section>
           )}
@@ -99,10 +143,26 @@ export default function WebPrepStep({ clientId, clientName, keyOutcomes, onAddOu
           {(tasks.length > 0 || documents.length > 0) && (
             <Section title="Outstanding Actions">
               {tasks.map((t) => (
-                <ContextRow key={t.id} icon={<ListTodo className="h-3.5 w-3.5" />} tagLabel="Task" tagColor={t.isOverdue ? "bg-destructive/10 text-destructive" : "bg-orange-500/10 text-orange-600"} text={t.title} meta={t.dueDate ? format(new Date(t.dueDate), "dd MMM") : "No date"} />
+                <ContextRow
+                  key={t.id}
+                  icon={<ListTodo className="h-3.5 w-3.5" />}
+                  tagLabel="Task"
+                  tagColor={t.isOverdue ? "bg-destructive/10 text-destructive" : "bg-orange-500/10 text-orange-600"}
+                  text={t.title}
+                  meta={t.dueDate ? format(new Date(t.dueDate), "dd MMM") : "No date"}
+                  onClick={() => setSelectedDetail({ type: "task", data: t })}
+                />
               ))}
               {documents.map((d) => (
-                <ContextRow key={d.id} icon={<File className="h-3.5 w-3.5" />} tagLabel="Document" tagColor="bg-rose-500/10 text-rose-600" text={d.name} meta={d.status} />
+                <ContextRow
+                  key={d.id}
+                  icon={<File className="h-3.5 w-3.5" />}
+                  tagLabel="Document"
+                  tagColor="bg-rose-500/10 text-rose-600"
+                  text={d.name}
+                  meta={d.status}
+                  onClick={() => setSelectedDetail({ type: "document", data: d })}
+                />
               ))}
             </Section>
           )}
@@ -147,9 +207,188 @@ export default function WebPrepStep({ clientId, clientName, keyOutcomes, onAddOu
           </button>
         </div>
       </Section>
+
+      {/* Detail Dialog */}
+      <Dialog open={!!selectedDetail} onOpenChange={(open) => !open && setSelectedDetail(null)}>
+        <DialogContent className="max-w-md">
+          {selectedDetail && <DetailContent detail={selectedDetail} />}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
+/* ── Detail Dialog Content ── */
+
+function DetailContent({ detail }: { detail: DetailView }) {
+  const { type, data } = detail;
+
+  switch (type) {
+    case "note":
+      return (
+        <>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-4 w-4 text-blue-600" />
+              Note
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <DetailField label="Subject" value={data.subject} />
+            <DetailField label="Date" value={format(new Date(data.date), "dd MMM yyyy")} />
+            {data.priority && <DetailField label="Priority" value={<Badge variant="secondary" className="text-xs">{data.priority}</Badge>} />}
+            {data.interactionType && <DetailField label="Type" value={data.interactionType} />}
+            {data.content && <DetailField label="Content" value={<p className="text-sm text-muted-foreground whitespace-pre-wrap">{data.content}</p>} />}
+          </div>
+        </>
+      );
+
+    case "communication":
+      return (
+        <>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Mail className="h-4 w-4 text-violet-600" />
+              Communication
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <DetailField label="Subject" value={data.subject} />
+            <DetailField label="Channel" value={<Badge variant="secondary" className="text-xs">{data.channel}</Badge>} />
+            <DetailField label="Date" value={format(new Date(data.date), "dd MMM yyyy")} />
+            {data.summary && <DetailField label="Summary" value={<p className="text-sm text-muted-foreground">{data.summary}</p>} />}
+          </div>
+        </>
+      );
+
+    case "task":
+      return (
+        <>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ListTodo className="h-4 w-4 text-orange-600" />
+              Task
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <DetailField label="Title" value={data.title} />
+            {data.taskType && <DetailField label="Type" value={data.taskType} />}
+            {data.priority && <DetailField label="Priority" value={<Badge variant="secondary" className="text-xs">{data.priority}</Badge>} />}
+            {data.status && <DetailField label="Status" value={<Badge variant="outline" className="text-xs">{data.status}</Badge>} />}
+            {data.dueDate && (
+              <DetailField
+                label="Due Date"
+                value={
+                  <span className="flex items-center gap-1.5 text-sm">
+                    <Calendar className="h-3.5 w-3.5" />
+                    {format(new Date(data.dueDate), "dd MMM yyyy")}
+                    {data.isOverdue && (
+                      <Badge variant="destructive" className="text-[10px] px-1.5 py-0 ml-1">
+                        <AlertTriangle className="h-3 w-3 mr-0.5" />
+                        Overdue
+                      </Badge>
+                    )}
+                  </span>
+                }
+              />
+            )}
+            {data.progress != null && (
+              <DetailField
+                label="Progress"
+                value={
+                  <div className="space-y-1">
+                    <Progress value={data.progress} className="h-2" />
+                    <span className="text-xs text-muted-foreground">{data.progress}%</span>
+                  </div>
+                }
+              />
+            )}
+            {data.description && <DetailField label="Description" value={<p className="text-sm text-muted-foreground">{data.description}</p>} />}
+          </div>
+        </>
+      );
+
+    case "document":
+      return (
+        <>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <File className="h-4 w-4 text-rose-600" />
+              Document
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <DetailField label="Name" value={data.name} />
+            <DetailField label="Status" value={
+              <Badge variant="secondary" className={`text-xs ${data.status === "Expired" ? "bg-destructive/10 text-destructive" : ""}`}>
+                {data.status}
+              </Badge>
+            } />
+            {data.category && <DetailField label="Category" value={data.category} />}
+            {data.expiryDate && <DetailField label="Expiry Date" value={format(new Date(data.expiryDate), "dd MMM yyyy")} />}
+          </div>
+        </>
+      );
+
+    case "product":
+      return (
+        <>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Package className="h-4 w-4 text-emerald-600" />
+              Product
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <DetailField label="Product" value={data.productName} />
+            {data.category && <DetailField label="Category" value={data.category} />}
+            {data.currentValue != null && <DetailField label="Current Value" value={`R ${data.currentValue.toLocaleString()}`} />}
+            {data.status && <DetailField label="Status" value={<Badge variant="outline" className="text-xs">{data.status}</Badge>} />}
+            {data.policyNumber && <DetailField label="Policy Number" value={data.policyNumber} />}
+          </div>
+        </>
+      );
+
+    case "opportunity":
+      return (
+        <>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-amber-600" />
+              Opportunity
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <DetailField label="Type" value={data.opportunityType} />
+            {data.potentialRevenue != null && <DetailField label="Potential Revenue" value={`R ${data.potentialRevenue.toLocaleString()}`} />}
+            {data.confidence && <DetailField label="Confidence" value={
+              <div className="space-y-1">
+                <Progress value={data.confidence} className="h-2" />
+                <span className="text-xs text-muted-foreground">{data.confidence}%</span>
+              </div>
+            } />}
+            {data.status && <DetailField label="Status" value={<Badge variant="outline" className="text-xs">{data.status}</Badge>} />}
+            {data.suggestedAction && <DetailField label="Suggested Action" value={<p className="text-sm text-primary font-medium">{data.suggestedAction}</p>} />}
+            {data.reasoning && <DetailField label="Reasoning" value={<p className="text-sm text-muted-foreground">{data.reasoning}</p>} />}
+          </div>
+        </>
+      );
+
+    default:
+      return null;
+  }
+}
+
+function DetailField({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div>
+      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{label}</span>
+      <div className="mt-0.5">{typeof value === "string" ? <span className="text-sm text-foreground">{value}</span> : value}</div>
+    </div>
+  );
+}
+
+/* ── Shared sub-components ── */
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -160,16 +399,19 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-function ContextRow({ icon, tagLabel, tagColor, text, meta }: { icon: React.ReactNode; tagLabel: string; tagColor: string; text: string; meta?: string }) {
+function ContextRow({ icon, tagLabel, tagColor, text, meta, onClick }: { icon: React.ReactNode; tagLabel: string; tagColor: string; text: string; meta?: string; onClick?: () => void }) {
   return (
-    <div className="flex items-center gap-2 p-2.5 rounded-lg bg-card border border-border">
+    <button
+      onClick={onClick}
+      className="flex items-center gap-2 p-2.5 rounded-lg bg-card border border-border w-full text-left hover:bg-accent/50 transition-colors cursor-pointer"
+    >
       <Badge variant="secondary" className={`text-[10px] px-1.5 py-0 gap-1 shrink-0 ${tagColor}`}>
         {icon}
         {tagLabel}
       </Badge>
       <span className="text-sm text-foreground truncate flex-1">{text}</span>
       {meta && <span className="text-[10px] text-muted-foreground shrink-0">{meta}</span>}
-    </div>
+    </button>
   );
 }
 

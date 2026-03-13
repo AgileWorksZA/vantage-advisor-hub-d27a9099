@@ -1,37 +1,32 @@
 
 
-## Fix Scrollbar Wrapping & Add Detail Popups to Prep Step
+## Default to Web View After Login
 
-### Issues Identified
+### Problem
+When a user logs in via the `/auth` page, two issues arise:
+1. If the stored app mode is "adviser" or "client", the `/auth` route itself gets intercepted by the mobile/client shell and never renders the login form
+2. After successful login, the user navigates to `/dashboard` but may see the mobile/client shell instead of the web dashboard
 
-1. **Scrollbar wrapping**: The left meeting list's `ScrollArea` has content that wraps improperly — the meeting cards need `overflow-hidden` on the outer container and the `ScrollArea` needs proper height constraints.
+### Solution (two changes)
 
-2. **No detail popups**: The web `WebPrepStep` renders `ContextRow` as plain divs, unlike the mobile `PrepStep` which has clickable rows with `onTagClick` callbacks that open `MobileContextDetailView`. The web version needs equivalent popups using `Dialog` components.
+**1. Bypass mode shell for `/auth` route (`src/App.tsx`)**
+- Expand the `isRootPath` check to also include `/auth`, `/signup`, and `/signup-confirmation` paths
+- Rename to something like `isWebOnlyPath` for clarity
+- This ensures auth-related pages always render through the standard BrowserRouter
 
-### Changes
+```text
+Before:  const isRootPath = window.location.pathname === "/"
+After:   const isWebOnlyPath = ["/", "/auth", "/signup", "/signup-confirmation"].includes(window.location.pathname)
+```
 
-**`src/components/client-detail/ClientMeetingsTab.tsx`**
-- Add `overflow-hidden` to the left panel container (`w-72 shrink-0` → `w-72 shrink-0 overflow-hidden`)
-- Ensure the `ScrollArea` properly constrains its height
+Update both mode conditionals to use `!isWebOnlyPath` instead of `!isRootPath`.
 
-**`src/components/client-detail/meeting-steps/WebPrepStep.tsx`** — Major enhancement
-1. Add a `DetailDialog` component using Radix `Dialog` that shows detail views for notes, communications, tasks, documents, products, and opportunities (same content as `MobileContextDetailView` but in a dialog)
-2. Convert all `ContextRow` elements from static divs to clickable buttons (matching mobile `PrepStep` pattern)
-3. Add local state for `selectedDetail: DetailView | null` to control which dialog is open
-4. Import `Dialog`, `DialogContent`, `DialogHeader`, `DialogTitle` from UI components
-5. Import `Badge`, `Progress` for task detail rendering
-6. Each detail type shows:
-   - **Note**: Subject, date, priority, interaction type
-   - **Communication**: Subject, channel, date
-   - **Task**: Title, type, priority, status, due date, progress bar, overdue badge
-   - **Document**: Name, status, category, expiry date
-   - **Product**: Product name, category, current value, status
-   - **Opportunity**: Type, potential revenue, confidence, status, suggested action, reasoning
+**2. Reset mode to "web" on successful login (`src/pages/Auth.tsx`)**
+- Import `useAppMode` from the AppModeContext
+- In the `onAuthStateChange` callback (and `getSession` check), call `setMode("web")` before navigating to `/dashboard`
+- This ensures post-login always lands in the web view regardless of previously stored mode
 
-### File Summary
-
-| File | Change |
-|------|--------|
-| `ClientMeetingsTab.tsx` | Add `overflow-hidden` to left panel to fix scroll wrapping |
-| `WebPrepStep.tsx` | Add clickable rows + `Dialog`-based detail popups for all engagement/action types |
+### Files to Edit
+- `src/App.tsx` -- expand path bypass list (1 line change)
+- `src/pages/Auth.tsx` -- import `useAppMode`, call `setMode("web")` on login success (3 lines added)
 
