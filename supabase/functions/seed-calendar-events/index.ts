@@ -416,6 +416,7 @@ Deno.serve(async (req) => {
             all_day: false,
             is_recurring: false,
             is_deleted: false,
+            ai_prep_note: getRandomPrepNote(jurisdiction, eventInfo.type, clientName),
           });
         }
       }

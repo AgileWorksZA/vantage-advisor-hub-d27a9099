@@ -44,7 +44,7 @@ export default function WebPrepStep({ clientId, clientName, keyOutcomes, onAddOu
   const [generatingNote, setGeneratingNote] = useState(false);
   const [displayedNote, setDisplayedNote] = useState(aiPrepNote || "");
   const [isTyping, setIsTyping] = useState(false);
-  const typingRef = useRef<NodeJS.Timeout | null>(null);
+  const typingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     setDisplayedNote(aiPrepNote || "");
