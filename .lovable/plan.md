@@ -1,32 +1,29 @@
 
 
-## Default to Web View After Login
+## Remove Meeting Header Section
 
-### Problem
-When a user logs in via the `/auth` page, two issues arise:
-1. If the stored app mode is "adviser" or "client", the `/auth` route itself gets intercepted by the mobile/client shell and never renders the login form
-2. After successful login, the user navigates to `/dashboard` but may see the mobile/client shell instead of the web dashboard
+**`src/components/client-detail/ClientMeetingsTab.tsx`** — Lines 163-174
 
-### Solution (two changes)
+Remove the title/date/badge block above the progress bar, keeping the progress bar and outer container intact.
 
-**1. Bypass mode shell for `/auth` route (`src/App.tsx`)**
-- Expand the `isRootPath` check to also include `/auth`, `/signup`, and `/signup-confirmation` paths
-- Rename to something like `isWebOnlyPath` for clarity
-- This ensures auth-related pages always render through the standard BrowserRouter
+```tsx
+// Before (lines 163-174)
+<div className="px-4 pt-4 pb-0 border-b border-border">
+  <div className="flex items-center justify-between mb-2">
+    <div>
+      <h2>...</h2>
+      <p>...</p>
+    </div>
+    <Badge>...</Badge>
+  </div>
+  <WebMeetingProgressBar ... />
+</div>
 
-```text
-Before:  const isRootPath = window.location.pathname === "/"
-After:   const isWebOnlyPath = ["/", "/auth", "/signup", "/signup-confirmation"].includes(window.location.pathname)
+// After
+<div className="px-4 pt-2 pb-0 border-b border-border">
+  <WebMeetingProgressBar ... />
+</div>
 ```
 
-Update both mode conditionals to use `!isWebOnlyPath` instead of `!isRootPath`.
-
-**2. Reset mode to "web" on successful login (`src/pages/Auth.tsx`)**
-- Import `useAppMode` from the AppModeContext
-- In the `onAuthStateChange` callback (and `getSession` check), call `setMode("web")` before navigating to `/dashboard`
-- This ensures post-login always lands in the web view regardless of previously stored mode
-
-### Files to Edit
-- `src/App.tsx` -- expand path bypass list (1 line change)
-- `src/pages/Auth.tsx` -- import `useAppMode`, call `setMode("web")` on login success (3 lines added)
+Remove lines 164-174 (the title/date/badge div), adjust top padding from `pt-4` to `pt-2` since there's less content.
 
