@@ -52,7 +52,7 @@ export default function WebMeetingProgressBar({
               className="flex flex-col items-center gap-0.5 min-w-0"
             >
               <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold transition-all
+                className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold transition-all
                   ${isCompleted ? "bg-primary text-primary-foreground" : ""}
                   ${isActive ? "ring-2 ring-primary ring-offset-2 ring-offset-background bg-primary/10 text-primary" : ""}
                   ${isFuture ? "border border-muted-foreground/30 text-muted-foreground/50" : ""}
