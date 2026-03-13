@@ -1,20 +1,32 @@
 
 
-## Wrap Meeting Title
+## Default to Web View After Login
 
-### Change
+### Problem
+When a user logs in via the `/auth` page, two issues arise:
+1. If the stored app mode is "adviser" or "client", the `/auth` route itself gets intercepted by the mobile/client shell and never renders the login form
+2. After successful login, the user navigates to `/dashboard` but may see the mobile/client shell instead of the web dashboard
 
-**`src/components/client-detail/ClientMeetingsTab.tsx` — Line 139**
+### Solution (two changes)
 
-Replace `truncate` with `line-clamp-2 break-words` so long meeting titles wrap to a second line instead of being cut off with ellipsis.
+**1. Bypass mode shell for `/auth` route (`src/App.tsx`)**
+- Expand the `isRootPath` check to also include `/auth`, `/signup`, and `/signup-confirmation` paths
+- Rename to something like `isWebOnlyPath` for clarity
+- This ensures auth-related pages always render through the standard BrowserRouter
 
-```tsx
-// Before
-<p className="text-sm font-medium text-foreground truncate mb-1">{event.title}</p>
-
-// After
-<p className="text-sm font-medium text-foreground mb-1 line-clamp-2 break-words">{event.title}</p>
+```text
+Before:  const isRootPath = window.location.pathname === "/"
+After:   const isWebOnlyPath = ["/", "/auth", "/signup", "/signup-confirmation"].includes(window.location.pathname)
 ```
 
-Single-line change, no other files affected.
+Update both mode conditionals to use `!isWebOnlyPath` instead of `!isRootPath`.
+
+**2. Reset mode to "web" on successful login (`src/pages/Auth.tsx`)**
+- Import `useAppMode` from the AppModeContext
+- In the `onAuthStateChange` callback (and `getSession` check), call `setMode("web")` before navigating to `/dashboard`
+- This ensures post-login always lands in the web view regardless of previously stored mode
+
+### Files to Edit
+- `src/App.tsx` -- expand path bypass list (1 line change)
+- `src/pages/Auth.tsx` -- import `useAppMode`, call `setMode("web")` on login success (3 lines added)
 

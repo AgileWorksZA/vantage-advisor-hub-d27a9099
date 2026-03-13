@@ -136,7 +136,7 @@ const ClientMeetingsTab = () => {
                         {event.eventType}
                       </Badge>
                     </div>
-                    <p className="text-sm font-medium text-foreground truncate mb-1">{event.title}</p>
+                    <p className="text-sm font-medium text-foreground mb-1 line-clamp-2 break-words">{event.title}</p>
                     <div className="flex items-center gap-3 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <CalendarDays className="h-3 w-3" />
