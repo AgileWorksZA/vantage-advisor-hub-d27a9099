@@ -608,6 +608,7 @@ export type Database = {
       }
       calendar_events: {
         Row: {
+          ai_prep_note: string | null
           all_day: boolean
           attendees: Json | null
           client_id: string | null
@@ -632,6 +633,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          ai_prep_note?: string | null
           all_day?: boolean
           attendees?: Json | null
           client_id?: string | null
@@ -656,6 +658,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          ai_prep_note?: string | null
           all_day?: boolean
           attendees?: Json | null
           client_id?: string | null
