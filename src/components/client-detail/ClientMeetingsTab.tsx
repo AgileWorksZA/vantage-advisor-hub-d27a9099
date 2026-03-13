@@ -106,7 +106,7 @@ const ClientMeetingsTab = () => {
       <div className="w-72 shrink-0 overflow-hidden">
         <h3 className="text-sm font-semibold text-foreground mb-3">Meetings</h3>
         <ScrollArea className="h-[calc(100%-32px)]">
-          <div className="space-y-2 pr-2">
+          <div className="space-y-2 pr-3">
             {events.length === 0 ? (
               <Card>
                 <CardContent className="py-8 text-center">
