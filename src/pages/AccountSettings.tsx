@@ -448,7 +448,7 @@ const AccountSettings = () => {
                           <SelectValue placeholder="Use jurisdiction default" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Use jurisdiction default</SelectItem>
+                          <SelectItem value="auto">Use jurisdiction default</SelectItem>
                           {COMMON_TIMEZONES.map((tz) => (
                             <SelectItem key={tz.value} value={tz.value}>
                               {tz.label}
