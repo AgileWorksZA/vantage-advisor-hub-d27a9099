@@ -1,11 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useClientMeetingPrep } from "@/hooks/useClientMeetingPrep";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, FileText, Mail, Phone, Package, TrendingUp, ListTodo, File, Sparkles, Loader2, X, Target, Calendar, AlertTriangle } from "lucide-react";
+import { Plus, FileText, Mail, Phone, Package, TrendingUp, ListTodo, File, Sparkles, Loader2, X, Target, Calendar, AlertTriangle, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export interface KeyOutcome {
   id: string;
