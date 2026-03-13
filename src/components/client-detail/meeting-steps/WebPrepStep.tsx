@@ -149,6 +149,41 @@ export default function WebPrepStep({ clientId, clientName, keyOutcomes, onAddOu
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Left column */}
         <div className="space-y-4">
+          {/* AI Prep Note Card - top left */}
+          <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                <span className="text-xs font-semibold text-primary uppercase tracking-wider">AI Prep Note</span>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleGenerateNote}
+                disabled={generatingNote || !eventId}
+                className="h-7 text-xs gap-1.5 text-primary hover:text-primary"
+              >
+                {generatingNote ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-3.5 w-3.5" />
+                )}
+                {displayedNote ? "Regenerate" : "Generate Note"}
+              </Button>
+            </div>
+
+            {displayedNote ? (
+              <p className="text-sm text-foreground leading-relaxed">
+                {displayedNote}
+                {isTyping && <span className="inline-block w-1.5 h-4 bg-primary ml-0.5 animate-pulse align-text-bottom" />}
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground italic">
+                {generatingNote ? "Generating briefing..." : "Click 'Generate Note' to create an AI-powered meeting briefing based on client data."}
+              </p>
+            )}
+          </div>
+
           {/* Previous Engagements */}
           {(notes.length > 0 || communications.length > 0) && (
             <Section title="Previous Engagements">
@@ -254,41 +289,6 @@ export default function WebPrepStep({ clientId, clientName, keyOutcomes, onAddOu
               <p className="text-xs text-muted-foreground py-2">No urgent actions identified.</p>
             )}
           </Section>
-
-          {/* AI Prep Note Card - in right column */}
-          <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-primary" />
-                <span className="text-xs font-semibold text-primary uppercase tracking-wider">AI Prep Note</span>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleGenerateNote}
-                disabled={generatingNote || !eventId}
-                className="h-7 text-xs gap-1.5 text-primary hover:text-primary"
-              >
-                {generatingNote ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <RefreshCw className="h-3.5 w-3.5" />
-                )}
-                {displayedNote ? "Regenerate" : "Generate Note"}
-              </Button>
-            </div>
-
-            {displayedNote ? (
-              <p className="text-sm text-foreground leading-relaxed">
-                {displayedNote}
-                {isTyping && <span className="inline-block w-1.5 h-4 bg-primary ml-0.5 animate-pulse align-text-bottom" />}
-              </p>
-            ) : (
-              <p className="text-xs text-muted-foreground italic">
-                {generatingNote ? "Generating briefing..." : "Click 'Generate Note' to create an AI-powered meeting briefing based on client data."}
-              </p>
-            )}
-          </div>
         </div>
       </div>
 
