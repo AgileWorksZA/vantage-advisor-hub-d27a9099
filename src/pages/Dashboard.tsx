@@ -253,15 +253,12 @@ const Dashboard = () => {
   return <div className="h-screen bg-muted/30 flex overflow-hidden">
       {/* Sidebar - Fixed */}
       <aside className="w-16 bg-[hsl(180,25%,25%)] flex flex-col items-center py-4 gap-1 shrink-0">
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className="w-10 h-10 text-white/80 hover:bg-white/10 mb-4"
-          onClick={() => navigate("/command-center")}
+        <div 
+          className="w-10 h-10 flex items-center justify-center text-white/80 mb-4"
           title="Practice Overview"
         >
           <img src={commandCenterIcon} alt="Command Center" className="w-5 h-5" />
-        </Button>
+        </div>
         {sidebarItems.map(item => <button key={item.label} onClick={() => navigate(item.path)} className={`w-full flex flex-col items-center py-2 text-xs gap-1 ${item.path === "/dashboard" ? "bg-white/10 text-white" : "text-white/60 hover:bg-white/5 hover:text-white/80"}`}>
             <item.icon className="w-5 h-5" />
             <span>{item.label}</span>

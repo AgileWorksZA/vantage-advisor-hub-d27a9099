@@ -20,7 +20,7 @@ export default function MeetStep({ startTime, endTime, talkingPoints, onConvertT
   const [notes, setNotes] = useState<string[]>([]);
   const [newOutcome, setNewOutcome] = useState("");
   const [outcomesOpen, setOutcomesOpen] = useState(false);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     const tick = () => {
