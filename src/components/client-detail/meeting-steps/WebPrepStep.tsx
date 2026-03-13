@@ -46,11 +46,22 @@ export default function WebPrepStep({ clientId, clientName, keyOutcomes, onAddOu
   const [isTyping, setIsTyping] = useState(false);
   const typingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const autoTriggered = useRef(false);
+
   useEffect(() => {
     setDisplayedNote(aiPrepNote || "");
     setIsTyping(false);
+    autoTriggered.current = false;
     if (typingRef.current) clearInterval(typingRef.current);
   }, [aiPrepNote, eventId]);
+
+  // Auto-generate when no note exists
+  useEffect(() => {
+    if (eventId && !aiPrepNote && !generatingNote && !autoTriggered.current) {
+      autoTriggered.current = true;
+      handleGenerateNote();
+    }
+  }, [eventId, aiPrepNote]);
 
   const handleGenerateNote = async () => {
     if (!eventId) return;
