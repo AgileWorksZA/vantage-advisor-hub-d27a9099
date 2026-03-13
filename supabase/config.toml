@@ -41,3 +41,6 @@ verify_jwt = false
 [functions.seed-meeting-prep-data]
 verify_jwt = false
 
+[functions.generate-prep-note]
+verify_jwt = false
+

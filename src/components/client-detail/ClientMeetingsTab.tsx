@@ -178,6 +178,11 @@ const ClientMeetingsTab = () => {
                   keyOutcomes={keyOutcomes}
                   onAddOutcome={(text) => handleAddOutcome(text, "prep")}
                   onRemoveOutcome={handleRemoveOutcome}
+                  eventId={selectedEvent.id}
+                  aiPrepNote={selectedEvent.aiPrepNote}
+                  onPrepNoteUpdated={(note) => {
+                    setSelectedEventId(prev => prev);
+                  }}
                 />
               )}
               {activeStep === "meet" && (
