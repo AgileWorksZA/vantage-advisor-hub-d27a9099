@@ -291,7 +291,6 @@ export default function WebPrepStep({ clientId, clientName, keyOutcomes, onAddOu
           </Section>
         </div>
       </div>
-      </div>
 
       {/* Key Outcomes - full width */}
       <Section title="Key Outcomes">
