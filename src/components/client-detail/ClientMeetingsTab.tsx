@@ -160,18 +160,7 @@ const ClientMeetingsTab = () => {
         {selectedEvent ? (
           <Card className="h-full flex flex-col">
             {/* Header */}
-            <div className="px-4 pt-4 pb-0 border-b border-border">
-              <div className="flex items-center justify-between mb-2">
-                <div>
-                  <h2 className="text-base font-semibold text-foreground">{selectedEvent.title}</h2>
-                  <p className="text-xs text-muted-foreground">
-                    {format(selectedEvent.startTime, "EEEE, dd MMMM yyyy")} · {format(selectedEvent.startTime, "HH:mm")} – {format(selectedEvent.endTime, "HH:mm")}
-                  </p>
-                </div>
-                <Badge variant="secondary" className={`${getMeetingStatus(selectedEvent.startTime, selectedEvent.endTime).className}`}>
-                  {getMeetingStatus(selectedEvent.startTime, selectedEvent.endTime).label}
-                </Badge>
-              </div>
+            <div className="px-4 pt-2 pb-0 border-b border-border">
               <WebMeetingProgressBar
                 activeStep={activeStep}
                 onStepClick={setActiveStep}
