@@ -33,11 +33,81 @@ interface WebPrepStepProps {
   keyOutcomes: KeyOutcome[];
   onAddOutcome: (text: string) => void;
   onRemoveOutcome: (id: string) => void;
+  eventId?: string;
+  aiPrepNote?: string | null;
+  onPrepNoteUpdated?: (note: string) => void;
 }
 
-export default function WebPrepStep({ clientId, clientName, keyOutcomes, onAddOutcome, onRemoveOutcome }: WebPrepStepProps) {
+export default function WebPrepStep({ clientId, clientName, keyOutcomes, onAddOutcome, onRemoveOutcome, eventId, aiPrepNote, onPrepNoteUpdated }: WebPrepStepProps) {
   const { notes, communications, tasks, documents, opportunities, products, loading } = useClientMeetingPrep(clientId);
   const [newOutcome, setNewOutcome] = useState("");
+  const [generatingNote, setGeneratingNote] = useState(false);
+  const [displayedNote, setDisplayedNote] = useState(aiPrepNote || "");
+  const [isTyping, setIsTyping] = useState(false);
+  const typingRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    setDisplayedNote(aiPrepNote || "");
+    setIsTyping(false);
+    if (typingRef.current) clearInterval(typingRef.current);
+  }, [aiPrepNote, eventId]);
+
+  const handleGenerateNote = async () => {
+    if (!eventId) return;
+    setGeneratingNote(true);
+    setDisplayedNote("");
+    setIsTyping(true);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        toast.error("Not authenticated");
+        return;
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-prep-note`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ calendarEventId: eventId }),
+        }
+      );
+
+      if (!response.ok) {
+        const err = await response.json();
+        toast.error(err.error || "Failed to generate note");
+        setIsTyping(false);
+        return;
+      }
+
+      const result = await response.json();
+      const fullNote = result.note || "";
+
+      // Typing animation
+      let i = 0;
+      typingRef.current = setInterval(() => {
+        i += 2;
+        if (i >= fullNote.length) {
+          setDisplayedNote(fullNote);
+          setIsTyping(false);
+          if (typingRef.current) clearInterval(typingRef.current);
+          onPrepNoteUpdated?.(fullNote);
+        } else {
+          setDisplayedNote(fullNote.slice(0, i));
+        }
+      }, 15);
+    } catch (err: any) {
+      toast.error("Failed to generate prep note");
+      console.error(err);
+      setIsTyping(false);
+    } finally {
+      setGeneratingNote(false);
+    }
+  };
   const [selectedDetail, setSelectedDetail] = useState<DetailView | null>(null);
 
   if (loading) {
