@@ -35,3 +35,6 @@ verify_jwt = false
 [functions.seed-notifications]
 verify_jwt = false
 
+[functions.seed-meeting-recordings]
+verify_jwt = false
+

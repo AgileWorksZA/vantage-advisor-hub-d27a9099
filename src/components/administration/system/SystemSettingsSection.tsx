@@ -177,6 +177,7 @@ export function SystemSettingsSection() {
     { name: "seed-onboarding-tasks", label: "Onboarding Tasks" },
     { name: "seed-tlh-clients", label: "TLH Clients" },
     { name: "seed-notifications", label: "Notifications" },
+    { name: "seed-meeting-recordings", label: "Meeting Recordings" },
   ];
 
   const handleSeedAll = async () => {
