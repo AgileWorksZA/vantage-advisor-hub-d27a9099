@@ -1,318 +1,235 @@
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useParams } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import {
-  Search,
-  Mic,
-  Clock,
-  ChevronDown,
-  ChevronRight,
-  FileText,
-  Brain,
-  CheckSquare,
-  Trash2,
-  Play,
-  Loader2,
-} from "lucide-react";
-import { format } from "date-fns";
-import { useMeetingRecordings, MeetingRecording } from "@/hooks/useMeetingRecordings";
-import { TranscriptionPanel } from "@/components/calendar/TranscriptionPanel";
-import { ActionItemsList } from "@/components/calendar/ActionItemsList";
-import { supabase } from "@/integrations/supabase/client";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { CalendarDays, Clock, Video, Users, Loader2 } from "lucide-react";
+import { format, isAfter, isBefore } from "date-fns";
+import { useClientCalendarEvents, ClientCalendarEvent } from "@/hooks/useClientCalendarEvents";
+import { useClientMeetingPrep } from "@/hooks/useClientMeetingPrep";
+import WebMeetingProgressBar, { getDefaultStep, type MeetingStep } from "./meeting-steps/WebMeetingProgressBar";
+import WebPrepStep, { type KeyOutcome } from "./meeting-steps/WebPrepStep";
+import WebMeetStep from "./meeting-steps/WebMeetStep";
+import WebOutcomesStep from "./meeting-steps/WebOutcomesStep";
+import WebFollowUpsStep from "./meeting-steps/WebFollowUpsStep";
+
+function getMeetingStatus(start: Date, end: Date): { label: string; className: string } {
+  const now = new Date();
+  if (isBefore(now, start)) return { label: "Upcoming", className: "bg-blue-500/10 text-blue-600" };
+  if (isAfter(now, end)) return { label: "Past", className: "bg-muted text-muted-foreground" };
+  return { label: "Live", className: "bg-emerald-500/10 text-emerald-600" };
+}
 
 const ClientMeetingsTab = () => {
   const { clientId } = useParams<{ clientId: string }>();
-  const {
-    recordings,
-    loading,
-    processingState,
-    transcribeRecording,
-    processRecording,
-    deleteRecording,
-  } = useMeetingRecordings(undefined, clientId);
+  const { events, loading } = useClientCalendarEvents(clientId);
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [activeStep, setActiveStep] = useState<MeetingStep>("prep");
+  const [keyOutcomes, setKeyOutcomes] = useState<KeyOutcome[]>([]);
+  const [outcomesSeeded, setOutcomesSeeded] = useState(false);
 
-  const [searchQuery, setSearchQuery] = useState("");
-  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
-  const [processingId, setProcessingId] = useState<string | null>(null);
+  const selectedEvent = events.find(e => e.id === selectedEventId) || events[0] || null;
 
-  const filteredRecordings = recordings.filter((recording) =>
-    recording.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Auto-select first event
+  useMemo(() => {
+    if (events.length > 0 && !selectedEventId) {
+      setSelectedEventId(events[0].id);
+      setActiveStep(getDefaultStep(events[0].startTime, events[0].endTime));
+    }
+  }, [events, selectedEventId]);
 
-  const toggleRow = (id: string) => {
-    setExpandedRows((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
+  // Seed outcomes from prep data
+  const { opportunities, tasks, documents } = useClientMeetingPrep(selectedEvent?.id ? clientId || null : null);
+
+  useMemo(() => {
+    if (outcomesSeeded || !selectedEvent) return;
+    const initial: KeyOutcome[] = [];
+    opportunities.forEach((o) => {
+      initial.push({ id: crypto.randomUUID(), text: `Discuss ${o.opportunityType.toLowerCase()} opportunity`, completed: false, origin: "prep", note: null, transcriptTimestamp: null, transcriptSnippet: null });
     });
-  };
-
-  const formatDuration = (seconds: number | null) => {
-    if (!seconds) return "—";
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${String(secs).padStart(2, "0")}`;
-  };
-
-  const getStatusBadge = (recording: MeetingRecording) => {
-    if (recording.aiActionItems && recording.aiActionItems.length > 0) {
-      return <Badge className="bg-green-500 hover:bg-green-600">AI Ready</Badge>;
+    if (tasks.filter(t => t.isOverdue).length > 0) {
+      initial.push({ id: crypto.randomUUID(), text: `Address ${tasks.filter(t => t.isOverdue).length} overdue task(s)`, completed: false, origin: "prep", note: null, transcriptTimestamp: null, transcriptSnippet: null });
     }
-    if (recording.transcriptionStatus === "completed") {
-      return <Badge variant="secondary">Transcribed</Badge>;
+    if (documents.filter(d => d.status === "Expired").length > 0) {
+      initial.push({ id: crypto.randomUUID(), text: "Review expiring documents", completed: false, origin: "prep", note: null, transcriptTimestamp: null, transcriptSnippet: null });
     }
-    if (recording.transcriptionStatus === "processing") {
-      return <Badge variant="outline">Processing</Badge>;
+    if (initial.length > 0) {
+      setKeyOutcomes(initial);
+      setOutcomesSeeded(true);
     }
-    if (recording.transcriptionStatus === "failed") {
-      return <Badge variant="destructive">Failed</Badge>;
-    }
-    return <Badge variant="outline">Pending</Badge>;
-  };
+  }, [opportunities, tasks, documents, outcomesSeeded, selectedEvent]);
 
-  const handleTranscribe = async (recordingId: string) => {
-    setProcessingId(recordingId);
-    await transcribeRecording(recordingId);
-    setProcessingId(null);
-  };
+  const handleSelectEvent = useCallback((event: ClientCalendarEvent) => {
+    setSelectedEventId(event.id);
+    setActiveStep(getDefaultStep(event.startTime, event.endTime));
+    setKeyOutcomes([]);
+    setOutcomesSeeded(false);
+  }, []);
 
-  const handleAnalyze = async (recordingId: string) => {
-    setProcessingId(recordingId);
-    await processRecording(recordingId);
-    setProcessingId(null);
-  };
+  const handleAddOutcome = useCallback((text: string, origin: KeyOutcome["origin"]) => {
+    setKeyOutcomes(prev => [...prev, { id: crypto.randomUUID(), text, completed: false, origin, note: null, transcriptTimestamp: null, transcriptSnippet: null }]);
+  }, []);
 
-  const handlePlayAudio = async (recordingUrl: string) => {
-    try {
-      const { data } = await supabase.storage
-        .from("meeting-recordings")
-        .createSignedUrl(recordingUrl, 3600);
+  const handleRemoveOutcome = useCallback((id: string) => {
+    setKeyOutcomes(prev => prev.filter(o => o.id !== id));
+  }, []);
 
-      if (data?.signedUrl) {
-        const audio = new Audio(data.signedUrl);
-        audio.play();
-      }
-    } catch (error) {
-      console.error("Error playing audio:", error);
-    }
-  };
+  const handleToggleOutcome = useCallback((id: string) => {
+    setKeyOutcomes(prev => prev.map(o => o.id === id ? { ...o, completed: !o.completed } : o));
+  }, []);
+
+  const handleUpdateOutcomeNote = useCallback((id: string, note: string) => {
+    setKeyOutcomes(prev => prev.map(o => o.id === id ? { ...o, note } : o));
+  }, []);
+
+  const talkingPoints = useMemo(() => {
+    const points: string[] = [];
+    if (opportunities.length > 0) points.push(`${opportunities[0].opportunityType} opportunity`);
+    if (tasks.filter(t => t.isOverdue).length > 0) points.push("Overdue tasks");
+    if (documents.filter(d => d.status === "Expired").length > 0) points.push("Expiring documents");
+    if (opportunities.length > 1) points.push("Portfolio growth");
+    if (points.length === 0) points.push("General check-in", "Portfolio review");
+    return points;
+  }, [opportunities, tasks, documents]);
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-48">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold">Meeting Recordings</h2>
-          <p className="text-sm text-muted-foreground">
-            Recorded meetings, transcriptions, and AI-generated notes
-          </p>
-        </div>
-        <div className="relative w-64">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Search meetings..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
-        </div>
+    <div className="flex gap-4 h-[calc(100vh-280px)] min-h-[500px]">
+      {/* Left Panel - Meeting List */}
+      <div className="w-72 shrink-0">
+        <h3 className="text-sm font-semibold text-foreground mb-3">Meetings</h3>
+        <ScrollArea className="h-[calc(100%-32px)]">
+          <div className="space-y-2 pr-2">
+            {events.length === 0 ? (
+              <Card>
+                <CardContent className="py-8 text-center">
+                  <CalendarDays className="w-8 h-8 mx-auto mb-2 text-muted-foreground/40" />
+                  <p className="text-sm text-muted-foreground">No meetings found</p>
+                </CardContent>
+              </Card>
+            ) : (
+              events.map((event) => {
+                const status = getMeetingStatus(event.startTime, event.endTime);
+                const isSelected = selectedEvent?.id === event.id;
+                return (
+                  <button
+                    key={event.id}
+                    onClick={() => handleSelectEvent(event)}
+                    className={`w-full text-left p-3 rounded-lg border transition-colors ${
+                      isSelected
+                        ? "border-primary bg-primary/5"
+                        : "border-border bg-card hover:bg-accent/50"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <Badge variant="secondary" className={`text-[10px] px-1.5 py-0 ${status.className}`}>
+                        {status.label}
+                      </Badge>
+                      <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                        {event.eventType}
+                      </Badge>
+                    </div>
+                    <p className="text-sm font-medium text-foreground truncate mb-1">{event.title}</p>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <CalendarDays className="h-3 w-3" />
+                        {format(event.startTime, "dd MMM")}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {format(event.startTime, "HH:mm")} – {format(event.endTime, "HH:mm")}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </ScrollArea>
       </div>
 
-      {/* Empty State */}
-      {filteredRecordings.length === 0 ? (
-        <Card>
-          <CardContent className="py-12">
-            <div className="text-center text-muted-foreground">
-              <Mic className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p className="text-lg font-medium mb-1">No Recordings Yet</p>
-              <p className="text-sm">
-                Start recording meetings from the Calendar to see them here
-              </p>
+      {/* Right Panel - Meeting Workflow */}
+      <div className="flex-1 min-w-0">
+        {selectedEvent ? (
+          <Card className="h-full flex flex-col">
+            {/* Header */}
+            <div className="px-4 pt-4 pb-0 border-b border-border">
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <h2 className="text-base font-semibold text-foreground">{selectedEvent.title}</h2>
+                  <p className="text-xs text-muted-foreground">
+                    {format(selectedEvent.startTime, "EEEE, dd MMMM yyyy")} · {format(selectedEvent.startTime, "HH:mm")} – {format(selectedEvent.endTime, "HH:mm")}
+                  </p>
+                </div>
+                <Badge variant="secondary" className={`${getMeetingStatus(selectedEvent.startTime, selectedEvent.endTime).className}`}>
+                  {getMeetingStatus(selectedEvent.startTime, selectedEvent.endTime).label}
+                </Badge>
+              </div>
+              <WebMeetingProgressBar
+                activeStep={activeStep}
+                onStepClick={setActiveStep}
+                startTime={selectedEvent.startTime}
+                endTime={selectedEvent.endTime}
+              />
             </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <Card>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-10"></TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Title</TableHead>
-                <TableHead>Duration</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredRecordings.map((recording) => (
-                <Collapsible
-                  key={recording.id}
-                  open={expandedRows.has(recording.id)}
-                  onOpenChange={() => toggleRow(recording.id)}
-                  asChild
-                >
-                  <>
-                    <CollapsibleTrigger asChild>
-                      <TableRow className="cursor-pointer hover:bg-muted/50">
-                        <TableCell>
-                          {expandedRows.has(recording.id) ? (
-                            <ChevronDown className="w-4 h-4" />
-                          ) : (
-                            <ChevronRight className="w-4 h-4" />
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {recording.recordingStartedAt
-                            ? format(new Date(recording.recordingStartedAt), "dd MMM yyyy")
-                            : format(new Date(recording.createdAt), "dd MMM yyyy")}
-                        </TableCell>
-                        <TableCell className="font-medium">
-                          {recording.title}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1 text-muted-foreground">
-                            <Clock className="w-3 h-3" />
-                            {formatDuration(recording.durationSeconds)}
-                          </div>
-                        </TableCell>
-                        <TableCell>{getStatusBadge(recording)}</TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            {recording.recordingUrl && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handlePlayAudio(recording.recordingUrl!);
-                                }}
-                              >
-                                <Play className="w-4 h-4" />
-                              </Button>
-                            )}
-                            {recording.transcriptionStatus === "pending" && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleTranscribe(recording.id);
-                                }}
-                                disabled={processingId === recording.id}
-                              >
-                                {processingId === recording.id ? (
-                                  <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : (
-                                  <FileText className="w-4 h-4" />
-                                )}
-                              </Button>
-                            )}
-                            {recording.transcriptionStatus === "completed" &&
-                              !recording.aiActionItems && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleAnalyze(recording.id);
-                                  }}
-                                  disabled={processingId === recording.id}
-                                >
-                                  {processingId === recording.id ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                  ) : (
-                                    <Brain className="w-4 h-4" />
-                                  )}
-                                </Button>
-                              )}
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                deleteRecording(recording.id);
-                              }}
-                              className="text-destructive hover:text-destructive"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent asChild>
-                      <TableRow>
-                        <TableCell colSpan={6} className="bg-muted/30 p-4">
-                          <div className="space-y-4">
-                            <TranscriptionPanel
-                              transcription={recording.transcription}
-                              aiSummary={recording.aiSummary}
-                            />
-                            <ActionItemsList
-                              actionItems={recording.aiActionItems}
-                              clientId={clientId || null}
-                            />
-                            {!recording.transcription && !recording.aiSummary && (
-                              <div className="text-center py-4 text-muted-foreground">
-                                <p>No transcription or analysis available yet.</p>
-                                {recording.transcriptionStatus === "pending" && (
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="mt-2"
-                                    onClick={() => handleTranscribe(recording.id)}
-                                    disabled={processingId === recording.id}
-                                  >
-                                    {processingId === recording.id ? (
-                                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                    ) : (
-                                      <FileText className="w-4 h-4 mr-2" />
-                                    )}
-                                    Transcribe Recording
-                                  </Button>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    </CollapsibleContent>
-                  </>
-                </Collapsible>
-              ))}
-            </TableBody>
-          </Table>
-        </Card>
-      )}
+
+            {/* Step Content */}
+            <ScrollArea className="flex-1 px-4 py-4">
+              {activeStep === "prep" && (
+                <WebPrepStep
+                  clientId={clientId || null}
+                  clientName={undefined}
+                  keyOutcomes={keyOutcomes}
+                  onAddOutcome={(text) => handleAddOutcome(text, "prep")}
+                  onRemoveOutcome={handleRemoveOutcome}
+                />
+              )}
+              {activeStep === "meet" && (
+                <WebMeetStep
+                  startTime={selectedEvent.startTime}
+                  endTime={selectedEvent.endTime}
+                  talkingPoints={talkingPoints}
+                  keyOutcomes={keyOutcomes}
+                  onAddOutcome={(text) => handleAddOutcome(text, "meeting")}
+                />
+              )}
+              {activeStep === "outcomes" && (
+                <WebOutcomesStep
+                  eventId={selectedEvent.id}
+                  clientId={clientId || null}
+                  keyOutcomes={keyOutcomes}
+                  onAddOutcome={(text) => handleAddOutcome(text, "post-meeting")}
+                  onToggleOutcome={handleToggleOutcome}
+                  onUpdateOutcomeNote={handleUpdateOutcomeNote}
+                  setKeyOutcomes={setKeyOutcomes}
+                />
+              )}
+              {activeStep === "follow-ups" && (
+                <WebFollowUpsStep
+                  eventId={selectedEvent.id}
+                  clientId={clientId || null}
+                  clientName={undefined}
+                  keyOutcomes={keyOutcomes}
+                />
+              )}
+            </ScrollArea>
+          </Card>
+        ) : (
+          <Card className="h-full flex items-center justify-center">
+            <div className="text-center space-y-2">
+              <Video className="h-10 w-10 text-muted-foreground/30 mx-auto" />
+              <p className="text-sm text-muted-foreground">Select a meeting to view details</p>
+            </div>
+          </Card>
+        )}
+      </div>
     </div>
   );
 };
