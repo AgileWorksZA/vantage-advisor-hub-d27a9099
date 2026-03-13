@@ -11,6 +11,7 @@ export interface ClientCalendarEvent {
   location: string | null;
   status: string;
   color: string | null;
+  aiPrepNote: string | null;
 }
 
 export const useClientCalendarEvents = (clientId: string | undefined) => {
@@ -49,6 +50,7 @@ export const useClientCalendarEvents = (clientId: string | undefined) => {
         location: e.location,
         status: e.status,
         color: e.color,
+        aiPrepNote: e.ai_prep_note || null,
       })));
     } catch (err) {
       console.error("Error fetching client calendar events:", err);

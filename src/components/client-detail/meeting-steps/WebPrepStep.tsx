@@ -1,11 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useClientMeetingPrep } from "@/hooks/useClientMeetingPrep";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, FileText, Mail, Phone, Package, TrendingUp, ListTodo, File, Sparkles, Loader2, X, Target, Calendar, AlertTriangle } from "lucide-react";
+import { Plus, FileText, Mail, Phone, Package, TrendingUp, ListTodo, File, Sparkles, Loader2, X, Target, Calendar, AlertTriangle, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export interface KeyOutcome {
   id: string;
@@ -30,11 +33,81 @@ interface WebPrepStepProps {
   keyOutcomes: KeyOutcome[];
   onAddOutcome: (text: string) => void;
   onRemoveOutcome: (id: string) => void;
+  eventId?: string;
+  aiPrepNote?: string | null;
+  onPrepNoteUpdated?: (note: string) => void;
 }
 
-export default function WebPrepStep({ clientId, clientName, keyOutcomes, onAddOutcome, onRemoveOutcome }: WebPrepStepProps) {
+export default function WebPrepStep({ clientId, clientName, keyOutcomes, onAddOutcome, onRemoveOutcome, eventId, aiPrepNote, onPrepNoteUpdated }: WebPrepStepProps) {
   const { notes, communications, tasks, documents, opportunities, products, loading } = useClientMeetingPrep(clientId);
   const [newOutcome, setNewOutcome] = useState("");
+  const [generatingNote, setGeneratingNote] = useState(false);
+  const [displayedNote, setDisplayedNote] = useState(aiPrepNote || "");
+  const [isTyping, setIsTyping] = useState(false);
+  const typingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    setDisplayedNote(aiPrepNote || "");
+    setIsTyping(false);
+    if (typingRef.current) clearInterval(typingRef.current);
+  }, [aiPrepNote, eventId]);
+
+  const handleGenerateNote = async () => {
+    if (!eventId) return;
+    setGeneratingNote(true);
+    setDisplayedNote("");
+    setIsTyping(true);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        toast.error("Not authenticated");
+        return;
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-prep-note`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ calendarEventId: eventId }),
+        }
+      );
+
+      if (!response.ok) {
+        const err = await response.json();
+        toast.error(err.error || "Failed to generate note");
+        setIsTyping(false);
+        return;
+      }
+
+      const result = await response.json();
+      const fullNote = result.note || "";
+
+      // Typing animation
+      let i = 0;
+      typingRef.current = setInterval(() => {
+        i += 2;
+        if (i >= fullNote.length) {
+          setDisplayedNote(fullNote);
+          setIsTyping(false);
+          if (typingRef.current) clearInterval(typingRef.current);
+          onPrepNoteUpdated?.(fullNote);
+        } else {
+          setDisplayedNote(fullNote.slice(0, i));
+        }
+      }, 15);
+    } catch (err: any) {
+      toast.error("Failed to generate prep note");
+      console.error(err);
+      setIsTyping(false);
+    } finally {
+      setGeneratingNote(false);
+    }
+  };
   const [selectedDetail, setSelectedDetail] = useState<DetailView | null>(null);
 
   if (loading) {
@@ -56,10 +129,39 @@ export default function WebPrepStep({ clientId, clientName, keyOutcomes, onAddOu
 
   return (
     <div className="space-y-5">
-      {/* AI Header */}
-      <div className="flex items-center gap-2">
-        <Sparkles className="h-4 w-4 text-primary" />
-        <span className="text-xs font-semibold text-primary uppercase tracking-wider">AI Prep Note</span>
+      {/* AI Prep Note Card */}
+      <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-primary" />
+            <span className="text-xs font-semibold text-primary uppercase tracking-wider">AI Prep Note</span>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleGenerateNote}
+            disabled={generatingNote || !eventId}
+            className="h-7 text-xs gap-1.5 text-primary hover:text-primary"
+          >
+            {generatingNote ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <RefreshCw className="h-3.5 w-3.5" />
+            )}
+            {displayedNote ? "Regenerate" : "Generate Note"}
+          </Button>
+        </div>
+
+        {displayedNote ? (
+          <p className="text-sm text-foreground leading-relaxed">
+            {displayedNote}
+            {isTyping && <span className="inline-block w-1.5 h-4 bg-primary ml-0.5 animate-pulse align-text-bottom" />}
+          </p>
+        ) : (
+          <p className="text-xs text-muted-foreground italic">
+            {generatingNote ? "Generating briefing..." : "Click 'Generate Note' to create an AI-powered meeting briefing based on client data."}
+          </p>
+        )}
       </div>
 
       {clientName && (
