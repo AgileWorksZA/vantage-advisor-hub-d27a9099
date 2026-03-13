@@ -1,32 +1,60 @@
 
 
-## Default to Web View After Login
+## Seed Meeting Recordings with AI Content
 
-### Problem
-When a user logs in via the `/auth` page, two issues arise:
-1. If the stored app mode is "adviser" or "client", the `/auth` route itself gets intercepted by the mobile/client shell and never renders the login form
-2. After successful login, the user navigates to `/dashboard` but may see the mobile/client shell instead of the web dashboard
+Currently, `seed-calendar-events` creates calendar events for all clients, but no `meeting_recordings` are seeded. The Meetings tab's Outcomes and Follow-ups steps rely on `meeting_recordings` data (transcription, `ai_summary`, `ai_action_items`) which is empty for all clients.
 
-### Solution (two changes)
+### New Edge Function: `seed-meeting-recordings`
 
-**1. Bypass mode shell for `/auth` route (`src/App.tsx`)**
-- Expand the `isRootPath` check to also include `/auth`, `/signup`, and `/signup-confirmation` paths
-- Rename to something like `isWebOnlyPath` for clarity
-- This ensures auth-related pages always render through the standard BrowserRouter
+Creates a new `supabase/functions/seed-meeting-recordings/index.ts` that:
 
-```text
-Before:  const isRootPath = window.location.pathname === "/"
-After:   const isWebOnlyPath = ["/", "/auth", "/signup", "/signup-confirmation"].includes(window.location.pathname)
+1. Fetches all **past** calendar events (status = 'Completed') for the authenticated user
+2. Deletes any existing seeded meeting recordings for those events (idempotent)
+3. For each past event, generates a realistic `meeting_recordings` row with:
+
+**Transcription** — A multi-speaker transcript with timestamps, e.g.:
 ```
+[00:00] Advisor: Good morning, let's review your portfolio...
+[02:15] Client: I've been thinking about retirement planning...
+```
+Templates vary by event type (Meeting, Portfolio Review, Annual Review, Client Call, Compliance Review).
 
-Update both mode conditionals to use `!isWebOnlyPath` instead of `!isRootPath`.
+**AI Summary** (`ai_summary` JSON):
+- `summary`: 2-3 sentence meeting summary
+- `key_topics`: 3-5 relevant topics
+- `decisions_made`: 1-3 decisions
+- `client_facts`: retirement goals, risk tolerance, life events
+- `follow_up_date`: 2-4 weeks from event date
+- `tagged_actions`: linked to client's existing tasks
+- `tagged_opportunities`: linked to client's existing opportunities
 
-**2. Reset mode to "web" on successful login (`src/pages/Auth.tsx`)**
-- Import `useAppMode` from the AppModeContext
-- In the `onAuthStateChange` callback (and `getSession` check), call `setMode("web")` before navigating to `/dashboard`
-- This ensures post-login always lands in the web view regardless of previously stored mode
+**AI Action Items** (`ai_action_items` JSON array):
+- 2-4 action items per meeting with title, description, priority, suggested_due_date, task_type, source_quote
 
-### Files to Edit
-- `src/App.tsx` -- expand path bypass list (1 line change)
-- `src/pages/Auth.tsx` -- import `useAppMode`, call `setMode("web")` on login success (3 lines added)
+**Key Outcomes** seeded via the transcript content so the Outcomes step's keyword matching (`matchTranscript`) can auto-tick items.
+
+4. Sets `transcription_status: 'completed'`, realistic `duration_seconds` (20-60 min), `recording_started_at`/`recording_ended_at` matching the event times.
+
+### Template System
+
+Jurisdiction-aware content templates (ZA: FICA/RA, AU: Super, CA: RRSP, GB: ISA/SIPP, US: 401k/IRA) ensure realistic regional terminology in transcripts and action items.
+
+Event-type-specific templates:
+- **Portfolio Review**: Performance discussion, rebalancing, drift analysis
+- **Annual Review**: Life changes, goal updates, beneficiary review
+- **Compliance Review**: FICA/KYC, document expiry, regulatory updates
+- **Meeting/Client Call**: General advisory, product discussions, planning
+
+### Config & Integration
+
+- Add `[functions.seed-meeting-recordings]` with `verify_jwt = false` to `supabase/config.toml`
+- Add the function to the Administration seed sequence so it runs after `seed-calendar-events`
+
+### Files
+
+| File | Action |
+|------|--------|
+| `supabase/functions/seed-meeting-recordings/index.ts` | Create — new seeding edge function |
+| `supabase/config.toml` | Add function config entry |
+| `src/components/administration/system/SystemSettingsSection.tsx` | Add to seed sequence |
 
