@@ -505,6 +505,26 @@ serve(async (req) => {
       };
     });
 
+    let opportunityProjectId: string | null = null;
+    const { data: opportunityProject, error: opportunityProjectError } = await admin
+      .from("opportunity_projects")
+      .insert({
+        user_id: userId,
+        name: `${clientName} Meeting Opportunities`,
+        description: `Seeded meeting workflow opportunities for ${clientName}`,
+        project_type: "growth",
+        status: "Active",
+        target_revenue: 100000,
+        realized_revenue: 0,
+        region_code: jurisdiction,
+        sla_days: 30,
+      })
+      .select("id")
+      .single();
+
+    if (opportunityProjectError) throw opportunityProjectError;
+    opportunityProjectId = opportunityProject.id;
+
     const opportunitiesToInsert = shuffle(opportunityTemplates).slice(0, 3).map((opportunity, index) => ({
       user_id: userId,
       client_id: clientId,
@@ -516,7 +536,7 @@ serve(async (req) => {
       suggested_action: opportunity.action,
       reasoning: opportunity.reasoning,
       current_value: 250000 + index * 200000,
-      project_id: null,
+      project_id: opportunityProjectId,
     }));
 
     const tasksToInsert = insertedEvents
