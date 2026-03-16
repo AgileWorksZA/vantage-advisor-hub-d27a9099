@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { CalendarIcon, Loader2, ListChecks, Database, Bell } from "lucide-react";
+import { CalendarIcon, Loader2, ListChecks, Database, Bell, Users } from "lucide-react";
 import { useAdminData } from "@/hooks/useAdminData";
 import { AdminSectionHeader } from "../AdminSectionHeader";
 import { AdminDataTable, ColumnDef } from "../AdminDataTable";
@@ -159,6 +159,8 @@ export function SystemSettingsSection() {
   const [seedingOpenTasks, setSeedingOpenTasks] = useState(false);
   const [seedingAll, setSeedingAll] = useState(false);
   const [seedingNotifications, setSeedingNotifications] = useState(false);
+  const [seedingClientMeetings, setSeedingClientMeetings] = useState(false);
+  const [clientMeetingSeedId, setClientMeetingSeedId] = useState("");
   const [seedProgress, setSeedProgress] = useState("");
 
   const seedSequence = [
@@ -322,6 +324,31 @@ export function SystemSettingsSection() {
     }
   };
 
+  const handleSeedClientMeetings = async () => {
+    const clientId = clientMeetingSeedId.trim();
+    if (!clientId) {
+      toast.error("Enter a client ID");
+      return;
+    }
+
+    setSeedingClientMeetings(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("seed-client-meetings", {
+        body: { clientId },
+      });
+
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || "Failed to seed client meetings");
+
+      toast.success(`Seeded ${data.meetings} meetings for ${data.clientName}`);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to seed client meetings");
+      console.error(error);
+    } finally {
+      setSeedingClientMeetings(false);
+    }
+  };
+
   return (
     <div className="p-6 space-y-6">
       <Tabs
@@ -399,6 +426,27 @@ export function SystemSettingsSection() {
               )}
               {seedingNotifications ? "Seeding Notifications..." : "Seed Notifications"}
             </Button>
+            <div className="flex items-center gap-2 rounded-md border border-border bg-card px-2 py-2">
+              <Input
+                value={clientMeetingSeedId}
+                onChange={(e) => setClientMeetingSeedId(e.target.value)}
+                placeholder="Client ID"
+                className="h-8 min-w-[220px]"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSeedClientMeetings}
+                disabled={seedingClientMeetings || seedingAll}
+              >
+                {seedingClientMeetings ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Users className="w-4 h-4 mr-2" />
+                )}
+                {seedingClientMeetings ? "Seeding Meetings..." : "Seed Client Meetings"}
+              </Button>
+            </div>
           </div>
 
           <div className="mt-4">
