@@ -324,6 +324,31 @@ export function SystemSettingsSection() {
     }
   };
 
+  const handleSeedClientMeetings = async () => {
+    const clientId = clientMeetingSeedId.trim();
+    if (!clientId) {
+      toast.error("Enter a client ID");
+      return;
+    }
+
+    setSeedingClientMeetings(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("seed-client-meetings", {
+        body: { clientId },
+      });
+
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || "Failed to seed client meetings");
+
+      toast.success(`Seeded ${data.meetings} meetings for ${data.clientName}`);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to seed client meetings");
+      console.error(error);
+    } finally {
+      setSeedingClientMeetings(false);
+    }
+  };
+
   return (
     <div className="p-6 space-y-6">
       <Tabs
