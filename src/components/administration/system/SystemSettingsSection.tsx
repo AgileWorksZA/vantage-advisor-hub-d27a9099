@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { CalendarIcon, Loader2, ListChecks, Database, Bell } from "lucide-react";
+import { CalendarIcon, Loader2, ListChecks, Database, Bell, Users } from "lucide-react";
 import { useAdminData } from "@/hooks/useAdminData";
 import { AdminSectionHeader } from "../AdminSectionHeader";
 import { AdminDataTable, ColumnDef } from "../AdminDataTable";
