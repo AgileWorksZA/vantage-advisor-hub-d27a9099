@@ -44,3 +44,6 @@ verify_jwt = false
 [functions.generate-prep-note]
 verify_jwt = false
 
+[functions.seed-client-meetings]
+verify_jwt = false
+

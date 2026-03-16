@@ -426,6 +426,27 @@ export function SystemSettingsSection() {
               )}
               {seedingNotifications ? "Seeding Notifications..." : "Seed Notifications"}
             </Button>
+            <div className="flex items-center gap-2 rounded-md border border-border bg-card px-2 py-2">
+              <Input
+                value={clientMeetingSeedId}
+                onChange={(e) => setClientMeetingSeedId(e.target.value)}
+                placeholder="Client ID"
+                className="h-8 min-w-[220px]"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSeedClientMeetings}
+                disabled={seedingClientMeetings || seedingAll}
+              >
+                {seedingClientMeetings ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Users className="w-4 h-4 mr-2" />
+                )}
+                {seedingClientMeetings ? "Seeding Meetings..." : "Seed Client Meetings"}
+              </Button>
+            </div>
           </div>
 
           <div className="mt-4">
