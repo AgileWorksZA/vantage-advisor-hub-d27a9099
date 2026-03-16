@@ -1,32 +1,92 @@
 
+## Add Client-Targeted Meeting Seeding
 
-## Default to Web View After Login
+### What I found
+The project already has three separate backend seeders that power this meetings workflow:
+- `seed-calendar-events` for the meeting list
+- `seed-meeting-prep-data` for Prep step data
+- `seed-meeting-recordings` for Meet/Outcomes data
 
-### Problem
-When a user logs in via the `/auth` page, two issues arise:
-1. If the stored app mode is "adviser" or "client", the `/auth` route itself gets intercepted by the mobile/client shell and never renders the login form
-2. After successful login, the user navigates to `/dashboard` but may see the mobile/client shell instead of the web dashboard
+Right now they seed broadly for the signed-in advisor’s full dataset, not a single client’s meetings screen. The client Meetings tab itself reads from:
+- `calendar_events`
+- prep-related tables via `useClientMeetingPrep`
+- `meeting_recordings`
 
-### Solution (two changes)
+### Recommended implementation
+Create a new admin-only seeding flow that targets one client and seeds the entire meetings workflow end-to-end for that client.
 
-**1. Bypass mode shell for `/auth` route (`src/App.tsx`)**
-- Expand the `isRootPath` check to also include `/auth`, `/signup`, and `/signup-confirmation` paths
-- Rename to something like `isWebOnlyPath` for clarity
-- This ensures auth-related pages always render through the standard BrowserRouter
+### Build plan
 
-```text
-Before:  const isRootPath = window.location.pathname === "/"
-After:   const isWebOnlyPath = ["/", "/auth", "/signup", "/signup-confirmation"].includes(window.location.pathname)
-```
+#### 1. Add a dedicated backend function
+Create a new backend function such as `seed-client-meetings`.
 
-Update both mode conditionals to use `!isWebOnlyPath` instead of `!isRootPath`.
+It should:
+- require authentication
+- accept a `clientId`
+- validate the client belongs to the signed-in user
+- delete/replace previously seeded meeting workflow data only for that client
+- create:
+  - calendar events for the Meetings list
+  - prep data used in Prep step
+  - meeting recordings/transcripts/action items used in Meet and Outcomes
+  - AI prep notes on the seeded events
 
-**2. Reset mode to "web" on successful login (`src/pages/Auth.tsx`)**
-- Import `useAppMode` from the AppModeContext
-- In the `onAuthStateChange` callback (and `getSession` check), call `setMode("web")` before navigating to `/dashboard`
-- This ensures post-login always lands in the web view regardless of previously stored mode
+This is better than calling the three existing global seeders because those currently operate at user-wide scope and would over-seed unrelated clients.
 
-### Files to Edit
-- `src/App.tsx` -- expand path bypass list (1 line change)
-- `src/pages/Auth.tsx` -- import `useAppMode`, call `setMode("web")` on login success (3 lines added)
+#### 2. Reuse existing seeding patterns
+Use the same jurisdiction-aware logic already present in:
+- `seed-calendar-events`
+- `seed-meeting-prep-data`
+- `seed-meeting-recordings`
 
+But narrow it to:
+- one client
+- a smaller, realistic number of meetings
+- matching event-to-recording relationships
+
+Suggested output for one client:
+- 5–8 meetings across past/upcoming dates
+- prep records aligned to the client jurisdiction
+- recordings only for completed/past meetings
+- transcripts and action items linked to the correct event
+
+#### 3. Add admin UI control
+Extend `SystemSettingsSection.tsx` with a new admin action for client-specific meeting seeding.
+
+Recommended UI:
+- input for Client ID
+- optional “Current client” helper using the route/client context if available later
+- single button: “Seed Client Meetings”
+- loading state + success/error toast
+
+This keeps the trigger admin-only, matching your preference.
+
+#### 4. Keep current global seeders intact
+Do not remove existing seeders. They still support full environment/demo seeding.
+
+Instead:
+- keep global seeders for bulk population
+- add the new targeted seeder for debugging/demoing a specific client meetings screen
+
+### Files to add/change
+| File | Change |
+|------|--------|
+| `supabase/functions/seed-client-meetings/index.ts` | New targeted seeder for one client’s full meetings workflow |
+| `supabase/config.toml` | Register the new function |
+| `src/components/administration/system/SystemSettingsSection.tsx` | Add admin UI to trigger client-specific meeting seeding |
+
+### Technical notes
+- No database schema change should be needed.
+- The function should be idempotent per client so repeated runs refresh only that client’s seeded meetings data.
+- It should seed linked records in the right order: calendar events first, then prep data, then recordings tied to past events.
+- Since `ClientMeetingsTab` already reads live backend data, no client-screen code changes should be necessary unless you want a quick refresh affordance later.
+
+### Result
+After this change, an admin can seed the complete Meetings experience for a single client from the administration area, and that client’s Meetings tab will immediately have realistic data across:
+- meeting list
+- prep context
+- AI prep note
+- transcript/outcomes/follow-up workflow
+
+### Suggested follow-up
+After implementation, I’d also recommend adding a small admin “open seeded client” shortcut or a route-aware helper so you don’t have to manually copy/paste client IDs when preparing a specific meetings screen.
