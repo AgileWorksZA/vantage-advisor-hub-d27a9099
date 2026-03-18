@@ -174,7 +174,7 @@ const ComposeEmail = () => {
       setUser(session?.user ?? null);
       setAuthLoading(false);
       if (!session?.user) {
-        navigate("/auth");
+        console.log("Auth handled by BFF");
       }
     });
 
@@ -182,7 +182,7 @@ const ComposeEmail = () => {
       setUser(session?.user ?? null);
       setAuthLoading(false);
       if (!session?.user) {
-        navigate("/auth");
+        console.log("Auth handled by BFF");
       }
     });
 
@@ -191,7 +191,7 @@ const ComposeEmail = () => {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    navigate("/auth");
+    console.log("Auth handled by BFF");
   };
 
   const handleAddClientRecipient = (client: ClientListItem, type: "to" | "cc" | "bcc") => {

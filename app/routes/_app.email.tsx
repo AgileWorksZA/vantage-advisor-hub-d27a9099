@@ -153,7 +153,7 @@ const EmailPage = () => {
       setUser(session?.user ?? null);
       setAuthLoading(false);
       if (!session?.user) {
-        navigate("/auth");
+        console.log("Auth handled by BFF");
       }
     });
 
@@ -161,7 +161,7 @@ const EmailPage = () => {
       setUser(session?.user ?? null);
       setAuthLoading(false);
       if (!session?.user) {
-        navigate("/auth");
+        console.log("Auth handled by BFF");
       }
     });
 
@@ -170,7 +170,7 @@ const EmailPage = () => {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    navigate("/auth");
+    console.log("Auth handled by BFF");
   };
 
   const toggleEmailSelection = (id: string) => {

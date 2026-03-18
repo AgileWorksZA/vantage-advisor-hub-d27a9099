@@ -49,21 +49,21 @@ const Portfolio = () => {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
-        if (!session?.user) navigate("/auth");
+        if (!session?.user) console.log("Auth handled by BFF");
       }
     );
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
-      if (!session?.user) navigate("/auth");
+      if (!session?.user) console.log("Auth handled by BFF");
     });
     return () => subscription.unsubscribe();
   }, [navigate]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    navigate("/auth");
+    console.log("Auth handled by BFF");
   };
 
   if (loading) {

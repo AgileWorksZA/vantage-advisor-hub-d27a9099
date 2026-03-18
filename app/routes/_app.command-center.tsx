@@ -42,7 +42,7 @@ const CommandCenter = () => {
       setUser(session?.user ?? null);
       setLoading(false);
       if (!session?.user) {
-        navigate("/auth");
+        console.log("Auth handled by BFF");
       }
     });
 
@@ -50,7 +50,7 @@ const CommandCenter = () => {
       setUser(session?.user ?? null);
       setLoading(false);
       if (!session?.user) {
-        navigate("/auth");
+        console.log("Auth handled by BFF");
       }
     });
 
@@ -59,7 +59,7 @@ const CommandCenter = () => {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    navigate("/auth");
+    console.log("Auth handled by BFF");
   };
 
   if (loading) {

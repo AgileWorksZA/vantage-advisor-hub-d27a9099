@@ -73,7 +73,7 @@ const Notifications = () => {
       <div className="flex-1 flex flex-col overflow-hidden">
         <AppHeader
           userName={userName}
-          onSignOut={() => supabase.auth.signOut().then(() => navigate("/auth"))}
+          onSignOut={() => supabase.auth.signOut().then(() => console.log("Auth handled by BFF"))}
         />
         <div className="flex-1 overflow-auto p-6">
           <div className="max-w-3xl mx-auto">

@@ -125,7 +125,7 @@ const EmailView = () => {
         setUser(session?.user ?? null);
         setAuthLoading(false);
         if (!session?.user) {
-          navigate("/auth");
+          console.log("Auth handled by BFF");
         }
       }
     );
@@ -134,7 +134,7 @@ const EmailView = () => {
       setUser(session?.user ?? null);
       setAuthLoading(false);
       if (!session?.user) {
-        navigate("/auth");
+        console.log("Auth handled by BFF");
       }
     });
 
@@ -171,7 +171,7 @@ const EmailView = () => {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    navigate("/auth");
+    console.log("Auth handled by BFF");
   };
 
   const handleArchive = () => {

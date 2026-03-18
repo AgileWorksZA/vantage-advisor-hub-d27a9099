@@ -239,7 +239,7 @@ const CalendarPage = () => {
       setUser(session?.user ?? null);
       setAuthLoading(false);
       if (!session?.user) {
-        navigate("/auth");
+        console.log("Auth handled by BFF");
       }
     });
 
@@ -248,7 +248,7 @@ const CalendarPage = () => {
       setUser(session?.user ?? null);
       setAuthLoading(false);
       if (!session?.user) {
-        navigate("/auth");
+        console.log("Auth handled by BFF");
       }
     });
 
@@ -257,7 +257,7 @@ const CalendarPage = () => {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    navigate("/auth");
+    console.log("Auth handled by BFF");
   };
 
   // Filter events based on calendar filters

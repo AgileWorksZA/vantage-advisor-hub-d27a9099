@@ -144,7 +144,7 @@ const ClientDetail = () => {
         setAuthLoading(false);
         
         if (!session?.user) {
-          navigate("/auth");
+          console.log("Auth handled by BFF");
         }
       }
     );
@@ -155,7 +155,7 @@ const ClientDetail = () => {
       setAuthLoading(false);
       
       if (!session?.user) {
-        navigate("/auth");
+        console.log("Auth handled by BFF");
       }
     });
 
@@ -215,7 +215,7 @@ const ClientDetail = () => {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    navigate("/auth");
+    console.log("Auth handled by BFF");
   };
 
   return (

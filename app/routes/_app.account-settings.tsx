@@ -141,14 +141,14 @@ const AccountSettings = () => {
       setSession(session);
       setUser(session?.user ?? null);
       setAuthLoading(false);
-      if (!session?.user) navigate("/auth");
+      if (!session?.user) console.log("Auth handled by BFF");
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setAuthLoading(false);
-      if (!session?.user) navigate("/auth");
+      if (!session?.user) console.log("Auth handled by BFF");
     });
 
     return () => subscription.unsubscribe();
@@ -156,7 +156,7 @@ const AccountSettings = () => {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    navigate("/auth");
+    console.log("Auth handled by BFF");
   };
 
   const handleSaveProfile = () => {

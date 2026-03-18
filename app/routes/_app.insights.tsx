@@ -260,7 +260,7 @@ const Insights = () => {
       setUser(session?.user ?? null);
       setLoading(false);
       if (!session?.user) {
-        navigate("/auth");
+        console.log("Auth handled by BFF");
       }
     });
     supabase.auth.getSession().then(({
@@ -271,14 +271,14 @@ const Insights = () => {
       setUser(session?.user ?? null);
       setLoading(false);
       if (!session?.user) {
-        navigate("/auth");
+        console.log("Auth handled by BFF");
       }
     });
     return () => subscription.unsubscribe();
   }, [navigate]);
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    navigate("/auth");
+    console.log("Auth handled by BFF");
   };
 
   // Memoized filtered data

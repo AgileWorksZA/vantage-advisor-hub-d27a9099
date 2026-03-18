@@ -209,7 +209,7 @@ const Dashboard = () => {
       setUser(session?.user ?? null);
       setLoading(false);
       if (!session?.user) {
-        navigate("/auth");
+        console.log("Auth handled by BFF");
       } else if (session.access_token) {
         // Seed demo clients on login
         seedDemoClients(session.access_token);
@@ -225,7 +225,7 @@ const Dashboard = () => {
       setUser(session?.user ?? null);
       setLoading(false);
       if (!session?.user) {
-        navigate("/auth");
+        console.log("Auth handled by BFF");
       } else if (session.access_token) {
         // Seed demo clients on initial load
         seedDemoClients(session.access_token);
@@ -238,7 +238,7 @@ const Dashboard = () => {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    navigate("/auth");
+    console.log("Auth handled by BFF");
   };
 
   if (loading) {

@@ -181,7 +181,7 @@ const Clients = () => {
       setAuthLoading(false);
 
       if (!session?.user) {
-        navigate("/auth");
+        console.log("Auth handled by BFF");
       }
     });
 
@@ -191,7 +191,7 @@ const Clients = () => {
       setAuthLoading(false);
 
       if (!session?.user) {
-        navigate("/auth");
+        console.log("Auth handled by BFF");
       }
     });
 
@@ -200,7 +200,7 @@ const Clients = () => {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    navigate("/auth");
+    console.log("Auth handled by BFF");
   };
 
   // Handler for choice dialog selection
