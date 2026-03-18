@@ -1,57 +1,33 @@
-import { readFileSync, existsSync } from "fs";
-import { join, extname } from "path";
+import { createRequestHandler } from "react-router";
 
-const PORT = parseInt(process.env["PORT"] || "3000", 10);
-const DIST = join(import.meta.dir, "dist");
+const BUILD_DIR = "./build";
+const PORT = Number(process.env["PORT"] || "3000");
 
-const MIME_TYPES: Record<string, string> = {
-  ".html": "text/html",
-  ".js": "application/javascript",
-  ".css": "text/css",
-  ".json": "application/json",
-  ".png": "image/png",
-  ".jpg": "image/jpeg",
-  ".jpeg": "image/jpeg",
-  ".gif": "image/gif",
-  ".svg": "image/svg+xml",
-  ".ico": "image/x-icon",
-  ".woff": "font/woff",
-  ".woff2": "font/woff2",
-  ".ttf": "font/ttf",
-  ".eot": "application/vnd.ms-fontobject",
-  ".map": "application/json",
-};
+const build = await import(`${BUILD_DIR}/server/index.js`);
+const handler = createRequestHandler(build as any);
 
-const indexHtml = readFileSync(join(DIST, "index.html"), "utf-8");
-
-Bun.serve({
+const server = Bun.serve({
   port: PORT,
-  fetch(req) {
-    const url = new URL(req.url);
-    let pathname = url.pathname;
+  idleTimeout: 120,
 
-    // Try serving static file from dist/
-    const filePath = join(DIST, pathname);
-    if (pathname !== "/" && existsSync(filePath)) {
-      const ext = extname(pathname);
-      const contentType = MIME_TYPES[ext] || "application/octet-stream";
-      const file = Bun.file(filePath);
-      return new Response(file, {
-        headers: {
-          "Content-Type": contentType,
-          "Cache-Control": ext === ".html" ? "no-cache" : "public, max-age=31536000, immutable",
-        },
-      });
+  async fetch(req) {
+    const url = new URL(req.url);
+
+    // Health check
+    if (url.pathname === "/health") {
+      return new Response("ok", { status: 200 });
     }
 
-    // SPA fallback — serve index.html for all non-file routes
-    return new Response(indexHtml, {
-      headers: {
-        "Content-Type": "text/html",
-        "Cache-Control": "no-cache",
-      },
-    });
+    // Static assets from build/client
+    const staticPath = `${BUILD_DIR}/client${url.pathname}`;
+    const file = Bun.file(staticPath);
+    if (await file.exists()) {
+      return new Response(file);
+    }
+
+    // React Router SSR
+    return handler(req);
   },
 });
 
-console.log(`Vantage Advisor Hub running on http://localhost:${PORT}`);
+console.log(`Vantage Advisor Hub running on http://localhost:${server.port}`);

@@ -1,26 +1,13 @@
+import { reactRouter } from "@react-router/dev/vite";
 import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react-swc";
-import path from "path";
-import { componentTagger } from "lovable-tagger";
+import tsconfigPaths from "vite-tsconfig-paths";
 
-// https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
-  server: {
-    host: "::",
-    port: 8080,
-  },
-  plugins: [
-    react(),
-    mode === 'development' &&
-    componentTagger(),
-  ].filter(Boolean),
+export default defineConfig({
+  plugins: [reactRouter(), tsconfigPaths()],
   resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
-    },
     dedupe: [
-      "react", 
-      "react-dom", 
+      "react",
+      "react-dom",
       "react/jsx-runtime",
       "@radix-ui/react-tooltip",
       "@radix-ui/react-dialog",
@@ -30,7 +17,6 @@ export default defineConfig(({ mode }) => ({
   },
   optimizeDeps: {
     include: ["@tanstack/react-query", "react", "react-dom"],
-    force: true,
   },
   build: {
     rollupOptions: {
@@ -40,4 +26,7 @@ export default defineConfig(({ mode }) => ({
     },
     cssCodeSplit: false,
   },
-}));
+  server: {
+    port: 8080,
+  },
+});
