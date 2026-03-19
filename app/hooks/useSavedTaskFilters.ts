@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
+import { useKapableAuth } from "@/integrations/kapable/auth-context";
 import { toast } from "sonner";
 import { TaskFilters } from "@/hooks/useTasksEnhanced";
 
@@ -14,19 +15,19 @@ export interface SavedTaskFilter {
 }
 
 export const useSavedTaskFilters = () => {
+  const { userId } = useKapableAuth();
   const [savedFilters, setSavedFilters] = useState<SavedTaskFilter[]>([]);
   const [loading, setLoading] = useState(false);
 
   const fetchSavedFilters = useCallback(async () => {
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!userId) return;
 
-      const { data, error } = await supabase
+      const { data, error } = await kapable
         .from("saved_task_filters")
         .select("*")
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -46,11 +47,10 @@ export const useSavedTaskFilters = () => {
 
   const saveFilter = async (name: string, filters: TaskFilters) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!userId) throw new Error("Not authenticated");
 
-      const { error } = await supabase.from("saved_task_filters").insert({
-        user_id: user.id,
+      const { error } = await kapable.from("saved_task_filters").insert({
+        user_id: userId,
         name,
         filters: filters as any,
         is_default: false,
@@ -68,7 +68,7 @@ export const useSavedTaskFilters = () => {
 
   const deleteFilter = async (id: string) => {
     try {
-      const { error } = await supabase
+      const { error } = await kapable
         .from("saved_task_filters")
         .delete()
         .eq("id", id);

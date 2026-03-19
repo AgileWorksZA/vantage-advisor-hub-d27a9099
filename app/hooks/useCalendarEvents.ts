@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
+import { useKapableAuth } from "@/integrations/kapable/auth-context";
 import { toast } from "sonner";
 import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays } from "date-fns";
 
@@ -61,6 +62,7 @@ export interface UpdateCalendarEventInput extends Partial<CreateCalendarEventInp
 }
 
 export const useCalendarEvents = (viewDate: Date = new Date(), viewMode: "month" | "week" | "day" = "month") => {
+  const { userId } = useKapableAuth();
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -93,21 +95,17 @@ export const useCalendarEvents = (viewDate: Date = new Date(), viewMode: "month"
       setLoading(true);
       setError(null);
 
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      if (!userId) {
         setEvents([]);
         return;
       }
 
       const { start, end } = getDateRange();
 
-      const { data, error: fetchError } = await supabase
+      const { data, error: fetchError } = await kapable
         .from("calendar_events")
-        .select(`
-          *,
-          clients!calendar_events_client_id_fkey(first_name, surname, advisor)
-        `)
-        .eq("user_id", user.id)
+        .select("*")
+        .eq("user_id", userId)
         .eq("is_deleted", false)
         .gte("start_time", start.toISOString())
         .lte("end_time", end.toISOString())
@@ -157,16 +155,15 @@ export const useCalendarEvents = (viewDate: Date = new Date(), viewMode: "month"
 
   const createEvent = async (input: CreateCalendarEventInput): Promise<CalendarEvent | null> => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      if (!userId) {
         toast.error("You must be logged in to create events");
         return null;
       }
 
-      const { data, error: createError } = await supabase
+      const { data, error: createError } = await kapable
         .from("calendar_events")
         .insert({
-          user_id: user.id,
+          user_id: userId,
           title: input.title,
           description: input.description || null,
           event_type: input.eventType,
@@ -181,7 +178,7 @@ export const useCalendarEvents = (viewDate: Date = new Date(), viewMode: "month"
           color: input.color || null,
           attendees: input.attendees || [],
           timezone: input.timezone || null,
-          created_by: user.id,
+          created_by: userId,
         })
         .select()
         .single();
@@ -239,7 +236,7 @@ export const useCalendarEvents = (viewDate: Date = new Date(), viewMode: "month"
       if (input.status !== undefined) updateData.status = input.status;
       if ((input as any).timezone !== undefined) updateData.timezone = (input as any).timezone;
 
-      const { error: updateError } = await supabase
+      const { error: updateError } = await kapable
         .from("calendar_events")
         .update(updateData)
         .eq("id", eventId);
@@ -258,7 +255,7 @@ export const useCalendarEvents = (viewDate: Date = new Date(), viewMode: "month"
 
   const deleteEvent = async (eventId: string): Promise<boolean> => {
     try {
-      const { error: deleteError } = await supabase
+      const { error: deleteError } = await kapable
         .from("calendar_events")
         .update({ is_deleted: true, deleted_at: new Date().toISOString() })
         .eq("id", eventId);

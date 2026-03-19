@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
+import { useKapableAuth } from "@/integrations/kapable/auth-context";
 import { toast } from "sonner";
 
 export interface ClientGoal {
@@ -24,14 +25,15 @@ export interface ClientGoal {
 export const useClientGoals = (clientId: string, workflowId?: string) => {
   const [goals, setGoals] = useState<ClientGoal[]>([]);
   const [loading, setLoading] = useState(true);
+  const { userId } = useKapableAuth();
 
   const fetchGoals = useCallback(async () => {
     if (!clientId) return;
 
     try {
       setLoading(true);
-      let query = supabase
-        .from("client_goals")
+      let query = kapable
+        .from<ClientGoal>("client_goals")
         .select("*")
         .eq("client_id", clientId)
         .eq("is_deleted", false)
@@ -56,13 +58,11 @@ export const useClientGoals = (clientId: string, workflowId?: string) => {
 
   const addGoal = useCallback(async (goal: Omit<ClientGoal, "id" | "user_id" | "created_at" | "updated_at" | "is_deleted">) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!userId) throw new Error("Not authenticated");
 
-      const { data, error } = await supabase
-        .from("client_goals")
-        .insert({ ...goal, user_id: user.id })
-        .select()
+      const { data, error } = await kapable
+        .from<ClientGoal>("client_goals")
+        .insert({ ...goal, user_id: userId })
         .single();
 
       if (error) throw error;
@@ -74,12 +74,12 @@ export const useClientGoals = (clientId: string, workflowId?: string) => {
       toast.error("Failed to add goal");
       return null;
     }
-  }, []);
+  }, [userId]);
 
   const updateGoal = useCallback(async (id: string, updates: Partial<ClientGoal>) => {
     try {
-      const { error } = await supabase
-        .from("client_goals")
+      const { error } = await kapable
+        .from<ClientGoal>("client_goals")
         .update(updates)
         .eq("id", id);
 
@@ -94,9 +94,9 @@ export const useClientGoals = (clientId: string, workflowId?: string) => {
 
   const deleteGoal = useCallback(async (id: string) => {
     try {
-      const { error } = await supabase
-        .from("client_goals")
-        .update({ is_deleted: true, deleted_at: new Date().toISOString() })
+      const { error } = await kapable
+        .from<ClientGoal>("client_goals")
+        .update({ is_deleted: true, deleted_at: new Date().toISOString() } as any)
         .eq("id", id);
 
       if (error) throw error;
@@ -110,10 +110,10 @@ export const useClientGoals = (clientId: string, workflowId?: string) => {
 
   const getGoalsByCategory = useCallback(() => {
     const grouped: Record<string, ClientGoal[]> = {};
-    goals.forEach(g => {
+    for (const g of goals) {
       if (!grouped[g.goal_category]) grouped[g.goal_category] = [];
       grouped[g.goal_category].push(g);
-    });
+    }
     return grouped;
   }, [goals]);
 

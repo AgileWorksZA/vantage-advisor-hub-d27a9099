@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
+import { useKapableAuth } from "@/integrations/kapable/auth-context";
 import { toast } from "sonner";
 
 export interface TaskDocument {
@@ -16,6 +17,7 @@ export interface TaskDocument {
 }
 
 export const useTaskDocuments = (taskId?: string) => {
+  const { userId } = useKapableAuth();
   const [taskDocuments, setTaskDocuments] = useState<TaskDocument[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -24,35 +26,39 @@ export const useTaskDocuments = (taskId?: string) => {
     
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await kapable
         .from("task_documents")
-        .select(`
-          id,
-          task_id,
-          document_id,
-          document_type,
-          notes,
-          uploaded_at,
-          uploaded_by,
-          documents!task_documents_document_id_fkey(name, file_path, mime_type)
-        `)
+        .select("*")
         .eq("task_id", taskId)
         .order("uploaded_at", { ascending: false });
 
       if (error) throw error;
 
-      const transformed = (data || []).map((td: any) => ({
-        id: td.id,
-        task_id: td.task_id,
-        document_id: td.document_id,
-        document_type: td.document_type,
-        notes: td.notes,
-        uploaded_at: td.uploaded_at,
-        uploaded_by: td.uploaded_by,
-        document_name: td.documents?.name,
-        file_path: td.documents?.file_path,
-        mime_type: td.documents?.mime_type,
-      }));
+      // Fetch document details separately
+      const docIds = [...new Set((data || []).map((td: any) => td.document_id).filter(Boolean))];
+      let docsMap: Record<string, any> = {};
+      if (docIds.length > 0) {
+        const { data: docsData } = await kapable.from("documents").select("*").in("id", docIds);
+        for (const d of (docsData || [])) {
+          docsMap[d.id] = d;
+        }
+      }
+
+      const transformed = (data || []).map((td: any) => {
+        const doc = docsMap[td.document_id];
+        return {
+          id: td.id,
+          task_id: td.task_id,
+          document_id: td.document_id,
+          document_type: td.document_type,
+          notes: td.notes,
+          uploaded_at: td.uploaded_at,
+          uploaded_by: td.uploaded_by,
+          document_name: doc?.name,
+          file_path: doc?.file_path,
+          mime_type: doc?.mime_type,
+        };
+      });
 
       setTaskDocuments(transformed);
     } catch (err: any) {
@@ -67,18 +73,17 @@ export const useTaskDocuments = (taskId?: string) => {
     if (!taskId) return null;
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!userId) throw new Error("Not authenticated");
 
-      const { data, error } = await supabase
+      const { data, error } = await kapable
         .from("task_documents")
         .insert({
-          user_id: user.id,
+          user_id: userId,
           task_id: taskId,
           document_id: documentId,
           document_type: documentType,
           notes,
-          uploaded_by: user.id,
+          uploaded_by: userId,
         })
         .select()
         .single();
@@ -97,7 +102,7 @@ export const useTaskDocuments = (taskId?: string) => {
 
   const unlinkDocument = async (taskDocumentId: string) => {
     try {
-      const { error } = await supabase
+      const { error } = await kapable
         .from("task_documents")
         .delete()
         .eq("id", taskDocumentId);
@@ -116,7 +121,7 @@ export const useTaskDocuments = (taskId?: string) => {
 
   const updateDocumentNotes = async (taskDocumentId: string, notes: string) => {
     try {
-      const { error } = await supabase
+      const { error } = await kapable
         .from("task_documents")
         .update({ notes })
         .eq("id", taskDocumentId);

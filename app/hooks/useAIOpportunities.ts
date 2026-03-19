@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
+import { useKapableAuth } from "@/integrations/kapable/auth-context";
 import { useQuery } from "@tanstack/react-query";
 
 export interface AIOpportunity {
@@ -112,6 +113,7 @@ const getRandomAction = (type: string): string => {
 };
 
 export const useAIOpportunities = () => {
+  const { userId } = useKapableAuth();
   const {
     data: clientsWithProducts,
     isLoading,
@@ -120,43 +122,38 @@ export const useAIOpportunities = () => {
   } = useQuery({
     queryKey: ["ai-opportunities-scan"],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return [];
+      if (!userId) return [];
 
       // Fetch clients with their products
-      const { data: clients, error: clientsError } = await supabase
+      const { data: clients, error: clientsError } = await kapable
         .from("clients")
-        .select(`
-          id,
-          first_name,
-          surname,
-          client_products(
-            id,
-            current_value,
-            is_linked,
-            status,
-            products(
-              name,
-              product_categories(name),
-              product_providers(name)
-            )
-          )
-        `)
-        .eq("user_id", user.id);
+        .select("*")
+        .eq("user_id", userId);
 
       if (clientsError) throw clientsError;
 
+      // Fetch client_products separately (Kapable doesn't support nested selects)
+      const clientIds = (clients || []).map((c: any) => c.id);
+      let allClientProducts: any[] = [];
+      if (clientIds.length > 0) {
+        const { data: cpData } = await kapable
+          .from("client_products")
+          .select("*")
+          .in("client_id", clientIds);
+        allClientProducts = cpData || [];
+      }
+
       // Transform to ClientWithProducts structure
       const processed: ClientWithProducts[] = (clients || []).map((client: any) => {
-        const activeProducts = (client.client_products || []).filter(
-          (p: any) => p.status === "Active"
+        const activeProducts = allClientProducts.filter(
+          (p: any) => p.client_id === client.id && p.status === "Active"
         );
 
         const products = activeProducts.map((p: any) => ({
           id: p.id,
           currentValue: p.current_value,
-          category: p.products?.product_categories?.name || null,
-          providerName: p.products?.product_providers?.name || null,
+          category: null, // Would need separate products/categories lookup
+          providerName: null, // Would need separate providers lookup
           isLinked: p.is_linked,
         }));
 

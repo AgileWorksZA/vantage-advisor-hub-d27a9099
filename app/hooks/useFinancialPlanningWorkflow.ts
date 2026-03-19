@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
+import { useKapableAuth } from "@/integrations/kapable/auth-context";
 import { toast } from "sonner";
 
 export interface FinancialPlanningWorkflow {
@@ -21,6 +22,7 @@ export interface FinancialPlanningWorkflow {
 }
 
 export const useFinancialPlanningWorkflow = (clientId: string, workflowId?: string) => {
+  const { userId } = useKapableAuth();
   const [workflow, setWorkflow] = useState<FinancialPlanningWorkflow | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -33,7 +35,7 @@ export const useFinancialPlanningWorkflow = (clientId: string, workflowId?: stri
 
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      const { data, error } = await kapable
         .from("financial_planning_workflows")
         .select("*")
         .eq("id", workflowId)
@@ -53,13 +55,12 @@ export const useFinancialPlanningWorkflow = (clientId: string, workflowId?: stri
   const createWorkflow = useCallback(async (name: string): Promise<string | null> => {
     try {
       setSaving(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!userId) throw new Error("Not authenticated");
 
-      const { data, error } = await supabase
+      const { data, error } = await kapable
         .from("financial_planning_workflows")
         .insert({
-          user_id: user.id,
+          user_id: userId,
           client_id: clientId,
           workflow_name: name,
           current_step: 1,
@@ -95,7 +96,7 @@ export const useFinancialPlanningWorkflow = (clientId: string, workflowId?: stri
         dbUpdates.step_data = JSON.parse(JSON.stringify(updates.step_data));
       }
       
-      const { error } = await supabase
+      const { error } = await kapable
         .from("financial_planning_workflows")
         .update(dbUpdates)
         .eq("id", workflow.id);

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
 
 export interface EmailAttachment {
   id: string;
@@ -75,7 +75,7 @@ export const useEmailDetail = (emailId: string | null) => {
 
     try {
       // Fetch email detail
-      const { data: emailData, error: emailError } = await supabase
+      const { data: emailData, error: emailError } = await kapable
         .from("emails")
         .select("*")
         .eq("id", emailId)
@@ -94,14 +94,14 @@ export const useEmailDetail = (emailId: string | null) => {
 
       // Mark as read if not already
       if (!emailData.is_read) {
-        await supabase
+        await kapable
           .from("emails")
           .update({ is_read: true })
           .eq("id", emailId);
       }
 
       // Fetch attachments
-      const { data: attachmentData } = await supabase
+      const { data: attachmentData } = await kapable
         .from("email_attachments")
         .select("*")
         .eq("email_id", emailId);
@@ -109,25 +109,25 @@ export const useEmailDetail = (emailId: string | null) => {
       setAttachments((attachmentData as EmailAttachment[]) || []);
 
       // Fetch linked clients via email_clients junction table
-      const { data: emailClientsData } = await supabase
+      const { data: emailClientsData } = await kapable
         .from("email_clients")
-        .select("client_id")
+        .select("*")
         .eq("email_id", emailId);
 
       if (emailClientsData && emailClientsData.length > 0) {
         const clientIds = emailClientsData.map((ec) => ec.client_id);
-        const { data: clientsData } = await supabase
+        const { data: clientsData } = await kapable
           .from("clients")
-          .select("id, first_name, surname, initials, email")
+          .select("*")
           .in("id", clientIds);
 
         setLinkedClients((clientsData as LinkedClient[]) || []);
       } else {
         // Fallback: if email has client_id directly
         if (emailData.client_id) {
-          const { data: clientData } = await supabase
+          const { data: clientData } = await kapable
             .from("clients")
-            .select("id, first_name, surname, initials, email")
+            .select("*")
             .eq("id", emailData.client_id)
             .single();
 
@@ -144,9 +144,9 @@ export const useEmailDetail = (emailId: string | null) => {
           .replace(/^(RE:|FW:|Fwd:)\s*/gi, "")
           .trim();
 
-        const { data: relatedData } = await supabase
+        const { data: relatedData } = await kapable
           .from("emails")
-          .select("id, subject, from_address, received_at, body_preview, direction")
+          .select("*")
           .neq("id", emailId)
           .or(`subject.ilike.%${baseSubject}%`)
           .order("received_at", { ascending: true })

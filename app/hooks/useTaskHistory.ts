@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
+import { useKapableAuth } from "@/integrations/kapable/auth-context";
 import { toast } from "sonner";
 
 export interface TaskHistoryEntry {
@@ -14,6 +15,7 @@ export interface TaskHistoryEntry {
 }
 
 export const useTaskHistory = (taskId?: string) => {
+  const { userId } = useKapableAuth();
   const [history, setHistory] = useState<TaskHistoryEntry[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -22,7 +24,7 @@ export const useTaskHistory = (taskId?: string) => {
     
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await kapable
         .from("task_history")
         .select("*")
         .eq("task_id", taskId)
@@ -43,19 +45,18 @@ export const useTaskHistory = (taskId?: string) => {
     if (!taskId) return null;
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!userId) throw new Error("Not authenticated");
 
-      const { data, error } = await supabase
+      const { data, error } = await kapable
         .from("task_history")
         .insert({
-          user_id: user.id,
+          user_id: userId,
           task_id: taskId,
           action,
           field_name: fieldName,
           old_value: oldValue,
           new_value: newValue,
-          changed_by: user.id,
+          changed_by: userId,
         })
         .select()
         .single();

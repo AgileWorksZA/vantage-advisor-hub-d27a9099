@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
+import { useKapableAuth } from "@/integrations/kapable/auth-context";
 
 interface UseUserJurisdictionsResult {
   allowedJurisdictions: string[];
@@ -8,6 +9,7 @@ interface UseUserJurisdictionsResult {
 }
 
 export function useUserJurisdictions(): UseUserJurisdictionsResult {
+  const { userId } = useKapableAuth();
   const [allowedJurisdictions, setAllowedJurisdictions] = useState<string[]>([]);
   const [isRestricted, setIsRestricted] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -17,16 +19,15 @@ export function useUserJurisdictions(): UseUserJurisdictionsResult {
 
     const fetchJurisdictions = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user || cancelled) {
+        if (!userId) {
           setLoading(false);
           return;
         }
 
-        const { data, error } = await supabase
+        const { data, error } = await kapable
           .from("user_jurisdictions")
-          .select("jurisdiction_code")
-          .eq("user_id", user.id);
+          .select("*")
+          .eq("user_id", userId);
 
         if (error) {
           console.error("Error fetching user jurisdictions:", error);
@@ -36,7 +37,7 @@ export function useUserJurisdictions(): UseUserJurisdictionsResult {
 
         if (!cancelled) {
           if (data && data.length > 0) {
-            setAllowedJurisdictions(data.map((r) => r.jurisdiction_code));
+            setAllowedJurisdictions(data.map((r: any) => r.jurisdiction_code));
             setIsRestricted(true);
           } else {
             setAllowedJurisdictions([]);
@@ -52,16 +53,11 @@ export function useUserJurisdictions(): UseUserJurisdictionsResult {
 
     fetchJurisdictions();
 
-    // Re-fetch on auth state change
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
-      fetchJurisdictions();
-    });
-
+    // TODO: Replace with Kapable SSE in future sprint
     return () => {
       cancelled = true;
-      subscription.unsubscribe();
     };
-  }, []);
+  }, [userId]);
 
   return { allowedJurisdictions, isRestricted, loading };
 }

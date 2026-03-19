@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
+import { useKapableAuth } from "@/integrations/kapable/auth-context";
 import { useToast } from "@/hooks/use-toast";
 
 type AdminTable = 
@@ -29,7 +30,7 @@ async function fetchAdminData(
   orderBy: { column: string; ascending?: boolean }
 ): Promise<AnyRecord[]> {
   // Build query parts as URL params approach to avoid deep type issues
-  let queryBuilder = supabase.from(table).select("*");
+  let queryBuilder = kapable.from(table).select("*");
   
   // We need to use a workaround for the deep type instantiation issue
   // by building the query string manually via RPC or using any
@@ -50,13 +51,14 @@ async function fetchAdminData(
   return result as AnyRecord[];
 }
 
-export function useAdminData<T extends AnyRecord = AnyRecord>({ 
-  table, 
-  filters = {}, 
-  orderBy = { column: "created_at", ascending: false } 
+export function useAdminData<T extends AnyRecord = AnyRecord>({
+  table,
+  filters = {},
+  orderBy = { column: "created_at", ascending: false }
 }: UseAdminDataOptions) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { userId } = useKapableAuth();
   const [searchTerm, setSearchTerm] = useState("");
 
   const queryKey = [table, filters, orderBy];
@@ -68,12 +70,11 @@ export function useAdminData<T extends AnyRecord = AnyRecord>({
 
   const createMutation = useMutation({
     mutationFn: async (newItem: AnyRecord) => {
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user) throw new Error("Not authenticated");
+      if (!userId) throw new Error("Not authenticated");
 
-      const insertData = { ...newItem, user_id: userData.user.id };
-      
-      const { data: result, error: insertError } = await supabase
+      const insertData = { ...newItem, user_id: userId };
+
+      const { data: result, error: insertError } = await kapable
         .from(table)
         .insert(insertData as never)
         .select()
@@ -94,7 +95,7 @@ export function useAdminData<T extends AnyRecord = AnyRecord>({
   const updateMutation = useMutation({
     mutationFn: async (itemWithId: AnyRecord & { id: string }) => {
       const { id, ...updates } = itemWithId;
-      const { data: result, error: updateError } = await supabase
+      const { data: result, error: updateError } = await kapable
         .from(table)
         .update(updates as never)
         .eq("id" as never, id as never)
@@ -117,7 +118,7 @@ export function useAdminData<T extends AnyRecord = AnyRecord>({
     mutationFn: async (id: string) => {
       const deleteUpdate = { is_deleted: true, deleted_at: new Date().toISOString() };
       
-      const { error: deleteError } = await supabase
+      const { error: deleteError } = await kapable
         .from(table)
         .update(deleteUpdate as never)
         .eq("id" as never, id as never);

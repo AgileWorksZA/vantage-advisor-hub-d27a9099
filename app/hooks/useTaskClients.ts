@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
+import { useKapableAuth } from "@/integrations/kapable/auth-context";
 import { toast } from "sonner";
 
 export interface TaskClient {
@@ -13,6 +14,7 @@ export interface TaskClient {
 }
 
 export const useTaskClients = (taskId?: string) => {
+  const { userId } = useKapableAuth();
   const [taskClients, setTaskClients] = useState<TaskClient[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -21,29 +23,35 @@ export const useTaskClients = (taskId?: string) => {
     
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await kapable
         .from("task_clients")
-        .select(`
-          id,
-          task_id,
-          client_id,
-          role,
-          created_at,
-          clients!task_clients_client_id_fkey(first_name, surname, email)
-        `)
+        .select("*")
         .eq("task_id", taskId);
 
       if (error) throw error;
 
-      const transformed = (data || []).map((tc: any) => ({
-        id: tc.id,
-        task_id: tc.task_id,
-        client_id: tc.client_id,
-        role: tc.role,
-        created_at: tc.created_at,
-        client_name: tc.clients ? `${tc.clients.first_name} ${tc.clients.surname}` : "Unknown",
-        client_email: tc.clients?.email,
-      }));
+      // Fetch client details separately
+      const clientIds = [...new Set((data || []).map((tc: any) => tc.client_id).filter(Boolean))];
+      let clientsMap: Record<string, any> = {};
+      if (clientIds.length > 0) {
+        const { data: clientsData } = await kapable.from("clients").select("*").in("id", clientIds);
+        for (const c of (clientsData || [])) {
+          clientsMap[c.id] = c;
+        }
+      }
+
+      const transformed = (data || []).map((tc: any) => {
+        const client = clientsMap[tc.client_id];
+        return {
+          id: tc.id,
+          task_id: tc.task_id,
+          client_id: tc.client_id,
+          role: tc.role,
+          created_at: tc.created_at,
+          client_name: client ? `${client.first_name} ${client.surname}` : "Unknown",
+          client_email: client?.email,
+        };
+      });
 
       setTaskClients(transformed);
     } catch (err: any) {
@@ -58,13 +66,12 @@ export const useTaskClients = (taskId?: string) => {
     if (!taskId) return null;
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!userId) throw new Error("Not authenticated");
 
-      const { data, error } = await supabase
+      const { data, error } = await kapable
         .from("task_clients")
         .insert({
-          user_id: user.id,
+          user_id: userId,
           task_id: taskId,
           client_id: clientId,
           role,
@@ -86,7 +93,7 @@ export const useTaskClients = (taskId?: string) => {
 
   const removeClient = async (taskClientId: string) => {
     try {
-      const { error } = await supabase
+      const { error } = await kapable
         .from("task_clients")
         .delete()
         .eq("id", taskClientId);
@@ -105,7 +112,7 @@ export const useTaskClients = (taskId?: string) => {
 
   const updateRole = async (taskClientId: string, newRole: string) => {
     try {
-      const { error } = await supabase
+      const { error } = await kapable
         .from("task_clients")
         .update({ role: newRole })
         .eq("id", taskClientId);

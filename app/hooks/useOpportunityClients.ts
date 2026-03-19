@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
 import { sampleNewOpportunities, NewOpportunityType, NewOpportunityClient } from "@/data/sampleNewOpportunities";
 
 export interface EnrichedOpportunityClient extends NewOpportunityClient {
@@ -32,9 +32,9 @@ export function useOpportunityClients() {
           }
         });
 
-        const { data: dbClients } = await supabase
+        const { data: dbClients } = await kapable
           .from('clients')
-          .select('id, first_name, surname')
+          .select('*')
           .in('surname', Array.from(surnameSet));
 
         if (dbClients && dbClients.length > 0) {

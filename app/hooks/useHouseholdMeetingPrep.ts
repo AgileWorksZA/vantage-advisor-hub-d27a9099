@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
 import type { PrepTask, PrepDocument, PrepOpportunity, PrepProduct } from "./useClientMeetingPrep";
 
 export interface HouseholdPrepTask extends PrepTask {
@@ -59,9 +59,9 @@ export function useHouseholdMeetingPrep(householdGroup: string | null, enabled: 
 
     try {
       // Get all clients in the household
-      const { data: householdClients } = await supabase
+      const { data: householdClients } = await kapable
         .from("clients")
-        .select("id, first_name, surname, nationality, country_of_issue")
+        .select("*")
         .eq("household_group", householdGroup);
 
       if (!householdClients || householdClients.length === 0) {
@@ -74,28 +74,28 @@ export function useHouseholdMeetingPrep(householdGroup: string | null, enabled: 
 
       // Fetch all data in parallel across all household clients
       const [tasksRes, docsRes, oppsRes, prodsRes] = await Promise.all([
-        supabase
-          .from("tasks")
-          .select("id, title, task_type, priority, status, due_date, client_id")
+        kapable
+          .from("advisor_tasks")
+          .select("*")
           .in("client_id", clientIds)
           .eq("is_deleted", false)
           .not("status", "in", '("Completed","Cancelled")')
           .order("due_date", { ascending: true }),
-        supabase
+        kapable
           .from("documents")
-          .select("id, name, status, expiry_date, client_id, document_types!documents_document_type_id_fkey(category)")
+          .select("*")
           .in("client_id", clientIds)
           .eq("is_deleted", false)
           .in("status", ["Pending", "Expired"])
           .order("created_at", { ascending: false }),
-        supabase
+        kapable
           .from("project_opportunities")
-          .select("id, client_name, opportunity_type, potential_revenue, confidence, status, suggested_action, reasoning, client_id")
+          .select("*")
           .in("client_id", clientIds)
           .order("potential_revenue", { ascending: false }),
-        supabase
+        kapable
           .from("client_products")
-          .select("id, current_value, status, client_id, products!client_products_product_id_fkey(name, product_categories!products_category_id_fkey(name))")
+          .select("*")
           .in("client_id", clientIds)
           .eq("is_deleted", false)
           .eq("status", "Active")
@@ -126,7 +126,7 @@ export function useHouseholdMeetingPrep(householdGroup: string | null, enabled: 
           name: d.name,
           status: d.status,
           expiryDate: d.expiry_date,
-          category: d.document_types?.category || "Client",
+          category: (d as any).category || "Client",
           clientName: clientNameMap.get(d.client_id) || "Unknown",
         })),
         opportunities: (oppsRes.data || []).map((o: any) => ({
@@ -141,8 +141,8 @@ export function useHouseholdMeetingPrep(householdGroup: string | null, enabled: 
         })),
         products: (prodsRes.data || []).map((p: any) => ({
           id: p.id,
-          productName: p.products?.name || "Unknown",
-          category: p.products?.product_categories?.name || null,
+          productName: (p as any).product_name || "Unknown",
+          category: null, // Would need separate products/categories lookup
           currentValue: p.current_value,
           status: p.status,
           clientName: clientNameMap.get(p.client_id) || "Unknown",

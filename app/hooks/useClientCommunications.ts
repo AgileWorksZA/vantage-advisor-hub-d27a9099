@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
+import { useKapableAuth } from "@/integrations/kapable/auth-context";
 import { toast } from "sonner";
 
 export interface Communication {
@@ -60,15 +61,16 @@ export const useClientCommunications = (clientId: string) => {
   const [channelCounts, setChannelCounts] = useState<ChannelCount[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { userId } = useKapableAuth();
 
   const fetchCommunications = useCallback(async (channel?: Communication["channel"]) => {
     if (!clientId) return;
-    
+
     setLoading(true);
     setError(null);
     try {
-      let query = supabase
-        .from("communications")
+      let query = kapable
+        .from<Communication>("communications")
         .select("*")
         .eq("client_id", clientId)
         .eq("is_deleted", false)
@@ -88,18 +90,18 @@ export const useClientCommunications = (clientId: string) => {
       setCommunications(transformedComms);
 
       // Get channel counts
-      const { data: countData } = await supabase
-        .from("communications")
-        .select("channel")
+      const { data: countData } = await kapable
+        .from<Communication>("communications")
+        .select("*")
         .eq("client_id", clientId)
         .eq("is_deleted", false);
 
       if (countData) {
         const counts: Record<string, number> = {};
-        countData.forEach((c: any) => {
+        for (const c of countData as any[]) {
           counts[c.channel] = (counts[c.channel] || 0) + 1;
-        });
-        
+        }
+
         const channelList: ChannelCount[] = [
           { channel: "Email", count: counts["Email"] || 0 },
           { channel: "SMS", count: counts["SMS"] || 0 },
@@ -120,13 +122,12 @@ export const useClientCommunications = (clientId: string) => {
 
   const logCommunication = async (commData: Partial<Communication>) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!userId) throw new Error("Not authenticated");
 
-      const { data, error } = await supabase
-        .from("communications")
+      const { data, error } = await kapable
+        .from<Communication>("communications")
         .insert({
-          user_id: user.id,
+          user_id: userId,
           client_id: clientId,
           channel: commData.channel || "Email",
           direction: commData.direction || "Outbound",
@@ -136,8 +137,7 @@ export const useClientCommunications = (clientId: string) => {
           content: commData.content,
           sent_at: commData.sent_at || new Date().toISOString(),
           status: commData.status || "Sent",
-        })
-        .select()
+        } as any)
         .single();
 
       if (error) throw error;
@@ -154,9 +154,9 @@ export const useClientCommunications = (clientId: string) => {
 
   const deleteCommunication = async (commId: string) => {
     try {
-      const { error } = await supabase
-        .from("communications")
-        .update({ is_deleted: true, deleted_at: new Date().toISOString() })
+      const { error } = await kapable
+        .from<Communication>("communications")
+        .update({ is_deleted: true, deleted_at: new Date().toISOString() } as any)
         .eq("id", commId);
 
       if (error) throw error;

@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
+import { useKapableAuth } from "@/integrations/kapable/auth-context";
 import { useToast } from "@/hooks/use-toast";
 
 export interface TeamMember {
@@ -20,14 +21,14 @@ export interface TeamMember {
 export const useTeamMembers = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { userId } = useKapableAuth();
 
   const { data: teamMembers = [], isLoading, error } = useQuery({
     queryKey: ["team-members"],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!userId) throw new Error("Not authenticated");
 
-      const { data, error } = await supabase
+      const { data, error } = await kapable
         .from("team_members")
         .select("*")
         .eq("is_active", true)
@@ -40,14 +41,13 @@ export const useTeamMembers = () => {
 
   const addTeamMember = useMutation({
     mutationFn: async (member: Omit<TeamMember, "id" | "user_id" | "created_at" | "updated_at">) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!userId) throw new Error("Not authenticated");
 
-      const { data, error } = await supabase
+      const { data, error } = await kapable
         .from("team_members")
         .insert({
           ...member,
-          user_id: user.id,
+          user_id: userId,
         })
         .select()
         .single();

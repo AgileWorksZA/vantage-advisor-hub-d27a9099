@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
 
 export type TimeBucket = "today" | "lt7days" | "lt14days" | "lt1month" | "gte1month";
 export type OnboardingStatus = "In Progress" | "Pending Client" | "Not Started";
@@ -46,18 +46,33 @@ export function useOnboardingProgress(selectedAdvisorNames: string[]) {
     const fetchOnboardingTasks = async () => {
       setLoading(true);
       try {
-        const { data, error } = await supabase
-          .from("tasks")
-          .select(`
-            id, status, due_date, client_id,
-            clients!tasks_client_id_fkey(advisor)
-          `)
+        const { data, error } = await kapable
+          .from("advisor_tasks")
+          .select("*")
           .eq("task_type", "Onboarding")
           .eq("is_deleted", false)
           .in("status", ["In Progress", "Pending Client", "Not Started"] as any);
 
         if (error) throw error;
-        setRawTasks(data || []);
+
+        // Fetch client advisors separately (Kapable doesn't support nested selects)
+        const clientIds = [...new Set((data || []).map((t: any) => t.client_id).filter(Boolean))];
+        let clientAdvisorMap: Record<string, string> = {};
+        if (clientIds.length > 0) {
+          const { data: clientsData } = await kapable.from("clients").select("*").in("id", clientIds);
+          for (const c of (clientsData || [])) {
+            if (c.advisor) clientAdvisorMap[c.id] = c.advisor;
+          }
+        }
+
+        // Merge advisor data into tasks
+        const enrichedTasks = (data || []).map((t: any) => ({
+          ...t,
+          clients: t.client_id && clientAdvisorMap[t.client_id]
+            ? { advisor: clientAdvisorMap[t.client_id] }
+            : null,
+        }));
+        setRawTasks(enrichedTasks);
       } catch (err) {
         console.error("Error fetching onboarding tasks:", err);
         setRawTasks([]);

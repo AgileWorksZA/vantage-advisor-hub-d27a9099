@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
 
 export interface ClientCalendarEvent {
   id: string;
@@ -27,10 +27,8 @@ export const useClientCalendarEvents = (clientId: string | undefined) => {
 
     try {
       setLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setEvents([]); return; }
 
-      const { data, error } = await supabase
+      const { data, error } = await kapable
         .from("calendar_events")
         .select("*")
         .eq("client_id", clientId)

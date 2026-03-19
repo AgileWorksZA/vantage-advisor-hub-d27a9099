@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
+import { useKapableAuth } from "@/integrations/kapable/auth-context";
 import { toast } from "sonner";
 
 export interface ClientProduct {
@@ -71,22 +72,17 @@ export const useClientProducts = (clientId: string) => {
   const [products, setProducts] = useState<ProductListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { userId } = useKapableAuth();
 
   const fetchProducts = useCallback(async (showInactive: boolean = false) => {
     if (!clientId) return;
-    
+
     setLoading(true);
     setError(null);
     try {
-      let query = supabase
-        .from("client_products")
-        .select(`
-          *,
-          products!client_products_product_id_fkey(
-            name,
-            product_categories!products_category_id_fkey(name)
-          )
-        `)
+      let query = kapable
+        .from<ClientProduct>("client_products")
+        .select("*")
         .eq("client_id", clientId)
         .eq("is_deleted", false)
         .order("created_at", { ascending: false });
@@ -99,10 +95,49 @@ export const useClientProducts = (clientId: string) => {
 
       if (fetchError) throw fetchError;
 
+      // Look up product names from the products table
+      const productIds = new Set<string>();
+      for (const p of (data || []) as any[]) {
+        if (p.product_id) productIds.add(p.product_id);
+      }
+
+      let productMap: Record<string, any> = {};
+      if (productIds.size > 0) {
+        const { data: productsData } = await kapable
+          .from("products")
+          .select("*")
+          .in("id", [...productIds]);
+
+        // Also look up product categories
+        const categoryIds = new Set<string>();
+        for (const prod of (productsData || []) as any[]) {
+          productMap[prod.id] = prod;
+          if (prod.category_id) categoryIds.add(prod.category_id);
+        }
+
+        if (categoryIds.size > 0) {
+          const { data: categoriesData } = await kapable
+            .from("product_categories")
+            .select("*")
+            .in("id", [...categoryIds]);
+          const categoryMap: Record<string, any> = {};
+          for (const cat of (categoriesData || []) as any[]) {
+            categoryMap[cat.id] = cat;
+          }
+          // Attach category names to products
+          for (const prodId of Object.keys(productMap)) {
+            const prod = productMap[prodId];
+            if (prod.category_id && categoryMap[prod.category_id]) {
+              prod.category_name = categoryMap[prod.category_id].name;
+            }
+          }
+        }
+      }
+
       const transformedProducts = (data || []).map((product: any) => ({
         ...product,
-        product_name: product.products?.name,
-        category_name: product.products?.product_categories?.name,
+        product_name: product.product_id ? productMap[product.product_id]?.name : undefined,
+        category_name: product.product_id ? productMap[product.product_id]?.category_name : undefined,
       })).map(transformProductToListItem);
 
       setProducts(transformedProducts);
@@ -117,13 +152,12 @@ export const useClientProducts = (clientId: string) => {
 
   const createProduct = async (productData: Partial<ClientProduct>) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!userId) throw new Error("Not authenticated");
 
-      const { data, error } = await supabase
-        .from("client_products")
+      const { data, error } = await kapable
+        .from<ClientProduct>("client_products")
         .insert({
-          user_id: user.id,
+          user_id: userId,
           client_id: clientId,
           product_id: productData.product_id,
           policy_number: productData.policy_number,
@@ -135,10 +169,9 @@ export const useClientProducts = (clientId: string) => {
           start_date: productData.start_date,
           is_linked: productData.is_linked ?? true,
           notes: productData.notes,
-          created_by: user.id,
-          adviser_id: user.id,
-        })
-        .select()
+          created_by: userId,
+          adviser_id: userId,
+        } as any)
         .single();
 
       if (error) throw error;
@@ -155,15 +188,13 @@ export const useClientProducts = (clientId: string) => {
 
   const updateProduct = async (productId: string, updates: Partial<ClientProduct>) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      const { error } = await supabase
-        .from("client_products")
+      const { error } = await kapable
+        .from<ClientProduct>("client_products")
         .update({
           ...updates,
-          updated_by: user?.id,
+          updated_by: userId,
           value_updated_at: updates.current_value !== undefined ? new Date().toISOString() : undefined,
-        })
+        } as any)
         .eq("id", productId);
 
       if (error) throw error;
@@ -180,9 +211,9 @@ export const useClientProducts = (clientId: string) => {
 
   const deleteProduct = async (productId: string) => {
     try {
-      const { error } = await supabase
-        .from("client_products")
-        .update({ is_deleted: true, deleted_at: new Date().toISOString() })
+      const { error } = await kapable
+        .from<ClientProduct>("client_products")
+        .update({ is_deleted: true, deleted_at: new Date().toISOString() } as any)
         .eq("id", productId);
 
       if (error) throw error;

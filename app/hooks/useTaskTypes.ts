@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
 
 export interface TaskTypeOption {
   code: string;
@@ -21,10 +21,10 @@ export const useTaskTypes = () => {
   const fetchTypes = useCallback(async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await kapable
         .from("admin_general_lists")
         .select("*")
-        .in("list_type", ["task_types", "task_categories", "task_resolution_types", "task_sources", "task_statuses", "task_priorities", "priorities"])
+        .in("list_type", ["task_types", "task_categories", "task_resolution_types", "task_sources", "task_statuses", "task_priorities", "priorities"] as any)
         .eq("is_active", true)
         .order("display_order", { ascending: true });
 

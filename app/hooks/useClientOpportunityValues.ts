@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
+import { useKapableAuth } from "@/integrations/kapable/auth-context";
 
 export interface ClientWithValue {
   id: string;
@@ -18,39 +19,39 @@ const opportunityMultipliers: Record<string, number> = {
 
 export const useClientOpportunityValues = (projectType: string, excludeClientIds: string[] = []) => {
   const multiplier = opportunityMultipliers[projectType] || 0.05;
+  const { userId } = useKapableAuth();
 
   const clientsQuery = useQuery({
     queryKey: ["clients-with-values", projectType, excludeClientIds],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!userId) throw new Error("Not authenticated");
 
       // Fetch clients
-      const { data: clients, error: clientsError } = await supabase
+      const { data: clients, error: clientsError } = await kapable
         .from("clients")
-        .select("id, first_name, surname, email")
+        .select("*")
         .order("surname", { ascending: true });
 
       if (clientsError) throw clientsError;
 
       // Fetch client products for value aggregation
-      const { data: products, error: productsError } = await supabase
+      const { data: products, error: productsError } = await kapable
         .from("client_products")
-        .select("client_id, current_value")
+        .select("*")
         .eq("is_deleted", false);
 
       if (productsError) throw productsError;
 
       // Aggregate product values by client
       const valuesByClient: Record<string, number> = {};
-      products?.forEach((p) => {
+      for (const p of (products || []) as any[]) {
         if (p.client_id) {
           valuesByClient[p.client_id] = (valuesByClient[p.client_id] || 0) + (Number(p.current_value) || 0);
         }
-      });
+      }
 
       // Map clients with calculated values
-      const clientsWithValues: ClientWithValue[] = (clients || [])
+      const clientsWithValues: ClientWithValue[] = ((clients || []) as any[])
         .filter(c => !excludeClientIds.includes(c.id))
         .map((client) => {
           const currentValue = valuesByClient[client.id] || 0;

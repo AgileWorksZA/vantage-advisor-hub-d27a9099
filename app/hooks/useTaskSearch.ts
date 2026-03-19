@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
 
 export interface TaskSearchFilters {
   clientIds?: string[];
@@ -43,15 +43,9 @@ export const useTaskSearch = () => {
       setError(null);
 
       try {
-        let query = supabase
-          .from("tasks")
-          .select(
-            `
-            *,
-            clients!tasks_client_id_fkey(first_name, surname, advisor)
-          `,
-            { count: "exact" }
-          )
+        let query = kapable
+          .from("advisor_tasks")
+          .select("*")
           .eq("is_deleted", false);
 
         // Filter by client IDs if provided
@@ -119,35 +113,48 @@ export const useTaskSearch = () => {
         const to = from + pageSize - 1;
         query = query.range(from, to).order("created_at", { ascending: false });
 
-        const { data, error: fetchError, count } = await query;
+        const { data, error: fetchError } = await query;
 
         if (fetchError) throw fetchError;
 
-        const transformedTasks: TaskSearchResult[] = (data || []).map((task: any) => ({
-          id: task.id,
-          task_number: task.task_number,
-          title: task.title,
-          description: task.description,
-          task_type: task.task_type,
-          priority: task.priority,
-          status: task.status,
-          due_date: task.due_date,
-          follow_up_date: task.follow_up_date,
-          client_id: task.client_id,
-          client_name: task.clients
-            ? `${task.clients.first_name} ${task.clients.surname}`
-            : null,
-          client_initials: task.clients
-            ? `${task.clients.first_name?.[0] || ""}${task.clients.surname?.[0] || ""}`.toUpperCase()
-            : null,
-          advisor: task.clients?.advisor || null,
-          assignee: null, // Would need profiles join
-          last_comment: null, // Would need task_history join
-          created_at: task.created_at,
-        }));
+        // Fetch client details separately
+        const clientIds = [...new Set((data || []).map((t: any) => t.client_id).filter(Boolean))];
+        let clientsMap: Record<string, any> = {};
+        if (clientIds.length > 0) {
+          const { data: clientsData } = await kapable.from("clients").select("*").in("id", clientIds);
+          for (const c of (clientsData || [])) {
+            clientsMap[c.id] = c;
+          }
+        }
+
+        const transformedTasks: TaskSearchResult[] = (data || []).map((task: any) => {
+          const client = clientsMap[task.client_id];
+          return {
+            id: task.id,
+            task_number: task.task_number,
+            title: task.title,
+            description: task.description,
+            task_type: task.task_type,
+            priority: task.priority,
+            status: task.status,
+            due_date: task.due_date,
+            follow_up_date: task.follow_up_date,
+            client_id: task.client_id,
+            client_name: client
+              ? `${client.first_name} ${client.surname}`
+              : null,
+            client_initials: client
+              ? `${client.first_name?.[0] || ""}${client.surname?.[0] || ""}`.toUpperCase()
+              : null,
+            advisor: client?.advisor || null,
+            assignee: null,
+            last_comment: null,
+            created_at: task.created_at,
+          };
+        });
 
         setTasks(transformedTasks);
-        setTotalCount(count || 0);
+        setTotalCount((data || []).length);
       } catch (err: any) {
         console.error("Error searching tasks:", err);
         setError(err.message);

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
+import { useKapableAuth } from "@/integrations/kapable/auth-context";
 import { toast } from "sonner";
 
 export type DirectMessageChannel = "whatsapp" | "sms" | "push";
@@ -60,6 +61,7 @@ const regionToCountry: Record<string, string> = {
 };
 
 export const useDirectMessages = (channel: DirectMessageChannel, jurisdiction?: string) => {
+  const { userId } = useKapableAuth();
   const [messages, setMessages] = useState<DirectMessage[]>([]);
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -68,13 +70,12 @@ export const useDirectMessages = (channel: DirectMessageChannel, jurisdiction?: 
   const fetchConversations = useCallback(async () => {
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setLoading(false); return; }
+      if (!userId) { setLoading(false); return; }
 
-      const { data: messagesData, error: messagesError } = await supabase
+      const { data: messagesData, error: messagesError } = await kapable
         .from("direct_messages")
-        .select("id, client_id, content, sent_at, direction, status, message_type")
-        .eq("user_id", user.id)
+        .select("*")
+        .eq("user_id", userId)
         .eq("channel", channel)
         .eq("is_deleted", false)
         .order("sent_at", { ascending: false });
@@ -89,9 +90,9 @@ export const useDirectMessages = (channel: DirectMessageChannel, jurisdiction?: 
         return;
       }
 
-      let clientQuery = supabase
+      let clientQuery = kapable
         .from("clients")
-        .select("id, first_name, surname, cell_number, country_of_issue")
+        .select("*")
         .in("id", clientIds);
 
       if (jurisdiction) {
@@ -155,13 +156,12 @@ export const useDirectMessages = (channel: DirectMessageChannel, jurisdiction?: 
     setLoading(true);
     setError(null);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!userId) return;
 
-      const { data, error: fetchError } = await supabase
+      const { data, error: fetchError } = await kapable
         .from("direct_messages")
         .select("*")
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .eq("client_id", clientId)
         .eq("channel", channel)
         .eq("is_deleted", false)
@@ -184,11 +184,10 @@ export const useDirectMessages = (channel: DirectMessageChannel, jurisdiction?: 
 
   const sendMessage = async (input: SendMessageInput): Promise<boolean> => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!userId) throw new Error("Not authenticated");
 
       const insertPayload: any = {
-        user_id: user.id,
+        user_id: userId,
         client_id: input.client_id,
         channel: input.channel,
         direction: "outbound",
@@ -199,7 +198,7 @@ export const useDirectMessages = (channel: DirectMessageChannel, jurisdiction?: 
       };
       if (input.poll_data) insertPayload.poll_data = input.poll_data;
 
-      const { data, error: insertError } = await supabase
+      const { data, error: insertError } = await kapable
         .from("direct_messages")
         .insert([insertPayload])
         .select()
@@ -223,7 +222,7 @@ export const useDirectMessages = (channel: DirectMessageChannel, jurisdiction?: 
 
   const markAsRead = async (messageIds: string[]): Promise<void> => {
     try {
-      await supabase
+      await kapable
         .from("direct_messages")
         .update({ status: "read" as MessageStatus })
         .in("id", messageIds)

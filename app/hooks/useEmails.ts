@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
+import { useKapableAuth } from "@/integrations/kapable/auth-context";
 import { toast } from "sonner";
 import { detectOpportunityTypes } from "@/lib/opportunity-detection";
 
@@ -94,6 +95,7 @@ export type ContentFilter = "all" | "has-tasks" | "has-opportunities" | "has-bot
 const OPPORTUNITY_KEYWORDS = /\b(opportunity|recommend|rebalance|top[\s-]?up|review|contribution|switch|beneficiary|annuity|retirement|estate|tax|insurance|risk|hedge|diversif)/i;
 
 export const useEmails = (folder?: Email["folder"] | null, contentFilter: ContentFilter = "all") => {
+  const { userId } = useKapableAuth();
   const [emails, setEmails] = useState<EmailListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
@@ -104,10 +106,10 @@ export const useEmails = (folder?: Email["folder"] | null, contentFilter: Conten
   // Fetch all clients for email matching
   const fetchClients = useCallback(async () => {
     try {
-      const { data } = await supabase
+      const { data } = await kapable
         .from("clients")
-        .select("id, first_name, surname, preferred_name, email, work_email, advisor, country_of_issue");
-      
+        .select("*");
+
       setAllClients((data as ClientRecord[]) || []);
     } catch (err) {
       console.error("Error fetching clients for matching:", err);
@@ -134,7 +136,7 @@ export const useEmails = (folder?: Email["folder"] | null, contentFilter: Conten
         await fetchClients();
       }
       
-      let query = supabase
+      let query = kapable
         .from("emails")
         .select("*")
         .eq("is_deleted", false)
@@ -147,9 +149,9 @@ export const useEmails = (folder?: Email["folder"] | null, contentFilter: Conten
       if (fetchError) throw fetchError;
 
       // Get latest clients for matching
-      const { data: clientsData } = await supabase
+      const { data: clientsData } = await kapable
         .from("clients")
-        .select("id, first_name, surname, preferred_name, email, work_email, advisor, country_of_issue");
+        .select("*");
       
       const clientsList = (clientsData as ClientRecord[]) || [];
 
@@ -196,9 +198,9 @@ export const useEmails = (folder?: Email["folder"] | null, contentFilter: Conten
 
       if (contentFilter === "has-tasks" || contentFilter === "has-both") {
         // Query email_tasks junction to find emails with linked tasks
-        const { data: taskLinks } = await supabase
+        const { data: taskLinks } = await kapable
           .from("email_tasks")
-          .select("email_id");
+          .select("*");
         const emailIdsWithTasks = new Set((taskLinks || []).map((t: any) => t.email_id));
         filteredEmails = filteredEmails.filter(e => emailIdsWithTasks.has(e.id));
       }
@@ -207,9 +209,9 @@ export const useEmails = (folder?: Email["folder"] | null, contentFilter: Conten
         // Get full email bodies for keyword matching
         const emailIds = filteredEmails.map(e => e.id);
         if (emailIds.length > 0) {
-          const { data: bodyData } = await supabase
+          const { data: bodyData } = await kapable
             .from("emails")
-            .select("id, body_preview, body_html, subject")
+            .select("*")
             .in("id", emailIds);
           const opportunityIds = new Set(
             (bodyData || [])
@@ -226,9 +228,9 @@ export const useEmails = (folder?: Email["folder"] | null, contentFilter: Conten
       setEmails(filteredEmails);
 
       // Get folder counts
-      const { data: countData } = await supabase
+      const { data: countData } = await kapable
         .from("emails")
-        .select("folder")
+        .select("*")
         .eq("is_deleted", false);
 
       if (countData) {
@@ -255,16 +257,15 @@ export const useEmails = (folder?: Email["folder"] | null, contentFilter: Conten
 
   const createEmail = async (emailData: Partial<Email>) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!userId) throw new Error("Not authenticated");
 
-      const { data, error } = await supabase
+      const { data, error } = await kapable
         .from("emails")
         .insert({
-          user_id: user.id,
+          user_id: userId,
           folder: emailData.folder || "Draft",
           direction: emailData.direction || "Outbound",
-          from_address: emailData.from_address || user.email || "",
+          from_address: emailData.from_address || "",
           to_addresses: emailData.to_addresses || [],
           cc_addresses: emailData.cc_addresses || [],
           subject: emailData.subject,
@@ -290,7 +291,7 @@ export const useEmails = (folder?: Email["folder"] | null, contentFilter: Conten
 
   const updateEmail = async (emailId: string, updates: Partial<Email>) => {
     try {
-      const { error } = await supabase
+      const { error } = await kapable
         .from("emails")
         .update(updates)
         .eq("id", emailId);
@@ -308,7 +309,7 @@ export const useEmails = (folder?: Email["folder"] | null, contentFilter: Conten
 
   const moveToFolder = async (emailIds: string[], targetFolder: Email["folder"]) => {
     try {
-      const { error } = await supabase
+      const { error } = await kapable
         .from("emails")
         .update({ folder: targetFolder })
         .in("id", emailIds);
@@ -327,7 +328,7 @@ export const useEmails = (folder?: Email["folder"] | null, contentFilter: Conten
 
   const markAsRead = async (emailIds: string[], isRead: boolean = true) => {
     try {
-      const { error } = await supabase
+      const { error } = await kapable
         .from("emails")
         .update({ is_read: isRead })
         .in("id", emailIds);
@@ -344,7 +345,7 @@ export const useEmails = (folder?: Email["folder"] | null, contentFilter: Conten
 
   const deleteEmail = async (emailId: string) => {
     try {
-      const { error } = await supabase
+      const { error } = await kapable
         .from("emails")
         .update({ is_deleted: true, deleted_at: new Date().toISOString() })
         .eq("id", emailId);

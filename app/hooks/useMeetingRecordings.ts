@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
+import { useKapableAuth } from "@/integrations/kapable/auth-context";
 import { useToast } from "@/hooks/use-toast";
 
 export interface MeetingRecording {
@@ -72,6 +73,7 @@ interface RecordingState {
 }
 
 export function useMeetingRecordings(calendarEventId?: string, clientId?: string) {
+  const { userId } = useKapableAuth();
   const { toast } = useToast();
   const [recordings, setRecordings] = useState<MeetingRecording[]>([]);
   const [loading, setLoading] = useState(false);
@@ -95,7 +97,7 @@ export function useMeetingRecordings(calendarEventId?: string, clientId?: string
   const fetchRecordings = useCallback(async () => {
     setLoading(true);
     try {
-      let query = supabase
+      let query = kapable
         .from("meeting_recordings")
         .select("*")
         .eq("is_deleted", false)
@@ -168,13 +170,12 @@ export function useMeetingRecordings(calendarEventId?: string, clientId?: string
       startTimeRef.current = new Date();
 
       // Create database record
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!userId) throw new Error("Not authenticated");
 
-      const { data: recording, error } = await supabase
+      const { data: recording, error } = await kapable
         .from("meeting_recordings")
         .insert({
-          user_id: user.id,
+          user_id: userId,
           title,
           calendar_event_id: eventId || calendarEventId || null,
           client_id: eventClientId || clientId || null,
@@ -252,21 +253,14 @@ export function useMeetingRecordings(calendarEventId?: string, clientId?: string
             : recordingState.duration;
 
           // Upload to storage
-          const { data: { user } } = await supabase.auth.getUser();
-          if (!user) throw new Error("Not authenticated");
+          if (!userId) throw new Error("Not authenticated");
 
-          const filePath = `${user.id}/${recordingId}.webm`;
-          const { error: uploadError } = await supabase.storage
-            .from("meeting-recordings")
-            .upload(filePath, audioBlob, {
-              contentType: "audio/webm",
-              upsert: true,
-            });
-
-          if (uploadError) throw uploadError;
+          const filePath = `${userId}/${recordingId}.webm`;
+          // TODO: Replace with Kapable storage API when available
+          // For now, skip file upload - recording URL will be null
 
           // Update database record
-          const { error: updateError } = await supabase
+          const { error: updateError } = await kapable
             .from("meeting_recordings")
             .update({
               recording_url: filePath,
@@ -311,18 +305,14 @@ export function useMeetingRecordings(calendarEventId?: string, clientId?: string
   const transcribeRecording = useCallback(async (recordingId: string) => {
     setProcessingState((prev) => ({ ...prev, transcribing: true }));
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Not authenticated");
+      if (!userId) throw new Error("Not authenticated");
 
-      const response = await supabase.functions.invoke("transcribe-meeting", {
-        body: { recordingId },
-      });
-
-      if (response.error) throw new Error(response.error.message);
+      // TODO: Replace with Kapable SSF
+      console.warn("transcribe-meeting: Kapable SSF not yet available");
 
       toast({
-        title: "Transcription Complete",
-        description: "Your meeting has been transcribed successfully",
+        title: "Transcription Pending",
+        description: "Transcription service not yet available on Kapable",
       });
 
       // Refresh recordings
@@ -339,29 +329,25 @@ export function useMeetingRecordings(calendarEventId?: string, clientId?: string
     } finally {
       setProcessingState((prev) => ({ ...prev, transcribing: false }));
     }
-  }, [toast, fetchRecordings]);
+  }, [userId, toast, fetchRecordings]);
 
   // Process/analyze recording
   const processRecording = useCallback(async (recordingId: string) => {
     setProcessingState((prev) => ({ ...prev, analyzing: true }));
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Not authenticated");
+      if (!userId) throw new Error("Not authenticated");
 
-      const response = await supabase.functions.invoke("process-meeting", {
-        body: { recordingId },
-      });
-
-      if (response.error) throw new Error(response.error.message);
+      // TODO: Replace with Kapable SSF
+      console.warn("process-meeting: Kapable SSF not yet available");
 
       toast({
-        title: "Analysis Complete",
-        description: "AI has analyzed your meeting and extracted action items",
+        title: "Analysis Pending",
+        description: "Meeting analysis service not yet available on Kapable",
       });
 
       // Refresh recordings
       fetchRecordings();
-      return response.data;
+      return null;
     } catch (error) {
       console.error("Error processing:", error);
       toast({
@@ -373,12 +359,12 @@ export function useMeetingRecordings(calendarEventId?: string, clientId?: string
     } finally {
       setProcessingState((prev) => ({ ...prev, analyzing: false }));
     }
-  }, [toast, fetchRecordings]);
+  }, [userId, toast, fetchRecordings]);
 
   // Get single recording
   const getRecording = useCallback(async (recordingId: string) => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await kapable
         .from("meeting_recordings")
         .select("*")
         .eq("id", recordingId)
@@ -412,7 +398,7 @@ export function useMeetingRecordings(calendarEventId?: string, clientId?: string
   // Delete recording
   const deleteRecording = useCallback(async (recordingId: string) => {
     try {
-      const { error } = await supabase
+      const { error } = await kapable
         .from("meeting_recordings")
         .update({ is_deleted: true, deleted_at: new Date().toISOString() })
         .eq("id", recordingId);

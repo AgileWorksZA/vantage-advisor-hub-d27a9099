@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
+import { useKapableAuth } from "@/integrations/kapable/auth-context";
 import { toast } from "sonner";
 
 export type EmailProvider = "gmail" | "microsoft" | "imap";
@@ -28,6 +29,7 @@ export interface EmailSettingsInput {
 }
 
 export const useEmailSettings = () => {
+  const { userId } = useKapableAuth();
   const [settings, setSettings] = useState<EmailSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -36,16 +38,15 @@ export const useEmailSettings = () => {
     setLoading(true);
     setError(null);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      if (!userId) {
         setSettings(null);
         return;
       }
 
-      const { data, error: fetchError } = await supabase
+      const { data, error: fetchError } = await kapable
         .from("email_settings")
         .select("*")
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .eq("is_active", true)
         .maybeSingle();
 
@@ -62,20 +63,19 @@ export const useEmailSettings = () => {
 
   const saveSettings = async (input: EmailSettingsInput): Promise<boolean> => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!userId) throw new Error("Not authenticated");
 
       // Deactivate existing settings first
-      await supabase
+      await kapable
         .from("email_settings")
         .update({ is_active: false })
-        .eq("user_id", user.id);
+        .eq("user_id", userId);
 
       // Insert new settings
-      const { data, error: insertError } = await supabase
+      const { data, error: insertError } = await kapable
         .from("email_settings")
         .insert([{
-          user_id: user.id,
+          user_id: userId,
           provider: input.provider,
           email_address: input.email_address,
           fetch_mode: input.fetch_mode,
@@ -109,7 +109,7 @@ export const useEmailSettings = () => {
         updateData.settings = JSON.parse(JSON.stringify(updates.settings));
       }
       
-      const { data, error: updateError } = await supabase
+      const { data, error: updateError } = await kapable
         .from("email_settings")
         .update(updateData)
         .eq("id", settings.id)
@@ -132,7 +132,7 @@ export const useEmailSettings = () => {
     if (!settings) return;
 
     try {
-      await supabase
+      await kapable
         .from("email_settings")
         .update({ last_sync_at: new Date().toISOString() })
         .eq("id", settings.id);
@@ -145,7 +145,7 @@ export const useEmailSettings = () => {
     if (!settings) return false;
 
     try {
-      const { error: updateError } = await supabase
+      const { error: updateError } = await kapable
         .from("email_settings")
         .update({ is_active: false })
         .eq("id", settings.id);

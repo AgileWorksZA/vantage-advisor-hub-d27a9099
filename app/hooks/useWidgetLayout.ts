@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { kapable } from '@/integrations/kapable/client';
 import { debounce } from '@/lib/utils';
-import { Json } from '@/integrations/supabase/types';
 
 export interface WidgetLayout {
   i: string;
@@ -35,9 +34,9 @@ export const useWidgetLayout = ({ pageId, defaultLayout, userId }: UseWidgetLayo
     }
     
     const fetchLayout = async () => {
-      const { data, error } = await supabase
+      const { data, error } = await kapable
         .from('user_widget_layouts')
-        .select('layout, hidden_widgets')
+        .select('*')
         .eq('user_id', userId)
         .eq('page_id', pageId)
         .maybeSingle();
@@ -74,16 +73,25 @@ export const useWidgetLayout = ({ pageId, defaultLayout, userId }: UseWidgetLayo
           if (isInvalidLayout || hasForeignWidgets) {
             // Auto-heal: use default layout and persist it
             setLayout(defaultLayout);
-            await supabase
+            const { data: existingLayout } = await kapable
               .from('user_widget_layouts')
-              .upsert({
+              .select('*')
+              .eq('user_id', userId)
+              .eq('page_id', pageId)
+              .maybeSingle();
+            if (existingLayout) {
+              await kapable.from('user_widget_layouts').update({
+                layout: defaultLayout as unknown as Record<string, unknown>,
+                updated_at: new Date().toISOString(),
+              }).eq('id', (existingLayout as any).id);
+            } else {
+              await kapable.from('user_widget_layouts').insert({
                 user_id: userId,
                 page_id: pageId,
-                layout: defaultLayout as unknown as Json,
+                layout: defaultLayout as unknown as Record<string, unknown>,
                 updated_at: new Date().toISOString(),
-              }, {
-                onConflict: 'user_id,page_id'
               });
+            }
           } else if (needsHeightMigration) {
             const migratedLayout = savedLayout.map(item => {
               const defaults = defaultLayoutMap.get(item.i);
@@ -92,19 +100,25 @@ export const useWidgetLayout = ({ pageId, defaultLayout, userId }: UseWidgetLayo
             });
 
             setLayout(migratedLayout);
-            await supabase
+            const { data: existingMig } = await kapable
               .from('user_widget_layouts')
-              .upsert(
-                {
-                  user_id: userId,
-                  page_id: pageId,
-                  layout: migratedLayout as unknown as Json,
-                  updated_at: new Date().toISOString(),
-                },
-                {
-                  onConflict: 'user_id,page_id',
-                }
-              );
+              .select('*')
+              .eq('user_id', userId)
+              .eq('page_id', pageId)
+              .maybeSingle();
+            if (existingMig) {
+              await kapable.from('user_widget_layouts').update({
+                layout: migratedLayout as unknown as Record<string, unknown>,
+                updated_at: new Date().toISOString(),
+              }).eq('id', (existingMig as any).id);
+            } else {
+              await kapable.from('user_widget_layouts').insert({
+                user_id: userId,
+                page_id: pageId,
+                layout: migratedLayout as unknown as Record<string, unknown>,
+                updated_at: new Date().toISOString(),
+              });
+            }
         } else {
             // Check for new widgets missing from saved layout
             const savedIds = new Set(savedLayout.map(item => item.i));
@@ -113,16 +127,25 @@ export const useWidgetLayout = ({ pageId, defaultLayout, userId }: UseWidgetLayo
             if (missingWidgets.length > 0) {
               const mergedLayout = [...savedLayout, ...missingWidgets];
               setLayout(mergedLayout);
-              await supabase
+              const { data: existingMerge } = await kapable
                 .from('user_widget_layouts')
-                .upsert({
+                .select('*')
+                .eq('user_id', userId)
+                .eq('page_id', pageId)
+                .maybeSingle();
+              if (existingMerge) {
+                await kapable.from('user_widget_layouts').update({
+                  layout: mergedLayout as unknown as Record<string, unknown>,
+                  updated_at: new Date().toISOString(),
+                }).eq('id', (existingMerge as any).id);
+              } else {
+                await kapable.from('user_widget_layouts').insert({
                   user_id: userId,
                   page_id: pageId,
-                  layout: mergedLayout as unknown as Json,
+                  layout: mergedLayout as unknown as Record<string, unknown>,
                   updated_at: new Date().toISOString(),
-                }, {
-                  onConflict: 'user_id,page_id'
                 });
+              }
             } else {
               setLayout(savedLayout);
             }
@@ -139,17 +162,26 @@ export const useWidgetLayout = ({ pageId, defaultLayout, userId }: UseWidgetLayo
   const saveLayout = useMemo(
     () => debounce(async (newLayout: WidgetLayout[], currentUserId: string) => {
       if (!currentUserId) return;
-      
-      await supabase
+
+      const { data: existing } = await kapable
         .from('user_widget_layouts')
-        .upsert({
+        .select('*')
+        .eq('user_id', currentUserId)
+        .eq('page_id', pageId)
+        .maybeSingle();
+      if (existing) {
+        await kapable.from('user_widget_layouts').update({
+          layout: newLayout as unknown as Record<string, unknown>,
+          updated_at: new Date().toISOString(),
+        }).eq('id', (existing as any).id);
+      } else {
+        await kapable.from('user_widget_layouts').insert({
           user_id: currentUserId,
           page_id: pageId,
-          layout: newLayout as unknown as Json,
+          layout: newLayout as unknown as Record<string, unknown>,
           updated_at: new Date().toISOString(),
-        }, {
-          onConflict: 'user_id,page_id'
         });
+      }
     }, 1000),
     [pageId]
   );
@@ -164,17 +196,26 @@ export const useWidgetLayout = ({ pageId, defaultLayout, userId }: UseWidgetLayo
   const setHiddenWidgets = useCallback(async (widgetIds: string[]) => {
     setHiddenWidgetsState(widgetIds);
     if (!userId) return;
-    
-    await supabase
+
+    const { data: existing } = await kapable
       .from('user_widget_layouts')
-      .upsert({
+      .select('*')
+      .eq('user_id', userId)
+      .eq('page_id', pageId)
+      .maybeSingle();
+    if (existing) {
+      await kapable.from('user_widget_layouts').update({
+        hidden_widgets: widgetIds as unknown as Record<string, unknown>,
+        updated_at: new Date().toISOString(),
+      }).eq('id', (existing as any).id);
+    } else {
+      await kapable.from('user_widget_layouts').insert({
         user_id: userId,
         page_id: pageId,
-        hidden_widgets: widgetIds as unknown as Json,
+        hidden_widgets: widgetIds as unknown as Record<string, unknown>,
         updated_at: new Date().toISOString(),
-      }, {
-        onConflict: 'user_id,page_id'
       });
+    }
   }, [userId, pageId]);
 
   return { layout, onLayoutChange, hiddenWidgets, setHiddenWidgets, loading };

@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
+import { useKapableAuth } from "@/integrations/kapable/auth-context";
 import { useToast } from "@/hooks/use-toast";
 
 export interface OpportunityProject {
@@ -44,14 +45,14 @@ export interface UpdateProjectInput {
 export const useOpportunityProjects = (regionCode: string) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { userId } = useKapableAuth();
 
   const projectsQuery = useQuery({
     queryKey: ["opportunity-projects", regionCode],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!userId) throw new Error("Not authenticated");
 
-      const { data, error } = await supabase
+      const { data, error } = await kapable
         .from("opportunity_projects")
         .select("*")
         .eq("region_code", regionCode)
@@ -66,13 +67,12 @@ export const useOpportunityProjects = (regionCode: string) => {
 
   const createProject = useMutation({
     mutationFn: async (input: CreateProjectInput) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!userId) throw new Error("Not authenticated");
 
-      const { data, error } = await supabase
+      const { data, error } = await kapable
         .from("opportunity_projects")
         .insert({
-          user_id: user.id,
+          user_id: userId,
           name: input.name,
           description: input.description || null,
           project_type: input.project_type,
@@ -99,7 +99,7 @@ export const useOpportunityProjects = (regionCode: string) => {
   const updateProject = useMutation({
     mutationFn: async (input: UpdateProjectInput) => {
       const { id, ...updates } = input;
-      const { data, error } = await supabase
+      const { data, error } = await kapable
         .from("opportunity_projects")
         .update(updates)
         .eq("id", id)
@@ -120,7 +120,7 @@ export const useOpportunityProjects = (regionCode: string) => {
 
   const deleteProject = useMutation({
     mutationFn: async (projectId: string) => {
-      const { error } = await supabase
+      const { error } = await kapable
         .from("opportunity_projects")
         .update({ is_deleted: true, deleted_at: new Date().toISOString() })
         .eq("id", projectId);

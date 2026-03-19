@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
+import { useKapableAuth } from "@/integrations/kapable/auth-context";
 import { toast } from "sonner";
 
 export interface ClientLiability {
@@ -26,14 +27,15 @@ export interface ClientLiability {
 export const useClientLiabilities = (clientId: string) => {
   const [liabilities, setLiabilities] = useState<ClientLiability[]>([]);
   const [loading, setLoading] = useState(true);
+  const { userId } = useKapableAuth();
 
   const fetchLiabilities = useCallback(async () => {
     if (!clientId) return;
 
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from("client_liabilities")
+      const { data, error } = await kapable
+        .from<ClientLiability>("client_liabilities")
         .select("*")
         .eq("client_id", clientId)
         .eq("is_deleted", false)
@@ -51,13 +53,11 @@ export const useClientLiabilities = (clientId: string) => {
 
   const addLiability = useCallback(async (liability: Omit<ClientLiability, "id" | "user_id" | "created_at" | "updated_at" | "is_deleted">) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!userId) throw new Error("Not authenticated");
 
-      const { data, error } = await supabase
-        .from("client_liabilities")
-        .insert({ ...liability, user_id: user.id })
-        .select()
+      const { data, error } = await kapable
+        .from<ClientLiability>("client_liabilities")
+        .insert({ ...liability, user_id: userId })
         .single();
 
       if (error) throw error;
@@ -69,12 +69,12 @@ export const useClientLiabilities = (clientId: string) => {
       toast.error("Failed to add liability");
       return null;
     }
-  }, []);
+  }, [userId]);
 
   const updateLiability = useCallback(async (id: string, updates: Partial<ClientLiability>) => {
     try {
-      const { error } = await supabase
-        .from("client_liabilities")
+      const { error } = await kapable
+        .from<ClientLiability>("client_liabilities")
         .update(updates)
         .eq("id", id);
 
@@ -89,9 +89,9 @@ export const useClientLiabilities = (clientId: string) => {
 
   const deleteLiability = useCallback(async (id: string) => {
     try {
-      const { error } = await supabase
-        .from("client_liabilities")
-        .update({ is_deleted: true, deleted_at: new Date().toISOString() })
+      const { error } = await kapable
+        .from<ClientLiability>("client_liabilities")
+        .update({ is_deleted: true, deleted_at: new Date().toISOString() } as any)
         .eq("id", id);
 
       if (error) throw error;

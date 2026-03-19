@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
 
 export interface PrepNote {
   id: string;
@@ -81,52 +81,91 @@ export function useClientMeetingPrep(clientId: string | null) {
     }
 
     setData(prev => ({ ...prev, loading: true }));
-    const now = new Date().toISOString();
 
     try {
       const [notesRes, commsRes, tasksRes, docsRes, oppsRes, prodsRes] = await Promise.all([
-        supabase
+        kapable
           .from("client_notes")
-          .select("id, subject, created_at, priority, interaction_type")
+          .select("*")
           .eq("client_id", clientId)
           .eq("is_deleted", false)
           .order("created_at", { ascending: false })
           .limit(5),
-        supabase
+        kapable
           .from("communications")
-          .select("id, subject, channel, sent_at, created_at")
+          .select("*")
           .eq("client_id", clientId)
           .eq("is_deleted", false)
           .order("sent_at", { ascending: false })
           .limit(5),
-        supabase
-          .from("tasks")
-          .select("id, title, task_type, priority, status, due_date")
+        kapable
+          .from("advisor_tasks")
+          .select("*")
           .eq("client_id", clientId)
           .eq("is_deleted", false)
-          .not("status", "in", '("Completed","Cancelled")')
           .order("due_date", { ascending: true }),
-        supabase
+        kapable
           .from("documents")
-          .select("id, name, status, expiry_date, document_types!documents_document_type_id_fkey(category)")
+          .select("*")
           .eq("client_id", clientId)
           .eq("is_deleted", false)
-          .in("status", ["Pending", "Expired"])
           .order("created_at", { ascending: false }),
-        supabase
+        kapable
           .from("project_opportunities")
-          .select("id, client_name, opportunity_type, potential_revenue, confidence, status, suggested_action, reasoning")
+          .select("*")
           .eq("client_id", clientId)
           .order("potential_revenue", { ascending: false }),
-        supabase
+        kapable
           .from("client_products")
-          .select("id, current_value, status, products!client_products_product_id_fkey(name, product_categories!products_category_id_fkey(name))")
+          .select("*")
           .eq("client_id", clientId)
           .eq("is_deleted", false)
           .eq("status", "Active")
           .order("current_value", { ascending: false })
           .limit(5),
       ]);
+
+      // Filter tasks client-side (replacing .not("status", "in", ...))
+      const filteredTasks = (tasksRes.data || []).filter(
+        (t: any) => t.status !== "Completed" && t.status !== "Cancelled"
+      );
+
+      // Filter documents client-side for Pending/Expired status
+      const filteredDocs = (docsRes.data || []).filter(
+        (d: any) => d.status === "Pending" || d.status === "Expired"
+      );
+
+      // For products, we need to look up product names separately
+      const productIds = new Set<string>();
+      for (const p of (prodsRes.data || []) as any[]) {
+        if (p.product_id) productIds.add(p.product_id);
+      }
+      let productMap: Record<string, any> = {};
+      if (productIds.size > 0) {
+        const { data: productsData } = await kapable
+          .from("products")
+          .select("*")
+          .in("id", [...productIds]);
+        for (const prod of (productsData || []) as any[]) {
+          productMap[prod.id] = prod;
+        }
+      }
+
+      // For documents, look up document_type categories
+      const docTypeIds = new Set<string>();
+      for (const d of filteredDocs as any[]) {
+        if (d.document_type_id) docTypeIds.add(d.document_type_id);
+      }
+      let docTypeMap: Record<string, any> = {};
+      if (docTypeIds.size > 0) {
+        const { data: docTypesData } = await kapable
+          .from("document_types")
+          .select("*")
+          .in("id", [...docTypeIds]);
+        for (const dt of (docTypesData || []) as any[]) {
+          docTypeMap[dt.id] = dt;
+        }
+      }
 
       setData({
         loading: false,
@@ -143,7 +182,7 @@ export function useClientMeetingPrep(clientId: string | null) {
           channel: c.channel,
           date: c.sent_at || c.created_at,
         })),
-        tasks: (tasksRes.data || []).map((t: any) => ({
+        tasks: filteredTasks.map((t: any) => ({
           id: t.id,
           title: t.title,
           taskType: t.task_type,
@@ -152,12 +191,12 @@ export function useClientMeetingPrep(clientId: string | null) {
           dueDate: t.due_date,
           isOverdue: t.due_date ? new Date(t.due_date) < new Date() : false,
         })),
-        documents: (docsRes.data || []).map((d: any) => ({
+        documents: filteredDocs.map((d: any) => ({
           id: d.id,
           name: d.name,
           status: d.status,
           expiryDate: d.expiry_date,
-          category: d.document_types?.category || "Client",
+          category: d.document_type_id ? (docTypeMap[d.document_type_id]?.category || "Client") : "Client",
         })),
         opportunities: (oppsRes.data || []).map((o: any) => ({
           id: o.id,
@@ -171,8 +210,8 @@ export function useClientMeetingPrep(clientId: string | null) {
         })),
         products: (prodsRes.data || []).map((p: any) => ({
           id: p.id,
-          productName: p.products?.name || "Unknown",
-          category: p.products?.product_categories?.name || null,
+          productName: p.product_id ? (productMap[p.product_id]?.name || "Unknown") : "Unknown",
+          category: p.product_id ? (productMap[p.product_id]?.category_name || null) : null,
           currentValue: p.current_value,
           status: p.status,
         })),

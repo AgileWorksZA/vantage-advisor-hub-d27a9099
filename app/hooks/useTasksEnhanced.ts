@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
+import { useKapableAuth } from "@/integrations/kapable/auth-context";
 import { toast } from "sonner";
 import { isBefore } from "date-fns";
 
@@ -79,6 +80,7 @@ const getInitials = (name: string): string => {
 };
 
 export const useTasksEnhanced = (filters?: TaskFilters) => {
+  const { userId } = useKapableAuth();
   const [tasks, setTasks] = useState<EnhancedTask[]>([]);
   const [stats, setStats] = useState<TaskStats>({
     totalOpen: 0,
@@ -96,17 +98,14 @@ export const useTasksEnhanced = (filters?: TaskFilters) => {
     setLoading(true);
     setError(null);
     try {
-      let query = supabase
-        .from("tasks")
-        .select(`
-          *,
-          clients!tasks_client_id_fkey(first_name, surname, advisor)
-        `)
+      let query = kapable
+        .from("advisor_tasks")
+        .select("*")
         .eq("is_deleted", false)
         .order("is_pinned", { ascending: false })
         .order("created_at", { ascending: false });
 
-      // Apply filters - cast to any to avoid Supabase enum type restrictions
+      // Apply filters - cast to any to avoid enum type restrictions
       if (filters?.status && filters.status.length > 0) {
         query = query.in("status", filters.status as any);
       }
@@ -144,45 +143,62 @@ export const useTasksEnhanced = (filters?: TaskFilters) => {
       let linkedClientsMap: Record<string, Array<{ id: string; client_id: string; client_name: string; role: string }>> = {};
 
       if (taskIds.length > 0) {
-        const { data: taskClients } = await supabase
+        const { data: taskClients } = await kapable
           .from("task_clients")
-          .select(`
-            id,
-            task_id,
-            client_id,
-            role,
-            clients!task_clients_client_id_fkey(first_name, surname)
-          `)
+          .select("*")
           .in("task_id", taskIds);
 
         if (taskClients) {
+          // Fetch linked clients' details
+          const linkedClientIds = [...new Set(taskClients.map((tc: any) => tc.client_id).filter(Boolean))];
+          let linkedClientDetails: Record<string, any> = {};
+          if (linkedClientIds.length > 0) {
+            const { data: lcData } = await kapable.from("clients").select("*").in("id", linkedClientIds);
+            for (const c of (lcData || [])) {
+              linkedClientDetails[c.id] = c;
+            }
+          }
           taskClients.forEach((tc: any) => {
             if (!linkedClientsMap[tc.task_id]) {
               linkedClientsMap[tc.task_id] = [];
             }
+            const client = linkedClientDetails[tc.client_id];
             linkedClientsMap[tc.task_id].push({
               id: tc.id,
               client_id: tc.client_id,
-              client_name: tc.clients ? `${tc.clients.first_name} ${tc.clients.surname}` : "Unknown",
+              client_name: client ? `${client.first_name} ${client.surname}` : "Unknown",
               role: tc.role,
             });
           });
         }
       }
 
-      let transformedTasks: EnhancedTask[] = (data || []).map((task: any) => ({
-        ...task,
-        client_name: task.clients
-          ? `${task.clients.first_name} ${task.clients.surname}`
-          : null,
-        client_advisor: task.clients?.advisor || null,
+      // Fetch client details for all tasks
+      const allClientIds = [...new Set((data || []).map((t: any) => t.client_id).filter(Boolean))];
+      let allClientsMap: Record<string, any> = {};
+      if (allClientIds.length > 0) {
+        const { data: clData } = await kapable.from("clients").select("*").in("id", allClientIds);
+        for (const c of (clData || [])) {
+          allClientsMap[c.id] = c;
+        }
+      }
+
+      let transformedTasks: EnhancedTask[] = (data || []).map((task: any) => {
+        const client = allClientsMap[task.client_id];
+        return {
+          ...task,
+          client_name: client
+            ? `${client.first_name} ${client.surname}`
+            : null,
+          client_advisor: client?.advisor || null,
         assigned_to_name: task.assigned_to_name || "Current User",
         linked_clients: linkedClientsMap[task.id] || [],
         notes: Array.isArray(task.notes) ? task.notes : [],
         internal_notes: Array.isArray(task.internal_notes) ? task.internal_notes : [],
         tags: Array.isArray(task.tags) ? task.tags : [],
-        watchers: Array.isArray(task.watchers) ? task.watchers : [],
-      }));
+          watchers: Array.isArray(task.watchers) ? task.watchers : [],
+        };
+      });
 
       // Client-side SLA status filtering
       if (filters?.slaStatus && filters.slaStatus.length > 0) {
@@ -241,11 +257,10 @@ export const useTasksEnhanced = (filters?: TaskFilters) => {
 
   const createTask = async (taskData: Partial<EnhancedTask>, linkedClientIds?: string[]) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!userId) throw new Error("Not authenticated");
 
       const insertData: any = {
-        user_id: user.id,
+        user_id: userId,
         title: taskData.title || "New Task",
         description: taskData.description,
         task_type: (taskData.task_type || "Follow-up") as any,
@@ -253,8 +268,8 @@ export const useTasksEnhanced = (filters?: TaskFilters) => {
         status: (taskData.status || "Not Started") as any,
         due_date: taskData.due_date,
         client_id: taskData.client_id,
-        assigned_to_user_id: taskData.assigned_to_user_id || user.id,
-        created_by: user.id,
+        assigned_to_user_id: taskData.assigned_to_user_id || userId,
+        created_by: userId,
         is_practice_task: taskData.is_practice_task || false,
         notes: taskData.notes || [],
         source: taskData.source || "Manual",
@@ -268,8 +283,8 @@ export const useTasksEnhanced = (filters?: TaskFilters) => {
         insertData.sla_deadline = (taskData as any).sla_deadline;
       }
 
-      const { data, error } = await supabase
-        .from("tasks")
+      const { data, error } = await kapable
+        .from("advisor_tasks")
         .insert(insertData)
         .select()
         .single();
@@ -279,21 +294,21 @@ export const useTasksEnhanced = (filters?: TaskFilters) => {
       // Create linked clients
       if (linkedClientIds && linkedClientIds.length > 0) {
         const clientLinks = linkedClientIds.map((clientId, index) => ({
-          user_id: user.id,
+          user_id: userId,
           task_id: data.id,
           client_id: clientId,
           role: index === 0 ? "Primary" : "Related",
         }));
 
-        await supabase.from("task_clients").insert(clientLinks);
+        await kapable.from("task_clients").insert(clientLinks);
       }
 
       // Log to history
-      await supabase.from("task_history").insert({
-        user_id: user.id,
+      await kapable.from("task_history").insert({
+        user_id: userId,
         task_id: data.id,
         action: "Created",
-        changed_by: user.id,
+        changed_by: userId,
       });
 
       await fetchTasks();
@@ -308,8 +323,7 @@ export const useTasksEnhanced = (filters?: TaskFilters) => {
 
   const updateTask = async (taskId: string, updates: Partial<EnhancedTask>) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!userId) throw new Error("Not authenticated");
 
       const updatePayload: any = { ...updates };
       
@@ -325,8 +339,8 @@ export const useTasksEnhanced = (filters?: TaskFilters) => {
       delete updatePayload.assigned_to_name;
       delete updatePayload.linked_clients;
 
-      const { error } = await supabase
-        .from("tasks")
+      const { error } = await kapable
+        .from("advisor_tasks")
         .update(updatePayload)
         .eq("id", taskId);
 
@@ -335,13 +349,13 @@ export const useTasksEnhanced = (filters?: TaskFilters) => {
       // Log to history
       const changedFields = Object.keys(updates);
       for (const field of changedFields) {
-        await supabase.from("task_history").insert({
-          user_id: user.id,
+        await kapable.from("task_history").insert({
+          user_id: userId,
           task_id: taskId,
           action: "Updated",
           field_name: field,
           new_value: String((updates as any)[field]),
-          changed_by: user.id,
+          changed_by: userId,
         });
       }
 
@@ -357,22 +371,21 @@ export const useTasksEnhanced = (filters?: TaskFilters) => {
 
   const deleteTask = async (taskId: string) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!userId) throw new Error("Not authenticated");
 
-      const { error } = await supabase
-        .from("tasks")
+      const { error } = await kapable
+        .from("advisor_tasks")
         .update({ is_deleted: true, deleted_at: new Date().toISOString() })
         .eq("id", taskId);
 
       if (error) throw error;
 
       // Log to history
-      await supabase.from("task_history").insert({
-        user_id: user.id,
+      await kapable.from("task_history").insert({
+        user_id: userId,
         task_id: taskId,
         action: "Deleted",
-        changed_by: user.id,
+        changed_by: userId,
       });
 
       setTasks((prev) => prev.filter((t) => t.id !== taskId));
@@ -391,8 +404,7 @@ export const useTasksEnhanced = (filters?: TaskFilters) => {
 
   const addNote = async (taskId: string, note: string, isInternal: boolean = false) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!userId) throw new Error("Not authenticated");
 
       const task = tasks.find((t) => t.id === taskId);
       if (!task) throw new Error("Task not found");
@@ -401,7 +413,7 @@ export const useTasksEnhanced = (filters?: TaskFilters) => {
         id: crypto.randomUUID(),
         content: note,
         created_at: new Date().toISOString(),
-        created_by: user.id,
+        created_by: userId,
         is_internal: isInternal,
       };
 

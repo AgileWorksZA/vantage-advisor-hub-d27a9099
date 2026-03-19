@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useRegion } from "@/contexts/RegionContext";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
+import { useKapableAuth } from "@/integrations/kapable/auth-context";
 import { tlhOpportunitiesByRegion, getTLHDashboardMetrics, TLHOpportunityDemo, TLHDashboardMetrics } from "@/data/tlhDemoData";
 import { toast } from "sonner";
 
@@ -23,6 +24,7 @@ export interface TLHTradeRecord {
 }
 
 export function useTLHData() {
+  const { userId } = useKapableAuth();
   const { selectedRegion, formatCurrency } = useRegion();
 
   const [executedTrades, setExecutedTrades] = useState<TLHTradeRecord[]>([]);
@@ -37,7 +39,7 @@ export function useTLHData() {
   useEffect(() => {
     const fetchDbOpportunities = async () => {
       try {
-        const { data, error } = await supabase
+        const { data, error } = await kapable
           .from('tlh_opportunities')
           .select('*')
           .eq('jurisdiction', selectedRegion)
@@ -124,12 +126,11 @@ export function useTLHData() {
       setIsAutoSeeding(true);
       try {
         console.log('Auto-seeding TLH data...');
-        const { data, error } = await supabase.functions.invoke('seed-tlh-clients');
-        if (error) throw error;
-        console.log('TLH auto-seed complete:', data?.summary);
+        // TODO: Replace with Kapable SSF
+        console.warn('seed-tlh-clients: Kapable SSF not yet available — skipping auto-seed');
         
         // Re-fetch opportunities after seeding
-        const { data: newData } = await supabase
+        const { data: newData } = await kapable
           .from('tlh_opportunities')
           .select('*')
           .eq('jurisdiction', selectedRegion)
@@ -232,8 +233,8 @@ export function useTLHData() {
     // Try to write to DB if we have DB-backed data
     if (isSeeded) {
       try {
-        await supabase.from('tlh_trades').insert({
-          user_id: (await supabase.auth.getUser()).data.user?.id,
+        await kapable.from('tlh_trades').insert({
+          user_id: userId,
           opportunity_id: opportunity.id,
           client_id: (opportunity as any).dbClientId || null,
           sell_fund_name: opportunity.currentFund.name,
@@ -250,7 +251,7 @@ export function useTLHData() {
         });
 
         // Update opportunity status
-        await supabase
+        await kapable
           .from('tlh_opportunities')
           .update({ status: 'executed', executed_at: new Date().toISOString() })
           .eq('id', opportunity.id);

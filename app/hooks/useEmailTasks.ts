@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
+import { useKapableAuth } from "@/integrations/kapable/auth-context";
 import { toast } from "sonner";
 
 export interface EmailTask {
@@ -34,6 +35,7 @@ export interface LinkedTaskDisplay {
 }
 
 export const useEmailTasks = (emailId: string | null) => {
+  const { userId } = useKapableAuth();
   const [linkedTasks, setLinkedTasks] = useState<LinkedTaskDisplay[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,40 +49,55 @@ export const useEmailTasks = (emailId: string | null) => {
     setLoading(true);
     setError(null);
     try {
-      const { data, error: fetchError } = await supabase
+      const { data, error: fetchError } = await kapable
         .from("email_tasks")
-        .select(`
-          *,
-          tasks!email_tasks_task_id_fkey(
-            id,
-            task_number,
-            title,
-            task_type,
-            due_date,
-            client_id,
-            clients!tasks_client_id_fkey(first_name, surname)
-          )
-        `)
+        .select("*")
         .eq("email_id", emailId);
+
+      // Fetch related tasks separately (Kapable doesn't support nested selects)
+      const taskIds = (data || []).map((et: any) => et.task_id).filter(Boolean);
+      let tasksMap: Record<string, any> = {};
+      if (taskIds.length > 0) {
+        const { data: tasksData } = await kapable.from("advisor_tasks").select("*").in("id", taskIds);
+        for (const t of (tasksData || [])) {
+          tasksMap[t.id] = t;
+        }
+        // Fetch clients for those tasks
+        const clientIds = (tasksData || []).map((t: any) => t.client_id).filter(Boolean);
+        let clientsMap: Record<string, any> = {};
+        if (clientIds.length > 0) {
+          const { data: clientsData } = await kapable.from("clients").select("*").in("id", clientIds);
+          for (const c of (clientsData || [])) {
+            clientsMap[c.id] = c;
+          }
+        }
+        // Merge client data into tasks
+        for (const t of Object.values(tasksMap)) {
+          if (t.client_id && clientsMap[t.client_id]) {
+            t.clients = clientsMap[t.client_id];
+          }
+        }
+      }
 
       if (fetchError) throw fetchError;
 
       const transformedTasks: LinkedTaskDisplay[] = (data || []).map((et: any) => {
-        const firstName = et.tasks?.clients?.first_name || "";
-        const surname = et.tasks?.clients?.surname || "";
+        const task = tasksMap[et.task_id];
+        const firstName = task?.clients?.first_name || "";
+        const surname = task?.clients?.surname || "";
         const clientName = surname && firstName
           ? `${surname}, ${firstName[0]} (${firstName})`
           : surname || firstName || null;
         return {
           id: et.id,
-          task_id: et.tasks?.id || et.task_id,
-          client_id: et.tasks?.client_id || null,
-          task_number: et.tasks?.task_number || 0,
-          title: et.tasks?.title || null,
-          task_type: et.tasks?.task_type || null,
+          task_id: task?.id || et.task_id,
+          client_id: task?.client_id || null,
+          task_number: task?.task_number || 0,
+          title: task?.title || null,
+          task_type: task?.task_type || null,
           assignee: null,
-          due_date: et.tasks?.due_date || null,
-          client_initials: et.tasks?.clients
+          due_date: task?.due_date || null,
+          client_initials: task?.clients
             ? `${firstName?.[0] || ""}${surname?.[0] || ""}`.toUpperCase()
             : null,
           client_name: clientName,
@@ -101,13 +118,12 @@ export const useEmailTasks = (emailId: string | null) => {
     if (!emailId) return false;
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!userId) throw new Error("Not authenticated");
 
-      const { error: insertError } = await supabase
+      const { error: insertError } = await kapable
         .from("email_tasks")
         .insert({
-          user_id: user.id,
+          user_id: userId,
           email_id: emailId,
           task_id: taskId,
           is_linked: true,
@@ -132,7 +148,7 @@ export const useEmailTasks = (emailId: string | null) => {
 
   const unlinkTask = async (emailTaskId: string): Promise<boolean> => {
     try {
-      const { error: deleteError } = await supabase
+      const { error: deleteError } = await kapable
         .from("email_tasks")
         .delete()
         .eq("id", emailTaskId);
@@ -151,7 +167,7 @@ export const useEmailTasks = (emailId: string | null) => {
 
   const toggleTaskLink = async (emailTaskId: string, linked: boolean): Promise<boolean> => {
     try {
-      const { error: updateError } = await supabase
+      const { error: updateError } = await kapable
         .from("email_tasks")
         .update({ is_linked: linked })
         .eq("id", emailTaskId);

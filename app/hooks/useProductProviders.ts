@@ -1,8 +1,8 @@
 import { useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
+import { useKapableAuth } from "@/integrations/kapable/auth-context";
 import { toast } from "sonner";
-import type { Json } from "@/integrations/supabase/types";
 
 export interface ProductProvider {
   id: string;
@@ -48,13 +48,14 @@ export interface Product {
 }
 
 export function useProductProviders() {
+  const { userId } = useKapableAuth();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
 
   const { data: providers = [], isLoading } = useQuery({
     queryKey: ["product-providers"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await kapable
         .from("product_providers")
         .select("*")
         .eq("is_deleted", false)
@@ -73,14 +74,13 @@ export function useProductProviders() {
 
   const createProvider = useMutation({
     mutationFn: async (provider: Partial<ProductProvider>) => {
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user) throw new Error("Not authenticated");
+      if (!userId) throw new Error("Not authenticated");
 
       const insertData = {
         name: provider.name || "",
         code: provider.code || "",
         provider_type: provider.provider_type || "Insurance",
-        user_id: userData.user.id,
+        user_id: userId,
         contact_email: provider.contact_email,
         contact_phone: provider.contact_phone,
         is_active: provider.is_active ?? true,
@@ -93,7 +93,7 @@ export function useProductProviders() {
         portal_url: provider.portal_url,
         residential_address: provider.residential_address,
         postal_address: provider.postal_address,
-        services: provider.services as Json,
+        services: provider.services as unknown as string[],
         umbrella_provider_id: provider.umbrella_provider_id,
         contract_padding: provider.contract_padding,
         exclude_from_aging: provider.exclude_from_aging,
@@ -105,7 +105,7 @@ export function useProductProviders() {
         cc_static_update: provider.cc_static_update,
       };
 
-      const { data, error } = await supabase
+      const { data, error } = await kapable
         .from("product_providers")
         .insert(insertData)
         .select()
@@ -153,7 +153,7 @@ export function useProductProviders() {
       if (updates.is_umbrella_provider !== undefined) updateData.is_umbrella_provider = updates.is_umbrella_provider;
       if (updates.cc_static_update !== undefined) updateData.cc_static_update = updates.cc_static_update;
 
-      const { data, error } = await supabase
+      const { data, error } = await kapable
         .from("product_providers")
         .update(updateData)
         .eq("id", id)
@@ -174,7 +174,7 @@ export function useProductProviders() {
 
   const deleteProvider = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
+      const { error } = await kapable
         .from("product_providers")
         .update({ is_deleted: true, deleted_at: new Date().toISOString() })
         .eq("id", id);
@@ -192,27 +192,21 @@ export function useProductProviders() {
 
   const seedProviders = useCallback(async () => {
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData.session) {
+      if (!userId) {
         toast.error("Please sign in to seed providers");
         return;
       }
 
-      const response = await supabase.functions.invoke("seed-providers-data");
-
-      if (response.error) {
-        throw new Error(response.error.message);
-      }
-
-      queryClient.invalidateQueries({ queryKey: ["product-providers"] });
-      toast.success(response.data.message);
-      return response.data;
+      // TODO: Replace with Kapable SSF
+      console.warn("seed-providers-data: Kapable SSF not yet available");
+      toast.error("Seed providers not yet available on Kapable");
+      return null;
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Unknown error";
       toast.error(`Failed to seed providers: ${message}`);
       throw error;
     }
-  }, [queryClient]);
+  }, [userId, queryClient]);
 
   return {
     providers: filteredProviders,
@@ -236,7 +230,7 @@ export function useProviderProducts(providerId: string | null) {
     queryFn: async () => {
       if (!providerId) return [];
 
-      const { data, error } = await supabase
+      const { data, error } = await kapable
         .from("products")
         .select("*")
         .eq("provider_id", providerId)
@@ -252,7 +246,7 @@ export function useProviderProducts(providerId: string | null) {
   const { data: availableProducts = [] } = useQuery({
     queryKey: ["available-products"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await kapable
         .from("products")
         .select("*")
         .eq("is_active", true)
@@ -265,7 +259,7 @@ export function useProviderProducts(providerId: string | null) {
 
   const linkProduct = useMutation({
     mutationFn: async ({ productId, providerId }: { productId: string; providerId: string }) => {
-      const { data, error } = await supabase
+      const { data, error } = await kapable
         .from("products")
         .update({ provider_id: providerId })
         .eq("id", productId)
@@ -287,7 +281,7 @@ export function useProviderProducts(providerId: string | null) {
 
   const unlinkProduct = useMutation({
     mutationFn: async (productId: string) => {
-      const { data, error } = await supabase
+      const { data, error } = await kapable
         .from("products")
         .update({ provider_id: null })
         .eq("id", productId)

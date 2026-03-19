@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
+import { useKapableAuth } from "@/integrations/kapable/auth-context";
 import { toast } from "sonner";
 
 export interface ClientRelationship {
@@ -52,15 +53,16 @@ export const useClientRelationships = (clientId: string) => {
   const [businesses, setBusinesses] = useState<BusinessListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { userId } = useKapableAuth();
 
   const fetchRelationships = useCallback(async () => {
     if (!clientId) return;
-    
+
     setLoading(true);
     setError(null);
     try {
-      const { data, error: fetchError } = await supabase
-        .from("client_relationships")
+      const { data, error: fetchError } = await kapable
+        .from<ClientRelationship>("client_relationships")
         .select("*")
         .eq("client_id", clientId)
         .eq("is_deleted", false)
@@ -72,7 +74,7 @@ export const useClientRelationships = (clientId: string) => {
       const family: FamilyMemberListItem[] = [];
       const business: BusinessListItem[] = [];
 
-      (data || []).forEach((rel: ClientRelationship) => {
+      for (const rel of (data || []) as ClientRelationship[]) {
         if (familyRelationshipTypes.includes(rel.relationship_type)) {
           family.push({
             id: rel.id,
@@ -98,7 +100,7 @@ export const useClientRelationships = (clientId: string) => {
             relatedClientId: rel.related_client_id,
           });
         }
-      });
+      }
 
       setFamilyMembers(family);
       setBusinesses(business);
@@ -113,13 +115,12 @@ export const useClientRelationships = (clientId: string) => {
 
   const createRelationship = async (relData: Partial<ClientRelationship>) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!userId) throw new Error("Not authenticated");
 
-      const { data, error } = await supabase
-        .from("client_relationships")
+      const { data, error } = await kapable
+        .from<ClientRelationship>("client_relationships")
         .insert({
-          user_id: user.id,
+          user_id: userId,
           client_id: clientId,
           name: relData.name || "",
           entity_type: relData.entity_type || "Individual",
@@ -130,8 +131,7 @@ export const useClientRelationships = (clientId: string) => {
           family_name: relData.family_name,
           share_percentage: relData.share_percentage,
           related_client_id: relData.related_client_id,
-        })
-        .select()
+        } as any)
         .single();
 
       if (error) throw error;
@@ -148,8 +148,8 @@ export const useClientRelationships = (clientId: string) => {
 
   const updateRelationship = async (relId: string, updates: Partial<ClientRelationship>) => {
     try {
-      const { error } = await supabase
-        .from("client_relationships")
+      const { error } = await kapable
+        .from<ClientRelationship>("client_relationships")
         .update(updates)
         .eq("id", relId);
 
@@ -168,28 +168,38 @@ export const useClientRelationships = (clientId: string) => {
   const deleteRelationship = async (relId: string) => {
     try {
       // First get the relationship to find the reciprocal
-      const { data: relData } = await supabase
-        .from("client_relationships")
-        .select("client_id, related_client_id")
+      const { data: relData } = await kapable
+        .from<ClientRelationship>("client_relationships")
+        .select("*")
         .eq("id", relId)
-        .single();
+        .maybeSingle();
 
       // Soft-delete the primary relationship
-      const { error } = await supabase
-        .from("client_relationships")
-        .update({ is_deleted: true, deleted_at: new Date().toISOString() })
+      const { error } = await kapable
+        .from<ClientRelationship>("client_relationships")
+        .update({ is_deleted: true, deleted_at: new Date().toISOString() } as any)
         .eq("id", relId);
 
       if (error) throw error;
 
       // Find and soft-delete the reciprocal relationship if it exists
       if (relData?.related_client_id) {
-        await supabase
-          .from("client_relationships")
-          .update({ is_deleted: true, deleted_at: new Date().toISOString() })
-          .eq("client_id", relData.related_client_id)
-          .eq("related_client_id", relData.client_id)
+        // Fetch reciprocal relationships and soft-delete them
+        const { data: reciprocals } = await kapable
+          .from<ClientRelationship>("client_relationships")
+          .select("*")
+          .eq("client_id", (relData as any).related_client_id)
+          .eq("related_client_id", (relData as any).client_id)
           .eq("is_deleted", false);
+
+        if (reciprocals) {
+          for (const recip of reciprocals as any[]) {
+            await kapable
+              .from<ClientRelationship>("client_relationships")
+              .update({ is_deleted: true, deleted_at: new Date().toISOString() } as any)
+              .eq("id", recip.id);
+          }
+        }
       }
 
       setFamilyMembers((prev) => prev.filter((f) => f.id !== relId));

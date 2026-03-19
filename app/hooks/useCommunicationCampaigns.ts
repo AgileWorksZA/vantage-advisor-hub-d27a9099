@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
+import { useKapableAuth } from "@/integrations/kapable/auth-context";
 import { useToast } from "@/hooks/use-toast";
-import { Json } from "@/integrations/supabase/types";
 
 export type CommunicationChannel = "Email" | "SMS" | "WhatsApp" | "Push";
 export type CampaignStatus = "Draft" | "Scheduled" | "Sending" | "Sent" | "Failed";
@@ -62,14 +62,14 @@ const transformDbToCampaign = (row: any): CommunicationCampaign => ({
 export const useCommunicationCampaigns = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { userId } = useKapableAuth();
 
   const { data: campaigns = [], isLoading, error } = useQuery({
     queryKey: ["communication-campaigns"],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!userId) throw new Error("Not authenticated");
 
-      const { data, error } = await supabase
+      const { data, error } = await kapable
         .from("communication_campaigns")
         .select("*")
         .eq("is_deleted", false)
@@ -82,15 +82,14 @@ export const useCommunicationCampaigns = () => {
 
   const createCampaign = useMutation({
     mutationFn: async (campaign: CampaignInput) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!userId) throw new Error("Not authenticated");
 
-      const { data, error } = await supabase
+      const { data, error } = await kapable
         .from("communication_campaigns")
         .insert({
           ...campaign,
-          user_id: user.id,
-          recipient_filter: campaign.recipient_filter as unknown as Json,
+          user_id: userId,
+          recipient_filter: campaign.recipient_filter as unknown as Record<string, unknown>,
         })
         .select()
         .single();
@@ -111,10 +110,10 @@ export const useCommunicationCampaigns = () => {
     mutationFn: async ({ id, ...updates }: Partial<CampaignInput> & { id: string }) => {
       const dbUpdates: any = { ...updates };
       if (updates.recipient_filter) {
-        dbUpdates.recipient_filter = updates.recipient_filter as unknown as Json;
+        dbUpdates.recipient_filter = updates.recipient_filter as unknown as Record<string, unknown>;
       }
       
-      const { data, error } = await supabase
+      const { data, error } = await kapable
         .from("communication_campaigns")
         .update(dbUpdates)
         .eq("id", id)
@@ -134,7 +133,7 @@ export const useCommunicationCampaigns = () => {
 
   const deleteCampaign = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
+      const { error } = await kapable
         .from("communication_campaigns")
         .update({ is_deleted: true, deleted_at: new Date().toISOString() })
         .eq("id", id);

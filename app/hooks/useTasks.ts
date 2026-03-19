@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
+import { useKapableAuth } from "@/integrations/kapable/auth-context";
 import { toast } from "sonner";
 
 export interface Task {
@@ -70,6 +71,7 @@ const transformTaskToListItem = (task: Task): TaskListItem => {
 };
 
 export const useTasks = () => {
+  const { userId } = useKapableAuth();
   const [tasks, setTasks] = useState<TaskListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -78,24 +80,34 @@ export const useTasks = () => {
     setLoading(true);
     setError(null);
     try {
-      const { data, error: fetchError } = await supabase
-        .from("tasks")
-        .select(`
-          *,
-          clients!tasks_client_id_fkey(first_name, surname)
-        `)
+      const { data, error: fetchError } = await kapable
+        .from("advisor_tasks")
+        .select("*")
         .eq("is_deleted", false)
         .order("created_at", { ascending: false });
 
       if (fetchError) throw fetchError;
 
-      const transformedTasks = (data || []).map((task: any) => ({
-        ...task,
-        client_name: task.clients 
-          ? `${task.clients.first_name} ${task.clients.surname}`
-          : null,
-        assigned_to_name: "Current User", // Will be enhanced later with profiles join
-      })).map(transformTaskToListItem);
+      // Fetch client details separately
+      const clientIds = [...new Set((data || []).map((t: any) => t.client_id).filter(Boolean))];
+      let clientsMap: Record<string, any> = {};
+      if (clientIds.length > 0) {
+        const { data: clientsData } = await kapable.from("clients").select("*").in("id", clientIds);
+        for (const c of (clientsData || [])) {
+          clientsMap[c.id] = c;
+        }
+      }
+
+      const transformedTasks = (data || []).map((task: any) => {
+        const client = clientsMap[task.client_id];
+        return {
+          ...task,
+          client_name: client
+            ? `${client.first_name} ${client.surname}`
+            : null,
+          assigned_to_name: "Current User", // Will be enhanced later with profiles join
+        };
+      }).map(transformTaskToListItem);
 
       setTasks(transformedTasks);
     } catch (err: any) {
@@ -109,13 +121,12 @@ export const useTasks = () => {
 
   const createTask = async (taskData: Partial<Task>) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!userId) throw new Error("Not authenticated");
 
-      const { data, error } = await supabase
-        .from("tasks")
+      const { data, error } = await kapable
+        .from("advisor_tasks")
         .insert({
-          user_id: user.id,
+          user_id: userId,
           title: taskData.title || "New Task",
           description: taskData.description,
           task_type: taskData.task_type || "Follow-up",
@@ -123,8 +134,8 @@ export const useTasks = () => {
           status: taskData.status || "Not Started",
           due_date: taskData.due_date,
           client_id: taskData.client_id,
-          assigned_to_user_id: taskData.assigned_to_user_id || user.id,
-          created_by: user.id,
+          assigned_to_user_id: taskData.assigned_to_user_id || userId,
+          created_by: userId,
           is_practice_task: taskData.is_practice_task || false,
           notes: taskData.notes || [],
         })
@@ -145,8 +156,8 @@ export const useTasks = () => {
 
   const updateTask = async (taskId: string, updates: Partial<Task>) => {
     try {
-      const { error } = await supabase
-        .from("tasks")
+      const { error } = await kapable
+        .from("advisor_tasks")
         .update({
           ...updates,
           completed_at: updates.status === "Completed" ? new Date().toISOString() : null,
@@ -167,8 +178,8 @@ export const useTasks = () => {
 
   const deleteTask = async (taskId: string) => {
     try {
-      const { error } = await supabase
-        .from("tasks")
+      const { error } = await kapable
+        .from("advisor_tasks")
         .update({ is_deleted: true, deleted_at: new Date().toISOString() })
         .eq("id", taskId);
 

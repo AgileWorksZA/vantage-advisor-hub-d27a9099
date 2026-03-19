@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
+import { useKapableAuth } from "@/integrations/kapable/auth-context";
 import { toast } from "sonner";
 
 export interface ClientContact {
@@ -42,15 +43,16 @@ export const useClientContacts = (clientId: string) => {
   const [contacts, setContacts] = useState<ContactListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { userId } = useKapableAuth();
 
   const fetchContacts = useCallback(async () => {
     if (!clientId) return;
-    
+
     setLoading(true);
     setError(null);
     try {
-      const { data, error: fetchError } = await supabase
-        .from("client_contacts")
+      const { data, error: fetchError } = await kapable
+        .from<ClientContact>("client_contacts")
         .select("*")
         .eq("client_id", clientId)
         .eq("is_deleted", false)
@@ -71,13 +73,12 @@ export const useClientContacts = (clientId: string) => {
 
   const createContact = async (contactData: Partial<ClientContact>) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!userId) throw new Error("Not authenticated");
 
-      const { data, error } = await supabase
-        .from("client_contacts")
+      const { data, error } = await kapable
+        .from<ClientContact>("client_contacts")
         .insert({
-          user_id: user.id,
+          user_id: userId,
           client_id: clientId,
           name: contactData.name || "",
           job_title: contactData.job_title,
@@ -86,8 +87,7 @@ export const useClientContacts = (clientId: string) => {
           phone: contactData.phone,
           notes: contactData.notes,
           contact_type: contactData.contact_type || "Other",
-        })
-        .select()
+        } as any)
         .single();
 
       if (error) throw error;
@@ -104,8 +104,8 @@ export const useClientContacts = (clientId: string) => {
 
   const updateContact = async (contactId: string, updates: Partial<ClientContact>) => {
     try {
-      const { error } = await supabase
-        .from("client_contacts")
+      const { error } = await kapable
+        .from<ClientContact>("client_contacts")
         .update(updates)
         .eq("id", contactId);
 
@@ -123,9 +123,9 @@ export const useClientContacts = (clientId: string) => {
 
   const deleteContact = async (contactId: string) => {
     try {
-      const { error } = await supabase
-        .from("client_contacts")
-        .update({ is_deleted: true, deleted_at: new Date().toISOString() })
+      const { error } = await kapable
+        .from<ClientContact>("client_contacts")
+        .update({ is_deleted: true, deleted_at: new Date().toISOString() } as any)
         .eq("id", contactId);
 
       if (error) throw error;

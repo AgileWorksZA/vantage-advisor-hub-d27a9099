@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
+import { useKapableAuth } from "@/integrations/kapable/auth-context";
 import { toast } from "sonner";
 
 export interface ClientNote {
@@ -67,16 +68,17 @@ export const useClientNotes = (clientId: string) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [totalCount, setTotalCount] = useState(0);
+  const { userId } = useKapableAuth();
 
   const fetchNotes = useCallback(async (filter?: "current" | "all" | "completed" | "pending") => {
     if (!clientId) return;
-    
+
     setLoading(true);
     setError(null);
     try {
-      let query = supabase
-        .from("client_notes")
-        .select("*", { count: "exact" })
+      let query = kapable
+        .from<ClientNote>("client_notes")
+        .select("*")
         .eq("client_id", clientId)
         .eq("is_deleted", false)
         .order("created_at", { ascending: false });
@@ -89,13 +91,14 @@ export const useClientNotes = (clientId: string) => {
         query = query.eq("is_complete", false);
       }
 
-      const { data, error: fetchError, count } = await query;
+      const { data, error: fetchError } = await query;
 
       if (fetchError) throw fetchError;
 
-      const transformedNotes = (data || []).map(transformNoteToListItem);
+      const allNotes = (data || []) as ClientNote[];
+      const transformedNotes = allNotes.map(transformNoteToListItem);
       setNotes(transformedNotes);
-      setTotalCount(count || 0);
+      setTotalCount(allNotes.length);
     } catch (err: any) {
       console.error("Error fetching notes:", err);
       setError(err.message);
@@ -107,13 +110,12 @@ export const useClientNotes = (clientId: string) => {
 
   const createNote = async (noteData: Partial<ClientNote>) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!userId) throw new Error("Not authenticated");
 
-      const { data, error } = await supabase
-        .from("client_notes")
+      const { data, error } = await kapable
+        .from<ClientNote>("client_notes")
         .insert({
-          user_id: user.id,
+          user_id: userId,
           client_id: clientId,
           interaction_type: noteData.interaction_type || "Note",
           subject: noteData.subject,
@@ -122,10 +124,9 @@ export const useClientNotes = (clientId: string) => {
           is_complete: noteData.is_complete || false,
           is_visible_portal: noteData.is_visible_portal || false,
           attachment_count: noteData.attachment_count || 0,
-          responsible_user_id: noteData.responsible_user_id || user.id,
-          owner_user_id: user.id,
-        })
-        .select()
+          responsible_user_id: noteData.responsible_user_id || userId,
+          owner_user_id: userId,
+        } as any)
         .single();
 
       if (error) throw error;
@@ -142,8 +143,8 @@ export const useClientNotes = (clientId: string) => {
 
   const updateNote = async (noteId: string, updates: Partial<ClientNote>) => {
     try {
-      const { error } = await supabase
-        .from("client_notes")
+      const { error } = await kapable
+        .from<ClientNote>("client_notes")
         .update({
           ...updates,
           completed_at: updates.is_complete ? new Date().toISOString() : null,
@@ -164,9 +165,9 @@ export const useClientNotes = (clientId: string) => {
 
   const deleteNote = async (noteId: string) => {
     try {
-      const { error } = await supabase
-        .from("client_notes")
-        .update({ is_deleted: true, deleted_at: new Date().toISOString() })
+      const { error } = await kapable
+        .from<ClientNote>("client_notes")
+        .update({ is_deleted: true, deleted_at: new Date().toISOString() } as any)
         .eq("id", noteId);
 
       if (error) throw error;

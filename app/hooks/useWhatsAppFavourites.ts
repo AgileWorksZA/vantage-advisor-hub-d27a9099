@@ -1,19 +1,20 @@
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
+import { useKapableAuth } from "@/integrations/kapable/auth-context";
 
 export const useWhatsAppFavourites = () => {
+  const { userId } = useKapableAuth();
   const [favouriteClientIds, setFavouriteClientIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchFavourites = useCallback(async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!userId) return;
 
-      const { data, error } = await supabase
+      const { data, error } = await kapable
         .from("whatsapp_favourites")
-        .select("client_id")
-        .eq("user_id", user.id);
+        .select("*")
+        .eq("user_id", userId);
 
       if (error) throw error;
       setFavouriteClientIds((data || []).map(d => d.client_id));
@@ -26,20 +27,19 @@ export const useWhatsAppFavourites = () => {
 
   const toggleFavourite = async (clientId: string) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!userId) return;
 
       if (favouriteClientIds.includes(clientId)) {
-        await supabase
+        await kapable
           .from("whatsapp_favourites")
           .delete()
-          .eq("user_id", user.id)
+          .eq("user_id", userId)
           .eq("client_id", clientId);
         setFavouriteClientIds(prev => prev.filter(id => id !== clientId));
       } else {
-        await supabase
+        await kapable
           .from("whatsapp_favourites")
-          .insert({ user_id: user.id, client_id: clientId });
+          .insert({ user_id: userId, client_id: clientId });
         setFavouriteClientIds(prev => [...prev, clientId]);
       }
     } catch (err) {

@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
+import { useKapableAuth } from "@/integrations/kapable/auth-context";
 import { toast } from "sonner";
 
 export interface TaskCommunication {
@@ -16,6 +17,7 @@ export interface TaskCommunication {
 }
 
 export const useTaskCommunications = (taskId?: string) => {
+  const { userId } = useKapableAuth();
   const [taskCommunications, setTaskCommunications] = useState<TaskCommunication[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -24,32 +26,39 @@ export const useTaskCommunications = (taskId?: string) => {
     
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await kapable
         .from("task_communications")
-        .select(`
-          id,
-          task_id,
-          communication_id,
-          created_at,
-          communications!task_communications_communication_id_fkey(subject, channel, direction, sent_at, status, to_identifier)
-        `)
+        .select("*")
         .eq("task_id", taskId)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
 
-      const transformed = (data || []).map((tc: any) => ({
-        id: tc.id,
-        task_id: tc.task_id,
-        communication_id: tc.communication_id,
-        created_at: tc.created_at,
-        subject: tc.communications?.subject,
-        channel: tc.communications?.channel,
-        direction: tc.communications?.direction,
-        sent_at: tc.communications?.sent_at,
-        status: tc.communications?.status,
-        to_identifier: tc.communications?.to_identifier,
-      }));
+      // Fetch communication details separately
+      const commIds = [...new Set((data || []).map((tc: any) => tc.communication_id).filter(Boolean))];
+      let commsMap: Record<string, any> = {};
+      if (commIds.length > 0) {
+        const { data: commsData } = await kapable.from("communications").select("*").in("id", commIds);
+        for (const c of (commsData || [])) {
+          commsMap[c.id] = c;
+        }
+      }
+
+      const transformed = (data || []).map((tc: any) => {
+        const comm = commsMap[tc.communication_id];
+        return {
+          id: tc.id,
+          task_id: tc.task_id,
+          communication_id: tc.communication_id,
+          created_at: tc.created_at,
+          subject: comm?.subject,
+          channel: comm?.channel,
+          direction: comm?.direction,
+          sent_at: comm?.sent_at,
+          status: comm?.status,
+          to_identifier: comm?.to_identifier,
+        };
+      });
 
       setTaskCommunications(transformed);
     } catch (err: any) {
@@ -64,13 +73,12 @@ export const useTaskCommunications = (taskId?: string) => {
     if (!taskId) return null;
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!userId) throw new Error("Not authenticated");
 
-      const { data, error } = await supabase
+      const { data, error } = await kapable
         .from("task_communications")
         .insert({
-          user_id: user.id,
+          user_id: userId,
           task_id: taskId,
           communication_id: communicationId,
         })
@@ -91,7 +99,7 @@ export const useTaskCommunications = (taskId?: string) => {
 
   const unlinkCommunication = async (taskCommunicationId: string) => {
     try {
-      const { error } = await supabase
+      const { error } = await kapable
         .from("task_communications")
         .delete()
         .eq("id", taskCommunicationId);

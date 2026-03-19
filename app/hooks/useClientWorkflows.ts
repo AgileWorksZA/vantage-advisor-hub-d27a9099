@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
+import { useKapableAuth } from "@/integrations/kapable/auth-context";
 import { toast } from "sonner";
 
 export interface Workflow {
@@ -99,24 +100,26 @@ export const useClientWorkflows = (clientId: string) => {
   const [workflowCount, setWorkflowCount] = useState(0);
   const [adviceCount, setAdviceCount] = useState(0);
   const [faisCount, setFaisCount] = useState(0);
+  const { userId } = useKapableAuth();
 
   const fetchWorkflows = useCallback(async () => {
     if (!clientId) return;
-    
+
     setLoading(true);
     setError(null);
     try {
       // Fetch workflows
-      const { data: workflowData, error: workflowError, count: wCount } = await supabase
-        .from("workflows")
-        .select("*", { count: "exact" })
+      const { data: workflowData, error: workflowError } = await kapable
+        .from<Workflow>("workflows")
+        .select("*")
         .eq("client_id", clientId)
         .eq("is_deleted", false)
         .order("created_at", { ascending: false });
 
       if (workflowError) throw workflowError;
 
-      const transformedWorkflows = (workflowData || []).map((w: Workflow, idx) => ({
+      const allWorkflows = (workflowData || []) as Workflow[];
+      const transformedWorkflows = allWorkflows.map((w: Workflow) => ({
         id: w.id,
         service: w.service_area || "General",
         name: w.name,
@@ -125,19 +128,20 @@ export const useClientWorkflows = (clientId: string) => {
         status: w.status,
       }));
       setWorkflows(transformedWorkflows);
-      setWorkflowCount(wCount || 0);
+      setWorkflowCount(allWorkflows.length);
 
       // Fetch advice workflows
-      const { data: adviceData, error: adviceError, count: aCount } = await supabase
-        .from("advice_workflows")
-        .select("*", { count: "exact" })
+      const { data: adviceData, error: adviceError } = await kapable
+        .from<AdviceWorkflow>("advice_workflows")
+        .select("*")
         .eq("client_id", clientId)
         .eq("is_deleted", false)
         .order("created_at", { ascending: false });
 
       if (adviceError) throw adviceError;
 
-      const transformedAdvice = (adviceData || []).map((a: AdviceWorkflow, idx) => ({
+      const allAdvice = (adviceData || []) as AdviceWorkflow[];
+      const transformedAdvice = allAdvice.map((a: AdviceWorkflow, idx) => ({
         id: idx + 1,
         name: a.name,
         currentStep: getStepName(a.current_step),
@@ -146,20 +150,21 @@ export const useClientWorkflows = (clientId: string) => {
         date: formatDate(a.date),
       }));
       setAdviceWorkflows(transformedAdvice);
-      setAdviceCount(aCount || 0);
+      setAdviceCount(allAdvice.length);
 
       // Fetch FAIS controls
-      const { data: faisData, error: faisError, count: fCount } = await supabase
-        .from("fais_controls")
-        .select("*", { count: "exact" })
+      const { data: faisData, error: faisError } = await kapable
+        .from<FaisControl>("fais_controls")
+        .select("*")
         .eq("client_id", clientId)
         .eq("is_deleted", false)
         .order("created_at", { ascending: false });
 
       if (faisError) throw faisError;
 
+      const allFais = (faisData || []) as any[];
       const faisStepNames = ["Active", "Consent", "Disclosure", "Complete"];
-      const transformedFais: FaisControlListItem[] = (faisData || []).map((f: any, idx: number) => ({
+      const transformedFais: FaisControlListItem[] = allFais.map((f: any, idx: number) => ({
         id: idx + 1,
         name: f.name,
         products: Array.isArray(f.products) ? f.products as string[] : [],
@@ -167,7 +172,7 @@ export const useClientWorkflows = (clientId: string) => {
         date: formatDate(f.date),
       }));
       setFaisControls(transformedFais);
-      setFaisCount(fCount || 0);
+      setFaisCount(allFais.length);
     } catch (err: any) {
       console.error("Error fetching workflows:", err);
       setError(err.message);
@@ -179,22 +184,20 @@ export const useClientWorkflows = (clientId: string) => {
 
   const createWorkflow = async (workflowData: Partial<Workflow>) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!userId) throw new Error("Not authenticated");
 
-      const { data, error } = await supabase
-        .from("workflows")
+      const { data, error } = await kapable
+        .from<Workflow>("workflows")
         .insert({
-          user_id: user.id,
+          user_id: userId,
           client_id: clientId,
           name: workflowData.name || "New Workflow",
           service_area: workflowData.service_area || "General",
           current_step: workflowData.current_step || 1,
           status: "Active",
-          adviser_id: user.id,
+          adviser_id: userId,
           start_date: new Date().toISOString().split("T")[0],
-        })
-        .select()
+        } as any)
         .single();
 
       if (error) throw error;
@@ -211,21 +214,19 @@ export const useClientWorkflows = (clientId: string) => {
 
   const createFaisControl = async (faisData: Partial<FaisControl>) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!userId) throw new Error("Not authenticated");
 
-      const { data, error } = await supabase
-        .from("fais_controls")
+      const { data, error } = await kapable
+        .from<FaisControl>("fais_controls")
         .insert({
-          user_id: user.id,
+          user_id: userId,
           client_id: clientId,
           name: faisData.name || "FAIS Disclosure",
           products: faisData.products || [],
           current_step: 1,
           status: "Active",
           date: new Date().toISOString().split("T")[0],
-        })
-        .select()
+        } as any)
         .single();
 
       if (error) throw error;
@@ -242,8 +243,8 @@ export const useClientWorkflows = (clientId: string) => {
 
   const updateWorkflowStatus = async (workflowId: string, newStatus: string) => {
     try {
-      const { error } = await supabase
-        .from("workflows")
+      const { error } = await kapable
+        .from<Workflow>("workflows")
         .update({ status: newStatus as any })
         .eq("id", workflowId);
 
@@ -263,19 +264,18 @@ export const useClientWorkflows = (clientId: string) => {
 
   const createAdviceWorkflow = async (name: string) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!userId) throw new Error("Not authenticated");
 
-      const { error } = await supabase
-        .from("advice_workflows")
+      const { error } = await kapable
+        .from<AdviceWorkflow>("advice_workflows")
         .insert({
-          user_id: user.id,
+          user_id: userId,
           client_id: clientId,
           name,
           current_step: 0,
           status: "Active",
           date: new Date().toISOString().split("T")[0],
-        });
+        } as any);
 
       if (error) throw error;
 

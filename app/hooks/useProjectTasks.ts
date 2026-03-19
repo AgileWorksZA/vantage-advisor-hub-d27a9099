@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
+import { useKapableAuth } from "@/integrations/kapable/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { differenceInDays, parseISO } from "date-fns";
 
@@ -53,14 +54,14 @@ export type SLAStatus = "on-track" | "warning" | "critical" | "overdue";
 export const useProjectTasks = (projectId?: string) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { userId } = useKapableAuth();
 
   const tasksQuery = useQuery({
     queryKey: ["project-tasks", projectId],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!userId) throw new Error("Not authenticated");
 
-      let query = supabase
+      let query = kapable
         .from("project_tasks")
         .select("*")
         .eq("is_deleted", false)
@@ -78,13 +79,12 @@ export const useProjectTasks = (projectId?: string) => {
 
   const createTask = useMutation({
     mutationFn: async (input: CreateTaskInput) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!userId) throw new Error("Not authenticated");
 
-      const { data, error } = await supabase
+      const { data, error } = await kapable
         .from("project_tasks")
         .insert({
-          user_id: user.id,
+          user_id: userId,
           project_id: input.project_id,
           opportunity_id: input.opportunity_id || null,
           client_id: input.client_id || null,
@@ -121,7 +121,7 @@ export const useProjectTasks = (projectId?: string) => {
         ...(updates.status === "Completed" ? { completed_at: new Date().toISOString() } : {}),
       };
 
-      const { data, error } = await supabase
+      const { data, error } = await kapable
         .from("project_tasks")
         .update(finalUpdates)
         .eq("id", id)
@@ -142,7 +142,7 @@ export const useProjectTasks = (projectId?: string) => {
 
   const deleteTask = useMutation({
     mutationFn: async (taskId: string) => {
-      const { error } = await supabase
+      const { error } = await kapable
         .from("project_tasks")
         .update({ is_deleted: true })
         .eq("id", taskId);
