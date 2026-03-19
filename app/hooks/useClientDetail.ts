@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { Client } from "@/types/client";
+import { kapable } from "@/integrations/kapable/client";
+import type { Client } from "@/hooks/useClients";
 
 export const useClientDetail = (clientId: string | undefined) => {
   const [client, setClient] = useState<Client | null>(null);
@@ -18,8 +18,8 @@ export const useClientDetail = (clientId: string | undefined) => {
       setLoading(true);
       setError(null);
 
-      const { data, error: fetchError } = await supabase
-        .from("clients")
+      const { data, error: fetchError } = await kapable
+        .from<Client>("clients")
         .select("*")
         .eq("id", clientId)
         .maybeSingle();
@@ -46,8 +46,8 @@ export const useClientDetail = (clientId: string | undefined) => {
     if (!clientId || !client) return;
 
     try {
-      const { error: updateError } = await supabase
-        .from("clients")
+      const { error: updateError } = await kapable
+        .from<Client>("clients")
         .update(updates)
         .eq("id", clientId);
 

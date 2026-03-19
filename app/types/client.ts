@@ -1,7 +1,7 @@
-import { Tables } from "@/integrations/supabase/types";
+import type { Client } from "@/hooks/useClients";
 
-// Re-export the database client type for use throughout the app
-export type Client = Tables<"clients">;
+// Re-export the Client type for use throughout the app
+export type { Client };
 
 // Helper to calculate age from date of birth
 export const calculateAge = (dateOfBirth: string | null): number => {

@@ -14,6 +14,9 @@ export default [
   route("/disclaimer", "routes/disclaimer.tsx"),
   route("/help", "routes/help.tsx"),
 
+  // Kapable BFF proxy (must be before layout routes)
+  route("/api/kapable/*", "routes/api.kapable.$.ts"),
+
   // Protected routes (wrapped in _app layout with auth guard)
   layout("routes/_app.tsx", [
     route("/dashboard", "routes/_app.dashboard.tsx"),

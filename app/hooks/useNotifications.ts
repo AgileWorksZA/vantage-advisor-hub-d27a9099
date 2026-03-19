@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
+import { useKapableAuth } from "@/integrations/kapable/auth-context";
 
 interface NotificationSoundSettings {
   notification_sound_enabled: boolean;
@@ -37,9 +38,12 @@ function isCriticalNotification(n: Notification): boolean {
   return CRITICAL_TYPES.includes(n.type) || (n.opportunity_tag?.toLowerCase().includes("compliance") ?? false);
 }
 
+// Poll interval for notifications (Kapable SSE will replace this in Sprint 2)
+const POLL_INTERVAL_MS = 30_000;
+
 export const useNotifications = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [userId, setUserId] = useState<string | null>(null);
+  const { userId } = useKapableAuth();
   const [soundSettings, setSoundSettings] = useState<NotificationSoundSettings>({
     notification_sound_enabled: true,
     notification_push_enabled: false,
@@ -47,12 +51,6 @@ export const useNotifications = () => {
   });
   const knownIdsRef = useRef<Set<string>>(new Set());
   const initialLoadDone = useRef(false);
-
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) setUserId(data.user.id);
-    });
-  }, []);
 
   const playSound = useCallback(() => {
     try {
@@ -74,12 +72,12 @@ export const useNotifications = () => {
     } catch {}
   }, []);
 
-  // Fetch sound settings directly to avoid hook nesting issues
+  // Fetch sound settings
   useEffect(() => {
     if (!userId) return;
-    supabase
+    kapable
       .from("user_settings")
-      .select("notification_sound_enabled, notification_push_enabled, notification_critical_only_sound")
+      .select("*")
       .eq("user_id", userId)
       .maybeSingle()
       .then(({ data }) => {
@@ -108,8 +106,9 @@ export const useNotifications = () => {
 
   const fetchNotifications = useCallback(async () => {
     if (!userId) return;
-    const { data } = await supabase
-      .from("notifications")
+    // Table name is "advisor_notifications" (avoids platform route collision)
+    const { data } = await kapable
+      .from<Notification>("advisor_notifications")
       .select("*")
       .eq("is_dismissed", false)
       .order("created_at", { ascending: false });
@@ -134,27 +133,11 @@ export const useNotifications = () => {
     fetchNotifications();
   }, [fetchNotifications]);
 
+  // Poll for new notifications (replace with Kapable SSE in Sprint 2)
   useEffect(() => {
     if (!userId) return;
-    const channel = supabase
-      .channel("notifications-realtime")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "notifications",
-          filter: `user_id=eq.${userId}`,
-        },
-        () => {
-          fetchNotifications();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    const interval = setInterval(fetchNotifications, POLL_INTERVAL_MS);
+    return () => clearInterval(interval);
   }, [userId, fetchNotifications]);
 
   const unreadCount = notifications.filter((n) => !n.is_read).length;
@@ -163,32 +146,30 @@ export const useNotifications = () => {
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
     );
-    await supabase.from("notifications").update({ is_read: true }).eq("id", id);
+    await kapable.from("advisor_notifications").update({ is_read: true }).eq("id", id);
   };
 
   const dismiss = async (id: string) => {
     setNotifications((prev) => prev.filter((n) => n.id !== id));
-    await supabase.from("notifications").update({ is_dismissed: true }).eq("id", id);
+    await kapable.from("advisor_notifications").update({ is_dismissed: true }).eq("id", id);
   };
 
   const markAllRead = async () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
-    if (!userId) return;
-    await supabase
-      .from("notifications")
-      .update({ is_read: true })
-      .eq("user_id", userId)
-      .eq("is_dismissed", false);
+    // Kapable doesn't support bulk update with multiple filters easily,
+    // so update each unread notification individually
+    const unread = notifications.filter((n) => !n.is_read);
+    for (const n of unread) {
+      await kapable.from("advisor_notifications").update({ is_read: true }).eq("id", n.id);
+    }
   };
 
   const clearAll = async () => {
+    const current = [...notifications];
     setNotifications([]);
-    if (!userId) return;
-    await supabase
-      .from("notifications")
-      .update({ is_dismissed: true })
-      .eq("user_id", userId)
-      .eq("is_dismissed", false);
+    for (const n of current) {
+      await kapable.from("advisor_notifications").update({ is_dismissed: true }).eq("id", n.id);
+    }
   };
 
   const requestPushPermission = async (): Promise<NotificationPermission> => {

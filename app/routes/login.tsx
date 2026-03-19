@@ -7,7 +7,7 @@ export async function action({ request }: { request: Request }) {
   const formData = await request.formData();
   const email = (formData.get("email") as string)?.trim();
   const password = (formData.get("password") as string)?.trim();
-  const orgSlug = (formData.get("orgSlug") as string)?.trim() || "agileworks";
+  const orgSlug = (formData.get("orgSlug") as string)?.trim() || "vantage";
 
   if (!email || !password) {
     return { error: "Email and password are required" };

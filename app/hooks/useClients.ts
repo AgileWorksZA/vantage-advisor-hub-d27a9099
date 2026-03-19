@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
 import { toast } from "sonner";
 
 export interface Client {
@@ -144,8 +144,8 @@ export const useClients = () => {
     setLoading(true);
     setError(null);
     try {
-      const { data, error: fetchError } = await supabase
-        .from("clients")
+      const { data, error: fetchError } = await kapable
+        .from<Client>("clients")
         .select("*")
         .order("created_at", { ascending: false });
 
@@ -164,7 +164,7 @@ export const useClients = () => {
 
   const deleteClient = async (clientId: string) => {
     try {
-      const { error: deleteError } = await supabase
+      const { error: deleteError } = await kapable
         .from("clients")
         .delete()
         .eq("id", clientId);

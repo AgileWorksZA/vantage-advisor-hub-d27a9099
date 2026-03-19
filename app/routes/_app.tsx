@@ -1,6 +1,7 @@
 import { Outlet, useLoaderData } from "react-router";
 import { requireAuth } from "@/lib/session.server";
 import { useEffect, useState } from "react";
+import { KapableAuthProvider } from "@/integrations/kapable/auth-context";
 
 export async function loader({ request }: { request: Request }) {
   const auth = await requireAuth(request);
@@ -15,6 +16,8 @@ export async function loader({ request }: { request: Request }) {
 }
 
 export default function AppLayout() {
+  const loaderData = useLoaderData<typeof loader>();
+
   // Child routes are SPA components that use localStorage, supabase.auth, etc.
   // They cannot render during SSR. Wait for client hydration before rendering.
   const [hydrated, setHydrated] = useState(false);
@@ -31,5 +34,18 @@ export default function AppLayout() {
     );
   }
 
-  return <Outlet />;
+  return (
+    <KapableAuthProvider
+      value={{
+        userId: loaderData.userId,
+        email: loaderData.userEmail,
+        name: loaderData.userName,
+        role: loaderData.userRole,
+        orgId: loaderData.orgId,
+        orgName: loaderData.orgName,
+      }}
+    >
+      <Outlet />
+    </KapableAuthProvider>
+  );
 }

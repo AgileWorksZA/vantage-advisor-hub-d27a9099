@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
+import { useKapableAuth } from "@/integrations/kapable/auth-context";
 import { useToast } from "@/hooks/use-toast";
 
 export interface UserSettings {
@@ -27,42 +28,54 @@ export interface UserSettings {
 export const useUserSettings = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { userId } = useKapableAuth();
 
   const { data: settings, isLoading, error } = useQuery({
-    queryKey: ["user-settings"],
+    queryKey: ["user-settings", userId],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!userId) throw new Error("Not authenticated");
 
-      const { data, error } = await supabase
-        .from("user_settings")
+      const { data, error } = await kapable
+        .from<UserSettings>("user_settings")
         .select("*")
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .maybeSingle();
 
       if (error) throw error;
       return data as UserSettings | null;
     },
+    enabled: !!userId,
   });
 
   const upsertSettings = useMutation({
     mutationFn: async (updates: Partial<Omit<UserSettings, "id" | "user_id" | "created_at" | "updated_at">>) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!userId) throw new Error("Not authenticated");
 
-      const { data, error } = await supabase
-        .from("user_settings")
-        .upsert({
-          user_id: user.id,
-          ...updates,
-        }, {
-          onConflict: "user_id",
-        })
-        .select()
-        .single();
+      // No native upsert — check if settings exist, then POST or PATCH
+      const { data: existing } = await kapable
+        .from<UserSettings>("user_settings")
+        .select("*")
+        .eq("user_id", userId)
+        .maybeSingle();
 
-      if (error) throw error;
-      return data;
+      if (existing) {
+        // Update existing settings
+        const { data, error } = await kapable
+          .from<UserSettings>("user_settings")
+          .update(updates)
+          .eq("id", existing.id);
+
+        if (error) throw error;
+        return data;
+      } else {
+        // Create new settings
+        const { data, error } = await kapable
+          .from<UserSettings>("user_settings")
+          .insert({ user_id: userId, ...updates });
+
+        if (error) throw error;
+        return data;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user-settings"] });
