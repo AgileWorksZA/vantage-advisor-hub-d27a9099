@@ -1,7 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate, useParams } from "react-router";
-import { supabase } from "@/integrations/supabase/client";
-import { User, Session } from "@supabase/supabase-js";
+import { useKapableAuth } from "@/integrations/kapable/auth-context";
 import { useRegion } from "@/contexts/RegionContext";
 import { usePageContext } from "@/contexts/PageContext";
 import { Button } from "@/components/ui/button";
@@ -59,9 +58,7 @@ const sidebarItems = [
 const ClientDetail = () => {
   const navigate = useNavigate();
   const { clientId } = useParams<{ clientId: string }>();
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
+  const { userId, email: kapableEmail, name: kapableName } = useKapableAuth();
   const [activeTab, setActiveTab] = useState("dashboard");
   const { regionalData, selectedAdvisors } = useRegion();
   const { setCurrentAdvisorInitials } = usePageContext();
@@ -136,33 +133,7 @@ const ClientDetail = () => {
     return () => setCurrentAdvisorInitials(null);
   }, [client?.advisor, regionalData.advisors, setCurrentAdvisorInitials]);
 
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setAuthLoading(false);
-        
-        if (!session?.user) {
-          console.log("Auth handled by BFF");
-        }
-      }
-    );
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setAuthLoading(false);
-      
-      if (!session?.user) {
-        console.log("Auth handled by BFF");
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate]);
-
-  if (authLoading || clientLoading) {
+  if (clientLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -210,12 +181,11 @@ const ClientDetail = () => {
     );
   }
 
-  const userName = user?.user_metadata?.full_name || "Adviser";
-  const userEmail = user?.email || "adviser@vantage.co";
+  const userName = kapableName || "Adviser";
+  const userEmail = kapableEmail || "adviser@vantage.co";
 
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    console.log("Auth handled by BFF");
+  const handleSignOut = () => {
+    navigate("/logout");
   };
 
   return (
@@ -305,7 +275,7 @@ const ClientDetail = () => {
           {/* Scrollable tab content */}
           <main className="flex-1 p-6 overflow-auto">
             <TabsContent value="dashboard" className="mt-0">
-              <ClientDashboardTab client={client} clientId={clientId!} onTabChange={setActiveTab} userId={user?.id} />
+              <ClientDashboardTab client={client} clientId={clientId!} onTabChange={setActiveTab} userId={userId} />
             </TabsContent>
             <TabsContent value="summary" className="mt-0">
               <ClientSummaryTab

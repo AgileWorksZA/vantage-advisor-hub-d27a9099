@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import { useParams, useNavigate } from "react-router";
 import { supabase } from "@/integrations/supabase/client";
-import { User } from "@supabase/supabase-js";
+import { useKapableAuth } from "@/integrations/kapable/auth-context";
 import DOMPurify from "dompurify";
 import { format } from "date-fns";
 import {
@@ -62,8 +62,7 @@ const EmailView = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [user, setUser] = useState<User | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
+  const { email: kapableEmail, name: kapableName } = useKapableAuth();
   const { regionalData } = useRegion();
   const { setCurrentAdvisorInitials } = usePageContext();
 
@@ -119,28 +118,6 @@ const EmailView = () => {
   const primaryClientId = editableClients[0]?.id;
   const { uploadDocument } = useClientDocuments(primaryClientId || "");
 
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setUser(session?.user ?? null);
-        setAuthLoading(false);
-        if (!session?.user) {
-          console.log("Auth handled by BFF");
-        }
-      }
-    );
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      setAuthLoading(false);
-      if (!session?.user) {
-        console.log("Auth handled by BFF");
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate]);
-
   // Sync linkedClients to editableClients on load
   useEffect(() => {
     if (linkedClients.length > 0 && editableClients.length === 0) {
@@ -169,9 +146,8 @@ const EmailView = () => {
     return () => setCurrentAdvisorInitials(null);
   }, [linkedClients, regionalData.advisors, setCurrentAdvisorInitials]);
 
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    console.log("Auth handled by BFF");
+  const handleSignOut = () => {
+    navigate("/logout");
   };
 
   const handleArchive = () => {
@@ -317,16 +293,8 @@ const EmailView = () => {
       })
     : null;
 
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
-  const userName = user?.user_metadata?.full_name || "Adviser";
-  const userEmail = user?.email || "adviser@vantage.co";
+  const userName = kapableName || "Adviser";
+  const userEmail = kapableEmail || "adviser@vantage.co";
 
   return (
     <div className="h-screen bg-muted/30 flex overflow-hidden">

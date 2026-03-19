@@ -1,7 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router";
-import { supabase } from "@/integrations/supabase/client";
-import { User, Session } from "@supabase/supabase-js";
+import { useKapableAuth } from "@/integrations/kapable/auth-context";
 import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard,
@@ -91,9 +90,7 @@ const sidebarItems = [
 const Clients = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
+  const { userId, email: kapableEmail, name: kapableName } = useKapableAuth();
   const [includeInactive, setIncludeInactive] = useState(false);
   const [selectedProfileFilters, setSelectedProfileFilters] = useState<string[]>(
     profileFilterOptions.map((o) => o.value),
@@ -172,35 +169,8 @@ const Clients = () => {
     }
   }, [searchParams]);
 
-  useEffect(() => {
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setAuthLoading(false);
-
-      if (!session?.user) {
-        console.log("Auth handled by BFF");
-      }
-    });
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setAuthLoading(false);
-
-      if (!session?.user) {
-        console.log("Auth handled by BFF");
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate]);
-
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    console.log("Auth handled by BFF");
+  const handleSignOut = () => {
+    navigate("/logout");
   };
 
   // Handler for choice dialog selection
@@ -291,16 +261,8 @@ const Clients = () => {
       .filter((c): c is NonNullable<typeof c> => Boolean(c));
   }, [filteredClients, recentClientIds, searchQuery, filterSource]);
 
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
-  const userName = user?.user_metadata?.full_name || "Adviser";
-  const userEmail = user?.email || "adviser@vantage.co";
+  const userName = kapableName || "Adviser";
+  const userEmail = kapableEmail || "adviser@vantage.co";
 
   const getClientIcon = (type: string) => {
     switch (type) {

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { supabase } from "@/integrations/supabase/client";
-import { User, Session } from "@supabase/supabase-js";
+import { useKapableAuth } from "@/integrations/kapable/auth-context";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -76,9 +76,7 @@ const settingsSections = [
 const AccountSettings = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
+  const { email, name } = useKapableAuth();
   const [searchParams] = useSearchParams();
   const [activeSection, setActiveSection] = useState(searchParams.get("section") || "profile");
   const { selectedRegion } = useRegion();
@@ -136,27 +134,8 @@ const AccountSettings = () => {
     }
   }, [settings]);
 
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setAuthLoading(false);
-      if (!session?.user) console.log("Auth handled by BFF");
-    });
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setAuthLoading(false);
-      if (!session?.user) console.log("Auth handled by BFF");
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate]);
-
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    console.log("Auth handled by BFF");
+  const handleSignOut = () => {
+    navigate("/logout");
   };
 
   const handleSaveProfile = () => {
@@ -247,16 +226,8 @@ const AccountSettings = () => {
     });
   };
 
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
-  const userName = user?.user_metadata?.full_name || "Adviser";
-  const userEmail = user?.email || "adviser@vantage.co";
+  const userName = name || "Adviser";
+  const userEmail = email || "adviser@vantage.co";
   const activeTimezone = getActiveTimezone(settings?.timezone, selectedRegion);
 
   return (

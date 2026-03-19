@@ -23,7 +23,7 @@ import { useOpportunityProjects } from "@/hooks/useOpportunityProjects";
 import { useProjectOpportunities } from "@/hooks/useProjectOpportunities";
 import { useProjectTasks } from "@/hooks/useProjectTasks";
 import { useAIOpportunities, AIOpportunity } from "@/hooks/useAIOpportunities";
-import { supabase } from "@/integrations/supabase/client";
+import { useKapableAuth } from "@/integrations/kapable/auth-context";
 import { getDemoProjects, getDemoTasks, DemoProject, DemoTask } from "@/data/demoProjects";
 import { ClientWithValue } from "@/hooks/useClientOpportunityValues";
 import { addDays } from "date-fns";
@@ -95,6 +95,7 @@ const AIAssistant = () => {
 
   // Time-based greeting state
   const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>(getTimeOfDay());
+  const { name: kapableName } = useKapableAuth();
   const [userName, setUserName] = useState("");
   const [isProfileLoaded, setIsProfileLoaded] = useState(false);
   const [displayedGreeting, setDisplayedGreeting] = useState("");
@@ -136,24 +137,15 @@ const AIAssistant = () => {
     hasOpportunities,
   } = useAIOpportunities();
 
-  // Fetch user's first name from profiles
+  // Set user's first name from Kapable auth context
   useEffect(() => {
-    const fetchProfile = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data } = await supabase
-          .from("profiles")
-          .select("first_name")
-          .eq("user_id", user.id)
-          .single();
-        if (data?.first_name) {
-          setUserName(data.first_name);
-        }
-      }
-      setIsProfileLoaded(true);
-    };
-    fetchProfile();
-  }, []);
+    if (kapableName) {
+      // Extract first name from full name
+      const firstName = kapableName.split(" ")[0];
+      setUserName(firstName);
+    }
+    setIsProfileLoaded(true);
+  }, [kapableName]);
 
   // Update time of day every minute
   useEffect(() => {

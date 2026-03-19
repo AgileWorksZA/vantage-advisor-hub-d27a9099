@@ -1,8 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { useRegion } from "@/contexts/RegionContext";
-import { supabase } from "@/integrations/supabase/client";
-import { User } from "@supabase/supabase-js";
+import { useKapableAuth } from "@/integrations/kapable/auth-context";
 import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard,
@@ -46,8 +45,7 @@ const sidebarItems = [
 const Tasks = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [user, setUser] = useState<User | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
+  const { email, name } = useKapableAuth();
 
   // Read URL params for deep-linking from onboarding widget
   const urlTaskType = searchParams.get("taskType");
@@ -181,23 +179,8 @@ const Tasks = () => {
 
   const totalPages = Math.ceil(filteredTasks.length / itemsPerPage);
 
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setUser(session?.user ?? null);
-      setAuthLoading(false);
-      if (!session?.user) console.log("Auth handled by BFF");
-    });
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      setAuthLoading(false);
-      if (!session?.user) console.log("Auth handled by BFF");
-    });
-    return () => subscription.unsubscribe();
-  }, [navigate]);
-
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    console.log("Auth handled by BFF");
+  const handleSignOut = () => {
+    navigate("/logout");
   };
 
   const handleViewChange = (newView: "dashboard" | "analytics" | "detail" | "kanban", newFilters?: TaskFilters) => {
@@ -234,16 +217,8 @@ const Tasks = () => {
     }
   }, [urlTaskId, allTasks, detailSheetOpen, searchParams, setSearchParams]);
 
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
-  const userName = user?.user_metadata?.full_name || "Adviser";
-  const userEmail = user?.email || "adviser@vantage.co";
+  const userName = name || "Adviser";
+  const userEmail = email || "adviser@vantage.co";
 
   return (
     <div className="h-screen bg-muted/30 flex overflow-hidden">

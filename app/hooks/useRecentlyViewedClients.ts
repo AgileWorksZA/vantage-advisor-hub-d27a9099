@@ -1,23 +1,24 @@
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
+import { useKapableAuth } from "@/integrations/kapable/auth-context";
 
 export const useRecentlyViewedClients = () => {
   const [recentClientIds, setRecentClientIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const { userId } = useKapableAuth();
 
   const fetchRecentViews = useCallback(async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setRecentClientIds([]);
-        setLoading(false);
-        return;
-      }
+    if (!userId) {
+      setRecentClientIds([]);
+      setLoading(false);
+      return;
+    }
 
-      const { data, error } = await supabase
+    try {
+      const { data, error } = await kapable
         .from("client_views")
-        .select("client_id, viewed_at")
-        .eq("user_id", user.id)
+        .select("*")
+        .eq("user_id", userId)
         .order("viewed_at", { ascending: false })
         .limit(20);
 
@@ -25,7 +26,7 @@ export const useRecentlyViewedClients = () => {
         console.error("Error fetching recent views:", error);
         setRecentClientIds([]);
       } else {
-        setRecentClientIds(data?.map((row) => row.client_id) || []);
+        setRecentClientIds(data?.map((row: any) => row.client_id) || []);
       }
     } catch (err) {
       console.error("Error fetching recent views:", err);
@@ -33,35 +34,42 @@ export const useRecentlyViewedClients = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [userId]);
 
   useEffect(() => {
     fetchRecentViews();
   }, [fetchRecentViews]);
 
   const recordView = useCallback(async (clientId: string) => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+    if (!userId) return;
 
-      const { error } = await supabase
+    try {
+      // No native upsert — check existing then create/update
+      const { data: existing } = await kapable
         .from("client_views")
-        .upsert(
-          {
-            user_id: user.id,
+        .select("*")
+        .eq("user_id", userId)
+        .eq("client_id", clientId)
+        .maybeSingle();
+
+      if (existing) {
+        await kapable
+          .from("client_views")
+          .update({ viewed_at: new Date().toISOString() })
+          .eq("id", (existing as any).id);
+      } else {
+        await kapable
+          .from("client_views")
+          .insert({
+            user_id: userId,
             client_id: clientId,
             viewed_at: new Date().toISOString(),
-          },
-          { onConflict: "user_id,client_id" }
-        );
-
-      if (error) {
-        console.error("Error recording client view:", error);
+          });
       }
     } catch (err) {
       console.error("Error recording client view:", err);
     }
-  }, []);
+  }, [userId]);
 
   return { recentClientIds, recordView, loading, refetch: fetchRecentViews };
 };

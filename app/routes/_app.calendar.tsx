@@ -1,8 +1,7 @@
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useRegion } from "@/contexts/RegionContext";
 import { useNavigate } from "react-router";
-import { supabase } from "@/integrations/supabase/client";
-import { User, Session } from "@supabase/supabase-js";
+import { useKapableAuth } from "@/integrations/kapable/auth-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -128,9 +127,7 @@ const eventTypes: CalendarEventType[] = [
 
 const CalendarPage = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
+  const { email, name } = useKapableAuth();
 
   const [viewDate, setViewDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<"month" | "week" | "day">("month");
@@ -233,31 +230,8 @@ const CalendarPage = () => {
     refetch: refetchRecordings,
   } = useMeetingRecordings(selectedEvent?.id);
 
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setAuthLoading(false);
-      if (!session?.user) {
-        console.log("Auth handled by BFF");
-      }
-    });
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setAuthLoading(false);
-      if (!session?.user) {
-        console.log("Auth handled by BFF");
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate]);
-
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    console.log("Auth handled by BFF");
+  const handleSignOut = () => {
+    navigate("/logout");
   };
 
   // Filter events based on calendar filters
@@ -411,16 +385,8 @@ const CalendarPage = () => {
     setSelectedEvent(null);
   };
 
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
-  const userName = user?.user_metadata?.full_name || "Adviser";
-  const userEmail = user?.email || "adviser@vantage.co";
+  const userName = name || "Adviser";
+  const userEmail = email || "adviser@vantage.co";
 
   return (
     <div className="h-screen bg-muted/30 flex overflow-hidden">

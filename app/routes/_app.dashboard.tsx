@@ -1,7 +1,7 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router";
+import { useKapableAuth } from "@/integrations/kapable/auth-context";
 import { supabase } from "@/integrations/supabase/client";
-import { User, Session } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LayoutDashboard, Users, Briefcase, Mail, CalendarIcon, ListTodo, LineChart, Building2, X, GripVertical, MoreVertical, Settings, TrendingUp, TrendingDown } from "lucide-react";
@@ -81,9 +81,7 @@ const DASHBOARD_WIDGETS: WidgetConfig[] = [
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { userId, email, name } = useKapableAuth();
   const [caFilter, setCaFilter] = useState<'mandatory' | 'voluntary'>('mandatory');
   const [aumGrowthPeriod, setAumGrowthPeriod] = useState<'1m' | '6m' | 'ytd'>('1m');
   
@@ -102,7 +100,7 @@ const Dashboard = () => {
   const { layout, onLayoutChange, hiddenWidgets, setHiddenWidgets, loading: layoutLoading } = useWidgetLayout({
     pageId: 'dashboard',
     defaultLayout: defaultDashboardLayout,
-    userId: user?.id,
+    userId,
   });
 
   const handleToggleWidget = useCallback((widgetId: string, visible: boolean) => {
@@ -155,100 +153,12 @@ const Dashboard = () => {
     }
   };
 
-  // Seed demo clients for new users
-  const seedDemoClients = async (accessToken: string) => {
-    try {
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/seed-demo-clients`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-      const result = await response.json();
-      if (result.seeded) {
-        console.log(`Seeded ${result.count} demo clients`);
-      }
-    } catch (error) {
-      console.error('Failed to seed demo clients:', error);
-    }
+  const handleSignOut = () => {
+    navigate("/logout");
   };
 
-  // Seed onboarding tasks for new users
-  const seedOnboardingTasks = async (accessToken: string) => {
-    try {
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/seed-onboarding-tasks`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-      const result = await response.json();
-      if (result.seeded) {
-        console.log(`Seeded ${result.count} onboarding tasks`);
-      }
-    } catch (error) {
-      console.error('Failed to seed onboarding tasks:', error);
-    }
-  };
-
-  useEffect(() => {
-    const {
-      data: {
-        subscription
-      }
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-      if (!session?.user) {
-        console.log("Auth handled by BFF");
-      } else if (session.access_token) {
-        // Seed demo clients on login
-        seedDemoClients(session.access_token);
-        seedOnboardingTasks(session.access_token);
-      }
-    });
-    supabase.auth.getSession().then(({
-      data: {
-        session
-      }
-    }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-      if (!session?.user) {
-        console.log("Auth handled by BFF");
-      } else if (session.access_token) {
-        // Seed demo clients on initial load
-        seedDemoClients(session.access_token);
-        seedOnboardingTasks(session.access_token);
-      }
-    });
-    return () => subscription.unsubscribe();
-  }, [navigate]);
-
-
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    console.log("Auth handled by BFF");
-  };
-
-  if (loading) {
-    return <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>;
-  }
-
-  const userName = user?.user_metadata?.full_name || "Adviser";
-  const userEmail = user?.email || "adviser@vantage.co";
+  const userName = name || "Adviser";
+  const userEmail = email || "adviser@vantage.co";
 
   return <div className="h-screen bg-muted/30 flex overflow-hidden">
       {/* Sidebar - Fixed */}
@@ -305,7 +215,7 @@ const Dashboard = () => {
             <WidgetSettingsDialog widgets={DASHBOARD_WIDGETS} hiddenWidgets={hiddenWidgets} onToggleWidget={handleToggleWidget} />
           </div>
           
-          {(loading || layoutLoading) ? (
+          {layoutLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {Array.from({ length: 6 }).map((_, i) => (
                 <Card key={i}>

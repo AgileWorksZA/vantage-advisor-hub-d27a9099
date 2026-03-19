@@ -6,8 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { getOpportunityConfig } from "@/lib/opportunity-detection";
 import { AppHeader } from "@/components/layout/AppHeader";
-import { supabase } from "@/integrations/supabase/client";
-import { useState, useEffect } from "react";
+import { useKapableAuth } from "@/integrations/kapable/auth-context";
 import { useNotifications, type Notification } from "@/hooks/useNotifications";
 
 const getNotificationIcon = (type: Notification["type"]) => {
@@ -47,13 +46,8 @@ const formatDate = (dateStr: string) => {
 const Notifications = () => {
   const navigate = useNavigate();
   const { notifications, markAsRead, dismiss, markAllRead, clearAll } = useNotifications();
-  const [userName, setUserName] = useState("User");
-
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user?.email) setUserName(data.user.email.split("@")[0]);
-    });
-  }, []);
+  const { email, name } = useKapableAuth();
+  const userName = name || email?.split("@")[0] || "User";
 
   const groupedNotifications = groupByDate(notifications);
 
@@ -73,7 +67,7 @@ const Notifications = () => {
       <div className="flex-1 flex flex-col overflow-hidden">
         <AppHeader
           userName={userName}
-          onSignOut={() => supabase.auth.signOut().then(() => console.log("Auth handled by BFF"))}
+          onSignOut={() => navigate("/logout")}
         />
         <div className="flex-1 overflow-auto p-6">
           <div className="max-w-3xl mx-auto">
