@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
 
 interface SelectedClient {
   id: string;
@@ -21,9 +21,9 @@ const ClientPickerDialog = ({ onSelect }: ClientPickerDialogProps) => {
 
   useEffect(() => {
     const fetchClients = async () => {
-      const { data } = await supabase
+      const { data } = await kapable
         .from("clients")
-        .select("id, first_name, surname, email")
+        .select("*")
         .order("surname", { ascending: true })
         .limit(100);
       setClients((data as SelectedClient[]) || []);

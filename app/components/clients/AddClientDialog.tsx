@@ -29,7 +29,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
+import { useKapableAuth } from "@/integrations/kapable/auth-context";
 import { toast } from "sonner";
 
 const clientSchema = z.object({
@@ -119,11 +120,13 @@ const AddClientDialog = ({ open, onOpenChange, onClientAdded, onClientCreated }:
     }
   }, [watchIdNumber, watchClientType, form]);
 
+  const { userId } = useKapableAuth();
+
   // Check for duplicate ID number before submission
   const checkDuplicateIdNumber = async (idNumber: string) => {
-    const { data, error } = await supabase
+    const { data, error } = await kapable
       .from("clients")
-      .select("id, first_name, surname, id_number")
+      .select("*")
       .ilike("id_number", idNumber)
       .limit(1);
 
@@ -136,8 +139,7 @@ const AddClientDialog = ({ open, onOpenChange, onClientAdded, onClientCreated }:
   const onSubmit = async (data: ClientFormData) => {
     setIsSubmitting(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      if (!userId) {
         toast.error("You must be logged in to add a client");
         return;
       }
@@ -162,8 +164,8 @@ const AddClientDialog = ({ open, onOpenChange, onClientAdded, onClientCreated }:
         dateOfBirth = data.date_of_birth;
       }
 
-      const { data: newClient, error } = await supabase.from("clients").insert({
-        user_id: user.id,
+      const { data: newClient, error } = await kapable.from("clients").insert({
+        user_id: userId,
         profile_state: "Active",
         profile_type: data.profile_type,
         client_type: data.client_type,

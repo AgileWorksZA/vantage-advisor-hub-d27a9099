@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import { useParams, useNavigate } from "react-router";
-import { supabase } from "@/integrations/supabase/client";
+// TODO: Replace supabase.functions.invoke("guess-email-tasks") with Kapable SSF
 import { useKapableAuth } from "@/integrations/kapable/auth-context";
 import DOMPurify from "dompurify";
 import { format } from "date-fns";
@@ -216,17 +216,8 @@ const EmailView = () => {
     setIsGuessing(true);
     setAiOpportunities([]);
     try {
-      const { data, error } = await supabase.functions.invoke("guess-email-tasks", {
-        body: {
-          emailId: id,
-          clientIds: editableClients.map((c) => c.id),
-          includeCompleted,
-        },
-      });
-
-      if (error) throw error;
-
-      const matched = data?.matchedTasks || [];
+      // TODO: Replace with Kapable SSF call
+      const matched: any[] = [];
       let linked = 0;
       for (const match of matched) {
         if (match.confidence === "high" || match.confidence === "medium") {

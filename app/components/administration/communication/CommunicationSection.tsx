@@ -24,7 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Json } from "@/integrations/supabase/types";
+type Json = any;
 
 interface CommunicationSetting {
   id: string;

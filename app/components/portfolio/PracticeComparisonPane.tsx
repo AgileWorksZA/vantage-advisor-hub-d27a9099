@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
 import { useRegion } from "@/contexts/RegionContext";
 import {
   generateFees,
@@ -70,9 +70,9 @@ export default function PracticeComparisonPane({ groupId, currentFunds, currency
 
   useEffect(() => {
     const exchanges = getExchangesForJurisdiction(jurisdiction);
-    supabase
+    kapable
       .from("admin_funds")
-      .select("id, name, code, exchange, sector, fund_manager")
+      .select("*")
       .eq("is_deleted", false)
       .in("exchange", exchanges)
       .then(({ data }) => { if (data) setAvailableFunds(data as AdminFund[]); });

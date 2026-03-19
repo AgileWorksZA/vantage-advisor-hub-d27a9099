@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
+import { useKapableAuth } from "@/integrations/kapable/auth-context";
 import { CalendarIcon, Loader2, ListChecks, Database, Bell, Users } from "lucide-react";
 import { useAdminData } from "@/hooks/useAdminData";
 import { AdminSectionHeader } from "../AdminSectionHeader";
@@ -26,7 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Json } from "@/integrations/supabase/types";
+type Json = any;
 import { Badge } from "@/components/ui/badge";
 
 interface SystemSetting {
@@ -183,14 +184,18 @@ export function SystemSettingsSection() {
     { name: "seed-meeting-recordings", label: "Meeting Recordings" },
   ];
 
+  // TODO: Replace with Kapable SSF — all seed functions route through BFF proxy
+  const callSeedFunction = async (name: string, body?: Record<string, unknown>): Promise<any> => {
+    const response = await fetch(`/api/kapable/${name}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      ...(body ? { body: JSON.stringify(body) } : {}),
+    });
+    return response.json();
+  };
+
   const handleSeedAll = async () => {
     setSeedingAll(true);
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.access_token) {
-      toast.error("Not authenticated");
-      setSeedingAll(false);
-      return;
-    }
 
     let successes = 0;
     let failures = 0;
@@ -199,26 +204,16 @@ export function SystemSettingsSection() {
       const step = seedSequence[i];
       setSeedProgress(`${step.label} (${i + 1}/${seedSequence.length})`);
       try {
-        const response = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${step.name}`,
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${session.access_token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-        const result = await response.json();
-        if (result.success || response.ok) {
-          toast.success(`✓ ${step.label} seeded`);
+        const result = await callSeedFunction(step.name);
+        if (result.success) {
+          toast.success(`${step.label} seeded`);
           successes++;
         } else {
-          toast.error(`✗ ${step.label}: ${result.error || "Failed"}`);
+          toast.error(`${step.label}: ${result.error || "Failed"}`);
           failures++;
         }
       } catch (error: any) {
-        toast.error(`✗ ${step.label}: ${error.message}`);
+        toast.error(`${step.label}: ${error.message}`);
         failures++;
       }
     }
@@ -231,22 +226,7 @@ export function SystemSettingsSection() {
   const handleSeedCalendar = async () => {
     setSeedingCalendar(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        toast.error("Not authenticated");
-        return;
-      }
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/seed-calendar-events`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      const result = await response.json();
+      const result = await callSeedFunction("seed-calendar-events");
       if (result.success) {
         toast.success(`Seeded ${result.totalEvents} calendar events across ${result.advisors} advisors`);
       } else {
@@ -263,22 +243,7 @@ export function SystemSettingsSection() {
   const handleSeedOpenTasks = async () => {
     setSeedingOpenTasks(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        toast.error("Not authenticated");
-        return;
-      }
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/seed-open-tasks`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      const result = await response.json();
+      const result = await callSeedFunction("seed-open-tasks");
       if (result.success) {
         toast.success(`Seeded ${result.totalTasks} open tasks across ${result.advisors} advisors`);
       } else {
@@ -295,22 +260,7 @@ export function SystemSettingsSection() {
   const handleSeedNotifications = async () => {
     setSeedingNotifications(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        toast.error("Not authenticated");
-        return;
-      }
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/seed-notifications`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      const result = await response.json();
+      const result = await callSeedFunction("seed-notifications");
       if (result.success) {
         toast.success(`Seeded ${result.count} notifications`);
       } else {
@@ -333,14 +283,10 @@ export function SystemSettingsSection() {
 
     setSeedingClientMeetings(true);
     try {
-      const { data, error } = await supabase.functions.invoke("seed-client-meetings", {
-        body: { clientId },
-      });
+      const result = await callSeedFunction("seed-client-meetings", { clientId });
+      if (!result?.success) throw new Error(result?.error || "Failed to seed client meetings");
 
-      if (error) throw error;
-      if (!data?.success) throw new Error(data?.error || "Failed to seed client meetings");
-
-      toast.success(`Seeded ${data.meetings} meetings for ${data.clientName}`);
+      toast.success(`Seeded ${result.meetings} meetings for ${result.clientName}`);
     } catch (error: any) {
       toast.error(error.message || "Failed to seed client meetings");
       console.error(error);

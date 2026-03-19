@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Plus, FileText, Mail, Phone, Package, TrendingUp, ListTodo, File, Sparkles, Loader2, X, Target, Calendar, AlertTriangle, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
 import { toast } from "sonner";
 
 export interface KeyOutcome {
@@ -70,18 +70,12 @@ export default function WebPrepStep({ clientId, clientName, keyOutcomes, onAddOu
     setIsTyping(true);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        toast.error("Not authenticated");
-        return;
-      }
-
+      // TODO: Replace with Kapable SSF
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-prep-note`,
+        `/api/kapable/generate-prep-note`,
         {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${session.access_token}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({ calendarEventId: eventId }),

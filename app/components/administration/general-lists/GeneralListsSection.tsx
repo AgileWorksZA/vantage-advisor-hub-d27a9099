@@ -17,7 +17,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { adminSections } from "../AdminLayout";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
+import { useKapableAuth } from "@/integrations/kapable/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { Database, Loader2 } from "lucide-react";
 
@@ -87,28 +88,22 @@ export function GeneralListsSection() {
   const handleSeedReferenceData = async () => {
     setIsSeeding(true);
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData.session) {
-        toast({
-          title: "Not authenticated",
-          description: "Please log in to seed reference data",
-          variant: "destructive",
-        });
-        return;
+      // TODO: Replace with Kapable SSF
+      const response = await fetch("/api/kapable/seed-admin-reference-data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to seed reference data");
       }
 
-      const response = await supabase.functions.invoke("seed-admin-reference-data");
-      
-      if (response.error) {
-        throw new Error(response.error.message);
-      }
-
-      const result = response.data;
+      const result = await response.json();
       toast({
         title: result.success ? "Success" : "Partial Success",
-        description: `Seeded ${result.counts.currencies} currencies, ${result.counts.banks} banks, ${result.counts.locations} locations`,
+        description: `Seeded ${result.counts?.currencies || 0} currencies, ${result.counts?.banks || 0} banks, ${result.counts?.locations || 0} locations`,
       });
-      
+
       refetch();
     } catch (error) {
       console.error("Seed error:", error);

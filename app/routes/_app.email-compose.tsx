@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import DOMPurify from "dompurify";
-import { supabase } from "@/integrations/supabase/client";
+// TODO: Replace supabase.functions.invoke("guess-email-tasks") with Kapable SSF
 import { useKapableAuth } from "@/integrations/kapable/auth-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -254,17 +254,8 @@ const ComposeEmail = () => {
     setIsGuessing(true);
     setAiOpportunities([]);
     try {
-      const { data, error } = await supabase.functions.invoke("guess-email-tasks", {
-        body: {
-          emailId: currentEmailId,
-          clientIds: linkedClients.map((c) => c.id),
-          includeCompleted,
-        },
-      });
-
-      if (error) throw error;
-
-      const matched = data?.matchedTasks || [];
+      // TODO: Replace with Kapable SSF call
+      const matched: any[] = [];
       let linked = 0;
       for (const match of matched) {
         if (match.confidence === "high" || match.confidence === "medium") {

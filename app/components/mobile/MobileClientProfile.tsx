@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
 import { ArrowLeft, Phone, Mail, MapPin, Briefcase, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -32,9 +32,9 @@ const MobileClientProfile = ({ clientId, onBack }: MobileClientProfileProps) => 
   useEffect(() => {
     const fetchClient = async () => {
       setLoading(true);
-      const { data } = await supabase
+      const { data } = await kapable
         .from("clients")
-        .select("id, first_name, surname, title, email, cell_number, work_number, date_of_birth, occupation, employer, advisor, profile_state, client_type, id_number")
+        .select("*")
         .eq("id", clientId)
         .single();
 

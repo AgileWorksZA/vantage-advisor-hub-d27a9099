@@ -18,9 +18,9 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { ExternalLink, Database, Loader2 } from "lucide-react";
 import { icons } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
 import { toast } from "@/hooks/use-toast";
-import { Json } from "@/integrations/supabase/types";
+type Json = any;
 
 interface AdminFund {
   id: string;
@@ -137,12 +137,17 @@ export function FundsSection() {
   const handleSeedData = async () => {
     setIsSeeding(true);
     try {
-      const { data: result, error } = await supabase.functions.invoke("seed-instruments-data");
-      
-      if (error) {
+      // TODO: Replace with Kapable SSF
+      const response = await fetch("/api/kapable/seed-instruments-data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      const result = await response.json();
+
+      if (!response.ok) {
         toast({
           title: "Error",
-          description: error.message || "Failed to seed instrument data",
+          description: result.error || "Failed to seed instrument data",
           variant: "destructive",
         });
       } else {

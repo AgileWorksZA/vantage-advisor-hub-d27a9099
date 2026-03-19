@@ -1,2 +1,0 @@
-async function f(t){const s=new TextEncoder().encode(t),n=await crypto.subtle.digest("SHA-1",s);return Array.from(new Uint8Array(n)).map(a=>a.toString(16).padStart(2,"0")).join("").toUpperCase()}async function d(t){try{const e=await f(t),s=e.slice(0,5),n=e.slice(5),r=await fetch(`https://api.pwnedpasswords.com/range/${s}`,{headers:{"Add-Padding":"true"}});if(!r.ok)return!1;const o=(await r.text()).split(`
-`);for(const c of o){const[i]=c.split(":");if(i.trim()===n)return!0}return!1}catch{return!1}}export{d as c};

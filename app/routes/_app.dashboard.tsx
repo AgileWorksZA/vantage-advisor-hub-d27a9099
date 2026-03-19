@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router";
 import { useKapableAuth } from "@/integrations/kapable/auth-context";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LayoutDashboard, Users, Briefcase, Mail, CalendarIcon, ListTodo, LineChart, Building2, X, GripVertical, MoreVertical, Settings, TrendingUp, TrendingDown } from "lucide-react";
@@ -128,13 +128,13 @@ const Dashboard = () => {
     const surname = nameParts[nameParts.length - 1];
     
     try {
-      const { data, error } = await supabase
+      const { data, error } = await kapable
         .from('clients')
-        .select('id')
+        .select('*')
         .ilike('first_name', `%${firstName}%`)
         .ilike('surname', `%${surname}%`)
         .limit(1)
-        .single();
+        .maybeSingle();
       
       if (error || !data) return null;
       return data.id;

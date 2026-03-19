@@ -5,7 +5,7 @@ import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
 import { useAppMode } from "@/contexts/AppModeContext";
-import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router";
 
 interface ClientSettingsMenuProps {
   onBack: () => void;
@@ -25,9 +25,11 @@ const ClientSettingsMenu = ({ onBack, onChangeClient }: ClientSettingsMenuProps)
     setTheme(resolvedTheme === "dark" ? "light" : "dark");
   };
 
+  const navigate = useNavigate();
+
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
     setMode("web");
+    navigate("/logout");
   };
 
   return (

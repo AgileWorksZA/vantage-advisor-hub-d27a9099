@@ -27,7 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { FamilyMemberListItem } from "@/hooks/useClientRelationships";
@@ -208,7 +208,7 @@ const EditFamilyMemberDialog = ({
       setIsLoading(true);
       try {
         // Fetch the relationship record
-        const { data: relData, error: relError } = await supabase
+        const { data: relData, error: relError } = await kapable
           .from("client_relationships")
           .select("*")
           .eq("id", familyMember.id)
@@ -220,7 +220,7 @@ const EditFamilyMemberDialog = ({
 
         // If there's a related client, fetch their full data
         if (relData.related_client_id) {
-          const { data: clientData, error: clientError } = await supabase
+          const { data: clientData, error: clientError } = await kapable
             .from("clients")
             .select("*")
             .eq("id", relData.related_client_id)
@@ -311,7 +311,7 @@ const EditFamilyMemberDialog = ({
     setIsSubmitting(true);
     try {
       // Update relationship record
-      const { error: relError } = await supabase
+      const { error: relError } = await kapable
         .from("client_relationships")
         .update({
           relationship_type: data.relationship_type,
@@ -353,7 +353,7 @@ const EditFamilyMemberDialog = ({
           code: data.postal_code || "",
         };
 
-        const { error: clientError } = await supabase
+        const { error: clientError } = await kapable
           .from("clients")
           .update({
             person_type: data.person_type,

@@ -25,7 +25,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
+import { useKapableAuth } from "@/integrations/kapable/auth-context";
 import { toast } from "sonner";
 
 const contactSchema = z.object({
@@ -87,21 +88,22 @@ const AddContactDialog = ({ open, onOpenChange, clientId, onSuccess }: AddContac
     },
   });
 
+  const { userId } = useKapableAuth();
+
   const onSubmit = async (data: ContactFormData) => {
     setIsSubmitting(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      if (!userId) {
         toast.error("You must be logged in");
         return;
       }
 
       const fullName = `${data.title ? data.title + " " : ""}${data.first_name} ${data.surname}`;
 
-      const { error } = await supabase
+      const { error } = await kapable
         .from("client_contacts")
         .insert({
-          user_id: user.id,
+          user_id: userId,
           client_id: clientId,
           name: fullName,
           job_title: data.job_title || null,

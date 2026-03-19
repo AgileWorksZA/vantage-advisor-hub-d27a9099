@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
-import { supabase } from "@/integrations/supabase/client";
+// Password change uses BFF proxy to Kapable auth API
 import { useKapableAuth } from "@/integrations/kapable/auth-context";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -166,8 +166,9 @@ const AccountSettings = () => {
         return;
       }
 
-      const { error } = await supabase.auth.updateUser({ password: newPassword });
-      if (error) throw error;
+      // TODO: Implement Kapable password change API endpoint
+      // For now, show a message directing users to reset via email
+      throw new Error("Password change coming soon. Use 'Forgot Password' on the login page.");
       toast({ title: "Password updated successfully" });
       setNewPassword("");
       setConfirmPassword("");

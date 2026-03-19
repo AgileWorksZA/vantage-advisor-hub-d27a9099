@@ -8,7 +8,9 @@ import { useTheme } from "next-themes";
 import { useAppMode } from "@/contexts/AppModeContext";
 import { useRegion } from "@/contexts/RegionContext";
 import { regions } from "@/components/dashboard/RegionSelector";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
+import { useKapableAuth } from "@/integrations/kapable/auth-context";
+import { useNavigate } from "react-router";
 
 const AI_CHAT_STORAGE_KEY = "vantage-ai-chat-enabled";
 const VOICE_MEMO_STORAGE_KEY = "vantage-voice-memo-visible";
@@ -38,26 +40,16 @@ const MobileSettingsMenu = ({ onBack }: MobileSettingsMenuProps) => {
     setMounted(true);
   }, []);
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUserEmail(user.email || "");
-        const { data: profile } = await supabase
-          .from("profiles" as any)
-          .select("display_name")
-          .eq("user_id", user.id)
-          .maybeSingle();
+  const { userId, email, name: authName } = useKapableAuth();
 
-        if (profile && (profile as any).display_name) {
-          setUserName((profile as any).display_name);
-        } else {
-          setUserName(user.email?.split("@")[0] || "User");
-        }
-      }
-    };
-    fetchUser();
-  }, []);
+  useEffect(() => {
+    setUserEmail(email || "");
+    if (authName) {
+      setUserName(authName);
+    } else {
+      setUserName(email?.split("@")[0] || "User");
+    }
+  }, [email, authName]);
 
   const getInitial = (name: string) => name.charAt(0).toUpperCase();
 
@@ -90,9 +82,11 @@ const MobileSettingsMenu = ({ onBack }: MobileSettingsMenuProps) => {
     setTimeout(() => { window.location.href = "/account-settings"; }, 100);
   };
 
+  const navigate = useNavigate();
+
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
     setMode("web");
+    navigate("/logout");
   };
 
   return (

@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
+import { useKapableAuth } from "@/integrations/kapable/auth-context";
 import { toast } from "sonner";
 import ReactECharts from "echarts-for-react";
 
@@ -35,6 +36,7 @@ export const BucketAllocationChart = ({
     Wealth: { recommended: 0, current: 0, proposed: 0, notes: "" },
   });
   const [loading, setLoading] = useState(true);
+  const { userId } = useKapableAuth();
 
   // Calculate recommended amounts based on financial position
   const calculateRecommendations = useCallback(() => {
@@ -58,7 +60,7 @@ export const BucketAllocationChart = ({
     const fetchBuckets = async () => {
       try {
         setLoading(true);
-        const { data, error } = await supabase
+        const { data, error } = await kapable
           .from("bucket_allocations")
           .select("*")
           .eq("workflow_id", workflowId);
@@ -115,17 +117,16 @@ export const BucketAllocationChart = ({
 
   const handleSave = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!userId) throw new Error("Not authenticated");
 
       // Delete existing and insert new
-      await supabase
+      await kapable
         .from("bucket_allocations")
         .delete()
         .eq("workflow_id", workflowId);
 
       const inserts = Object.entries(buckets).map(([bucketType, data]) => ({
-        user_id: user.id,
+        user_id: userId,
         workflow_id: workflowId,
         bucket_type: bucketType,
         recommended_amount: data.recommended,
@@ -134,7 +135,7 @@ export const BucketAllocationChart = ({
         notes: data.notes || null,
       }));
 
-      const { error } = await supabase
+      const { error } = await kapable
         .from("bucket_allocations")
         .insert(inserts);
 

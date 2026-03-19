@@ -28,7 +28,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
+import { useKapableAuth } from "@/integrations/kapable/auth-context";
 import { toast } from "sonner";
 import DuplicateClientDialog from "@/components/clients/DuplicateClientDialog";
 
@@ -80,13 +81,15 @@ const AddFamilyMemberDialog = ({ open, onOpenChange, clientId, onSuccess }: AddF
     },
   });
 
+  const { userId } = useKapableAuth();
+
   // Fetch parent client's country for jurisdiction-aware ID type
   useEffect(() => {
     if (!open || !clientId) return;
     const fetchParentCountry = async () => {
-      const { data } = await supabase
+      const { data } = await kapable
         .from("clients")
-        .select("country_of_issue")
+        .select("*")
         .eq("id", clientId)
         .single();
       setParentCountry(data?.country_of_issue || null);
@@ -119,9 +122,9 @@ const AddFamilyMemberDialog = ({ open, onOpenChange, clientId, onSuccess }: AddF
 
   // Check for duplicate ID number
   const checkDuplicateIdNumber = async (idNumber: string) => {
-    const { data, error } = await supabase
+    const { data, error } = await kapable
       .from("clients")
-      .select("id, first_name, surname, id_number")
+      .select("*")
       .ilike("id_number", idNumber)
       .limit(1);
 
@@ -134,8 +137,7 @@ const AddFamilyMemberDialog = ({ open, onOpenChange, clientId, onSuccess }: AddF
   const onSubmit = async (data: FamilyMemberFormData) => {
     setIsSubmitting(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      if (!userId) {
         toast.error("You must be logged in");
         return;
       }
@@ -154,19 +156,19 @@ const AddFamilyMemberDialog = ({ open, onOpenChange, clientId, onSuccess }: AddF
       }
 
       // Fetch original client's data for the reciprocal relationship
-      const { data: originalClient, error: originalClientError } = await supabase
+      const { data: originalClient, error: originalClientError } = await kapable
         .from("clients")
-        .select("first_name, surname, id_number")
+        .select("*")
         .eq("id", clientId)
         .single();
 
       if (originalClientError) throw originalClientError;
 
       // First create the family member as a client
-      const { data: newClient, error: clientError } = await supabase
+      const { data: newClient, error: clientError } = await kapable
         .from("clients")
         .insert({
-          user_id: user.id,
+          user_id: userId,
           profile_state: "Active",
           profile_type: "Prospect",
           client_type: "individual",
@@ -186,10 +188,10 @@ const AddFamilyMemberDialog = ({ open, onOpenChange, clientId, onSuccess }: AddF
       if (clientError) throw clientError;
 
       // Create the primary relationship (new family member linked to original client)
-      const { error: relationshipError } = await supabase
+      const { error: relationshipError } = await kapable
         .from("client_relationships")
         .insert({
-          user_id: user.id,
+          user_id: userId,
           client_id: clientId,
           related_client_id: newClient.id,
           name: `${data.first_name} ${data.surname}`,
@@ -204,10 +206,10 @@ const AddFamilyMemberDialog = ({ open, onOpenChange, clientId, onSuccess }: AddF
 
       // Create the reciprocal relationship (original client linked to new family member)
       const reciprocalType = getReciprocalRelationship(data.relationship_type);
-      const { error: reciprocalError } = await supabase
+      const { error: reciprocalError } = await kapable
         .from("client_relationships")
         .insert({
-          user_id: user.id,
+          user_id: userId,
           client_id: newClient.id,
           related_client_id: clientId,
           name: `${originalClient.first_name} ${originalClient.surname}`,

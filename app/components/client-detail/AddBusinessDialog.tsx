@@ -26,7 +26,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
+import { useKapableAuth } from "@/integrations/kapable/auth-context";
 import { toast } from "sonner";
 import DuplicateClientDialog from "@/components/clients/DuplicateClientDialog";
 
@@ -69,11 +70,13 @@ const AddBusinessDialog = ({ open, onOpenChange, clientId, onSuccess }: AddBusin
     },
   });
 
+  const { userId } = useKapableAuth();
+
   // Check for duplicate registration number (stored in id_number field)
   const checkDuplicateRegistration = async (registrationNumber: string) => {
-    const { data, error } = await supabase
+    const { data, error } = await kapable
       .from("clients")
-      .select("id, first_name, surname, id_number")
+      .select("*")
       .ilike("id_number", registrationNumber)
       .limit(1);
 
@@ -86,8 +89,7 @@ const AddBusinessDialog = ({ open, onOpenChange, clientId, onSuccess }: AddBusin
   const onSubmit = async (data: BusinessFormData) => {
     setIsSubmitting(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      if (!userId) {
         toast.error("You must be logged in");
         return;
       }
@@ -106,10 +108,10 @@ const AddBusinessDialog = ({ open, onOpenChange, clientId, onSuccess }: AddBusin
       }
 
       // First create the business as a client
-      const { data: newClient, error: clientError } = await supabase
+      const { data: newClient, error: clientError } = await kapable
         .from("clients")
         .insert({
-          user_id: user.id,
+          user_id: userId,
           profile_state: "Active",
           profile_type: "Prospect",
           client_type: "business",
@@ -123,10 +125,10 @@ const AddBusinessDialog = ({ open, onOpenChange, clientId, onSuccess }: AddBusin
       if (clientError) throw clientError;
 
       // Then create the relationship linking to the new client
-      const { error: relationshipError } = await supabase
+      const { error: relationshipError } = await kapable
         .from("client_relationships")
         .insert({
-          user_id: user.id,
+          user_id: userId,
           client_id: clientId,
           related_client_id: newClient.id,
           name: data.business_name,

@@ -1,15 +1,15 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router";
-import { supabase } from "@/integrations/supabase/client";
 import { checkPasswordLeaked } from "@/lib/password-security";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { User, Session } from "@supabase/supabase-js";
 import { ArrowLeft } from "lucide-react";
 import { z } from "zod";
+
+const KAPABLE_API = "https://api.kapable.dev";
 
 const signupSchema = z.object({
   firstName: z
@@ -54,39 +54,12 @@ const Signup = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  
   const [firstName, setFirstName] = useState("");
   const [surname, setSurname] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<SignupFormErrors>({});
-
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          navigate("/");
-        }
-      }
-    );
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        navigate("/");
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate]);
 
   const validateForm = (): boolean => {
     const result = signupSchema.safeParse({ 
@@ -134,16 +107,25 @@ const Signup = () => {
         return;
       }
 
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: email.trim(),
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`,
-        },
+      const orgSlug = (businessName.trim() || `${firstName}-${surname}`)
+        .toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-");
+
+      const res = await fetch(`${KAPABLE_API}/v1/auth/signup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: email.trim(),
+          password,
+          name: `${firstName.trim()} ${surname.trim()}`,
+          org_name: businessName.trim() || `${firstName.trim()} ${surname.trim()}`,
+          org_slug: orgSlug,
+        }),
       });
-      
-      if (authError) {
-        if (authError.message.includes("already registered")) {
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        const msg = (err as any).error?.message || `Sign up failed (${res.status})`;
+        if (msg.includes("already") || msg.includes("exists")) {
           toast({
             title: "Account exists",
             description: "This email is already registered. Please sign in instead.",
@@ -152,30 +134,15 @@ const Signup = () => {
         } else {
           toast({
             title: "Sign up failed",
-            description: authError.message,
+            description: msg,
             variant: "destructive",
           });
         }
         return;
       }
 
-      if (authData.user) {
-        const { error: profileError } = await supabase
-          .from("profiles")
-          .insert({
-            user_id: authData.user.id,
-            first_name: firstName.trim(),
-            surname: surname.trim(),
-            business_name: businessName.trim() || null,
-          });
-
-        if (profileError) {
-          console.error("Profile creation error:", profileError);
-        }
-        
-        // Redirect to confirmation page
-        navigate("/signup-confirmation");
-      }
+      // Redirect to confirmation page
+      navigate("/signup-confirmation");
     } catch (error: any) {
       toast({
         title: "Sign up failed",

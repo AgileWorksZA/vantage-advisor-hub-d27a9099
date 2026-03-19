@@ -24,7 +24,8 @@ import {
   FilterCondition,
 } from "@/hooks/useCommunicationCampaigns";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
+import { useKapableAuth } from "@/integrations/kapable/auth-context";
 
 interface ComposeMessageDialogProps {
   open: boolean;
@@ -57,18 +58,10 @@ export const ComposeMessageDialog = ({
   const [subject, setSubject] = useState("");
   const [bodyHtml, setBodyHtml] = useState("");
 
-  // Get current user info
-  const [userEmail, setUserEmail] = useState("");
-  const [userName, setUserName] = useState("Adviser");
-
-  useState(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) {
-        setUserEmail(data.user.email || "");
-        setUserName(data.user.user_metadata?.full_name || "Adviser");
-      }
-    });
-  });
+  // Get current user info from Kapable auth context
+  const { email: authEmail, name: authName } = useKapableAuth();
+  const [userEmail] = useState(authEmail || "");
+  const [userName] = useState(authName || "Adviser");
 
   // Calculate recipient count based on filters + direct selections
   const recipientCount = useMemo(() => {

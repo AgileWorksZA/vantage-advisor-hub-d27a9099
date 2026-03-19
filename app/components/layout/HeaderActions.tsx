@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router";
 import { Button } from "@/components/ui/button";
 import { Bell, LogOut } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+// Auth sign-out handled via navigation to /logout
 
 interface HeaderActionsProps {
   userName: string;
@@ -12,8 +12,7 @@ export const HeaderActions = ({ userName, showAdvisorAvatars = true }: HeaderAct
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    navigate("/auth");
+    navigate("/logout");
   };
 
   return (

@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
 import { useRegion } from "@/contexts/RegionContext";
 import { generateClient360Data, mapNationalityToJurisdiction } from "@/data/regional360ViewData";
 import {
@@ -131,9 +131,9 @@ export default function ClientPerformanceTab({ clientId, nationality, countryOfI
 
   useEffect(() => {
     const exchanges = getExchangesForJurisdiction(jurisdiction);
-    supabase
+    kapable
       .from("admin_funds")
-      .select("id, name, code, exchange, sector, fund_manager")
+      .select("*")
       .eq("is_deleted", false)
       .in("exchange", exchanges)
       .then(({ data }) => {

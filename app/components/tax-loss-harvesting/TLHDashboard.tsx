@@ -38,7 +38,7 @@ import { useTLHData } from "@/hooks/useTLHData";
 import { FundSwitchDialog } from "./FundSwitchDialog";
 import { TrackingErrorBand } from "./TrackingErrorBand";
 import { TLHOpportunityDemo, getClientTLHMetrics, TLHDashboardMetrics } from "@/data/tlhDemoData";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
 import { useRegion } from "@/contexts/RegionContext";
 
 interface TLHDashboardProps {
@@ -85,13 +85,13 @@ export const TLHDashboard = ({ open, onOpenChange, clientName, clientId }: TLHDa
   // Fetch client product count if we have a valid UUID
   useEffect(() => {
     if (clientId && isValidUUID(clientId) && open) {
-      supabase
+      kapable
         .from("client_products")
-        .select("id", { count: "exact", head: true })
+        .select("*")
         .eq("client_id", clientId)
         .eq("is_deleted", false)
-        .then(({ count }) => {
-          setProductCount(count ?? null);
+        .then(({ data }) => {
+          setProductCount(data ? (data as any[]).length : null);
         });
     } else {
       setProductCount(null);

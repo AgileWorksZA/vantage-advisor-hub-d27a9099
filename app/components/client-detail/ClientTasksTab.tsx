@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { kapable } from "@/integrations/kapable/client";
+import { useKapableAuth } from "@/integrations/kapable/auth-context";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -43,16 +44,14 @@ const ClientTasksTab = ({ clientId }: ClientTasksTabProps) => {
   const [detailOpen, setDetailOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
 
+  const { userId } = useKapableAuth();
+
   const fetchTasks = useCallback(async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from("tasks")
-        .select(`
-          *,
-          clients!tasks_client_id_fkey(first_name, surname, advisor),
-          team_members!tasks_assigned_to_user_id_fkey(first_name, last_name)
-        `)
+      const { data, error } = await kapable
+        .from("advisor_tasks")
+        .select("*")
         .eq("is_deleted", false)
         .eq("client_id", clientId)
         .order("created_at", { ascending: false });
@@ -90,8 +89,8 @@ const ClientTasksTab = ({ clientId }: ClientTasksTabProps) => {
   const handleUpdate = async (taskId: string, updates: Partial<EnhancedTask>) => {
     try {
       const { client_name, client_advisor, assigned_to_name, linked_clients, ...dbUpdates } = updates as any;
-      const { error } = await supabase
-        .from("tasks")
+      const { error } = await kapable
+        .from("advisor_tasks")
         .update({
           ...dbUpdates,
           completed_at: updates.status === "Completed" ? new Date().toISOString() : undefined,
@@ -109,8 +108,8 @@ const ClientTasksTab = ({ clientId }: ClientTasksTabProps) => {
 
   const handleDelete = async (taskId: string) => {
     try {
-      const { error } = await supabase
-        .from("tasks")
+      const { error } = await kapable
+        .from("advisor_tasks")
         .update({ is_deleted: true, deleted_at: new Date().toISOString() })
         .eq("id", taskId);
       if (error) throw error;
@@ -139,12 +138,11 @@ const ClientTasksTab = ({ clientId }: ClientTasksTabProps) => {
 
   const handleCreate = async (taskData: Partial<EnhancedTask>) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
-      const { data, error } = await supabase
-        .from("tasks")
+      if (!userId) throw new Error("Not authenticated");
+      const { data, error } = await kapable
+        .from("advisor_tasks")
         .insert([{
-          user_id: user.id,
+          user_id: userId,
           title: taskData.title || "New Task",
           description: taskData.description,
           task_type: (taskData.task_type as any) || "Follow-up",
@@ -152,8 +150,8 @@ const ClientTasksTab = ({ clientId }: ClientTasksTabProps) => {
           status: (taskData.status as any) || "Not Started",
           due_date: taskData.due_date,
           client_id: taskData.client_id || clientId,
-          assigned_to_user_id: taskData.assigned_to_user_id || user.id,
-          created_by: user.id,
+          assigned_to_user_id: taskData.assigned_to_user_id || userId,
+          created_by: userId,
           is_practice_task: false,
           notes: taskData.notes || [],
           category: taskData.category,
