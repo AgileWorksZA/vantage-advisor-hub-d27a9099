@@ -26,8 +26,18 @@ export function KapableAuthProvider({ children, value }: KapableAuthProviderProp
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
+const EMPTY_AUTH: KapableAuthContext = {
+  userId: "",
+  email: "",
+  name: "",
+  role: "",
+  orgId: "",
+  orgName: "",
+};
+
 export function useKapableAuth(): KapableAuthContext {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useKapableAuth must be used within KapableAuthProvider");
-  return ctx;
+  // Return empty context when outside provider (e.g., RegionContext in root.tsx)
+  // Hooks check for empty userId before making API calls
+  return ctx ?? EMPTY_AUTH;
 }
