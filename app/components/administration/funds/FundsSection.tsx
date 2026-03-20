@@ -137,8 +137,7 @@ export function FundsSection() {
   const handleSeedData = async () => {
     setIsSeeding(true);
     try {
-      // TODO: Replace with Kapable SSF
-      const response = await fetch("/api/kapable/seed-instruments-data", {
+      const response = await fetch("/api/seed/seed-instruments-data", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
       });

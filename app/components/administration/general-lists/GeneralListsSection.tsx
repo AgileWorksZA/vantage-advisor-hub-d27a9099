@@ -88,8 +88,7 @@ export function GeneralListsSection() {
   const handleSeedReferenceData = async () => {
     setIsSeeding(true);
     try {
-      // TODO: Replace with Kapable SSF
-      const response = await fetch("/api/kapable/seed-admin-reference-data", {
+      const response = await fetch("/api/seed/seed-admin-reference-data", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
       });

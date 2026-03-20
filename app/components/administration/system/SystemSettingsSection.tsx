@@ -184,9 +184,8 @@ export function SystemSettingsSection() {
     { name: "seed-meeting-recordings", label: "Meeting Recordings" },
   ];
 
-  // TODO: Replace with Kapable SSF — all seed functions route through BFF proxy
   const callSeedFunction = async (name: string, body?: Record<string, unknown>): Promise<any> => {
-    const response = await fetch(`/api/kapable/${name}`, {
+    const response = await fetch(`/api/seed/${name}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       ...(body ? { body: JSON.stringify(body) } : {}),

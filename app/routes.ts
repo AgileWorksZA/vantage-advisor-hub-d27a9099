@@ -14,6 +14,9 @@ export default [
   route("/disclaimer", "routes/disclaimer.tsx"),
   route("/help", "routes/help.tsx"),
 
+  // Seed BFF route (must be before kapable wildcard)
+  route("/api/seed/:name", "routes/api.seed.$name.ts"),
+
   // Kapable BFF proxies (must be before layout routes)
   route("/api/kapable/*", "routes/api.kapable.$.ts"),
   route("/api/kapable-auth/change-password", "routes/api.kapable-auth.change-password.ts"),

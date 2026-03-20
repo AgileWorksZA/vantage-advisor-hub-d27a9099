@@ -126,9 +126,12 @@ export function useTLHData() {
       setIsAutoSeeding(true);
       try {
         console.log('Auto-seeding TLH data...');
-        // TODO: Replace with Kapable SSF
-        console.warn('seed-tlh-clients: Kapable SSF not yet available — skipping auto-seed');
-        
+        const seedRes = await fetch("/api/seed/seed-tlh-clients", { method: "POST" });
+        const seedResult = await seedRes.json();
+        if (!seedRes.ok || !seedResult.success) {
+          console.warn('TLH auto-seed failed:', seedResult.error);
+        }
+
         // Re-fetch opportunities after seeding
         const { data: newData } = await kapable
           .from('tlh_opportunities')

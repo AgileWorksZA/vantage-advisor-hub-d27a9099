@@ -197,10 +197,17 @@ export function useProductProviders() {
         return;
       }
 
-      // TODO: Replace with Kapable SSF
-      console.warn("seed-providers-data: Kapable SSF not yet available");
-      toast.error("Seed providers not yet available on Kapable");
-      return null;
+      const res = await fetch("/api/seed/seed-providers-data", { method: "POST" });
+      const result = await res.json();
+
+      if (!res.ok || !result.success) {
+        toast.error(result.error || "Failed to seed providers");
+        return null;
+      }
+
+      toast.success(result.message || "Providers seeded successfully");
+      queryClient.invalidateQueries({ queryKey: ["product-providers"] });
+      return result;
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Unknown error";
       toast.error(`Failed to seed providers: ${message}`);
