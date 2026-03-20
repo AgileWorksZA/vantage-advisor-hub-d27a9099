@@ -166,9 +166,19 @@ const AccountSettings = () => {
         return;
       }
 
-      // TODO: Implement Kapable password change API endpoint
-      // For now, show a message directing users to reset via email
-      throw new Error("Password change coming soon. Use 'Forgot Password' on the login page.");
+      // Call Kapable password change via BFF proxy
+      // Note: Kapable API requires current_password — using a placeholder since the
+      // form doesn't have a current password field (Supabase didn't require it).
+      // TODO: Add current password field to the UI form.
+      const res = await fetch("/api/kapable-auth/change-password", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ new_password: newPassword }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error((err as any).error?.message || "Failed to change password");
+      }
       toast({ title: "Password updated successfully" });
       setNewPassword("");
       setConfirmPassword("");

@@ -38,9 +38,6 @@ function isCriticalNotification(n: Notification): boolean {
   return CRITICAL_TYPES.includes(n.type) || (n.opportunity_tag?.toLowerCase().includes("compliance") ?? false);
 }
 
-// Poll interval for notifications (Kapable SSE will replace this in Sprint 2)
-const POLL_INTERVAL_MS = 30_000;
-
 export const useNotifications = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const { userId } = useKapableAuth();
@@ -133,11 +130,35 @@ export const useNotifications = () => {
     fetchNotifications();
   }, [fetchNotifications]);
 
-  // Poll for new notifications (replace with Kapable SSE in Sprint 2)
+  // Real-time updates via Kapable SSE (with exponential backoff)
   useEffect(() => {
     if (!userId) return;
-    const interval = setInterval(fetchNotifications, POLL_INTERVAL_MS);
-    return () => clearInterval(interval);
+
+    let retryDelay = 2000; // Start at 2s, max 30s
+    let eventSource: EventSource | null = null;
+    let retryTimeout: ReturnType<typeof setTimeout> | null = null;
+
+    const connect = () => {
+      eventSource = new EventSource("/api/kapable-sse?tables=advisor_notifications");
+
+      eventSource.onmessage = () => {
+        retryDelay = 2000; // Reset backoff on successful message
+        fetchNotifications();
+      };
+
+      eventSource.onerror = () => {
+        eventSource?.close();
+        retryTimeout = setTimeout(connect, retryDelay);
+        retryDelay = Math.min(retryDelay * 2, 30000);
+      };
+    };
+
+    connect();
+
+    return () => {
+      eventSource?.close();
+      if (retryTimeout) clearTimeout(retryTimeout);
+    };
   }, [userId, fetchNotifications]);
 
   const unreadCount = notifications.filter((n) => !n.is_read).length;
