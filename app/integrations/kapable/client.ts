@@ -171,9 +171,13 @@ class QueryBuilder<T = Record<string, unknown>> {
       params.append("where", `${f.column}.${f.op}.${val}`);
     }
 
-    // Ordering
-    for (const o of this._ordering) {
-      params.append("order", `${o.column}.${o.ascending ? "asc" : "desc"}`);
+    // Ordering — join multiple orders into a single comma-separated param
+    // (Kapable API rejects duplicate "order" query params)
+    if (this._ordering.length > 0) {
+      const orderVal = this._ordering
+        .map((o) => `${o.column}.${o.ascending ? "asc" : "desc"}`)
+        .join(",");
+      params.set("order", orderVal);
     }
 
     // Pagination
