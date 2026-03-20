@@ -86,9 +86,11 @@ const AccountSettings = () => {
   const [displayName, setDisplayName] = useState("");
 
   // Password state
+  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordError, setPasswordError] = useState("");
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
@@ -145,6 +147,11 @@ const AccountSettings = () => {
   const handlePasswordUpdate = async () => {
     setPasswordError("");
 
+    if (!currentPassword) {
+      setPasswordError("Current password is required");
+      return;
+    }
+
     const result = passwordSchema.safeParse(newPassword);
     if (!result.success) {
       setPasswordError(result.error.errors[0].message);
@@ -166,20 +173,17 @@ const AccountSettings = () => {
         return;
       }
 
-      // Call Kapable password change via BFF proxy
-      // Note: Kapable API requires current_password — using a placeholder since the
-      // form doesn't have a current password field (Supabase didn't require it).
-      // TODO: Add current password field to the UI form.
       const res = await fetch("/api/kapable-auth/change-password", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ new_password: newPassword }),
+        body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error((err as any).error?.message || "Failed to change password");
       }
       toast({ title: "Password updated successfully" });
+      setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
     } catch (error: any) {
@@ -348,6 +352,27 @@ const AccountSettings = () => {
                       Choose a strong password with at least 8 characters, including uppercase, lowercase, and a number.
                     </p>
                     <div className="space-y-2">
+                      <Label>Current Password</Label>
+                      <div className="relative">
+                        <Input
+                          type={showCurrentPassword ? "text" : "password"}
+                          value={currentPassword}
+                          onChange={(e) => {
+                            setCurrentPassword(e.target.value);
+                            setPasswordError("");
+                          }}
+                          placeholder="Enter current password"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        >
+                          {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
                       <Label>New Password</Label>
                       <div className="relative">
                         <Input
@@ -392,7 +417,7 @@ const AccountSettings = () => {
                     {passwordError && (
                       <p className="text-sm text-destructive">{passwordError}</p>
                     )}
-                    <Button onClick={handlePasswordUpdate} disabled={isUpdatingPassword || !newPassword}>
+                    <Button onClick={handlePasswordUpdate} disabled={isUpdatingPassword || !currentPassword || !newPassword}>
                       {isUpdatingPassword ? (
                         <>
                           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
